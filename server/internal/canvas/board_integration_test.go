@@ -80,8 +80,8 @@ func createTestBoard(
 			return err
 		}
 		for _, collaborator := range collaborators {
-			if _, err = q.UpsertOutputGrant(ctx, generated.UpsertOutputGrantParams{
-				CompanyID: p.CompanyID, OutputID: id, UserID: collaborator.UserID, Permission: "edit",
+			if _, err = q.UpsertArtifactGrant(ctx, generated.UpsertArtifactGrantParams{
+				CompanyID: p.CompanyID, ArtifactID: id, UserID: collaborator.UserID, Permission: "edit",
 				ActorUserID: p.UserID,
 			}); err != nil {
 				return err
@@ -110,16 +110,16 @@ func grantTestBoardAccess(
 	t.Helper()
 	q := s.store.Queries()
 	if permission == "none" {
-		if _, err := q.DeleteOutputGrant(t.Context(), generated.DeleteOutputGrantParams{
-			CompanyID: owner.CompanyID, OutputID: id, UserID: user,
+		if _, err := q.DeleteArtifactGrant(t.Context(), generated.DeleteArtifactGrantParams{
+			CompanyID: owner.CompanyID, ArtifactID: id, UserID: user,
 		}); err != nil {
 			t.Fatal(err)
 		}
 		return
 	}
-	if _, err := q.UpsertOutputGrant(t.Context(), generated.UpsertOutputGrantParams{
+	if _, err := q.UpsertArtifactGrant(t.Context(), generated.UpsertArtifactGrantParams{
 		CompanyID:   owner.CompanyID,
-		OutputID:    id,
+		ArtifactID:  id,
 		UserID:      user,
 		Permission:  permission,
 		ActorUserID: owner.UserID,

@@ -1,6 +1,30 @@
+import { DocumentViewMode } from "./document-view-mode";
+import { captureRuntimeExtension } from "./intelligent-ui/capture-runtime-extension";
+import { ReadonlyDocument } from "./intelligent-ui/readonly-document";
+import {
+  copyDocumentSlice,
+  copyDocumentDrop,
+  hasDocumentBlocks,
+} from "./document-copy";
+import {
+  editorRuntime,
+  editorDocumentView,
+  type DocumentView,
+} from "./intelligent-ui/editor-runtime";
+import { useScope } from "./intelligent-ui/reactive-values";
+import type { ScopeRuntime } from "./intelligent-ui/scope-runtime";
+import {
+  IntelligentDocumentContext,
+  IntelligentInstanceContext,
+  type InstanceContext,
+} from "./intelligent-ui/document-context";
+import {
+  inlineDocumentBlockTypes,
+  inlineDocumentExtensions,
+} from "./intelligent-ui/inline-document-node";
 import { DocumentOutline } from "./document-outline";
 import { BlockSettings, useBlockEditable } from "./block-settings";
-import { DocumentLinks } from "./document-links";
+import { DocumentLinks, documentLocation } from "./document-links";
 import { PageReportMode } from "./page-report-context";
 import { BlockViewSelect } from "./block-view-select";
 import "./document-blocks.css";
@@ -9,9 +33,11 @@ import {
   lazy,
   Suspense,
   useContext,
+  useCallback,
   useEffect,
   useId,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -24,6 +50,7 @@ import {
   ReactNodeViewRenderer,
   EditorContent,
   useEditor,
+  type Editor,
   type NodeViewProps,
   type JSONContent,
 } from "@tiptap/react";
@@ -33,17 +60,12 @@ import {
   WorkBlock,
   OutputCollectionBlock,
   WorkBlockScope,
-  WorkBlockMode,
 } from "./work-blocks";
 import { WorkflowBlock } from "./workflow-block";
 import { Link, useNavigate } from "react-router";
 import { Icon } from "@/shared/ui/icon";
 import { useTheme } from "next-themes";
-import {
-  Slice,
-  Fragment,
-  type Node as ProseMirrorNode,
-} from "@tiptap/pm/model";
+import { type Node as ProseMirrorNode } from "@tiptap/pm/model";
 import { ySyncPluginKey, yUndoPluginKey } from "@tiptap/y-tiptap";
 import type { UndoManager } from "yjs";
 import { preserveBlockIdentityOnUndo } from "./document-identities";
@@ -65,7 +87,7 @@ import {
 } from "../api/canvas-api";
 import type { components } from "@/shared/api/generated/api.generated";
 import { MarkdownView } from "../previews/markdown-view";
-import type { DocumentScope } from "./document-scope";
+import { documentScopeKey, type DocumentScope } from "./document-scope";
 import {
   WikiPageLink,
   WikiArtifactRef,
@@ -86,9 +108,11 @@ export function BlockScopeProvider({
 }) {
   return (
     <BlockScope.Provider value={value}>
-      <WikiArtifactsProvider companyId={value.companyId} content={content}>
-        {children}
-      </WikiArtifactsProvider>
+      <IntelligentDocumentContext.Provider value={value}>
+        <WikiArtifactsProvider companyId={value.companyId} content={content}>
+          {children}
+        </WikiArtifactsProvider>
+      </IntelligentDocumentContext.Provider>
     </BlockScope.Provider>
   );
 }
@@ -105,6 +129,7 @@ const ReferenceViewer = lazy(() =>
 );
 
 const blockTypes = [
+  ...inlineDocumentBlockTypes,
   "paragraph",
   "heading",
   "blockquote",
@@ -178,6 +203,7 @@ function validBlockIdentities(doc: ProseMirrorNode) {
 function BlockIdentities(
   ids?: string[],
   reserve?: (count?: number, retry?: boolean) => void,
+  instance = false,
 ) {
   return Extension.create({
     name: "blockIdentities",
@@ -209,12 +235,14 @@ function BlockIdentities(
               default: null,
               parseHTML: (element) => element.getAttribute("data-block-id"),
               renderHTML: (attrs) =>
-                attrs.blockId
-                  ? {
-                      "data-block-id": attrs.blockId,
-                      id: `block-${attrs.blockId}`,
-                    }
-                  : {},
+                attrs.blockId && instance
+                  ? { "data-template-block-id": attrs.blockId }
+                  : attrs.blockId
+                    ? {
+                        "data-block-id": attrs.blockId,
+                        id: `block-${attrs.blockId}`,
+                      }
+                    : {},
             },
           },
         },
@@ -239,29 +267,42 @@ function BlockIdentities(
                 : validBlockIdentities(tr.doc),
           },
           props: {
-            transformPasted(slice) {
-              const clear = (node: ProseMirrorNode): ProseMirrorNode => {
-                if (node.isText) return node;
-                const children: ProseMirrorNode[] = [];
-                node.content.forEach((child) => children.push(clear(child)));
-                return node.type.create(
-                  {
-                    ...node.attrs,
-                    ...(blockTypes.includes(node.type.name)
-                      ? { blockId: null }
-                      : {}),
-                  },
-                  Fragment.fromArray(children),
-                  node.marks,
-                );
-              };
-              const children: ProseMirrorNode[] = [];
-              slice.content.forEach((node) => children.push(clear(node)));
-              return new Slice(
-                Fragment.fromArray(children),
-                slice.openStart,
-                slice.openEnd,
+            handleDrop(view, event, slice, moved) {
+              if (!view.editable || moved) return false;
+              if (!hasDocumentBlocks(slice)) return false;
+              const hit = view.posAtCoords({
+                left: event.clientX,
+                top: event.clientY,
+              });
+              if (!hit) return true;
+              const copied = copyDocumentDrop(view.state, slice, hit.pos, ids);
+              if (!copied.transaction) {
+                if (copied.needed) reserve?.(copied.needed, true);
+                return true;
+              }
+              view.focus();
+              view.dispatch(copied.transaction);
+              if (ids.length < 8) reserve?.(32);
+              return true;
+            },
+            handlePaste(view, _event, slice) {
+              if (!view.editable) return false;
+              // Plain inline text keeps ProseMirror's normal paste behavior.
+              if (!hasDocumentBlocks(slice)) return false;
+              const copied = copyDocumentSlice(slice, ids);
+              if (!copied.slice) {
+                reserve?.(copied.needed, true);
+                return true;
+              }
+              view.dispatch(
+                view.state.tr
+                  .replaceSelection(copied.slice)
+                  .scrollIntoView()
+                  .setMeta("paste", true)
+                  .setMeta("uiEvent", "paste"),
               );
+              if (ids.length < 8) reserve?.(32);
+              return true;
             },
           },
           // Undo may preserve a paragraph while removing its ID. Inline edits
@@ -565,13 +606,14 @@ function EquationView({ node, updateAttributes, editor }: NodeViewProps) {
 
 function ReferenceView(props: NodeViewProps) {
   const scope = useContext(BlockScope);
+  const { template } = useScope(props);
   if (!scope || !("projectId" in scope))
     return (
       <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         This reference requires a Project.
       </NodeViewWrapper>
     );
-  return <ProjectReferenceView {...props} scope={scope} />;
+  return <ProjectReferenceView {...props} scope={scope} template={template} />;
 }
 
 function ProjectReferenceView({
@@ -579,29 +621,26 @@ function ProjectReferenceView({
   editor,
   updateAttributes,
   scope,
-}: NodeViewProps & { scope: CanvasScope }) {
+  template,
+}: NodeViewProps & { scope: CanvasScope; template: boolean }) {
   const editable = useBlockEditable(editor);
   const live = useContext(BlockLive);
   const capturedDocuments = useContext(SnapshotDocuments);
-  const mode = useContext(WorkBlockMode);
+  const mode = useContext(DocumentViewMode);
   const trail = useContext(ReferenceTrail);
   const navigate = useNavigate();
-  const snapshot = useGetCanvasQuery(scope);
+  const snapshot = useGetCanvasQuery(scope, { skip: template && !editable });
   const pinned = String(node.attrs.versionId || "");
   const artifact = snapshot.currentData?.artifacts.find(
     (row) => row.id === node.attrs.artifactId || row.latestVersionId === pinned,
   );
-  const follows =
-    node.attrs.format === "accepted" &&
-    (editable || live) &&
-    !capturedDocuments;
-  const versionId = follows ? artifact?.acceptedVersionId || "" : pinned;
+  const versionId = pinned;
   const history = useCanvasHistoryQuery(
     {
       ...scope,
       artifactId: artifact?.id || String(node.attrs.artifactId || ""),
     },
-    { skip: !artifact?.id && !node.attrs.artifactId },
+    { skip: template || (!artifact?.id && !node.attrs.artifactId) },
   );
   const version =
     history.currentData?.versions.find((row) => row.id === versionId) ??
@@ -642,6 +681,7 @@ function ProjectReferenceView({
     { ...scope, versionId },
     {
       skip:
+        template ||
         !!capturedDocuments ||
         readsLivePage ||
         !open ||
@@ -651,7 +691,7 @@ function ProjectReferenceView({
   );
   const page = useCanvasDocumentQuery(
     { ...scope, versionId },
-    { skip: !readsLivePage || !open || !versionId },
+    { skip: template || !readsLivePage || !open || !versionId },
   );
   const content = capturedDocuments
     ? capturedDocuments[
@@ -669,6 +709,29 @@ function ProjectReferenceView({
   const loading =
     !capturedDocuments &&
     (history.isFetching || (snapshot.isFetching && !artifact));
+  const registerSourceEditor = useCallback(
+    (sourceEditor: Editor) => {
+      if (capturedDocuments || unavailable || !content || !node.attrs.blockId)
+        return;
+      return editorRuntime(editor).registerReference(
+        String(node.attrs.blockId),
+        {
+          key: readsLivePage ? `${versionId}:live` : versionId,
+          editor: sourceEditor,
+          content,
+        },
+      );
+    },
+    [
+      editor,
+      capturedDocuments,
+      unavailable,
+      content,
+      node.attrs.blockId,
+      readsLivePage,
+      versionId,
+    ],
+  );
   const sections: { id: string; label: string }[] = [];
   const collect = (block?: Block) => {
     if (!block || sections.length >= 100) return;
@@ -783,7 +846,11 @@ function ProjectReferenceView({
           </label>
         </BlockSettings>
       )}
-      {loading ? (
+      {template ? (
+        <p role="status">
+          Reference template · Content loads in rendered instances.
+        </p>
+      ) : loading ? (
         <p
           role="status"
           className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center"
@@ -820,7 +887,6 @@ function ProjectReferenceView({
           {!capturedDocuments &&
             artifact &&
             artifact.latestVersionId !== versionId &&
-            !follows &&
             !readsLivePage && (
               <small className="block m-[12px_0] text-[var(--pc-accent)] text-[length:11px]">
                 A newer source version is available. This selection stays
@@ -842,6 +908,7 @@ function ProjectReferenceView({
                   blockId={String(node.attrs.blockTargetId || "") || undefined}
                   mode={capturedDocuments ? "snapshot" : mode}
                   live={readsLivePage}
+                  registerEditor={registerSourceEditor}
                 />
               </ReferenceTrail.Provider>
             ) : (
@@ -860,9 +927,7 @@ function ProjectReferenceView({
                 : readsLivePage
                   ? "Live page"
                   : "Page version"
-              : follows
-                ? "Following accepted"
-                : "Pinned evidence"}
+              : "Snapshot evidence"}
             {version && node.attrs.format !== "live"
               ? ` · Version ${version.number}`
               : ""}
@@ -1029,6 +1094,7 @@ function container(
 }
 
 export function blockExtensions(options: {
+  inheritedRuntime?: ScopeRuntime;
   navigate: (location: string) => void;
   collaborative?: boolean;
   companyId?: string;
@@ -1036,6 +1102,8 @@ export function blockExtensions(options: {
   reserve?: (count?: number, retry?: boolean) => void;
 }) {
   return [
+    ...inlineDocumentExtensions(),
+    captureRuntimeExtension(options.inheritedRuntime),
     DocumentLinks.configure({ navigate: options.navigate }),
     StarterKit.configure({
       codeBlock: false,
@@ -1069,7 +1137,7 @@ export function blockExtensions(options: {
     Placeholder.configure({
       placeholder: "Start writing…",
     }),
-    BlockIdentities(options.ids, options.reserve),
+    BlockIdentities(options.ids, options.reserve, !!options.inheritedRuntime),
     container("callout", "aside", "block+", "pc-block-callout"),
     container(
       "toggle",
@@ -1177,7 +1245,23 @@ export function blockExtensions(options: {
             workflowKey: { default: "" },
             capturedWorkflow: { default: null },
             taskId: { default: "" },
-            filter: { default: "all" },
+            filter: {
+              default: "all",
+              parseHTML: (element) => {
+                const source = element.getAttribute("data-task-filter");
+                if (source) {
+                  try {
+                    return JSON.parse(source);
+                  } catch {
+                    return "all";
+                  }
+                }
+                return element.getAttribute("filter") || "all";
+              },
+              renderHTML: (attributes) => ({
+                "data-task-filter": JSON.stringify(attributes.filter),
+              }),
+            },
             display: {
               default: name === "workflowReference" ? "card" : "list",
             },
@@ -1319,7 +1403,140 @@ function referencedSection(root: Block, id: string): Block | undefined {
   }
 }
 
-export function BlockDocument({
+type BlockDocumentProps = {
+  content: Block;
+  scope: DocumentScope;
+  blockId?: string;
+  focusId?: string;
+  live?: boolean;
+  mode?: "live" | "comparison" | "snapshot";
+  showOutline?: boolean;
+  instance?: InstanceContext;
+  registerEditor?: (editor: Editor) => (() => void) | undefined;
+};
+
+export function BlockDocument(props: BlockDocumentProps) {
+  return <EditorBlockDocument {...props} />;
+}
+
+// Opt in only for chat UI and repeated instances. Ordinary documents keep the
+// native renderer's complete formatting and editor integration.
+export function InteractiveBlockDocument(
+  props: Omit<BlockDocumentProps, "showOutline" | "registerEditor">,
+) {
+  return (
+    <ReadonlyBlockDocument key={documentScopeKey(props.scope)} {...props} />
+  );
+}
+
+function ReadonlyBlockDocument({
+  content,
+  scope,
+  blockId,
+  focusId,
+  live = false,
+  mode = "live",
+  instance,
+}: BlockDocumentProps) {
+  const target = useMemo(
+    () => (blockId ? referencedSection(content, blockId) : content),
+    [content, blockId],
+  );
+  const body = useMemo(() => blockPreviewDocument(target), [target]);
+  const host = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const renderNative = useCallback(
+    (block: Block, parent: ScopeRuntime | undefined, view: DocumentView) => (
+      <NativeReadonlyBlock
+        block={block}
+        scope={scope}
+        mode={mode}
+        parent={parent}
+        owner={view}
+      />
+    ),
+    [scope, mode],
+  );
+  useEffect(() => {
+    if (focusId)
+      host.current
+        ?.querySelector(`[data-block-id="${CSS.escape(focusId)}"]`)
+        ?.scrollIntoView({ block: "center" });
+  }, [focusId, body]);
+  if (blockId && !target)
+    return <p>This content was removed from this version.</p>;
+  return (
+    <BlockScopeProvider value={scope} content={body}>
+      <WorkBlockScope.Provider value={"projectId" in scope ? scope : null}>
+        <DocumentViewMode.Provider value={mode}>
+          <BlockLiveProvider value={live || mode === "comparison"}>
+            <div
+              ref={host}
+              className="pc-block-editor is-readonly"
+              onClick={(event) => {
+                const anchor =
+                  event.target instanceof Element
+                    ? event.target.closest("a[href]")
+                    : null;
+                if (!(anchor instanceof HTMLAnchorElement)) return;
+                const location = documentLocation(anchor.href);
+                if (!location) return;
+                event.preventDefault();
+                if (event.metaKey || event.ctrlKey || event.shiftKey)
+                  window.open(location, "_blank", "noopener,noreferrer");
+                else navigate(location);
+              }}
+            >
+              <ReadonlyDocument
+                content={body}
+                instance={instance}
+                renderNative={renderNative}
+              />
+            </div>
+          </BlockLiveProvider>
+        </DocumentViewMode.Provider>
+      </WorkBlockScope.Provider>
+    </BlockScopeProvider>
+  );
+}
+
+function NativeReadonlyBlock({
+  block,
+  scope,
+  mode,
+  parent,
+  owner,
+}: {
+  block: Block;
+  scope: DocumentScope;
+  mode: "live" | "comparison" | "snapshot";
+  parent?: ScopeRuntime;
+  owner: DocumentView;
+}) {
+  const registerEditor = useCallback(
+    (editor: Editor) =>
+      owner.registry.registerFallback(
+        String(block.attrs?.blockId),
+        editorDocumentView(editor),
+      ),
+    [owner, block.attrs?.blockId],
+  );
+  const instance = useMemo(
+    () => (parent ? { runtime: parent, depth: 0, budget: 10000 } : undefined),
+    [parent],
+  );
+  return (
+    <EditorBlockDocument
+      content={block}
+      scope={scope}
+      mode={mode}
+      instance={instance}
+      registerEditor={registerEditor}
+    />
+  );
+}
+
+function EditorBlockDocument({
   content,
   scope,
   blockId,
@@ -1327,6 +1544,8 @@ export function BlockDocument({
   live = false,
   mode = "live",
   showOutline = false,
+  instance,
+  registerEditor,
 }: {
   content: Block;
   scope: DocumentScope;
@@ -1335,6 +1554,8 @@ export function BlockDocument({
   live?: boolean;
   mode?: "live" | "comparison" | "snapshot";
   showOutline?: boolean;
+  instance?: InstanceContext;
+  registerEditor?: (editor: Editor) => (() => void) | undefined;
 }) {
   const navigate = useNavigate();
   const target = useMemo(
@@ -1344,13 +1565,29 @@ export function BlockDocument({
   const body = useMemo(() => blockPreviewDocument(target), [target]);
   const editor = useEditor(
     {
-      extensions: blockExtensions({ companyId: scope.companyId, navigate }),
+      extensions: blockExtensions({
+        companyId: scope.companyId,
+        navigate,
+        inheritedRuntime: instance?.runtime,
+      }),
       content: body as JSONContent,
       editable: false,
       immediatelyRender: false,
     },
-    [body],
+    [instance?.runtime],
   );
+  useEffect(() => {
+    if (editor && JSON.stringify(editor.getJSON()) !== JSON.stringify(body))
+      editor.commands.setContent(body as JSONContent, { emitUpdate: false });
+  }, [editor, body]);
+  useEffect(() => {
+    if (!editor || !registerEditor) return;
+    return registerEditor(editor);
+  }, [editor, registerEditor]);
+  useEffect(() => {
+    if (!editor || !instance?.registerView) return;
+    return instance.registerView(editorDocumentView(editor));
+  }, [editor, instance?.registerView]);
   useEffect(() => {
     if (!editor || !focusId) return;
     const frame = requestAnimationFrame(() =>
@@ -1365,15 +1602,17 @@ export function BlockDocument({
   return (
     <BlockScopeProvider value={scope} content={body}>
       <WorkBlockScope.Provider value={"projectId" in scope ? scope : null}>
-        <WorkBlockMode.Provider value={mode}>
+        <DocumentViewMode.Provider value={mode}>
           <BlockLiveProvider value={live || mode === "comparison"}>
             {showOutline && <DocumentOutline editor={editor} />}
-            <EditorContent
-              className="pc-block-editor is-readonly"
-              editor={editor}
-            />
+            <IntelligentInstanceContext.Provider value={instance ?? null}>
+              <EditorContent
+                className="pc-block-editor is-readonly"
+                editor={editor}
+              />
+            </IntelligentInstanceContext.Provider>
           </BlockLiveProvider>
-        </WorkBlockMode.Provider>
+        </DocumentViewMode.Provider>
       </WorkBlockScope.Provider>
     </BlockScopeProvider>
   );

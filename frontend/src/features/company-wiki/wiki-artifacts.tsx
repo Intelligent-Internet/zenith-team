@@ -160,6 +160,7 @@ const typeIcons: Record<ArtifactType, IconComponent> = {
   app: Monitor,
   media: Image,
   text: FileText,
+  page: FileText,
   file: File,
   whiteboard: LayoutDashboard,
 };

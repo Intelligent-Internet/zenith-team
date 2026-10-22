@@ -9,6 +9,8 @@ import (
 	"slices"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -409,6 +411,33 @@ func (s *DefaultDiscussionService) Send(
 			}
 			slices.SortFunc(artifactIDs, func(a, b uuid.UUID) int { return bytes.Compare(a[:], b[:]) })
 			for _, artifactID := range artifactIDs {
+				_, lookupErr := q.GetArtifactIdentity(
+					ctx,
+					generated.GetArtifactIdentityParams{CompanyID: p.CompanyID, ID: artifactID},
+				)
+				if lookupErr == nil {
+					if err := artifactdomain.ShareInTx(ctx, q, p, artifactID, id); err != nil {
+						if errors.Is(err, artifactdomain.ErrNotFound) ||
+							errors.Is(err, artifactdomain.ErrForbidden) {
+							return ErrDiscussionForbidden
+						}
+						return err
+					}
+					if err := q.LinkDiscussionWork(
+						ctx,
+						generated.LinkDiscussionWorkParams{
+							CompanyID:  p.CompanyID,
+							MessageID:  item.ID,
+							ArtifactID: uuid.NullUUID{UUID: artifactID, Valid: true},
+						},
+					); err != nil {
+						return err
+					}
+					continue
+				}
+				if !errors.Is(lookupErr, pgx.ErrNoRows) {
+					return lookupErr
+				}
 				if err := execution.ShareArtifactInTx(ctx, q, p, artifactID, id); err != nil {
 					if errors.Is(err, execution.ErrDeliverableNotFound) ||
 						errors.Is(err, execution.ErrDeliverableForbidden) {
@@ -421,7 +450,7 @@ func (s *DefaultDiscussionService) Send(
 					generated.LinkDiscussionArtifactParams{
 						CompanyID: p.CompanyID,
 						MessageID: item.ID,
-						OutputID:  artifactID,
+						OutputID:  uuid.NullUUID{UUID: artifactID, Valid: true},
 					},
 				); err != nil {
 					return err
@@ -435,12 +464,12 @@ func (s *DefaultDiscussionService) Send(
 				pending = append(
 					pending,
 					events.Event{
-						EntityType: execution.TopicArtifact,
-						Name:       execution.EventArtifactAccessChanged,
+						EntityType: artifactdomain.Topic,
+						Name:       artifactdomain.EventAccessChanged,
 						CompanyID:  p.CompanyID,
 						CreatedAt:  time.Now().UTC(),
 						Actor:      events.UserActor(p.UserID.String()),
-						Payload: execution.ArtifactAccessChanged{
+						Payload: artifactdomain.AccessChanged{
 							RecipientUserIDs: recipients,
 						},
 					},

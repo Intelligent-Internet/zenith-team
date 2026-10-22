@@ -28,11 +28,17 @@ func listTaskProjections(
 	if err != nil {
 		return Page{}, fmt.Errorf("list canonical Task projections: %w", err)
 	}
+	var nextCursor *int64
+	if options.Limit > 0 && int64(len(rows)) > int64(options.Limit) {
+		rows = rows[:options.Limit]
+		cursor := rows[len(rows)-1].Task.Number
+		nextCursor = &cursor
+	}
 	values := make([]Response, len(rows))
 	for index, row := range rows {
 		values[index] = responseFromProjectionRow(row)
 	}
-	return Page{Tasks: values}, nil
+	return Page{Tasks: values, NextCursor: nextCursor}, nil
 }
 
 func taskProjectionForActiveMember(
@@ -64,6 +70,7 @@ func taskProjectionParams(
 		ActorUserID:               principal.UserID,
 		CompanyID:                 principal.CompanyID,
 		Statuses:                  []string{},
+		ExcludedStatuses:          []string{},
 		Priorities:                []string{},
 		ExecutePermission:         string(auth.ProjectPermissionTasksExecute),
 		CompanyDefaultPermissions: sets.CompanyDefaultPermissions,
@@ -85,6 +92,13 @@ func taskProjectionParams(
 			params.Statuses[index] = string(status)
 		}
 	}
+	if len(options.ExcludedStatuses) > 0 {
+		params.HasExcludedStatuses = true
+		params.ExcludedStatuses = make([]string, len(options.ExcludedStatuses))
+		for index, status := range options.ExcludedStatuses {
+			params.ExcludedStatuses[index] = string(status)
+		}
+	}
 	if len(options.Priorities) > 0 {
 		params.HasPriorities = true
 		params.Priorities = make([]string, len(options.Priorities))
@@ -104,6 +118,14 @@ func taskProjectionParams(
 	if options.DependenciesResolved != nil {
 		params.HasDependenciesResolved = true
 		params.DependenciesResolved = *options.DependenciesResolved
+	}
+	if options.BeforeNumber > 0 {
+		params.HasBeforeNumber = true
+		params.BeforeNumber = options.BeforeNumber
+	}
+	if options.Limit > 0 {
+		params.HasLimit = true
+		params.RowLimit = int64(options.Limit)
 	}
 	return params
 }

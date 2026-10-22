@@ -144,6 +144,54 @@ type Approval struct {
 	Version                   int64              `json:"version"`
 }
 
+type Artifact struct {
+	ID                uuid.UUID          `json:"id"`
+	CompanyID         uuid.UUID          `json:"company_id"`
+	ProjectID         uuid.NullUUID      `json:"project_id"`
+	Title             string             `json:"title"`
+	AcceptedVersionID uuid.NullUUID      `json:"accepted_version_id"`
+	NextNumber        int64              `json:"next_number"`
+	Version           int64              `json:"version"`
+	CreatedByUserID   uuid.UUID          `json:"created_by_user_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	ArchivedAt        pgtype.Timestamptz `json:"archived_at"`
+	TaskID            uuid.NullUUID      `json:"task_id"`
+	SourceRunID       uuid.NullUUID      `json:"source_run_id"`
+	PendingCreation   bool               `json:"pending_creation"`
+	CreationChangeID  uuid.NullUUID      `json:"creation_change_id"`
+	Type              string             `json:"type"`
+	OwnerUserID       uuid.NullUUID      `json:"owner_user_id"`
+	Visibility        string             `json:"visibility"`
+	AccessVersion     int64              `json:"access_version"`
+	ConversationID    uuid.NullUUID      `json:"conversation_id"`
+}
+
+type ArtifactAccess struct {
+	CompanyID   uuid.UUID `json:"company_id"`
+	ArtifactID  uuid.UUID `json:"artifact_id"`
+	UserID      uuid.UUID `json:"user_id"`
+	AccessLevel int32     `json:"access_level"`
+}
+
+type ArtifactConversationGrant struct {
+	CompanyID       uuid.UUID          `json:"company_id"`
+	ArtifactID      uuid.UUID          `json:"artifact_id"`
+	ConversationID  uuid.UUID          `json:"conversation_id"`
+	GrantedByUserID uuid.UUID          `json:"granted_by_user_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+}
+
+type ArtifactGrant struct {
+	CompanyID       uuid.UUID          `json:"company_id"`
+	ArtifactID      uuid.UUID          `json:"artifact_id"`
+	UserID          uuid.UUID          `json:"user_id"`
+	Permission      string             `json:"permission"`
+	GrantedByUserID uuid.UUID          `json:"granted_by_user_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
 type ArtifactReviewDecision struct {
 	ID          uuid.UUID          `json:"id"`
 	CompanyID   uuid.UUID          `json:"company_id"`
@@ -154,6 +202,38 @@ type ArtifactReviewDecision struct {
 	Feedback    string             `json:"feedback"`
 	ActorUserID uuid.UUID          `json:"actor_user_id"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
+type ArtifactSnapshot struct {
+	ID              uuid.UUID          `json:"id"`
+	CompanyID       uuid.UUID          `json:"company_id"`
+	ProjectID       uuid.NullUUID      `json:"project_id"`
+	ArtifactID      uuid.UUID          `json:"artifact_id"`
+	Number          int64              `json:"number"`
+	SourceType      string             `json:"source_type"`
+	WikiPageID      uuid.NullUUID      `json:"wiki_page_id"`
+	WikiRevisionID  uuid.NullUUID      `json:"wiki_revision_id"`
+	AssetVersionID  uuid.NullUUID      `json:"asset_version_id"`
+	OutputID        uuid.NullUUID      `json:"output_id"`
+	BaseVersionID   uuid.NullUUID      `json:"base_version_id"`
+	CreatedByUserID uuid.UUID          `json:"created_by_user_id"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	BranchTitle     string             `json:"branch_title"`
+	Title           string             `json:"title"`
+	Theme           string             `json:"theme"`
+	SourceSequence  int64              `json:"source_sequence"`
+	SchemaVersion   int32              `json:"schema_version"`
+}
+
+type ArtifactSnapshotItem struct {
+	ID             uuid.UUID          `json:"id"`
+	CompanyID      uuid.UUID          `json:"company_id"`
+	SnapshotID     uuid.UUID          `json:"snapshot_id"`
+	Ordinal        int32              `json:"ordinal"`
+	Role           string             `json:"role"`
+	Label          string             `json:"label"`
+	AssetVersionID uuid.UUID          `json:"asset_version_id"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
 }
 
 type Asset struct {
@@ -225,11 +305,12 @@ type AuthSession struct {
 }
 
 type Board struct {
-	ID        uuid.UUID          `json:"id"`
-	CompanyID uuid.UUID          `json:"company_id"`
-	HeadSeq   int64              `json:"head_seq"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	ID           uuid.UUID          `json:"id"`
+	CompanyID    uuid.UUID          `json:"company_id"`
+	HeadSeq      int64              `json:"head_seq"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+	ArtifactType string             `json:"artifact_type"`
 }
 
 type BoardChange struct {
@@ -468,7 +549,7 @@ type CanvasTemplate struct {
 type CanvasVersionSource struct {
 	ID              uuid.UUID          `json:"id"`
 	CompanyID       uuid.UUID          `json:"company_id"`
-	ProjectID       uuid.UUID          `json:"project_id"`
+	ProjectID       uuid.NullUUID      `json:"project_id"`
 	ArtifactID      uuid.UUID          `json:"artifact_id"`
 	Number          int64              `json:"number"`
 	SourceType      string             `json:"source_type"`
@@ -665,24 +746,24 @@ type CompanyShareLink struct {
 }
 
 type CompanyWikiPage struct {
-	ID                 uuid.UUID          `json:"id"`
-	CompanyID          uuid.UUID          `json:"company_id"`
-	CollectionID       uuid.NullUUID      `json:"collection_id"`
-	Slug               string             `json:"slug"`
-	Title              string             `json:"title"`
-	Summary            string             `json:"summary"`
-	CurrentRevisionID  uuid.NullUUID      `json:"current_revision_id"`
-	Status             string             `json:"status"`
-	Version            int64              `json:"version"`
-	CreatedByUserID    uuid.UUID          `json:"created_by_user_id"`
-	CreatedAt          pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
-	ArchivedAt         pgtype.Timestamptz `json:"archived_at"`
-	SearchVector       interface{}        `json:"search_vector"`
-	NextRevisionNumber int64              `json:"next_revision_number"`
-	SourceOutputID     uuid.NullUUID      `json:"source_output_id"`
-	ProjectID          uuid.NullUUID      `json:"project_id"`
-	Theme              string             `json:"theme"`
+	ID                uuid.UUID          `json:"id"`
+	CompanyID         uuid.UUID          `json:"company_id"`
+	CollectionID      uuid.NullUUID      `json:"collection_id"`
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Summary           string             `json:"summary"`
+	CurrentRevisionID uuid.NullUUID      `json:"current_revision_id"`
+	Status            string             `json:"status"`
+	Version           int64              `json:"version"`
+	CreatedByUserID   uuid.UUID          `json:"created_by_user_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	ArchivedAt        pgtype.Timestamptz `json:"archived_at"`
+	SearchVector      interface{}        `json:"search_vector"`
+	SourceOutputID    uuid.NullUUID      `json:"source_output_id"`
+	ProjectID         uuid.NullUUID      `json:"project_id"`
+	Theme             string             `json:"theme"`
+	ArtifactType      string             `json:"artifact_type"`
 }
 
 type ConnectorCatalogItem struct {
@@ -1004,6 +1085,14 @@ type DeliverableInboxAccess struct {
 	UserID    uuid.UUID `json:"user_id"`
 }
 
+type DeliverySnapshot struct {
+	CompanyID  uuid.UUID          `json:"company_id"`
+	OutputID   uuid.UUID          `json:"output_id"`
+	SnapshotID uuid.UUID          `json:"snapshot_id"`
+	Ordinal    int32              `json:"ordinal"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
 type DesktopHandoffCode struct {
 	ID        uuid.UUID          `json:"id"`
 	UserID    uuid.UUID          `json:"user_id"`
@@ -1013,10 +1102,11 @@ type DesktopHandoffCode struct {
 }
 
 type DiscussionArtifact struct {
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	CompanyID uuid.UUID          `json:"company_id"`
-	MessageID uuid.UUID          `json:"message_id"`
-	OutputID  uuid.UUID          `json:"output_id"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	CompanyID  uuid.UUID          `json:"company_id"`
+	MessageID  uuid.UUID          `json:"message_id"`
+	OutputID   uuid.NullUUID      `json:"output_id"`
+	ArtifactID uuid.NullUUID      `json:"artifact_id"`
 }
 
 type DocumentChange struct {
@@ -1030,6 +1120,22 @@ type DocumentChange struct {
 	Delta      []byte             `json:"delta"`
 	Checkpoint []byte             `json:"checkpoint"`
 	Label      string             `json:"label"`
+}
+
+type DocumentSnapshot struct {
+	ID            uuid.UUID          `json:"id"`
+	CompanyID     uuid.UUID          `json:"company_id"`
+	PageID        uuid.UUID          `json:"page_id"`
+	Number        int64              `json:"number"`
+	Title         string             `json:"title"`
+	Body          string             `json:"body"`
+	Summary       string             `json:"summary"`
+	CollectionID  uuid.NullUUID      `json:"collection_id"`
+	AuthorUserID  uuid.UUID          `json:"author_user_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	BlockContent  []byte             `json:"block_content"`
+	PublishedAt   pgtype.Timestamptz `json:"published_at"`
+	AuthorAgentID uuid.NullUUID      `json:"author_agent_id"`
 }
 
 type DocumentWritingRequest struct {
@@ -1656,6 +1762,16 @@ type OutputStudioCanvase struct {
 	CreatedAt     pgtype.Timestamptz `json:"created_at"`
 }
 
+type PageReviewOperation struct {
+	CompanyID   uuid.UUID          `json:"company_id"`
+	PageID      uuid.UUID          `json:"page_id"`
+	ActorUserID uuid.UUID          `json:"actor_user_id"`
+	RequestKey  uuid.UUID          `json:"request_key"`
+	Fingerprint []byte             `json:"fingerprint"`
+	ResultID    uuid.UUID          `json:"result_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+}
+
 type PageSuggestionReview struct {
 	ID               uuid.UUID          `json:"id"`
 	CompanyID        uuid.UUID          `json:"company_id"`
@@ -1775,41 +1891,6 @@ type ProjectAccessPath struct {
 	GroupID    uuid.NullUUID `json:"group_id"`
 }
 
-type ProjectArtifact struct {
-	ID                uuid.UUID          `json:"id"`
-	CompanyID         uuid.UUID          `json:"company_id"`
-	ProjectID         uuid.UUID          `json:"project_id"`
-	Title             string             `json:"title"`
-	AcceptedVersionID uuid.NullUUID      `json:"accepted_version_id"`
-	NextNumber        int64              `json:"next_number"`
-	Version           int64              `json:"version"`
-	CreatedByUserID   uuid.UUID          `json:"created_by_user_id"`
-	CreatedAt         pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
-	ArchivedAt        pgtype.Timestamptz `json:"archived_at"`
-	TaskID            uuid.NullUUID      `json:"task_id"`
-	SourceRunID       uuid.NullUUID      `json:"source_run_id"`
-	PendingCreation   bool               `json:"pending_creation"`
-	CreationChangeID  uuid.NullUUID      `json:"creation_change_id"`
-}
-
-type ProjectArtifactVersion struct {
-	ID              uuid.UUID          `json:"id"`
-	CompanyID       uuid.UUID          `json:"company_id"`
-	ProjectID       uuid.UUID          `json:"project_id"`
-	ArtifactID      uuid.UUID          `json:"artifact_id"`
-	Number          int64              `json:"number"`
-	SourceType      string             `json:"source_type"`
-	WikiPageID      uuid.NullUUID      `json:"wiki_page_id"`
-	WikiRevisionID  uuid.NullUUID      `json:"wiki_revision_id"`
-	AssetVersionID  uuid.NullUUID      `json:"asset_version_id"`
-	OutputID        uuid.NullUUID      `json:"output_id"`
-	BaseVersionID   uuid.NullUUID      `json:"base_version_id"`
-	CreatedByUserID uuid.UUID          `json:"created_by_user_id"`
-	CreatedAt       pgtype.Timestamptz `json:"created_at"`
-	BranchTitle     string             `json:"branch_title"`
-}
-
 type ProjectAttachmentScope struct {
 	CompanyID    uuid.UUID          `json:"company_id"`
 	ProjectID    uuid.UUID          `json:"project_id"`
@@ -1881,7 +1962,7 @@ type ProjectGroupGrant struct {
 type ProjectPageChange struct {
 	ID            uuid.UUID          `json:"id"`
 	CompanyID     uuid.UUID          `json:"company_id"`
-	ProjectID     uuid.UUID          `json:"project_id"`
+	ProjectID     uuid.NullUUID      `json:"project_id"`
 	PageID        uuid.UUID          `json:"page_id"`
 	RunID         uuid.NullUUID      `json:"run_id"`
 	ActorUserID   uuid.UUID          `json:"actor_user_id"`
@@ -1898,6 +1979,7 @@ type ProjectPageChange struct {
 	Decisions     []byte             `json:"decisions"`
 	SupersedesID  uuid.NullUUID      `json:"supersedes_id"`
 	ActorAgentID  uuid.NullUUID      `json:"actor_agent_id"`
+	CrdtUpdates   []byte             `json:"crdt_updates"`
 }
 
 type ProjectPageManagedBlock struct {
@@ -1909,28 +1991,63 @@ type ProjectPageManagedBlock struct {
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
+type ProjectPageSourcePreview struct {
+	ID              uuid.UUID          `json:"id"`
+	CompanyID       uuid.UUID          `json:"company_id"`
+	ProjectID       uuid.NullUUID      `json:"project_id"`
+	PageID          uuid.UUID          `json:"page_id"`
+	RunID           uuid.UUID          `json:"run_id"`
+	ConversationID  uuid.UUID          `json:"conversation_id"`
+	CreatedByUserID uuid.UUID          `json:"created_by_user_id"`
+	RequestKey      uuid.UUID          `json:"request_key"`
+	ProtocolVersion int32              `json:"protocol_version"`
+	LanguageVersion int32              `json:"language_version"`
+	Revision        int64              `json:"revision"`
+	Source          string             `json:"source"`
+	Discarded       bool               `json:"discarded"`
+	LastRequestKey  uuid.NullUUID      `json:"last_request_key"`
+	LastRequestHash pgtype.Text        `json:"last_request_hash"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ExpiresAt       pgtype.Timestamptz `json:"expires_at"`
+}
+
 type ProjectPresentation struct {
-	ID                 uuid.UUID          `json:"id"`
-	CompanyID          uuid.UUID          `json:"company_id"`
-	ProjectID          uuid.UUID          `json:"project_id"`
-	PageID             uuid.UUID          `json:"page_id"`
-	PageVersionID      uuid.UUID          `json:"page_version_id"`
-	Theme              string             `json:"theme"`
-	Title              string             `json:"title"`
-	Content            []byte             `json:"content"`
-	Documents          []byte             `json:"documents"`
-	ExportMarkdown     string             `json:"export_markdown"`
-	SourceSequence     int64              `json:"source_sequence"`
-	Fingerprint        string             `json:"fingerprint"`
-	RequestKey         uuid.UUID          `json:"request_key"`
-	CreatedByUserID    uuid.UUID          `json:"created_by_user_id"`
-	SourceRunID        uuid.NullUUID      `json:"source_run_id"`
-	OutputID           uuid.NullUUID      `json:"output_id"`
-	ExportAttachmentID uuid.NullUUID      `json:"export_attachment_id"`
-	CreatedAt          pgtype.Timestamptz `json:"created_at"`
-	SharedContent      []byte             `json:"shared_content"`
-	ChangeID           uuid.NullUUID      `json:"change_id"`
-	ChangeSnapshot     []byte             `json:"change_snapshot"`
+	ID                  uuid.UUID          `json:"id"`
+	CompanyID           uuid.UUID          `json:"company_id"`
+	ProjectID           uuid.UUID          `json:"project_id"`
+	PageID              uuid.UUID          `json:"page_id"`
+	PageVersionID       uuid.UUID          `json:"page_version_id"`
+	Theme               string             `json:"theme"`
+	Title               string             `json:"title"`
+	Content             []byte             `json:"content"`
+	Documents           []byte             `json:"documents"`
+	ExportMarkdown      string             `json:"export_markdown"`
+	SourceSequence      int64              `json:"source_sequence"`
+	Fingerprint         string             `json:"fingerprint"`
+	RequestKey          uuid.UUID          `json:"request_key"`
+	CreatedByUserID     uuid.UUID          `json:"created_by_user_id"`
+	SourceRunID         uuid.NullUUID      `json:"source_run_id"`
+	ExportAttachmentID  uuid.NullUUID      `json:"export_attachment_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	SharedContent       []byte             `json:"shared_content"`
+	ChangeID            uuid.NullUUID      `json:"change_id"`
+	ChangeSnapshot      []byte             `json:"change_snapshot"`
+	IntelligentEvidence []byte             `json:"intelligent_evidence"`
+}
+
+type ProjectPresentationPublication struct {
+	ID              uuid.UUID          `json:"id"`
+	CompanyID       uuid.UUID          `json:"company_id"`
+	ProjectID       uuid.UUID          `json:"project_id"`
+	PresentationID  uuid.UUID          `json:"presentation_id"`
+	PublicToken     uuid.UUID          `json:"public_token"`
+	Html            string             `json:"html"`
+	CreatedByUserID uuid.UUID          `json:"created_by_user_id"`
+	RequestKey      uuid.UUID          `json:"request_key"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	RevokedAt       pgtype.Timestamptz `json:"revoked_at"`
+	RevokedByUserID uuid.NullUUID      `json:"revoked_by_user_id"`
 }
 
 type ProjectPresentationSource struct {
@@ -1970,6 +2087,16 @@ type Question struct {
 	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt                 pgtype.Timestamptz `json:"updated_at"`
 	Version                   int64              `json:"version"`
+}
+
+type RetainedSnapshot struct {
+	CompanyID   uuid.UUID          `json:"company_id"`
+	ID          uuid.UUID          `json:"id"`
+	ArtifactID  uuid.UUID          `json:"artifact_id"`
+	ContentType string             `json:"content_type"`
+	Summary     string             `json:"summary"`
+	Payload     []byte             `json:"payload"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 }
 
 type ReviewComment struct {
@@ -2524,8 +2651,6 @@ type WikiCanvasDraft struct {
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
 	SchemaVersion      int32              `json:"schema_version"`
 	Content            []byte             `json:"content"`
-	LegacyState        []byte             `json:"legacy_state"`
-	LegacyMarkdown     pgtype.Text        `json:"legacy_markdown"`
 	StructureSeq       int64              `json:"structure_seq"`
 	Title              string             `json:"title"`
 	Summary            string             `json:"summary"`
@@ -2557,38 +2682,22 @@ type WikiLink struct {
 }
 
 type WikiPage struct {
-	ID                 uuid.UUID          `json:"id"`
-	CompanyID          uuid.UUID          `json:"company_id"`
-	CollectionID       uuid.NullUUID      `json:"collection_id"`
-	Slug               string             `json:"slug"`
-	Title              string             `json:"title"`
-	Summary            string             `json:"summary"`
-	CurrentRevisionID  uuid.NullUUID      `json:"current_revision_id"`
-	Status             string             `json:"status"`
-	Version            int64              `json:"version"`
-	CreatedByUserID    uuid.UUID          `json:"created_by_user_id"`
-	CreatedAt          pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
-	ArchivedAt         pgtype.Timestamptz `json:"archived_at"`
-	SearchVector       interface{}        `json:"search_vector"`
-	NextRevisionNumber int64              `json:"next_revision_number"`
-	SourceOutputID     uuid.NullUUID      `json:"source_output_id"`
-	ProjectID          uuid.NullUUID      `json:"project_id"`
-	Theme              string             `json:"theme"`
-}
-
-type WikiRevision struct {
-	ID            uuid.UUID          `json:"id"`
-	CompanyID     uuid.UUID          `json:"company_id"`
-	PageID        uuid.UUID          `json:"page_id"`
-	Number        int64              `json:"number"`
-	Title         string             `json:"title"`
-	Body          string             `json:"body"`
-	Summary       string             `json:"summary"`
-	CollectionID  uuid.NullUUID      `json:"collection_id"`
-	AuthorUserID  uuid.UUID          `json:"author_user_id"`
-	CreatedAt     pgtype.Timestamptz `json:"created_at"`
-	BlockContent  []byte             `json:"block_content"`
-	PublishedAt   pgtype.Timestamptz `json:"published_at"`
-	AuthorAgentID uuid.NullUUID      `json:"author_agent_id"`
+	ID                uuid.UUID          `json:"id"`
+	CompanyID         uuid.UUID          `json:"company_id"`
+	CollectionID      uuid.NullUUID      `json:"collection_id"`
+	Slug              string             `json:"slug"`
+	Title             string             `json:"title"`
+	Summary           string             `json:"summary"`
+	CurrentRevisionID uuid.NullUUID      `json:"current_revision_id"`
+	Status            string             `json:"status"`
+	Version           int64              `json:"version"`
+	CreatedByUserID   uuid.UUID          `json:"created_by_user_id"`
+	CreatedAt         pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt         pgtype.Timestamptz `json:"updated_at"`
+	ArchivedAt        pgtype.Timestamptz `json:"archived_at"`
+	SearchVector      interface{}        `json:"search_vector"`
+	SourceOutputID    uuid.NullUUID      `json:"source_output_id"`
+	ProjectID         uuid.NullUUID      `json:"project_id"`
+	Theme             string             `json:"theme"`
+	ArtifactType      string             `json:"artifact_type"`
 }

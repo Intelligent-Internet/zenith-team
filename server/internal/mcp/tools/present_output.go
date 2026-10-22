@@ -29,6 +29,7 @@ const (
 )
 
 type PresentOutputInput struct {
+	ArtifactID       string              `json:"artifactId,omitempty"       jsonschema:"Existing editable file/media/app Artifact identity returned by a prior submission. Reuse it to save another snapshot of the same work; omit for new work. Not valid with page."`
 	Page             *PresentOutputPage  `json:"page,omitempty"             jsonschema:"Native Page delivery: exact page_preview identity, sequence, fingerprint and optional changeId. Mutually exclusive with file/app/studio inputs. Preserves suggestions without applying them."`
 	StudioCanvasPath string              `json:"studioCanvasPath,omitempty" jsonschema:"Workspace-relative JSON file produced by zenith-studio canvas export. Read and attach the CLI source graph automatically; use this instead of copying nodes into studio. Mutually exclusive with studio."`
 	Type             string              `json:"type,omitempty"             jsonschema:"Artifact type: app, media, text, or file (default). Use app for a local web application, media for image/audio/video work, text for plans and readable documents, and file for general downloads."`
@@ -70,10 +71,13 @@ type PresentOutputTarget struct {
 }
 
 type PresentOutputResult struct {
-	OutputID string `json:"outputId"`
+	ArtifactID string `json:"artifactId,omitempty"`
+	SnapshotID string `json:"snapshotId,omitempty"`
+	OutputID   string `json:"outputId"`
 }
 
 type presentOutputRequest struct {
+	ArtifactID      string                     `json:"artifactId,omitempty"`
 	Type            string                     `json:"type,omitempty"`
 	App             *PresentOutputApp          `json:"app,omitempty"`
 	Title           string                     `json:"title"`
@@ -89,7 +93,9 @@ type presentOutputRequestItem struct {
 }
 
 type presentOutputResponse struct {
-	OutputID string `json:"outputId"`
+	ArtifactID string `json:"artifactId,omitempty"`
+	SnapshotID string `json:"snapshotId,omitempty"`
+	OutputID   string `json:"outputId"`
 }
 
 type outputAPI interface {
@@ -152,7 +158,8 @@ func (s *DefaultPresentOutputService) PresentOutput(
 	}
 	if input.Page != nil {
 		page := input.Page
-		if input.App != nil || len(input.Items) > 0 || input.Studio != nil || input.StudioCanvasPath != "" ||
+		if input.ArtifactID != "" || input.App != nil || len(input.Items) > 0 || input.Studio != nil ||
+			input.StudioCanvasPath != "" ||
 			(input.Type != "" && input.Type != "text") ||
 			strings.TrimSpace(input.Summary) == "" ||
 			utf8.RuneCountInString(input.Summary) > maxPresentedOutputDetailRunes ||
@@ -193,8 +200,9 @@ func (s *DefaultPresentOutputService) PresentOutput(
 		return PresentOutputResult{}, err
 	}
 	request := presentOutputRequest{
-		Type:  normalized.Type,
-		Title: normalized.Title, Summary: normalized.Summary,
+		ArtifactID: normalized.ArtifactID,
+		Type:       normalized.Type,
+		Title:      normalized.Title, Summary: normalized.Summary,
 		Items: make([]presentOutputRequestItem, len(normalized.Items)),
 	}
 	if normalized.Type == "app" {
@@ -278,10 +286,21 @@ func (s *DefaultPresentOutputService) PresentOutput(
 			return PresentOutputResult{}, fmt.Errorf("register local app preview: %w", err)
 		}
 	}
-	return PresentOutputResult{OutputID: outputID.String()}, nil
+	return PresentOutputResult{
+		OutputID:   outputID.String(),
+		ArtifactID: response.ArtifactID,
+		SnapshotID: response.SnapshotID,
+	}, nil
 }
 
 func normalizePresentOutputInput(input PresentOutputInput) (PresentOutputInput, error) {
+	if input.ArtifactID != "" {
+		id, err := uuid.Parse(input.ArtifactID)
+		if err != nil || id == uuid.Nil {
+			return PresentOutputInput{}, errors.New("artifact identity is invalid")
+		}
+		input.ArtifactID = id.String()
+	}
 	if input.Type == "" {
 		if input.Studio != nil {
 			input.Type = "media"

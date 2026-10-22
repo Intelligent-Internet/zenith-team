@@ -1,5 +1,6 @@
+import { PageRunPreviews } from "./page-run-previews";
 import { CommentConnectors } from "./comment-connectors";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   DocumentCommentControls,
@@ -8,8 +9,10 @@ import {
   DocumentCommentsPanel,
 } from "./document-comments";
 import { useDocumentComments } from "./use-document-comments";
-import { usePageThreadsQuery, type PageScope } from "../api/page-api";
-import { useCanvasCommandMutation } from "../api/canvas-api";
+import {
+  usePageReviewQuery,
+  useMutatePageReviewMutation,
+} from "../api/page-api";
 import type { ExecuteCanvasCommand } from "../canvas/add-artifact";
 import type { ReviewAnchor } from "../review/annotation-overlay";
 import { scrollToReviewAnchor } from "../review/review-navigation";
@@ -25,9 +28,8 @@ export function PageComments({
   content,
   compactToolbar = false,
   requestedThreadId = "",
-  suggestions,
 }: {
-  scope: PageScope;
+  scope: { companyId: string; pageId: string; projectId?: string };
   canComment: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,10 +39,9 @@ export function PageComments({
   content: HTMLDivElement | null;
   compactToolbar?: boolean;
   requestedThreadId?: string;
-  suggestions?: ReactNode;
 }) {
-  const query = usePageThreadsQuery(scope);
-  const [mutate, mutation] = useCanvasCommandMutation();
+  const query = usePageReviewQuery(scope);
+  const [mutate, mutation] = useMutatePageReviewMutation();
   const [error, setError] = useState("");
   const comments = useDocumentComments({
     threads: query.isError ? undefined : query.currentData?.items,
@@ -71,8 +72,7 @@ export function PageComments({
     setError("");
     try {
       return await mutate({
-        companyId: scope.companyId,
-        projectId: scope.projectId,
+        ...scope,
         command: {
           ...command,
           requestKey: command.requestKey ?? crypto.randomUUID(),
@@ -104,7 +104,15 @@ export function PageComments({
         open={open}
       />
       <DocumentCommentsPanel
-        suggestions={suggestions}
+        renderThreadContent={(thread) =>
+          thread.agentRuns?.map((run) => (
+            <PageRunPreviews
+              key={`${scope.companyId}:${scope.pageId}:${run.runId}`}
+              scope={scope}
+              runId={run.runId}
+            />
+          ))
+        }
         agentScope={canComment ? scope : undefined}
         comments={comments}
         layout="page"

@@ -9,6 +9,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const linkDiscussionArtifact = `-- name: LinkDiscussionArtifact :exec
@@ -16,9 +17,9 @@ INSERT INTO discussion_artifacts(company_id,message_id,output_id) VALUES($1,$2,$
 `
 
 type LinkDiscussionArtifactParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	MessageID uuid.UUID `json:"message_id"`
-	OutputID  uuid.UUID `json:"output_id"`
+	CompanyID uuid.UUID     `json:"company_id"`
+	MessageID uuid.UUID     `json:"message_id"`
+	OutputID  uuid.NullUUID `json:"output_id"`
 }
 
 func (q *Queries) LinkDiscussionArtifact(ctx context.Context, arg LinkDiscussionArtifactParams) error {
@@ -95,8 +96,8 @@ const listDiscussionArtifacts = `-- name: ListDiscussionArtifacts :many
 WITH artifact_references AS (
     SELECT link.company_id, link.message_id, link.output_id
     FROM discussion_artifacts link
-    WHERE link.company_id=$2::uuid
-      AND link.message_id=ANY($3::uuid[])
+    WHERE link.company_id=$1::uuid
+      AND link.message_id=ANY($2::uuid[])
     UNION
     SELECT message.company_id, message.id AS message_id, output.id AS output_id
     FROM conversation_items message
@@ -104,11 +105,11 @@ WITH artifact_references AS (
       AND run.invocation_id=message.invocation_id
       AND run.id::text=message.metadata->>'runId'
     JOIN outputs output ON output.company_id=run.company_id AND output.run_id=run.id
-    WHERE message.company_id=$2::uuid
-      AND message.id=ANY($3::uuid[])
+    WHERE message.company_id=$1::uuid
+      AND message.id=ANY($2::uuid[])
       AND message.type='agent_text' AND message.run_id IS NULL
 )
-SELECT reference.message_id, output.id, output.title, output.type,
+SELECT reference.message_id, output.id, output.title, output.type, output.created_at,
   (SELECT count(*) FROM output_items item WHERE item.company_id=output.company_id AND item.output_id=output.id AND item.role <> 'supporting') AS file_count,
   COALESCE(file.filename, '')::text AS file_name, COALESCE(file.content_type, '')::text AS content_type,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('fileName', version.filename, 'contentType', version.content_type) ORDER BY item.ordinal)
@@ -119,7 +120,7 @@ FROM artifact_references reference
 JOIN conversation_items message ON message.company_id=reference.company_id AND message.id=reference.message_id
 JOIN outputs output ON output.id=reference.output_id AND output.company_id=reference.company_id
 JOIN output_access access ON access.output_id=output.id AND access.company_id=output.company_id
-  AND access.user_id=$1::uuid
+  AND access.user_id=$3::uuid
 LEFT JOIN LATERAL (
   SELECT version.filename, version.content_type
   FROM output_items item
@@ -129,31 +130,42 @@ LEFT JOIN LATERAL (
   LIMIT 1
 ) file ON true
 WHERE message.deleted_at IS NULL
-ORDER BY reference.message_id, output.created_at, output.id
+UNION ALL
+SELECT link.message_id, artifact.id, artifact.title, artifact.type, artifact.created_at,
+ 0::bigint AS file_count, ''::text AS file_name, ''::text AS content_type, '[]'::jsonb AS files
+FROM discussion_artifacts link
+JOIN conversation_items message ON message.company_id=link.company_id AND message.id=link.message_id
+JOIN artifacts artifact ON artifact.company_id=link.company_id AND artifact.id=link.artifact_id
+JOIN artifact_access access ON access.company_id=artifact.company_id AND access.artifact_id=artifact.id
+ AND access.user_id=$3::uuid
+WHERE link.company_id=$1::uuid AND link.message_id=ANY($2::uuid[])
+ AND message.deleted_at IS NULL AND artifact.archived_at IS NULL
+ORDER BY message_id, created_at, id
 `
 
 type ListDiscussionArtifactsParams struct {
-	ActorUserID uuid.UUID   `json:"actor_user_id"`
 	CompanyID   uuid.UUID   `json:"company_id"`
 	MessageIds  []uuid.UUID `json:"message_ids"`
+	ActorUserID uuid.UUID   `json:"actor_user_id"`
 }
 
 type ListDiscussionArtifactsRow struct {
-	MessageID   uuid.UUID `json:"message_id"`
-	ID          uuid.UUID `json:"id"`
-	Title       string    `json:"title"`
-	Type        string    `json:"type"`
-	FileCount   int64     `json:"file_count"`
-	FileName    string    `json:"file_name"`
-	ContentType string    `json:"content_type"`
-	Files       []byte    `json:"files"`
+	MessageID   uuid.UUID          `json:"message_id"`
+	ID          uuid.UUID          `json:"id"`
+	Title       string             `json:"title"`
+	Type        string             `json:"type"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	FileCount   int64              `json:"file_count"`
+	FileName    string             `json:"file_name"`
+	ContentType string             `json:"content_type"`
+	Files       []byte             `json:"files"`
 }
 
 // Published Agent replies refer to their exact final Run in server-owned metadata.
 // Derive these references on read so historical replies work without a backfill.
 // A reference never grants access: both sources use the current output_access view.
 func (q *Queries) ListDiscussionArtifacts(ctx context.Context, arg ListDiscussionArtifactsParams) ([]ListDiscussionArtifactsRow, error) {
-	rows, err := q.db.Query(ctx, listDiscussionArtifacts, arg.ActorUserID, arg.CompanyID, arg.MessageIds)
+	rows, err := q.db.Query(ctx, listDiscussionArtifacts, arg.CompanyID, arg.MessageIds, arg.ActorUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -166,6 +178,7 @@ func (q *Queries) ListDiscussionArtifacts(ctx context.Context, arg ListDiscussio
 			&i.ID,
 			&i.Title,
 			&i.Type,
+			&i.CreatedAt,
 			&i.FileCount,
 			&i.FileName,
 			&i.ContentType,

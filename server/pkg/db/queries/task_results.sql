@@ -23,6 +23,11 @@ LEFT JOIN runs
  AND runs.company_id = outputs.company_id
 LEFT JOIN runtimes ON runtimes.id = runs.runtime_id
 WHERE outputs.company_id = sqlc.arg(company_id)::uuid
+ AND (sqlc.arg(run_id)::uuid<>'00000000-0000-0000-0000-000000000000'::uuid OR NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=sqlc.arg(actor_user_id)::uuid
+         WHERE delivery.company_id=outputs.company_id AND delivery.output_id=outputs.id))
   AND (sqlc.arg(run_id)::uuid = '00000000-0000-0000-0000-000000000000'::uuid
        OR runs.id = sqlc.arg(run_id)::uuid)
   AND (
@@ -76,6 +81,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
 ), candidate AS (
     (SELECT output.id FROM outputs AS output
      WHERE output.company_id = sqlc.arg(company_id)::uuid
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=sqlc.arg(actor_user_id)::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND output.owner_user_id = sqlc.arg(actor_user_id)::uuid
        AND (sqlc.arg(ownership)::text='' OR
             (sqlc.arg(ownership)::text='owned' AND output.owner_user_id=sqlc.arg(actor_user_id)::uuid) OR
@@ -98,6 +108,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
        ON source_conversation.company_id = output.company_id
       AND source_conversation.id = output.conversation_id
      WHERE output.company_id = sqlc.arg(company_id)::uuid
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=sqlc.arg(actor_user_id)::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND output.visibility = 'company'
        AND (output.project_id IS NULL
             OR (SELECT 1 FROM project_access AS reader
@@ -120,6 +135,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
        ON output.company_id = grant_row.company_id AND output.id = grant_row.output_id
      WHERE grant_row.company_id = sqlc.arg(company_id)::uuid
        AND grant_row.user_id = sqlc.arg(actor_user_id)::uuid
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=sqlc.arg(actor_user_id)::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND (sqlc.arg(ownership)::text='' OR
             (sqlc.arg(ownership)::text='owned' AND output.owner_user_id=sqlc.arg(actor_user_id)::uuid) OR
             (sqlc.arg(ownership)::text='shared' AND output.owner_user_id IS DISTINCT FROM sqlc.arg(actor_user_id)::uuid))
@@ -139,6 +159,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
      WHERE participant.company_id = sqlc.arg(company_id)::uuid
        AND participant.user_id = sqlc.arg(actor_user_id)::uuid
        AND participant.status = 'active'
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=sqlc.arg(actor_user_id)::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND (sqlc.arg(ownership)::text='' OR
             (sqlc.arg(ownership)::text='owned' AND output.owner_user_id=sqlc.arg(actor_user_id)::uuid) OR
             (sqlc.arg(ownership)::text='shared' AND output.owner_user_id IS DISTINCT FROM sqlc.arg(actor_user_id)::uuid))
@@ -341,7 +366,8 @@ LIMIT sqlc.arg(row_limit)::integer;
 SELECT EXISTS (
  SELECT 1 FROM tasks t
  JOIN outputs o ON o.company_id=t.company_id AND o.task_id=t.id AND o.task_execution_generation=t.execution_generation
- JOIN project_presentations capture ON capture.company_id=o.company_id AND capture.output_id=o.id
+ JOIN delivery_snapshots delivery ON delivery.company_id=o.company_id AND delivery.output_id=o.id
+ JOIN project_presentations capture ON capture.company_id=delivery.company_id AND capture.id=delivery.snapshot_id
  JOIN project_page_changes change ON change.company_id=capture.company_id AND change.id=capture.change_id
  WHERE t.company_id=$1 AND t.id=$2 AND NOT t.result_proposal_only
  AND (NOT EXISTS(SELECT 1 FROM task_result_sets rs WHERE rs.task_id=t.id AND rs.execution_generation=t.execution_generation)
@@ -390,9 +416,10 @@ UPDATE task_result_sets SET approved_at=COALESCE(approved_at,clock_timestamp()),
 WHERE company_id=$1 AND id=$2;
 
 -- name: GetTaskResultOutputSuggestions :many
-SELECT c.id,c.project_id,c.page_id FROM project_presentations p
+SELECT DISTINCT c.id,c.project_id,c.page_id FROM project_presentations p
+JOIN delivery_snapshots delivery ON delivery.company_id=p.company_id AND delivery.snapshot_id=p.id
 JOIN project_page_changes c ON c.company_id=p.company_id AND c.id=p.change_id
-WHERE p.company_id=$1 AND p.output_id=ANY(sqlc.arg(output_ids)::uuid[])
+WHERE p.company_id=$1 AND delivery.output_id=ANY(sqlc.arg(output_ids)::uuid[])
 ORDER BY c.project_id,c.page_id,c.id;
 
 -- name: TaskNeedsResultSelection :one

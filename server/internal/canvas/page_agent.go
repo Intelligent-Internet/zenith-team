@@ -31,18 +31,20 @@ func admitPageRun(
 	)
 	if documentErr == nil {
 		project := document.ProjectID.UUID
-		if _, err := authorize(ctx, q, p, project, write); err != nil {
+		if err := auth.LockArtifactLifecycle(ctx, q, p, document.PageID.UUID); err != nil {
 			return project, uuid.Nil, err
 		}
-		if err := auth.RequireProjectPermissionHeld(
-			ctx,
-			q,
-			p.CompanyID,
-			project,
-			p.UserID,
-			auth.ProjectPermissionTasksExecute,
-		); err != nil {
-			return project, uuid.Nil, err
+		if project != uuid.Nil {
+			if err := auth.RequireProjectPermissionHeld(
+				ctx,
+				q,
+				p.CompanyID,
+				project,
+				p.UserID,
+				auth.ProjectPermissionTasksExecute,
+			); err != nil {
+				return project, uuid.Nil, err
+			}
 		}
 		if _, err := q.LockConversationForSystemRunQueueMutation(
 			ctx,
@@ -63,6 +65,17 @@ func admitPageRun(
 		if run.Status != "running" || !run.ExecutionAuthorizedByUserID.Valid ||
 			run.ExecutionAuthorizedByUserID.UUID != p.UserID {
 			return project, uuid.Nil, ErrForbidden
+		}
+		if write && project != uuid.Nil {
+			if _, err := q.EnsureProjectCanvas(
+				ctx,
+				generated.EnsureProjectCanvasParams{CompanyID: p.CompanyID, ProjectID: project},
+			); err != nil {
+				return project, uuid.Nil, err
+			}
+		}
+		if _, err := authorizeArtifactContent(ctx, q, p, document.PageID.UUID, write); err != nil {
+			return project, uuid.Nil, err
 		}
 		return project, uuid.Nil, nil
 	}
@@ -126,6 +139,8 @@ func admitPageRun(
 }
 
 type Page struct {
+	Source               string            `json:"source"`
+	LanguageVersion      int               `json:"languageVersion"`
 	CanReviewSuggestions bool              `json:"canReviewSuggestions"`
 	PendingCreation      bool              `json:"pendingCreation"`
 	PageID               uuid.UUID         `json:"pageId"`
@@ -159,6 +174,9 @@ func (s *DefaultPageService) ReadProjectForRun(
 		project, _, err := admitPageRun(ctx, q, p, run, false)
 		if err != nil {
 			return err
+		}
+		if project == uuid.Nil {
+			return ErrForbidden
 		}
 		result.ProjectID = project
 		overview, err := q.GetProjectOverviewVersion(
@@ -225,7 +243,7 @@ func (s *DefaultPageService) ReadProjectForRun(
 				result.Results = append(result.Results, a)
 			}
 		}
-		result.Changes, err = projectPageChanges(ctx, q, p.CompanyID, project, nil)
+		result.Changes, err = projectPageChanges(ctx, q, p, project, nil)
 		return err
 	})
 	return result, mapWrite(err)
@@ -245,14 +263,7 @@ func (s *DefaultPageService) ReadPageForRun(
 		if err != nil {
 			return err
 		}
-		canEdit, err := auth.HoldsProjectPermission(
-			ctx,
-			q,
-			p.CompanyID,
-			project,
-			p.UserID,
-			auth.ProjectPermissionTasksWrite,
-		)
+		canEdit, err := authorizeArtifactContent(ctx, q, p, pageID, false)
 		if err != nil {
 			return err
 		}
@@ -308,6 +319,7 @@ func readPage(
 		PendingCreation:      pendingCreation,
 		Content:              draft.Content,
 		BlockHashes:          map[string]string{},
+		LanguageVersion:      1,
 	}
 	var root wiki.BlockNode
 	if err = json.Unmarshal(draft.Content, &root); err != nil {
@@ -322,12 +334,13 @@ func readPage(
 			hash(child)
 		}
 	}
+	result.Source = wiki.BlocksSource(root)
 	hash(root)
 	result.Sources, err = pageSourceStates(ctx, q, p, project, root)
 	if err != nil {
 		return result, err
 	}
-	result.Changes, err = projectPageChanges(ctx, q, p.CompanyID, project, &pageID)
+	result.Changes, err = projectPageChanges(ctx, q, p, project, &pageID)
 	return result, err
 }
 
@@ -342,6 +355,7 @@ type pageProposal struct {
 	Summary       string
 	Operations    []wiki.BlockOperation
 	BeforeContent json.RawMessage
+	BeforeState   []byte
 	Sequence      int64
 	BeforeTheme   *string
 	AfterTheme    *string
@@ -355,6 +369,14 @@ func insertPageProposal(ctx context.Context, q *generated.Queries, in pagePropos
 	if err != nil {
 		return PageEditResult{}, err
 	}
+	updates, err := wiki.BlockOperationUpdates(in.BeforeState, in.Operations)
+	if err != nil {
+		return PageEditResult{}, err
+	}
+	encodedUpdates, err := json.Marshal(updates)
+	if err != nil {
+		return PageEditResult{}, err
+	}
 	encodedResult, err := json.Marshal(result)
 	if err != nil {
 		return PageEditResult{}, err
@@ -364,7 +386,8 @@ func insertPageProposal(ctx context.Context, q *generated.Queries, in pagePropos
 		RunID: nullable(&in.RunID), ActorUserID: in.ActorUserID,
 		RequestKey: in.RequestKey, RequestHash: in.RequestHash,
 		Operations: operations, BeforeContent: in.BeforeContent,
-		Result: encodedResult, Summary: in.Summary, Status: result.Status,
+		CrdtUpdates: encodedUpdates,
+		Result:      encodedResult, Summary: in.Summary, Status: result.Status,
 		BeforeTheme: pageText(in.BeforeTheme), AfterTheme: pageText(in.AfterTheme),
 	})
 	if err != nil {
@@ -379,7 +402,18 @@ func (s *DefaultPageService) EditPageForRun(
 	p auth.UserPrincipal,
 	run, pageID uuid.UUID,
 	in PageEditInput,
-) (PageEditResult, error) {
+) (edited PageEditResult, returnedErr error) {
+	observation := pageSourceObservation{operation: "proposal", started: time.Now()}
+	hasSource := false
+	for _, operation := range in.Operations {
+		if operation.Source != nil {
+			hasSource = true
+			observation.bytes += len(*operation.Source)
+		}
+	}
+	if hasSource {
+		defer func() { s.observeSource(observation, returnedErr) }()
+	}
 	if err := normalizePageEdit(&in); err != nil {
 		return PageEditResult{}, err
 	}
@@ -402,15 +436,18 @@ func (s *DefaultPageService) EditPageForRun(
 		if err != nil {
 			return err
 		}
-		if _, err = q.EnsureProjectCanvas(
-			ctx,
-			generated.EnsureProjectCanvasParams{CompanyID: p.CompanyID, ProjectID: project},
-		); err != nil {
-			return err
+		if project != uuid.Nil {
+			if _, err = q.EnsureProjectCanvas(
+				ctx,
+				generated.EnsureProjectCanvasParams{CompanyID: p.CompanyID, ProjectID: project},
+			); err != nil {
+				return err
+			}
 		}
 		receipt, err := q.GetProjectPageChangeReceipt(
 			ctx,
 			generated.GetProjectPageChangeReceiptParams{
+				PageID:      nullable(&pageID),
 				CompanyID:   p.CompanyID,
 				ProjectID:   project,
 				ActorUserID: p.UserID,
@@ -450,7 +487,7 @@ func (s *DefaultPageService) EditPageForRun(
 			if e != nil {
 				return lookup(e)
 			}
-			if prior.PageID != pageID {
+			if prior.PageID != pageID || prior.ActorUserID != p.UserID {
 				return ErrNotFound
 			}
 			if prior.Status != "proposed" && prior.Status != "needs_update" &&
@@ -488,12 +525,38 @@ func (s *DefaultPageService) EditPageForRun(
 			beforeTheme = &metadata.Theme
 		}
 
+		// Preserve the real CRDT identities from the revision the Agent read.
+		// Concurrent text edits can then merge as offline updates at approval.
+		baseState, baseContent := draft.State, draft.Content
+		if in.Sequence > draft.HeadSeq {
+			return ErrConflict
+		}
+		if in.Sequence != draft.HeadSeq {
+			base, err := wiki.ReadDocumentHistoryInTx(ctx, q, wiki.HistoryPoint{
+				CompanyID: p.CompanyID, PageID: pageID, Sequence: in.Sequence,
+			})
+			if errors.Is(err, pgx.ErrNoRows) {
+				return ErrConflict
+			}
+			if err != nil {
+				return err
+			}
+			baseState, baseContent = base.State, base.Content
+		}
 		var root wiki.BlockNode
-		if err = json.Unmarshal(draft.Content, &root); err != nil {
+		if err = json.Unmarshal(baseContent, &root); err != nil {
 			return err
 		}
 		for i := range in.Operations {
 			op := &in.Operations[i]
+			if err = wiki.CompileOperationSource(op, wiki.FindBlock(root, op.BlockID)); err != nil {
+				var diagnostic *wiki.SourceDiagnostic
+				if errors.As(err, &diagnostic) {
+					diagnostic.OperationIndex = &i
+					diagnostic.BlockID = op.BlockID
+				}
+				return err
+			}
 			if op.Content != nil {
 				if err = resolvePageReferences(ctx, q, p, project, op.Content); err != nil {
 					return err
@@ -544,18 +607,21 @@ func (s *DefaultPageService) EditPageForRun(
 				}
 			}
 		}
-		_, edited, err := wiki.ApplyBlockOperations(draft.State, in.Operations)
+		_, edited, err := wiki.ApplyBlockOperations(baseState, in.Operations)
 		if err != nil {
 			return err
 		}
-		if err = validateBlockReferences(ctx, q, p, project, edited); err != nil {
+		if err = s.authoring.Check(int(draft.SchemaVersion), edited); err != nil {
+			return err
+		}
+		if err = validateDocumentReferences(ctx, q, p, nullable(&project), edited); err != nil {
 			return err
 		}
 		result, err = insertPageProposal(ctx, q, pageProposal{
 			CompanyID: p.CompanyID, ProjectID: project, PageID: v.WikiPageID.UUID,
 			RunID: run, ActorUserID: p.UserID, RequestKey: in.RequestKey,
 			RequestHash: requestHash, Summary: in.Summary, Operations: in.Operations,
-			BeforeContent: draft.Content, Sequence: draft.HeadSeq,
+			BeforeContent: baseContent, BeforeState: baseState, Sequence: in.Sequence,
 			BeforeTheme: beforeTheme, AfterTheme: in.Theme,
 		})
 		if err != nil {
@@ -586,6 +652,10 @@ func (s *DefaultPageService) EditPageForRun(
 			}
 		}
 
+		if project == uuid.Nil {
+			notification, err = (documentTarget{PageID: pageID}).changed(ctx, q, p, 0, pageID)
+			return err
+		}
 		sequence, err := q.AdvanceCanvasHead(
 			ctx,
 			generated.AdvanceCanvasHeadParams{CompanyID: p.CompanyID, ProjectID: project},
@@ -633,6 +703,8 @@ func sameProtection(left, right wiki.BlockNode) bool {
 }
 
 type pageDraftEdit struct {
+	authoring   wiki.UIAuthoringPolicy
+	savedSchema int
 	principal   auth.UserPrincipal
 	page        uuid.UUID
 	sequence    int64
@@ -643,6 +715,9 @@ type pageDraftEdit struct {
 }
 
 func savePageEdit(ctx context.Context, q *generated.Queries, in pageDraftEdit) error {
+	if err := in.authoring.Check(in.savedSchema, in.root); err != nil {
+		return err
+	}
 	p, page, seq, state, root := in.principal, in.page, in.sequence, in.state, in.root
 	ids := wiki.BlockIDs(root)
 	count, err := q.ValidateWikiBlockIDs(
@@ -662,13 +737,14 @@ func savePageEdit(ctx context.Context, q *generated.Queries, in pageDraftEdit) e
 	rows, err := q.UpdateWikiBlockDraft(
 		ctx,
 		generated.UpdateWikiBlockDraftParams{
-			CompanyID:  p.CompanyID,
-			PageID:     page,
-			State:      state,
-			Content:    content,
-			Markdown:   wiki.BlocksMarkdown(root),
-			HeadSeq:    seq,
-			Structural: in.structural,
+			SchemaVersion: int32(wiki.UIDocumentSchema(root)),
+			CompanyID:     p.CompanyID,
+			PageID:        page,
+			State:         state,
+			Content:       content,
+			Markdown:      wiki.BlocksMarkdown(root),
+			HeadSeq:       seq,
+			Structural:    in.structural,
 		},
 	)
 	if err != nil {
@@ -715,7 +791,17 @@ func (s *DefaultPageService) PageChangeDetail(
 ) (PageChangeDetail, error) {
 	var result PageChangeDetail
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := authorize(ctx, q, p, project, false); err != nil {
+		var err error
+		project, err = pageReviewProject(ctx, q, p, pageReviewScope{ProjectID: project, PageID: pageID})
+		if err != nil {
+			return err
+		}
+		if err := authorizePageReview(
+			ctx,
+			q,
+			p,
+			pageReviewScope{ProjectID: project, PageID: pageID, Write: false},
+		); err != nil {
 			return err
 		}
 		if _, err := editableProjectPage(ctx, q, p, project, pageID); err != nil {
@@ -728,7 +814,7 @@ func (s *DefaultPageService) PageChangeDetail(
 		if err != nil {
 			return lookup(err)
 		}
-		if row.PageID != pageID {
+		if row.PageID != pageID || row.ActorUserID != p.UserID {
 			return ErrNotFound
 		}
 		var root wiki.BlockNode
@@ -813,13 +899,26 @@ func (s *DefaultPageService) PageChangeDetail(
 		if err != nil {
 			return err
 		}
-		review, err := pageSuggestionState(row, current, metadata.Theme, peers)
+
+		review, err := pageSuggestionState(
+			row,
+			pageSuggestionSnapshot{
+				root:              current,
+				state:             draft.State,
+				theme:             metadata.Theme,
+				structureSequence: draft.StructureSeq,
+			},
+			peers,
+		)
 		if err != nil {
 			return err
 		}
 		result.Fingerprint, result.Suggestions = review.fingerprint, review.suggestions
 		for i := range result.Suggestions {
-			for _, document := range []*wiki.BlockNode{result.Suggestions[i].Before, result.Suggestions[i].After} {
+			if i < len(review.updates) && result.Suggestions[i].Status == "pending" {
+				result.Suggestions[i].CRDTUpdate = review.updates[i]
+			}
+			for _, document := range []*wiki.BlockNode{result.Suggestions[i].Before, result.Suggestions[i].After, result.Suggestions[i].Current} {
 				if document != nil {
 					if err = redactUnavailableReferences(ctx, q, p, project, document); err != nil {
 						return err

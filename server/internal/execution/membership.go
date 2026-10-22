@@ -218,6 +218,11 @@ func cancelRunCandidatesInTx(
 	if err != nil {
 		return nil, err
 	}
+	for _, run := range candidates {
+		if err := lockDocumentRunLifecycle(ctx, q, run); err != nil {
+			return nil, err
+		}
+	}
 	var last uuid.UUID
 	for _, run := range candidates {
 		if run.ConversationID == last {

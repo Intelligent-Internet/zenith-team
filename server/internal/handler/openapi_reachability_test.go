@@ -3,10 +3,11 @@ package handler
 import (
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 // TestSpecSchemasAreReachable fails when a named schema is defined but nothing
@@ -44,11 +45,6 @@ func TestSpecSchemasAreReachable(t *testing.T) {
 	}
 }
 
-var (
-	schemaDefinitionLine = regexp.MustCompile(`^  ([A-Z]\w*):\s*$`)
-	schemaReferenceLine  = regexp.MustCompile(`\$ref:\s*'[^']*#/schemas/(\w+)'`)
-)
-
 // schemaGraph returns every schema the split spec defines, mapped to the file
 // defining it, and the set referenced from anywhere.
 func schemaGraph(t *testing.T) (defined map[string]string, referenced map[string]bool) {
@@ -72,28 +68,42 @@ func schemaGraph(t *testing.T) (defined map[string]string, referenced map[string
 			t.Fatalf("read %s: %v", entry.Name(), err)
 		}
 
-		inSchemas := false
-		for _, line := range strings.Split(string(raw), "\n") {
-			// `schemas:` at column zero opens the block in a domain file; any
-			// other top-level key closes it.
-			if !strings.HasPrefix(line, " ") && strings.TrimSpace(line) != "" {
-				inSchemas = strings.HasPrefix(line, "schemas:")
-			}
-			if inSchemas {
-				if match := schemaDefinitionLine.FindStringSubmatch(line); match != nil {
-					if previous, exists := defined[match[1]]; exists {
-						t.Errorf(
-							"schema %s is defined in both %s and %s",
-							match[1], previous, entry.Name(),
-						)
-					}
-					defined[match[1]] = entry.Name()
+		var document map[string]any
+		if err := yaml.Unmarshal(raw, &document); err != nil {
+			t.Fatalf("parse %s: %v", entry.Name(), err)
+		}
+		if schemas, ok := document["schemas"].(map[string]any); ok {
+			for name := range schemas {
+				if previous, exists := defined[name]; exists {
+					t.Errorf("schema %s is defined in both %s and %s", name, previous, entry.Name())
 				}
-			}
-			for _, match := range schemaReferenceLine.FindAllStringSubmatch(line, -1) {
-				referenced[match[1]] = true
+				defined[name] = entry.Name()
 			}
 		}
+		// Parse the document so YAML quoting and JSON-formatted domain files
+		// describe the same graph; source formatting is not part of the contract.
+		var visit func(any)
+		visit = func(value any) {
+			switch node := value.(type) {
+			case map[string]any:
+				if ref, ok := node["$ref"].(string); ok {
+					if _, name, ok := strings.Cut(ref, "#/schemas/"); ok {
+						referenced[name] = true
+					}
+					if _, name, ok := strings.Cut(ref, "#/components/schemas/"); ok {
+						referenced[name] = true
+					}
+				}
+				for _, child := range node {
+					visit(child)
+				}
+			case []any:
+				for _, child := range node {
+					visit(child)
+				}
+			}
+		}
+		visit(document)
 	}
 
 	if len(defined) == 0 {

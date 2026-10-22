@@ -244,6 +244,18 @@ components:
       $ref: './huddle-notes.yaml#/schemas/HuddleNotesBatch'
     HuddleNotesLease:
       $ref: './huddle-notes.yaml#/schemas/HuddleNotesLease'
+    LiveArtifactGrant:
+      $ref: './artifacts.yaml#/schemas/LiveArtifactGrant'
+    LiveArtifactAccess:
+      $ref: './artifacts.yaml#/schemas/LiveArtifactAccess'
+    LiveArtifactGrantChange:
+      $ref: './artifacts.yaml#/schemas/LiveArtifactGrantChange'
+    LiveArtifactAccessChange:
+      $ref: './artifacts.yaml#/schemas/LiveArtifactAccessChange'
+    PageSummary:
+      $ref: './artifacts.yaml#/schemas/PageSummary'
+    PageList:
+      $ref: './artifacts.yaml#/schemas/PageList'
     TaskCalendarSchedule:
       $ref: './tasks.yaml#/schemas/TaskCalendarSchedule'
     TaskCalendarOccurrence:
@@ -383,6 +395,10 @@ components:
       $ref: './pages.yaml#/schemas/PageEditResult'
     ProjectPresentationEntry:
       $ref: './pages.yaml#/schemas/ProjectPresentationEntry'
+    PresentationPublication:
+      $ref: './pages.yaml#/schemas/PresentationPublication'
+    PresentationPublicationInput:
+      $ref: './pages.yaml#/schemas/PresentationPublicationInput'
     ProjectPresentation:
       $ref: './pages.yaml#/schemas/ProjectPresentation'
     PresentationInput:
@@ -598,26 +614,46 @@ components:
 
 
 paths:
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/content:
+    $ref: './artifacts.yaml#/paths/content'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/snapshots/{snapshotId}/items/{itemId}/download:
+    $ref: './artifacts.yaml#/paths/download'
+  /api/v1/companies/{companyId}/artifacts/{artifactId}/access:
+    $ref: './artifacts.yaml#/paths/access'
+  /api/v1/companies/{companyId}/pages:
+    $ref: './artifacts.yaml#/paths/pages'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/changes:
+    $ref: './pages.yaml#/paths/document_changes'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/changes/{changeId}:
+    $ref: './pages.yaml#/paths/document_change'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/source-previews:
+    $ref: './pages.yaml#/paths/document_sourcePreviews'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/source-previews/{generationId}:
+    $ref: './pages.yaml#/paths/document_sourcePreview'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/review:
+    $ref: './pages.yaml#/paths/document_review'
+  /api/v1/companies/{companyId}/pages/{pageId}/document:
+    $ref: './pages.yaml#/paths/document'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/ids:
+    $ref: './pages.yaml#/paths/document_ids'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/checkpoints:
+    $ref: './pages.yaml#/paths/document_checkpoint'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/presence:
+    $ref: './pages.yaml#/paths/document_presence'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/history:
+    $ref: './pages.yaml#/paths/document_history_list'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/history/{sequence}:
+    $ref: './pages.yaml#/paths/document_history_state'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/history/{sequence}/restore:
+    $ref: './pages.yaml#/paths/document_history_restore'
+  /api/v1/companies/{companyId}/pages/{pageId}/document/history/{sequence}/name:
+    $ref: './pages.yaml#/paths/document_history_name'
+  /api/v1/companies/{companyId}/chat-ui-preview:
+    $ref: './conversations.yaml#/paths/chatUIPreview'
   /api/v1/companies/{companyId}/message-connectors:
     $ref: "./agents.yaml#/paths/companies_companyId_message_connectors"
   /api/v1/companies/{companyId}/message-skills:
     $ref: "./agents.yaml#/paths/companies_companyId_message_skills"
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history:
-    $ref: './document-history.yaml#/paths/output_list'
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}:
-    $ref: './document-history.yaml#/paths/output_state'
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}/restore:
-    $ref: './document-history.yaml#/paths/output_restore'
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}/name:
-    $ref: './document-history.yaml#/paths/output_name'
-  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history:
-    $ref: './document-history.yaml#/paths/project_list'
-  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}:
-    $ref: './document-history.yaml#/paths/project_state'
-  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}/restore:
-    $ref: './document-history.yaml#/paths/project_restore'
-  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}/name:
-    $ref: './document-history.yaml#/paths/project_name'
   /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard:
     $ref: "./whiteboards.yaml#/paths/board"
   /api/v1/companies/{companyId}/artifacts/{artifactId}/whiteboard/operations:
@@ -674,6 +710,10 @@ paths:
     $ref: './pages.yaml#/paths/pages'
   /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}:
     $ref: './pages.yaml#/paths/page'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/source-previews:
+    $ref: './pages.yaml#/paths/sourcePreviews'
+  /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/source-previews/{generationId}:
+    $ref: './pages.yaml#/paths/sourcePreview'
   /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/threads:
     $ref: "./pages.yaml#/paths/threads"
   /api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/changes:
@@ -686,6 +726,12 @@ paths:
     $ref: './pages.yaml#/paths/pagePresentations'
   /api/v1/companies/{companyId}/projects/{projectId}/presentations:
     $ref: './pages.yaml#/paths/presentations'
+  /api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}/publication:
+    $ref: './pages.yaml#/paths/presentationPublication'
+  /api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}/publication/{publicationId}:
+    $ref: './pages.yaml#/paths/presentationPublicationRevoke'
+  /api/v1/public/captures/{token}:
+    $ref: './pages.yaml#/paths/publicCapture'
   /api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}:
     $ref: './pages.yaml#/paths/presentation'
   /api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}/export:
@@ -698,6 +744,10 @@ paths:
     $ref: './pages.yaml#/paths/agentPages'
   /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}:
     $ref: './pages.yaml#/paths/agentPage'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/source-previews:
+    $ref: './pages.yaml#/paths/agentSourcePreviews'
+  /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/source-previews/{generationId}:
+    $ref: './pages.yaml#/paths/agentSourcePreview'
   /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/presentation-preview:
     $ref: './pages.yaml#/paths/agentPreview'
   /api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/presentations:
@@ -746,8 +796,6 @@ paths:
     $ref: './canvas.yaml#/paths/body'
   /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document:
     $ref: './canvas.yaml#/paths/document'
-  /api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/ids:
-    $ref: './canvas.yaml#/paths/block_ids'
   /api/v1/companies/{companyId}/projects/{projectId}/canvas/presence:
     $ref: './canvas.yaml#/paths/presence'
   /api/v1/companies/{companyId}/artifacts/{artifactId}/visibility:
@@ -1217,16 +1265,8 @@ paths:
     $ref: './runs.yaml#/paths/companies_companyId_artifacts_resolve'
   /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/open:
     $ref: './artifact-sharing.yaml#/paths/output_document_open'
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document:
-    $ref: './artifact-sharing.yaml#/paths/output_document_read'
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/ids:
-    $ref: './artifact-sharing.yaml#/paths/output_document_ids'
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/checkpoints:
-    $ref: './artifact-sharing.yaml#/paths/output_document_checkpoint'
   /api/v1/companies/{companyId}/artifacts/{artifactId}/review/versions/{versionId}/body:
     $ref: './artifact-sharing.yaml#/paths/output_document_version'
-  /api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/presence:
-    $ref: './artifact-sharing.yaml#/paths/output_document_presence'
   /api/v1/companies/{companyId}/artifacts/{artifactId}/review:
     $ref: './artifact-sharing.yaml#/paths/artifact_review'
   /api/v1/companies/{companyId}/artifacts/{artifactId}/review/operations:

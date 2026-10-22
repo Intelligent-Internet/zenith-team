@@ -393,6 +393,7 @@ function ArtifactRow({
     app: Globe2,
     media: ImageIcon,
     text: FileText,
+    page: FileText,
     file: File,
     whiteboard: LayoutDashboard,
   }[artifact.artifact.type];

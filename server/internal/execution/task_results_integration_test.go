@@ -44,6 +44,7 @@ func TestTaskResultsPreserveOutputVersionsAndSourceScope(t *testing.T) {
 		t.Fatal(err)
 	}
 	outputIDs := make(map[uuid.UUID]uuid.UUID)
+	artifactIDs := make(map[uuid.UUID]uuid.UUID)
 	for position, runID := range []uuid.UUID{fixture.RunA, newestRunID} {
 		attachmentID := insertReadyDeliverableAttachment(
 			t,
@@ -67,7 +68,11 @@ func TestTaskResultsPreserveOutputVersionsAndSourceScope(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		if presented.ArtifactID == nil {
+			t.Fatal("presentation has no retained Artifact identity")
+		}
 		outputIDs[runID] = presented.OutputID
+		artifactIDs[runID] = *presented.ArtifactID
 		dbtest.MustExec(
 			t,
 			ctx,
@@ -180,7 +185,7 @@ func TestTaskResultsPreserveOutputVersionsAndSourceScope(t *testing.T) {
 		ArtifactListOptions{Limit: 1},
 	)
 	if err != nil || len(artifacts.Items) != 1 || artifacts.Next == nil ||
-		artifacts.Items[0].Artifact.ID != outputIDs[newestRunID] {
+		artifacts.Items[0].Artifact.ID != artifactIDs[newestRunID] || artifacts.Items[0].RunID != nil || artifacts.Items[0].RuntimeID != nil {
 		t.Fatalf("ListConversationArtifacts() = %+v, %v", artifacts, err)
 	}
 	olderArtifacts, err := service.ListConversationArtifacts(
@@ -190,7 +195,7 @@ func TestTaskResultsPreserveOutputVersionsAndSourceScope(t *testing.T) {
 		ArtifactListOptions{Limit: 1, Before: artifacts.Next},
 	)
 	if err != nil || len(olderArtifacts.Items) != 1 || olderArtifacts.Next != nil ||
-		(olderArtifacts.Items[0].RunID == nil || *olderArtifacts.Items[0].RunID != fixture.RunA) {
+		(olderArtifacts.Items[0].Artifact.ID != artifactIDs[fixture.RunA] || olderArtifacts.Items[0].RunID != nil) {
 		t.Fatalf("older artifacts = %+v, %v", olderArtifacts, err)
 	}
 	for _, runID := range []uuid.UUID{fixture.RunA, newestRunID, uuid.New()} {
@@ -279,7 +284,7 @@ func TestTaskResultsPreserveOutputVersionsAndSourceScope(t *testing.T) {
 			ctx,
 			principal,
 			fixture.ConversationA,
-			ArtifactListOptions{Limit: 1},
+			ArtifactListOptions{Limit: 1, RunID: newestRunID},
 		)
 		if err != nil || len(artifacts.Items) != 1 {
 			t.Fatalf("ListConversationArtifacts() = %+v, %v", artifacts, err)

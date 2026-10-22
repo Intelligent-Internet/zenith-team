@@ -13,19 +13,18 @@ import (
 
 const getCanvasImportedDocument = `-- name: GetCanvasImportedDocument :one
 SELECT v.id FROM output_documents i
-JOIN project_artifact_versions v ON v.company_id=i.company_id AND v.wiki_page_id=i.page_id
-WHERE i.company_id=$1 AND v.artifact_id=$2 AND i.output_item_id=$3
+JOIN artifact_snapshots v ON v.company_id=i.company_id AND v.wiki_page_id=i.page_id
+WHERE i.company_id=$1 AND i.output_item_id=$2
 ORDER BY v.number DESC LIMIT 1
 `
 
 type GetCanvasImportedDocumentParams struct {
 	CompanyID    uuid.UUID `json:"company_id"`
-	ArtifactID   uuid.UUID `json:"artifact_id"`
 	OutputItemID uuid.UUID `json:"output_item_id"`
 }
 
 func (q *Queries) GetCanvasImportedDocument(ctx context.Context, arg GetCanvasImportedDocumentParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, getCanvasImportedDocument, arg.CompanyID, arg.ArtifactID, arg.OutputItemID)
+	row := q.db.QueryRow(ctx, getCanvasImportedDocument, arg.CompanyID, arg.OutputItemID)
 	var id uuid.UUID
 	err := row.Scan(&id)
 	return id, err
@@ -33,7 +32,7 @@ func (q *Queries) GetCanvasImportedDocument(ctx context.Context, arg GetCanvasIm
 
 const getCanvasOutputDocumentSource = `-- name: GetCanvasOutputDocumentSource :one
 SELECT i.id AS item_id,i.output_id,av.attachment_id,av.filename,av.content_type,av.size_bytes
-FROM project_artifact_versions v
+FROM artifact_snapshots v
 JOIN output_items i ON i.company_id=v.company_id AND i.output_id=v.output_id
 JOIN asset_versions av ON av.company_id=i.company_id AND av.id=i.asset_version_id
 WHERE v.company_id=$1::uuid AND v.project_id=$2::uuid

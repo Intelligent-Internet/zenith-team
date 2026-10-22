@@ -128,8 +128,8 @@ const documentSuggestionCapture = `-- name: DocumentSuggestionCapture :one
 SELECT change.project_id,before.block_content AS before_content,result.block_content AS result_content
 FROM page_suggestion_reviews review
 JOIN project_page_changes change ON change.company_id=review.company_id AND change.id=review.change_id
-JOIN wiki_revisions before ON before.company_id=review.company_id AND before.id=review.before_revision_id
-JOIN wiki_revisions result ON result.company_id=review.company_id AND result.id=review.result_revision_id
+JOIN document_snapshots before ON before.company_id=review.company_id AND before.id=review.before_revision_id
+JOIN document_snapshots result ON result.company_id=review.company_id AND result.id=review.result_revision_id
 WHERE change.company_id=$1 AND change.page_id=$2 AND review.after_sequence=$3
  AND review.action IN ('apply','undo')
 ORDER BY review.created_at DESC,review.id DESC LIMIT 1
@@ -142,9 +142,9 @@ type DocumentSuggestionCaptureParams struct {
 }
 
 type DocumentSuggestionCaptureRow struct {
-	ProjectID     uuid.UUID `json:"project_id"`
-	BeforeContent []byte    `json:"before_content"`
-	ResultContent []byte    `json:"result_content"`
+	ProjectID     uuid.NullUUID `json:"project_id"`
+	BeforeContent []byte        `json:"before_content"`
+	ResultContent []byte        `json:"result_content"`
 }
 
 func (q *Queries) DocumentSuggestionCapture(ctx context.Context, arg DocumentSuggestionCaptureParams) (DocumentSuggestionCaptureRow, error) {
@@ -189,7 +189,7 @@ type DocumentSuggestionReviewsRow struct {
 	ResultRevisionID uuid.NullUUID      `json:"result_revision_id"`
 	BeforeTheme      pgtype.Text        `json:"before_theme"`
 	ResultTheme      pgtype.Text        `json:"result_theme"`
-	ProjectID        uuid.UUID          `json:"project_id"`
+	ProjectID        uuid.NullUUID      `json:"project_id"`
 	PageID           uuid.UUID          `json:"page_id"`
 	ActorAgentID     uuid.NullUUID      `json:"actor_agent_id"`
 	AgentName        string             `json:"agent_name"`

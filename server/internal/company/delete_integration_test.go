@@ -215,7 +215,7 @@ func TestDeleteCompanyCleansDependentRecords(t *testing.T) {
 			seed: seedDeletionPresentation,
 			tables: []string{
 				"project_presentations", "project_presentation_sources", "attachments",
-				"wiki_pages", "wiki_revisions", "project_artifacts", "project_artifact_versions",
+				"wiki_pages", "document_snapshots", "artifacts", "artifact_snapshots",
 			},
 		},
 		{
@@ -226,7 +226,7 @@ func TestDeleteCompanyCleansDependentRecords(t *testing.T) {
 		{
 			name:   "whiteboard files",
 			seed:   seedDeletionWhiteboardFile,
-			tables: []string{"boards", "board_files", "board_items", "attachments"},
+			tables: []string{"artifacts", "boards", "board_files", "board_items", "attachments"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -292,8 +292,8 @@ func seedDeletionWhiteboardFile(t *testing.T, ctx context.Context, pool *pgxpool
 	t.Helper()
 	dbtest.MustExec(t, ctx, pool, `
 		WITH whiteboard AS (
-			INSERT INTO outputs (company_id, title, summary, presentation_fingerprint, type, owner_user_id, actor_type, actor_user_id)
-			VALUES ($1, 'Plan', '', '', 'whiteboard', $2, 'user', $2) RETURNING id
+			INSERT INTO artifacts (company_id, title, type, owner_user_id, created_by_user_id)
+			VALUES ($1, 'Plan', 'whiteboard', $2, $2) RETURNING id
 		), board AS (
 			INSERT INTO boards (company_id, id) SELECT $1, id FROM whiteboard RETURNING id
 		), file AS (
@@ -357,22 +357,21 @@ func seedDeletionMailDrafts(t *testing.T, ctx context.Context, pool *pgxpool.Poo
 func seedDeletionPresentation(t *testing.T, ctx context.Context, pool *pgxpool.Pool, f dbtest.Fixture) {
 	t.Helper()
 	dbtest.MustExec(t, ctx, pool, `
-		WITH page AS (
-			INSERT INTO wiki_pages (company_id, project_id, slug, title, created_by_user_id)
-			VALUES ($1, $2, 'presentation', 'Presentation', $3) RETURNING id
-		), revision AS (
-			INSERT INTO wiki_revisions (company_id, page_id, number, title, body, author_user_id)
-			SELECT $1, id, 1, 'Presentation', 'Content', $3 FROM page RETURNING id, page_id
-		), artifact AS (
-			INSERT INTO project_artifacts (company_id, project_id, title, created_by_user_id)
-			VALUES ($1, $2, 'Presentation', $3) RETURNING id
-		), artifact_version AS (
-			INSERT INTO project_artifact_versions (
-				company_id, project_id, artifact_id, number, source_type,
-				wiki_page_id, wiki_revision_id, created_by_user_id
-			)
-			SELECT $1, $2, artifact.id, 1, 'wiki', revision.page_id, revision.id, $3
-			FROM artifact CROSS JOIN revision RETURNING id, wiki_page_id, wiki_revision_id
+		WITH artifact AS (
+            INSERT INTO artifacts(company_id,project_id,type,title,created_by_user_id)
+            VALUES($1,$2,'page','Presentation',$3) RETURNING id
+        ), page AS (
+            INSERT INTO wiki_pages(id,artifact_type,company_id,project_id,slug,title,created_by_user_id)
+            SELECT id,'page',$1,$2,'presentation','Presentation',$3 FROM artifact RETURNING id
+        ), snapshot_identity AS (
+            SELECT gen_random_uuid() AS id, page.id AS page_id FROM page
+        ), revision AS (
+            INSERT INTO document_snapshots(id,company_id,page_id,number,title,body,author_user_id)
+            SELECT id,$1,page_id,1,'Presentation','Content',$3 FROM snapshot_identity RETURNING id,page_id
+        ), artifact_version AS (
+            INSERT INTO artifact_snapshots(id,company_id,project_id,artifact_id,number,source_type,wiki_page_id,wiki_revision_id,created_by_user_id,title)
+            SELECT revision.id,$1,$2,revision.page_id,1,'wiki',revision.page_id,revision.id,$3,'Presentation'
+            FROM revision RETURNING id,wiki_page_id,wiki_revision_id
 		), attachment AS (
 			INSERT INTO attachments (
 				company_id, uploaded_by_user_id, request_key, filename, content_type, size_bytes, status
@@ -381,11 +380,11 @@ func seedDeletionPresentation(t *testing.T, ctx context.Context, pool *pgxpool.P
 			RETURNING id
 		), presentation AS (
 			INSERT INTO project_presentations (
-				company_id, project_id, page_id, page_version_id, theme, title, content,
+				id, company_id, project_id, page_id, page_version_id, theme, title, content,
 				export_markdown, source_sequence, fingerprint, request_key,
 				created_by_user_id, export_attachment_id
 			)
-			SELECT $1, $2, artifact_version.wiki_page_id, artifact_version.id, 'default',
+			SELECT artifact_version.id, $1, $2, artifact_version.wiki_page_id, artifact_version.id, 'default',
 				'Presentation', '{}'::jsonb, 'Content', 1, 'fingerprint', gen_random_uuid(), $3, attachment.id
 			FROM artifact_version CROSS JOIN attachment RETURNING id
 		)

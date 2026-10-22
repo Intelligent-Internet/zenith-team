@@ -44,11 +44,18 @@ func TestPlatformSkillsListsCompiledThenPinnedSkills(t *testing.T) {
 	for _, skill := range skills {
 		keys = append(keys, skill.Key)
 	}
-	if want := []string{ZenithPlatformSkillKey, ZenithWorkflowsSkillKey}; !slices.Equal(keys, want) {
+	if want := []string{
+		ZenithPlatformSkillKey,
+		zenithIntelligentUISkillKey,
+		ZenithWorkflowsSkillKey,
+	}; !slices.Equal(
+		keys,
+		want,
+	) {
 		t.Fatalf("PlatformSkills() keys = %v, want %v", keys, want)
 	}
 	// Only playbooks are references; the forms stay the page's input.
-	if workflows := skills[1]; workflows.Name != "Zenith workflows" ||
+	if workflows := skills[2]; workflows.Name != "Zenith workflows" ||
 		!slices.Equal(workflows.References, []string{"account-brief/playbook.md"}) {
 		t.Fatalf("zenith-workflows summary = %+v", workflows)
 	}
@@ -60,7 +67,7 @@ func TestPlatformSkillsListsCompiledThenPinnedSkills(t *testing.T) {
 	}
 	// Without bundles the compiled catalog still lists.
 	compiled, err := PlatformSkills(nil)
-	if err != nil || len(compiled) != 1 || compiled[0].Key != ZenithPlatformSkillKey {
+	if err != nil || len(compiled) != 2 || compiled[0].Key != ZenithPlatformSkillKey {
 		t.Fatalf("PlatformSkills(nil) = %+v, %v", compiled, err)
 	}
 }
@@ -189,5 +196,28 @@ func TestReservedKeysDoNotDependOnBundles(t *testing.T) {
 	result, err := service.SearchSkills(t.Context(), SearchSkillsInput{Query: "replacement"})
 	if err != nil || len(result.Skills) != 0 {
 		t.Fatalf("snapshot entry under a reserved key is searchable: %+v, %v", result, err)
+	}
+}
+
+func TestIntelligentUISkillIsAvailableWithoutCustomSkills(t *testing.T) {
+	t.Parallel()
+	service, err := OpenTaskSkillService("", nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer service.Close()
+	found, err := service.SearchSkills(t.Context(), SearchSkillsInput{Query: "intelligent ui"})
+	if err != nil || len(found.Skills) != 1 || found.Skills[0].Key != zenithIntelligentUISkillKey {
+		t.Fatalf("search = %+v, %v", found, err)
+	}
+	loaded, err := service.LoadSkillReference(
+		t.Context(),
+		LoadSkillReferenceInput{SkillKey: found.Skills[0].Key, Path: "SKILL.md"},
+	)
+	if err != nil || loaded.Size == 0 || loaded.SHA256 == "" {
+		t.Fatalf("load = %+v, %v", loaded, err)
+	}
+	if !isPlatformSkillKey(zenithIntelligentUISkillKey) {
+		t.Fatal("custom snapshot could shadow authoring contract")
 	}
 }

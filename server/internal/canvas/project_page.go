@@ -20,11 +20,13 @@ import (
 )
 
 type PageCreateInput struct {
-	RequestKey uuid.UUID      `json:"requestKey"         binding:"required"`
-	Title      string         `json:"title"              binding:"required,max=200"`
-	Content    wiki.BlockNode `json:"content,omitempty"`
-	Markdown   string         `json:"markdown,omitempty"`
-	Theme      string         `json:"theme,omitempty"`
+	Source          *string        `json:"source,omitempty"`
+	LanguageVersion int            `json:"languageVersion,omitempty"`
+	RequestKey      uuid.UUID      `json:"requestKey"                binding:"required"`
+	Title           string         `json:"title"                     binding:"required,max=200"`
+	Content         wiki.BlockNode `json:"content,omitempty"`
+	Markdown        string         `json:"markdown,omitempty"`
+	Theme           string         `json:"theme,omitempty"`
 }
 
 type PageCreateResult struct {
@@ -36,14 +38,17 @@ type PageCreateResult struct {
 	Sequence   int64      `json:"sequence"`
 }
 
-// editableProjectPage selects a native Page in the caller's Project.
-// Imported outputs retain their immutable source and cannot be rewritten.
+// editableProjectPage selects Page-owned content in the caller's Project.
+// An imported Page has the same authority as an authored Page; its Output is provenance.
 func editableProjectPage(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
 	project, pageID uuid.UUID,
 ) (generated.CanvasVersionSource, error) {
+	if _, err := authorizeArtifactContent(ctx, q, p, pageID, false); err != nil {
+		return generated.CanvasVersionSource{}, err
+	}
 	source, err := q.GetProjectPageVersion(
 		ctx,
 		generated.GetProjectPageVersionParams{CompanyID: p.CompanyID, ProjectID: project, ID: pageID},
@@ -51,7 +56,7 @@ func editableProjectPage(
 	if err != nil {
 		return source, lookup(err)
 	}
-	if !source.WikiPageID.Valid || source.AccessOutputID.Valid {
+	if !source.WikiPageID.Valid {
 		return source, ErrInvalid
 	}
 	if _, err = q.LockCanvasArtifact(
@@ -97,8 +102,24 @@ func (s *DefaultPageService) createPage(
 	project uuid.UUID,
 	run *uuid.UUID,
 	in PageCreateInput,
-) (PageCreateResult, error) {
+) (created PageCreateResult, returnedErr error) {
+	if in.Source != nil {
+		observation := pageSourceObservation{operation: "create", bytes: len(*in.Source), started: time.Now()}
+		defer func() { s.observeSource(observation, returnedErr) }()
+	}
 	in.Title = strings.TrimSpace(in.Title)
+	if in.Source != nil {
+		if in.Content.Type != "" || in.Markdown != "" {
+			return PageCreateResult{}, ErrInvalid
+		}
+		compiled, err := wiki.CompileSource(*in.Source, in.LanguageVersion)
+		if err != nil {
+			return PageCreateResult{}, err
+		}
+		in.Content = compiled
+	} else if in.LanguageVersion != 0 {
+		return PageCreateResult{}, ErrInvalid
+	}
 	if in.Markdown != "" {
 		if in.Content.Type != "" {
 			return PageCreateResult{}, ErrInvalid
@@ -170,6 +191,9 @@ func (s *DefaultPageService) createPage(
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return err
 		}
+		if err := s.authoring.Check(0, in.Content); err != nil {
+			return err
+		}
 		count, err := q.CountCanvasArtifacts(ctx, project)
 		if err != nil {
 			return err
@@ -203,7 +227,9 @@ func (s *DefaultPageService) createPage(
 			ctx,
 			q,
 			wiki.CanvasPageInput{
-				HistoryAgentID:  historyAgent,
+				Authoring:      s.authoring,
+				HistoryAgentID: historyAgent,
+				TaskID:         taskID, SourceRunID: run,
 				Principal:       p,
 				ProjectID:       project,
 				Theme:           in.Theme,
@@ -216,36 +242,9 @@ func (s *DefaultPageService) createPage(
 		if err != nil {
 			return err
 		}
-		artifact, err := q.CreateCanvasArtifact(
+		artifact, err := q.LockCanvasArtifact(
 			ctx,
-			generated.CreateCanvasArtifactParams{
-				CompanyID:       p.CompanyID,
-				ProjectID:       project,
-				Title:           in.Title,
-				CreatedByUserID: p.UserID,
-				TaskID:          nullable(taskID),
-				SourceRunID:     nullable(run),
-			},
-		)
-		if err != nil {
-			return err
-		}
-		number, err := q.AllocateCanvasVersion(ctx, artifact.ID)
-		if err != nil {
-			return err
-		}
-		version, err := q.CreateCanvasVersion(
-			ctx,
-			generated.CreateCanvasVersionParams{
-				CompanyID:       p.CompanyID,
-				ProjectID:       project,
-				ArtifactID:      artifact.ID,
-				Number:          number,
-				SourceType:      "wiki",
-				WikiPageID:      nullable(&page),
-				WikiRevisionID:  nullable(&revision),
-				CreatedByUserID: p.UserID,
-			},
+			generated.LockCanvasArtifactParams{CompanyID: p.CompanyID, ProjectID: project, ID: page},
 		)
 		if err != nil {
 			return err
@@ -259,7 +258,7 @@ func (s *DefaultPageService) createPage(
 			return err
 		}
 		result = PageCreateResult{
-			VersionID:  version.ID,
+			VersionID:  revision,
 			ArtifactID: artifact.ID,
 			PageID:     page,
 			Title:      in.Title,
@@ -303,6 +302,7 @@ func (s *DefaultPageService) createPage(
 					RequestKey:    in.RequestKey,
 					RequestHash:   fmt.Sprintf("%x", hash[:]),
 					Operations:    ops,
+					CrdtUpdates:   []byte("[]"),
 					BeforeContent: draft.Content,
 					Result:        changeResult,
 					Summary:       "Create " + in.Title,
@@ -452,7 +452,17 @@ func (s *DefaultPageService) PageChanges(
 		beforeID = nullable(&id)
 	}
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := authorize(ctx, q, p, project, false); err != nil {
+		var err error
+		project, err = pageReviewProject(ctx, q, p, pageReviewScope{ProjectID: project, PageID: pageID})
+		if err != nil {
+			return err
+		}
+		if err := authorizePageReview(
+			ctx,
+			q,
+			p,
+			pageReviewScope{ProjectID: project, PageID: pageID, Write: false},
+		); err != nil {
 			return err
 		}
 		if _, err := editableProjectPage(ctx, q, p, project, pageID); err != nil {
@@ -461,9 +471,10 @@ func (s *DefaultPageService) PageChanges(
 		pending, err := q.ListPendingPageChanges(
 			ctx,
 			generated.ListPendingPageChangesParams{
-				CompanyID: p.CompanyID,
-				ProjectID: project,
-				PageID:    pageID,
+				ActorUserID: p.UserID,
+				CompanyID:   p.CompanyID,
+				ProjectID:   project,
+				PageID:      pageID,
 			},
 		)
 		if err != nil {
@@ -491,11 +502,12 @@ func (s *DefaultPageService) PageChanges(
 		rows, err := q.ListPageChangeHistory(
 			ctx,
 			generated.ListPageChangeHistoryParams{
-				CompanyID:  p.CompanyID,
-				ProjectID:  project,
-				PageID:     pageID,
-				BeforeTime: beforeTime,
-				BeforeID:   beforeID,
+				ActorUserID: p.UserID,
+				CompanyID:   p.CompanyID,
+				ProjectID:   project,
+				PageID:      pageID,
+				BeforeTime:  beforeTime,
+				BeforeID:    beforeID,
 			},
 		)
 		if err != nil {
@@ -605,11 +617,13 @@ func (s *DefaultPageService) UpdatePage(
 			ctx,
 			q,
 			pageDraftEdit{
-				principal: p,
-				page:      pageID,
-				sequence:  draft.HeadSeq,
-				state:     draft.State,
-				root:      root,
+				authoring:   s.authoring,
+				savedSchema: int(draft.SchemaVersion),
+				principal:   p,
+				page:        pageID,
+				sequence:    draft.HeadSeq,
+				state:       draft.State,
+				root:        root,
 			},
 		); err != nil {
 			return err
@@ -675,7 +689,7 @@ func (s *DefaultPageService) Pages(
 				ctx,
 				generated.ListProjectPageContributionsParams{
 					CompanyID: p.CompanyID,
-					ProjectID: project,
+					ProjectID: nullable(&project),
 					TaskID:    nullable(taskID),
 				},
 			)

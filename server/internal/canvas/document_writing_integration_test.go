@@ -45,8 +45,8 @@ func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
 	q := store.Queries()
 	thread, err := q.CreateReviewThread(ctx, generated.CreateReviewThreadParams{
 		CompanyID: f.CompanyA, ProjectID: nullable(&f.ProjectA), PageID: nullable(&page.PageID),
-		ArtifactVersionID: nullable(&page.VersionID), CreatedByUserID: f.UserA,
-		Anchor: []byte(`{"type":"textQuote","exact":"Original"}`),
+		CreatedByUserID: f.UserA,
+		Anchor:          []byte(`{"type":"textQuote","exact":"Original"}`),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -213,7 +213,17 @@ func TestDocumentWritingRetryReviewAndUndo(t *testing.T) {
 		f.ProjectA,
 		f.UserA,
 	)
-	if _, err = q.GetDocumentAgentRun(ctx, lookup); !errors.Is(err, pgx.ErrNoRows) {
-		t.Fatalf("read document Run after revocation = %v, want no rows", err)
+	if _, err = q.GetDocumentAgentRun(ctx, lookup); err != nil {
+		t.Fatalf("revocation erased immutable document Run scope: %v", err)
+	}
+	if err = checkDocumentAgentPage(ctx, q, p, retryID, uuid.New()); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("revoked Run escaped its Page scope = %v", err)
+	}
+	err = store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
+		_, _, err := admitPageRun(ctx, q, p, retryID, true)
+		return err
+	})
+	if !errors.Is(err, auth.ErrProjectPermissionRequired) {
+		t.Fatalf("revoked document Run admission = %v, want permission required", err)
 	}
 }

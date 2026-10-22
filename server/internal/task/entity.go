@@ -88,14 +88,18 @@ type ListOptions struct {
 	assistedTaskID       *uuid.UUID
 	ProjectID            *uuid.UUID
 	Statuses             []Status
+	ExcludedStatuses     []Status
 	Priorities           []Priority
 	AssigneeUserID       *uuid.UUID
 	ExecutedByAgentID    *uuid.UUID
 	DependenciesResolved *bool
+	Limit                int32
+	BeforeNumber         int64
 }
 
 type Page struct {
-	Tasks []Response
+	Tasks      []Response
+	NextCursor *int64
 }
 
 type MutationResult struct {
@@ -254,6 +258,15 @@ func normalizeListOptions(options ListOptions) (ListOptions, error) {
 		if !validStatus(status) {
 			return ListOptions{}, ErrInvalidInput
 		}
+	}
+	for _, status := range options.ExcludedStatuses {
+		if !validStatus(status) {
+			return ListOptions{}, ErrInvalidInput
+		}
+	}
+	if options.Limit < 0 || options.Limit > 1000 || options.BeforeNumber < 0 ||
+		(options.BeforeNumber > 0 && options.Limit == 0) {
+		return ListOptions{}, ErrInvalidInput
 	}
 	for _, priority := range options.Priorities {
 		if !validPriority(priority) {

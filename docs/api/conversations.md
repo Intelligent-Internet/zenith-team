@@ -1304,3 +1304,19 @@ mentions and followed-thread replies. Mentions delivers mentions and followed
 threads. Muted retains those Inbox entries but emits no notification hint.
 The sender never receives their own notification. Desktop delivery is suppressed
 when the corresponding channel is visible in the focused app window.
+
+
+## Inline Intelligent UI
+
+`POST /api/v1/companies/{companyId}/chat-ui-preview` is a member-only,
+non-persisting source preview endpoint. Chat renders locally; this endpoint remains
+available for compiler clients. Input:
+`{ "source": "...", "languageVersion": 1 }` (256 KiB maximum source).
+The response is the shared `SourcePreview` contract with validated complete or
+partial content and diagnostics. The route reads no product data and does not
+create a Page. Live sources independently require current viewer authorization.
+Assistant messages render recognized inline component markup directly. Markdown
+fences and code spans always remain literal code. The browser parses the same
+source grammar used by Page compilation; chat rendering does not call the preview
+endpoint. Complete children remain visible while a container streams, and callbacks
+stay disabled until the message is complete. Failure states offer Show source.

@@ -1,3 +1,5 @@
+import { DocumentViewMode } from "./document-view-mode";
+import { useScope } from "./intelligent-ui/reactive-values";
 import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { BlockSettings, useBlockEditable } from "./block-settings";
 import { BlockViewSelect } from "./block-view-select";
@@ -14,17 +16,19 @@ import type { Workflow } from "@/shared/api/types";
 import type { components } from "@/shared/api/generated/api.generated";
 import { Icon } from "@/shared/ui/icon";
 import type { CanvasScope } from "../api/canvas-api";
-import { WorkBlockMode, WorkBlockScope, taskBlockSummary } from "./work-blocks";
+import { WorkBlockScope } from "./work-blocks";
+import { taskBlockSummary } from "./task-summary";
 
 export function WorkflowBlock(props: NodeViewProps) {
   const scope = useContext(WorkBlockScope);
+  const { template } = useScope(props);
   if (!scope)
     return (
       <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         This Workflow requires a Project.
       </NodeViewWrapper>
     );
-  return <ProjectWorkflowBlock {...props} scope={scope} />;
+  return <ProjectWorkflowBlock {...props} scope={scope} template={template} />;
 }
 
 function ProjectWorkflowBlock({
@@ -32,9 +36,10 @@ function ProjectWorkflowBlock({
   editor,
   updateAttributes,
   scope,
-}: NodeViewProps & { scope: CanvasScope }) {
+  template,
+}: NodeViewProps & { scope: CanvasScope; template: boolean }) {
   const editable = useBlockEditable(editor);
-  const mode = useContext(WorkBlockMode);
+  const mode = useContext(DocumentViewMode);
   const captured = mode === "snapshot" || Boolean(node.attrs.capturedAt);
   const navigate = useNavigate();
   const key = String(node.attrs.workflowKey || "");
@@ -43,11 +48,11 @@ function ProjectWorkflowBlock({
   });
   const query = useGetWorkflowQuery(
     { companyId: scope.companyId, workflowKey: key },
-    { skip: captured || !key },
+    { skip: captured || template || !key },
   );
   const tasks = useListWorkspaceTasksQuery(
     { companyId: scope.companyId, options: { project_id: scope.projectId } },
-    { skip: captured || !key },
+    { skip: captured || template || !key },
   );
   const definition = captured
     ? (node.attrs.capturedWorkflow as Workflow | undefined)
@@ -58,18 +63,28 @@ function ProjectWorkflowBlock({
     [node.attrs.display],
   );
   const [launch, setLaunch] = useState(false);
+  useEffect(() => {
+    if (template || mode !== "live") setLaunch(false);
+  }, [template, mode]);
   const trigger = useRef<HTMLButtonElement>(null);
-  const linked: components["schemas"]["OverviewTask"][] = captured
-    ? (node.attrs.capturedTasks ?? [])
-    : (tasks.currentData?.items ?? [])
-        .filter((task) => task.labels.includes(`workflow:${key}`))
-        .map(taskBlockSummary);
+  const linked: components["schemas"]["OverviewTask"][] = template
+    ? []
+    : captured
+      ? (node.attrs.capturedTasks ?? [])
+      : (tasks.currentData?.items ?? [])
+          .filter((task) => task.labels.includes(`workflow:${key}`))
+          .map(taskBlockSummary);
   return (
     <NodeViewWrapper
       className={`pc-has-settings pc-workflow-block pc-workflow-${node.attrs.display || "card"}`}
       data-block-id={node.attrs.blockId}
       contentEditable={false}
     >
+      {template && (
+        <p role="status">
+          Workflow template · Runs only from rendered instances.
+        </p>
+      )}
       {mode === "comparison" && (
         <p className="text-[var(--pc-muted)] text-[length:11px] leading-[1.4] m-[0_0_8px]">
           Workflow · {node.attrs.display || "card"}
@@ -112,7 +127,7 @@ function ProjectWorkflowBlock({
           />
         </BlockSettings>
       )}
-      {!key ? (
+      {template ? null : !key ? (
         <p className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
           Choose a Workflow from Workflow options.
         </p>
@@ -138,7 +153,7 @@ function ProjectWorkflowBlock({
             >
               {expanded ? "Collapse" : "Details"}
             </button>
-            {!captured && mode === "live" && (
+            {!captured && !template && mode === "live" && (
               <button ref={trigger} onClick={() => setLaunch(true)}>
                 Use Workflow
               </button>
@@ -192,7 +207,7 @@ function ProjectWorkflowBlock({
               ))}
             </div>
           )}
-          {!captured && tasks.isError && (
+          {!captured && !template && tasks.isError && (
             <p role="alert">
               Workflow Tasks are unavailable.{" "}
               <button onClick={() => void tasks.refetch()}>Retry</button>
@@ -206,7 +221,7 @@ function ProjectWorkflowBlock({
           )}
         </>
       )}
-      {launch && (
+      {launch && !template && (
         <WorkflowLaunchDialog
           companyId={scope.companyId}
           initialProjectId={scope.projectId}

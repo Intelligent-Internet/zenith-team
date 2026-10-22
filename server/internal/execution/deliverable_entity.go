@@ -60,6 +60,7 @@ type DeliverablePresentAppRequest struct {
 }
 
 type DeliverablePresentRequest struct {
+	ArtifactID      *uuid.UUID                      `json:"artifactId,omitempty"`
 	PresentationID  *uuid.UUID                      `json:"presentationId,omitempty"`
 	Type            ArtifactType                    `json:"type,omitempty"`
 	App             *DeliverablePresentAppRequest   `json:"app,omitempty"`
@@ -130,13 +131,18 @@ type DeliverableRunResult struct {
 }
 
 type DeliverablePresentResult struct {
-	OutputID uuid.UUID `json:"outputId"`
-	Created  bool      `json:"created"`
+	ArtifactID *uuid.UUID `json:"artifactId,omitempty"`
+	SnapshotID *uuid.UUID `json:"snapshotId,omitempty"`
+	OutputID   uuid.UUID  `json:"outputId"`
+	Created    bool       `json:"created"`
 }
 
 func normalizeDeliverablePresentation(
 	request DeliverablePresentRequest,
 ) (DeliverablePresentRequest, error) {
+	if request.ArtifactID != nil && (!util.ValidUUID(*request.ArtifactID) || request.PresentationID != nil) {
+		return DeliverablePresentRequest{}, ErrDeliverableInvalidInput
+	}
 	if request.Type == "" {
 		request.Type = ArtifactTypeFile
 	}
@@ -210,6 +216,7 @@ func normalizeDeliverablePresentation(
 	request.Items = items
 
 	type fingerprintRequest struct {
+		ArtifactID      *uuid.UUID                      `json:"artifactId,omitempty"`
 		PresentationID  *uuid.UUID                      `json:"presentationId,omitempty"`
 		Type            ArtifactType                    `json:"type,omitempty"`
 		App             *DeliverablePresentAppRequest   `json:"app,omitempty"`
@@ -219,6 +226,7 @@ func normalizeDeliverablePresentation(
 		Items           []DeliverablePresentItemRequest `json:"items"`
 	}
 	fingerprint := fingerprintRequest{
+		ArtifactID:     request.ArtifactID,
 		PresentationID: request.PresentationID,
 		Title:          request.Title, Summary: request.Summary,
 		App: request.App, SubmissionNotes: request.SubmissionNotes, Items: request.Items,

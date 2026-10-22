@@ -39,6 +39,9 @@ var zenithTeamMCPToolCatalog = []string{
 	"page_create",
 	"page_read",
 	"page_edit",
+	"page_source_preview_start",
+	"page_source_preview_read",
+	"page_source_preview_patch",
 	"search_skills",
 	"social_publish",
 	"social_read",
@@ -145,7 +148,14 @@ func zenithTeamMCPToolsForRun(doc RunContext) []string {
 		if doc.ExecutionProfile.DocumentWriting {
 			return nil
 		}
-		return []string{"page_read", "page_edit", "source_read"}
+		return []string{
+			"page_read",
+			"page_edit",
+			"source_read",
+			"page_source_preview_start",
+			"page_source_preview_read",
+			"page_source_preview_patch",
+		}
 	}
 	if isScheduledRun(doc) || isCompanyInitializationRun(doc) {
 		return nil
@@ -166,6 +176,9 @@ func zenithTeamMCPToolsForRun(doc RunContext) []string {
 		allowed["page_create"] = struct{}{}
 		allowed["page_read"] = struct{}{}
 		allowed["page_edit"] = struct{}{}
+		allowed["page_source_preview_start"] = struct{}{}
+		allowed["page_source_preview_read"] = struct{}{}
+		allowed["page_source_preview_patch"] = struct{}{}
 		allowed["load_skill_reference"] = struct{}{}
 		allowed["mark_task_failed"] = struct{}{}
 		allowed["finalize_task_results"] = struct{}{}
@@ -199,12 +212,10 @@ func zenithTeamMCPToolsForRun(doc RunContext) []string {
 		allowed["social_publish"] = struct{}{}
 	}
 	removeDisabledZenithTeamTools(allowed, doc.Agent.Capabilities.DisabledBuiltIns)
-	// Page authoring and Studio both need their compiled guides independently
-	// of optional coordination actions or custom Skill snapshots.
-	if doc.ExecutionProfile.Task != nil || studioEnabledForRun(doc) || len(doc.Agent.SkillRefs) != 0 {
-		allowed["search_skills"] = struct{}{}
-		allowed["load_skill_reference"] = struct{}{}
-	}
+	// Ordinary chat can author inline Intelligent UI without a Page or Studio.
+	// Its compiled guide must be discoverable even without a custom Skill snapshot.
+	allowed["search_skills"] = struct{}{}
+	allowed["load_skill_reference"] = struct{}{}
 	tools := make([]string, 0, len(allowed))
 	for _, tool := range zenithTeamMCPToolCatalog {
 		if _, ok := allowed[tool]; ok {
@@ -326,9 +337,11 @@ func buildRunSystemPromptWithCLI(
 			builder.WriteString(" Return only the requested replacement text. No tools are available. " +
 				"The application stages your response for human acceptance; it does not apply changes automatically.")
 		} else {
-			builder.WriteString(" Use page_read, page_edit and source_read only. " +
-				"Page edits are restricted to the originating Page and require human acceptance. " +
-				"Answer questions in your final response, which is posted in the document thread.")
+			builder.WriteString(
+				" Use page_read, page_edit, source_read and the page_source_preview tools only. Temporary previews never apply edits. " +
+					"Page edits are restricted to the originating Page and require human acceptance. " +
+					"Answer questions in your final response, which is posted in the document thread.",
+			)
 		}
 		return builder.String()
 	}
@@ -352,6 +365,11 @@ func buildRunSystemPromptWithCLI(
 	appendCompanyReferences(&builder, doc.CompanyReferences, memory.CompanyReferenceRoot)
 	appendProjectDocuments(&builder, doc)
 	appendWikiInstructions(&builder, zenithTeamMCPToolsForRun(doc))
+	if slices.Contains(zenithTeamMCPToolsForRun(doc), "load_skill_reference") {
+		builder.WriteString(
+			"\n\nFor interactive explanations, calculators, comparisons, charts or local scenario controls in ordinary chat, load_skill_reference with skillKey zenith-intelligent-ui and path SKILL.md. Write version-1 component source directly in your assistant response, with ordinary Markdown around it. Do not wrap components in a Markdown fence. The chat renders it inline; no presentation tool or Page is required. Keep ordinary answers as prose when controls add no value. Controls never grant write authority. Follow-up actions use the current chat's normal send path when the member activates them.",
+		)
+	}
 	appendWhiteboardInstructions(&builder, doc, zenithTeamMCPToolsForRun(doc))
 	appendPageInstructions(
 		&builder,

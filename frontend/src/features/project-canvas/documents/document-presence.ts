@@ -2,7 +2,6 @@ import * as Y from "yjs";
 import { Awareness } from "y-protocols/awareness";
 import { apiClient } from "@/lib/api-client";
 import type { components } from "@/shared/api/generated/api.generated";
-import { canvasPath } from "../api/canvas-api";
 import { blockDocumentPath, type DocumentScope } from "./document-scope";
 import { encodeUpdate, decodeUpdate } from "./document-update";
 
@@ -14,28 +13,20 @@ export function startDocumentPresence(options: {
   enabled: () => boolean;
   onPeople: (people: components["schemas"]["CanvasSession"][]) => void;
 }) {
-  const { scope, versionId, doc, awareness } = options;
+  const { scope, doc, awareness } = options;
   const controller = new AbortController();
   const sessionId = crypto.randomUUID();
   let stopped = false;
   const presence = async () => {
-    if (
-      (!("projectId" in scope) && !("outputId" in scope)) ||
-      !options.enabled() ||
-      stopped
-    )
-      return;
+    if (!("pageId" in scope) || !options.enabled() || stopped) return;
     const cursor = awareness.getLocalState()?.cursor;
     try {
       const result = await apiClient.put<
         components["schemas"]["CanvasPresenceList"]
       >(
-        "outputId" in scope
-          ? `${blockDocumentPath(scope, versionId)}/presence`
-          : `${canvasPath(scope)}/presence`,
+        `${blockDocumentPath(scope)}/presence`,
         {
           sessionId,
-          documentVersionId: versionId,
           x: 0,
           y: 0,
           cameraX: 0,

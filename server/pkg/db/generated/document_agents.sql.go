@@ -16,7 +16,7 @@ INSERT INTO conversations(company_id,kind,project_id,document_thread_id,agent_id
 SELECT t.company_id,'direct',t.project_id,t.id,a.id,$1::uuid,p.title,gen_random_uuid()
 FROM review_threads t JOIN wiki_pages p ON p.company_id=t.company_id AND p.id=t.page_id AND p.status='active'
 JOIN agents a ON a.company_id=t.company_id AND a.id=$2::uuid AND a.archived_at IS NULL
-WHERE t.company_id=$3::uuid AND t.id=$4::uuid AND t.project_id IS NOT NULL AND t.status='open'
+WHERE t.company_id=$3::uuid AND t.id=$4::uuid AND t.status='open'
 ON CONFLICT(document_thread_id,agent_id,created_by_user_id) WHERE document_thread_id IS NOT NULL
 DO UPDATE SET title=EXCLUDED.title
 RETURNING id, company_id, kind, task_id, schedule_id, agent_id, created_by_user_id, title, request_key, pinned_at, archived_at, created_at, updated_at, version, head_seq, is_general, channel_id, channel_execution_generation, channel_context_revision, project_id, document_thread_id
@@ -101,20 +101,38 @@ func (q *Queries) GetDocumentAgentContext(ctx context.Context, arg GetDocumentAg
 	return i, err
 }
 
+const getDocumentAgentPageID = `-- name: GetDocumentAgentPageID :one
+SELECT t.page_id FROM conversations c
+JOIN review_threads t ON t.company_id=c.company_id AND t.id=c.document_thread_id
+WHERE c.company_id=$1::uuid AND c.id=$2::uuid
+ AND t.page_id IS NOT NULL
+`
+
+type GetDocumentAgentPageIDParams struct {
+	CompanyID      uuid.UUID `json:"company_id"`
+	ConversationID uuid.UUID `json:"conversation_id"`
+}
+
+func (q *Queries) GetDocumentAgentPageID(ctx context.Context, arg GetDocumentAgentPageIDParams) (uuid.NullUUID, error) {
+	row := q.db.QueryRow(ctx, getDocumentAgentPageID, arg.CompanyID, arg.ConversationID)
+	var page_id uuid.NullUUID
+	err := row.Scan(&page_id)
+	return page_id, err
+}
+
 const getDocumentAgentRun = `-- name: GetDocumentAgentRun :one
 SELECT c.project_id,c.document_thread_id,c.id AS conversation_id,t.page_id
 FROM runs r JOIN conversations c ON c.id=r.conversation_id AND c.company_id=r.company_id
 JOIN review_threads t ON t.id=c.document_thread_id AND t.company_id=c.company_id
-JOIN project_access access ON access.company_id=c.company_id AND access.project_id=c.project_id AND access.user_id=$1::uuid
-WHERE r.company_id=$2::uuid AND r.id=$3::uuid
- AND r.execution_authorized_by_user_id=$1::uuid AND c.document_thread_id IS NOT NULL
+WHERE r.company_id=$1::uuid AND r.id=$2::uuid
+ AND r.execution_authorized_by_user_id=$3::uuid AND c.document_thread_id IS NOT NULL
  AND COALESCE(r.context->'executionProfile'->>'documentWriting', 'false') <> 'true'
 `
 
 type GetDocumentAgentRunParams struct {
-	ActorUserID uuid.UUID `json:"actor_user_id"`
 	CompanyID   uuid.UUID `json:"company_id"`
 	RunID       uuid.UUID `json:"run_id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
 }
 
 type GetDocumentAgentRunRow struct {
@@ -125,7 +143,7 @@ type GetDocumentAgentRunRow struct {
 }
 
 func (q *Queries) GetDocumentAgentRun(ctx context.Context, arg GetDocumentAgentRunParams) (GetDocumentAgentRunRow, error) {
-	row := q.db.QueryRow(ctx, getDocumentAgentRun, arg.ActorUserID, arg.CompanyID, arg.RunID)
+	row := q.db.QueryRow(ctx, getDocumentAgentRun, arg.CompanyID, arg.RunID, arg.ActorUserID)
 	var i GetDocumentAgentRunRow
 	err := row.Scan(
 		&i.ProjectID,
@@ -213,6 +231,44 @@ type InsertDocumentAgentReplyParams struct {
 func (q *Queries) InsertDocumentAgentReply(ctx context.Context, arg InsertDocumentAgentReplyParams) error {
 	_, err := q.db.Exec(ctx, insertDocumentAgentReply, arg.Body, arg.RunID)
 	return err
+}
+
+const listDocumentAgentConversations = `-- name: ListDocumentAgentConversations :many
+SELECT c.id FROM conversations c
+WHERE c.company_id=$1 AND c.document_thread_id=$2 AND c.created_by_user_id=$3 AND c.agent_id=ANY($4::uuid[])
+ORDER BY c.id
+`
+
+type ListDocumentAgentConversationsParams struct {
+	CompanyID        uuid.UUID     `json:"company_id"`
+	DocumentThreadID uuid.NullUUID `json:"document_thread_id"`
+	CreatedByUserID  uuid.NullUUID `json:"created_by_user_id"`
+	AgentIds         []uuid.UUID   `json:"agent_ids"`
+}
+
+func (q *Queries) ListDocumentAgentConversations(ctx context.Context, arg ListDocumentAgentConversationsParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listDocumentAgentConversations,
+		arg.CompanyID,
+		arg.DocumentThreadID,
+		arg.CreatedByUserID,
+		arg.AgentIds,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const lockDocumentAgentConversations = `-- name: LockDocumentAgentConversations :many

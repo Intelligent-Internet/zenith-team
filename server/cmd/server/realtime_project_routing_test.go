@@ -124,6 +124,15 @@ func projectFrames(taskID, conversationID, projectID uuid.UUID) []projectFrame {
 				Sequence:     1,
 			}
 		}},
+		{canvas.Topic, canvas.EventPagePreviewChanged, func(a *auth.ProjectAudience) any {
+			return canvas.PagePreviewChanged{
+				ProjectFrame: frame(a),
+				ProjectID:    &projectID,
+				PageID:       uuid.New(),
+				GenerationID: uuid.New(),
+				Revision:     1,
+			}
+		}},
 		{task.Topic, task.EventCreated, func(a *auth.ProjectAudience) any {
 			return task.Response{
 				ID:             taskID,

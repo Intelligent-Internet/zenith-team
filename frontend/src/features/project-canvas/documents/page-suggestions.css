@@ -31,15 +31,15 @@
   color: var(--pc-muted, var(--muted-foreground));
   font-size: 12px;
 }
-:is(.pc-review, .pc-inline-review) .pc-review-merge {
+:is(.pc-review, .pc-inline-review) .pc-review-approve {
   background: var(--foreground);
   color: var(--background);
   white-space: nowrap;
 }
-:is(.pc-review, .pc-inline-review) .pc-review-merge:hover:not(:disabled) {
+:is(.pc-review, .pc-inline-review) .pc-review-approve:hover:not(:disabled) {
   background: color-mix(in srgb, var(--foreground) 85%, var(--background));
 }
-.pc-review-merge span {
+.pc-review-approve span {
   padding-left: 4px;
   font-variant-numeric: tabular-nums;
 }
@@ -93,47 +93,6 @@
 }
 .pc-point-preview .pc-inline-review {
   margin-top: 0;
-}
-.pc-conflict-editor {
-  margin: 12px 0;
-  padding: 12px 0;
-  border-block: 1px solid var(--border);
-  font: 400 13px/1.5 var(--font-sans, sans-serif);
-}
-.pc-conflict-editor > header,
-.pc-conflict-editor > footer,
-.pc-conflict-choices {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-.pc-conflict-editor > header {
-  justify-content: space-between;
-}
-.pc-conflict-editor > footer {
-  justify-content: flex-end;
-  margin-top: 10px;
-}
-.pc-conflict-choices {
-  margin: 8px 0 12px;
-}
-.pc-conflict-choices button[aria-pressed="true"] {
-  background: var(--pc-raised, var(--muted));
-  font-weight: 700;
-  box-shadow: inset 0 -2px var(--foreground);
-}
-.pc-conflict-draft .tiptap {
-  min-height: 90px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.pc-conflict-draft small {
-  display: block;
-  margin-top: 6px;
-  color: var(--pc-muted, var(--muted-foreground));
-  font-size: 11px;
 }
 .pc-diff-avatars {
   position: absolute;
@@ -286,4 +245,16 @@
 .pc-diff-avatars .pc-version-picker-single {
   width: 38px;
   border-radius: 50%;
+}
+
+/* Nested read-only editors otherwise inherit Tiptap's non-editable widget
+   whitespace reset, collapsing authored newlines only during review. */
+.ProseMirror .pc-inline-suggestion .ProseMirror[contenteditable="false"] {
+  white-space: pre-wrap;
+  white-space: break-spaces;
+}
+
+/* Show one inline diff in place of the original paragraph while reviewing. */
+.pc-suggestion-replaced-preview {
+  display: none;
 }

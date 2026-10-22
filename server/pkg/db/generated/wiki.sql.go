@@ -93,7 +93,7 @@ func (q *Queries) CountWikiPagesForMember(ctx context.Context, arg CountWikiPage
 }
 
 const countWikiRevisionsForMember = `-- name: CountWikiRevisionsForMember :one
-SELECT count(*) FROM wiki_revisions r
+SELECT count(*) FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id=r.company_id AND p.id=r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = $1::uuid AND actor.status = 'active'
@@ -166,9 +166,17 @@ func (q *Queries) CreateWikiCollectionIfAbsent(ctx context.Context, arg CreateWi
 }
 
 const createWikiPage = `-- name: CreateWikiPage :one
-INSERT INTO wiki_pages (id, company_id, collection_id, slug, title, summary, created_by_user_id)
-SELECT seed.id, $1, $2, 'page-' || seed.id::text, $3, $4, $5
-FROM (SELECT gen_random_uuid() AS id) seed RETURNING id
+WITH artifact AS (
+ INSERT INTO artifacts(company_id,project_id,type,owner_user_id,title,created_by_user_id,task_id,source_run_id)
+ VALUES($1::uuid,$6::uuid,$7::text,
+        $8::uuid,$3::text,$5::uuid,
+        $9::uuid,$10::uuid)
+ RETURNING id
+)
+INSERT INTO wiki_pages (id, company_id, collection_id, slug, title, summary, created_by_user_id, project_id, artifact_type)
+SELECT artifact.id,$1::uuid,$2::uuid,'page-' || artifact.id::text,
+       $3::text,$4::text,$5::uuid,$6::uuid,$7::text
+FROM artifact RETURNING id
 `
 
 type CreateWikiPageParams struct {
@@ -177,6 +185,11 @@ type CreateWikiPageParams struct {
 	Title           string        `json:"title"`
 	Summary         string        `json:"summary"`
 	CreatedByUserID uuid.UUID     `json:"created_by_user_id"`
+	ProjectID       uuid.NullUUID `json:"project_id"`
+	Type            string        `json:"type"`
+	OwnerUserID     uuid.NullUUID `json:"owner_user_id"`
+	TaskID          uuid.NullUUID `json:"task_id"`
+	SourceRunID     uuid.NullUUID `json:"source_run_id"`
 }
 
 func (q *Queries) CreateWikiPage(ctx context.Context, arg CreateWikiPageParams) (uuid.UUID, error) {
@@ -186,6 +199,11 @@ func (q *Queries) CreateWikiPage(ctx context.Context, arg CreateWikiPageParams) 
 		arg.Title,
 		arg.Summary,
 		arg.CreatedByUserID,
+		arg.ProjectID,
+		arg.Type,
+		arg.OwnerUserID,
+		arg.TaskID,
+		arg.SourceRunID,
 	)
 	var id uuid.UUID
 	err := row.Scan(&id)
@@ -193,9 +211,19 @@ func (q *Queries) CreateWikiPage(ctx context.Context, arg CreateWikiPageParams) 
 }
 
 const createWikiRevision = `-- name: CreateWikiRevision :one
-INSERT INTO wiki_revisions (company_id, page_id, number, title, body, summary,
-  collection_id, author_user_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at, author_agent_id
+WITH identity AS (SELECT gen_random_uuid() AS id), snapshot AS (
+ INSERT INTO artifact_snapshots(id,company_id,project_id,artifact_id,number,source_type,wiki_page_id,wiki_revision_id,created_by_user_id,title,theme,source_sequence,schema_version)
+ SELECT identity.id,artifact.company_id,artifact.project_id,artifact.id,$3::bigint,'wiki',artifact.id,identity.id,
+        $8::uuid,$4::text,page.theme,COALESCE(draft.head_seq,0),COALESCE(draft.schema_version,1)
+ FROM identity CROSS JOIN artifacts artifact JOIN wiki_pages page ON page.id=artifact.id
+ LEFT JOIN wiki_canvas_drafts draft ON draft.page_id=page.id
+ WHERE artifact.company_id=$1::uuid AND artifact.id=$2::uuid
+ RETURNING id
+)
+INSERT INTO document_snapshots (id,company_id,page_id,number,title,body,summary,collection_id,author_user_id)
+SELECT snapshot.id,$1::uuid,$2::uuid,$3::bigint,
+       $4::text,$5::text,$6::text,$7::uuid,$8::uuid
+FROM snapshot RETURNING id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at, author_agent_id
 `
 
 type CreateWikiRevisionParams struct {
@@ -209,7 +237,7 @@ type CreateWikiRevisionParams struct {
 	AuthorUserID uuid.UUID     `json:"author_user_id"`
 }
 
-func (q *Queries) CreateWikiRevision(ctx context.Context, arg CreateWikiRevisionParams) (WikiRevision, error) {
+func (q *Queries) CreateWikiRevision(ctx context.Context, arg CreateWikiRevisionParams) (DocumentSnapshot, error) {
 	row := q.db.QueryRow(ctx, createWikiRevision,
 		arg.CompanyID,
 		arg.PageID,
@@ -220,7 +248,7 @@ func (q *Queries) CreateWikiRevision(ctx context.Context, arg CreateWikiRevision
 		arg.CollectionID,
 		arg.AuthorUserID,
 	)
-	var i WikiRevision
+	var i DocumentSnapshot
 	err := row.Scan(
 		&i.ID,
 		&i.CompanyID,
@@ -286,7 +314,7 @@ func (q *Queries) DeleteWikiLinksFromPage(ctx context.Context, arg DeleteWikiLin
 
 const getEditableWikiPage = `-- name: GetEditableWikiPage :one
 SELECT id, status, version FROM wiki_pages WHERE company_id = $1::uuid
-  AND id = $2::uuid AND source_output_id IS NULL AND project_id IS NULL
+  AND id = $2::uuid AND artifact_type='wiki'
 `
 
 type GetEditableWikiPageParams struct {
@@ -361,7 +389,7 @@ func (q *Queries) GetWikiCollectionForUpdate(ctx context.Context, arg GetWikiCol
 }
 
 const getWikiCurrentRevision = `-- name: GetWikiCurrentRevision :one
-SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM wiki_revisions r
+SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
   AND p.current_revision_id = r.id
 WHERE p.company_id = $1::uuid AND p.id = $2::uuid
@@ -372,9 +400,9 @@ type GetWikiCurrentRevisionParams struct {
 	PageID    uuid.UUID `json:"page_id"`
 }
 
-func (q *Queries) GetWikiCurrentRevision(ctx context.Context, arg GetWikiCurrentRevisionParams) (WikiRevision, error) {
+func (q *Queries) GetWikiCurrentRevision(ctx context.Context, arg GetWikiCurrentRevisionParams) (DocumentSnapshot, error) {
 	row := q.db.QueryRow(ctx, getWikiCurrentRevision, arg.CompanyID, arg.PageID)
-	var i WikiRevision
+	var i DocumentSnapshot
 	err := row.Scan(
 		&i.ID,
 		&i.CompanyID,
@@ -410,7 +438,7 @@ FROM company_wiki_pages p
 LEFT JOIN wiki_canvas_drafts d ON d.company_id=p.company_id AND d.page_id=p.id
 LEFT JOIN wiki_collections display_collection ON display_collection.company_id=p.company_id
  AND display_collection.id=CASE WHEN p.current_revision_id IS NULL THEN d.collection_id ELSE p.collection_id END
-LEFT JOIN wiki_revisions r ON r.id = p.current_revision_id
+LEFT JOIN document_snapshots r ON r.id = p.current_revision_id
 LEFT JOIN agents author_agent ON author_agent.company_id = p.company_id AND author_agent.id = r.author_agent_id
 JOIN company_members actor ON actor.company_id = p.company_id
   AND actor.user_id = $1::uuid AND actor.status = 'active'
@@ -485,7 +513,7 @@ func (q *Queries) GetWikiPageForMember(ctx context.Context, arg GetWikiPageForMe
 
 const getWikiPageForUpdate = `-- name: GetWikiPageForUpdate :one
 SELECT id, status, version FROM wiki_pages WHERE company_id = $1::uuid
-  AND id = $2::uuid AND source_output_id IS NULL AND project_id IS NULL
+  AND id = $2::uuid AND artifact_type='wiki'
 FOR NO KEY UPDATE
 `
 
@@ -511,7 +539,7 @@ func (q *Queries) GetWikiPageForUpdate(ctx context.Context, arg GetWikiPageForUp
 }
 
 const getWikiRevisionForMember = `-- name: GetWikiRevisionForMember :one
-SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM wiki_revisions r
+SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = $1::uuid AND actor.status = 'active'
@@ -526,14 +554,14 @@ type GetWikiRevisionForMemberParams struct {
 	RevisionID  uuid.UUID `json:"revision_id"`
 }
 
-func (q *Queries) GetWikiRevisionForMember(ctx context.Context, arg GetWikiRevisionForMemberParams) (WikiRevision, error) {
+func (q *Queries) GetWikiRevisionForMember(ctx context.Context, arg GetWikiRevisionForMemberParams) (DocumentSnapshot, error) {
 	row := q.db.QueryRow(ctx, getWikiRevisionForMember,
 		arg.ActorUserID,
 		arg.CompanyID,
 		arg.PageID,
 		arg.RevisionID,
 	)
-	var i WikiRevision
+	var i DocumentSnapshot
 	err := row.Scan(
 		&i.ID,
 		&i.CompanyID,
@@ -919,7 +947,7 @@ func (q *Queries) ListWikiPagesForMember(ctx context.Context, arg ListWikiPagesF
 }
 
 const listWikiRevisionsForMember = `-- name: ListWikiRevisionsForMember :many
-SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM wiki_revisions r
+SELECT r.id, r.company_id, r.page_id, r.number, r.title, r.body, r.summary, r.collection_id, r.author_user_id, r.created_at, r.block_content, r.published_at, r.author_agent_id FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = $1::uuid AND actor.status = 'active'
@@ -936,7 +964,7 @@ type ListWikiRevisionsForMemberParams struct {
 	PageLimit   int32     `json:"page_limit"`
 }
 
-func (q *Queries) ListWikiRevisionsForMember(ctx context.Context, arg ListWikiRevisionsForMemberParams) ([]WikiRevision, error) {
+func (q *Queries) ListWikiRevisionsForMember(ctx context.Context, arg ListWikiRevisionsForMemberParams) ([]DocumentSnapshot, error) {
 	rows, err := q.db.Query(ctx, listWikiRevisionsForMember,
 		arg.ActorUserID,
 		arg.CompanyID,
@@ -948,9 +976,9 @@ func (q *Queries) ListWikiRevisionsForMember(ctx context.Context, arg ListWikiRe
 		return nil, err
 	}
 	defer rows.Close()
-	items := []WikiRevision{}
+	items := []DocumentSnapshot{}
 	for rows.Next() {
-		var i WikiRevision
+		var i DocumentSnapshot
 		if err := rows.Scan(
 			&i.ID,
 			&i.CompanyID,
@@ -1044,8 +1072,9 @@ func (q *Queries) RenameWikiCollection(ctx context.Context, arg RenameWikiCollec
 
 const restoreWikiBlockDraft = `-- name: RestoreWikiBlockDraft :one
 UPDATE wiki_canvas_drafts SET state=$3,content=$4,markdown=$5,title=$6,summary=$7,collection_id=$8,
- head_seq=head_seq+1,structure_seq=head_seq+1,updated_at=clock_timestamp(),restored_revision_id=$10::uuid
-WHERE company_id=$1 AND page_id=$2 AND head_seq=$9 RETURNING company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, legacy_state, legacy_markdown, structure_seq, title, summary, collection_id, restored_revision_id
+ schema_version=GREATEST(schema_version,$10::integer),
+ head_seq=head_seq+1,structure_seq=head_seq+1,updated_at=clock_timestamp(),restored_revision_id=$11::uuid
+WHERE company_id=$1 AND page_id=$2 AND head_seq=$9 RETURNING company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, structure_seq, title, summary, collection_id, restored_revision_id
 `
 
 type RestoreWikiBlockDraftParams struct {
@@ -1058,6 +1087,7 @@ type RestoreWikiBlockDraftParams struct {
 	Summary            string        `json:"summary"`
 	CollectionID       uuid.NullUUID `json:"collection_id"`
 	HeadSeq            int64         `json:"head_seq"`
+	SchemaVersion      int32         `json:"schema_version"`
 	RestoredRevisionID uuid.NullUUID `json:"restored_revision_id"`
 }
 
@@ -1072,6 +1102,7 @@ func (q *Queries) RestoreWikiBlockDraft(ctx context.Context, arg RestoreWikiBloc
 		arg.Summary,
 		arg.CollectionID,
 		arg.HeadSeq,
+		arg.SchemaVersion,
 		arg.RestoredRevisionID,
 	)
 	var i WikiCanvasDraft
@@ -1085,8 +1116,6 @@ func (q *Queries) RestoreWikiBlockDraft(ctx context.Context, arg RestoreWikiBloc
 		&i.UpdatedAt,
 		&i.SchemaVersion,
 		&i.Content,
-		&i.LegacyState,
-		&i.LegacyMarkdown,
 		&i.StructureSeq,
 		&i.Title,
 		&i.Summary,
@@ -1128,11 +1157,14 @@ func (q *Queries) SetWikiFavorite(ctx context.Context, arg SetWikiFavoriteParams
 }
 
 const setWikiPageArchived = `-- name: SetWikiPageArchived :one
+WITH updated_page AS (
 UPDATE wiki_pages SET status = 'archived', archived_at = clock_timestamp(),
   version = version + 1, updated_at = clock_timestamp()
 WHERE company_id = $1::uuid AND id = $2::uuid
-  AND version = $3::bigint AND status = 'active'
-RETURNING id
+  AND version = $3::bigint AND status = 'active' RETURNING id,title,archived_at,updated_at
+)
+UPDATE artifacts SET title=updated_page.title,archived_at=updated_page.archived_at,updated_at=updated_page.updated_at
+FROM updated_page WHERE artifacts.id=updated_page.id RETURNING artifacts.id
 `
 
 type SetWikiPageArchivedParams struct {
@@ -1149,27 +1181,30 @@ func (q *Queries) SetWikiPageArchived(ctx context.Context, arg SetWikiPageArchiv
 }
 
 const setWikiPageCurrentRevision = `-- name: SetWikiPageCurrentRevision :one
-UPDATE wiki_pages SET title = $1::text, summary = $2::text,
-  collection_id = $3::uuid,
-  current_revision_id = $4::uuid,
+WITH updated_page AS (
+UPDATE wiki_pages SET title = $2::text, summary = $3::text,
+  collection_id = $4::uuid,
+  current_revision_id = $1::uuid,
   search_vector = (SELECT setweight(to_tsvector('simple', r.title), 'A')
       || setweight(to_tsvector('simple', r.summary), 'B')
       || setweight(to_tsvector('simple', regexp_replace(r.body,
         '\[\[(?:artifact:)?[0-9a-fA-F-]{36}(?:#[0-9]{1,2})?(?:\|([^]]*))?\]\]', '\1', 'g')), 'C')
-    FROM wiki_revisions r
+    FROM document_snapshots r
     WHERE r.company_id = wiki_pages.company_id AND r.page_id = wiki_pages.id
-      AND r.id = $4::uuid),
-  version = version + 1, next_revision_number = GREATEST(next_revision_number,(SELECT number+1 FROM wiki_revisions WHERE id=$4::uuid)), updated_at = clock_timestamp()
+      AND r.id = $1::uuid),
+  version = version + 1, updated_at = clock_timestamp()
 WHERE company_id = $5::uuid AND id = $6::uuid
-  AND version = $7::bigint AND status = 'active'
-RETURNING id
+  AND version = $7::bigint AND status = 'active' RETURNING id,title,archived_at,updated_at
+)
+UPDATE artifacts SET next_number=GREATEST(next_number,(SELECT number+1 FROM document_snapshots WHERE id=$1::uuid)),title=updated_page.title,archived_at=updated_page.archived_at,updated_at=updated_page.updated_at
+FROM updated_page WHERE artifacts.id=updated_page.id RETURNING artifacts.id
 `
 
 type SetWikiPageCurrentRevisionParams struct {
+	RevisionID      uuid.UUID     `json:"revision_id"`
 	Title           string        `json:"title"`
 	Summary         string        `json:"summary"`
 	CollectionID    uuid.NullUUID `json:"collection_id"`
-	RevisionID      uuid.UUID     `json:"revision_id"`
 	CompanyID       uuid.UUID     `json:"company_id"`
 	PageID          uuid.UUID     `json:"page_id"`
 	ExpectedVersion int64         `json:"expected_version"`
@@ -1177,10 +1212,10 @@ type SetWikiPageCurrentRevisionParams struct {
 
 func (q *Queries) SetWikiPageCurrentRevision(ctx context.Context, arg SetWikiPageCurrentRevisionParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, setWikiPageCurrentRevision,
+		arg.RevisionID,
 		arg.Title,
 		arg.Summary,
 		arg.CollectionID,
-		arg.RevisionID,
 		arg.CompanyID,
 		arg.PageID,
 		arg.ExpectedVersion,
@@ -1191,11 +1226,14 @@ func (q *Queries) SetWikiPageCurrentRevision(ctx context.Context, arg SetWikiPag
 }
 
 const setWikiPageRestored = `-- name: SetWikiPageRestored :one
+WITH updated_page AS (
 UPDATE wiki_pages SET status = 'active', archived_at = NULL,
   version = version + 1, updated_at = clock_timestamp()
 WHERE company_id = $1::uuid AND id = $2::uuid
-  AND version = $3::bigint AND status = 'archived'
-RETURNING id
+  AND version = $3::bigint AND status = 'archived' RETURNING id,title,archived_at,updated_at
+)
+UPDATE artifacts SET title=updated_page.title,archived_at=updated_page.archived_at,updated_at=updated_page.updated_at
+FROM updated_page WHERE artifacts.id=updated_page.id RETURNING artifacts.id
 `
 
 type SetWikiPageRestoredParams struct {
@@ -1212,7 +1250,7 @@ func (q *Queries) SetWikiPageRestored(ctx context.Context, arg SetWikiPageRestor
 }
 
 const setWikiRevisionPublished = `-- name: SetWikiRevisionPublished :exec
-UPDATE wiki_revisions SET published_at=COALESCE(published_at,clock_timestamp())
+UPDATE document_snapshots SET published_at=COALESCE(published_at,clock_timestamp())
 WHERE company_id=$1 AND page_id=$2 AND id=$3
 `
 
@@ -1250,7 +1288,7 @@ func (q *Queries) UnfileWikiCollectionPages(ctx context.Context, arg UnfileWikiC
 const updateWikiDraftMetadata = `-- name: UpdateWikiDraftMetadata :one
 UPDATE wiki_canvas_drafts SET title=$3,summary=$4,collection_id=$5,
  head_seq=head_seq+1,updated_at=clock_timestamp()
-WHERE company_id=$1 AND page_id=$2 AND head_seq=$6 RETURNING company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, legacy_state, legacy_markdown, structure_seq, title, summary, collection_id, restored_revision_id
+WHERE company_id=$1 AND page_id=$2 AND head_seq=$6 RETURNING company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, structure_seq, title, summary, collection_id, restored_revision_id
 `
 
 type UpdateWikiDraftMetadataParams struct {
@@ -1282,8 +1320,6 @@ func (q *Queries) UpdateWikiDraftMetadata(ctx context.Context, arg UpdateWikiDra
 		&i.UpdatedAt,
 		&i.SchemaVersion,
 		&i.Content,
-		&i.LegacyState,
-		&i.LegacyMarkdown,
 		&i.StructureSeq,
 		&i.Title,
 		&i.Summary,

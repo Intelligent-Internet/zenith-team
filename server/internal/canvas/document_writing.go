@@ -11,6 +11,7 @@ import (
 	"unicode"
 	"unicode/utf16"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
@@ -49,6 +50,9 @@ func DocumentAgentPromptInTx(
 	if err = json.Unmarshal(draft.Content, &root); err != nil {
 		return "", nil, err
 	}
+	if err = redactUnavailableReferences(ctx, q, in.Principal, document.ProjectID.UUID, &root); err != nil {
+		return "", nil, err
+	}
 	contextText := []rune(wiki.BlocksMarkdown(root))
 	if len(contextText) > 32000 {
 		contextText = contextText[:32000]
@@ -58,6 +62,13 @@ func DocumentAgentPromptInTx(
 		document.PageID,
 		document.Anchor,
 	)
+	if in.RevisionChangeID != uuid.Nil {
+		revision, err := pageRevisionPrompt(ctx, q, in, document)
+		if err != nil {
+			return "", nil, err
+		}
+		instruction += revision
+	}
 	var snapshot *DocumentWritingSnapshot
 	if target := in.WritingTarget; target != nil {
 		block := wiki.FindBlock(root, target.BlockID)
@@ -278,7 +289,8 @@ func writingOperations(
 
 // Staging stores operations against the captured content, never the current
 // document. Existing suggestion fingerprints/hash checks handle intervening edits.
-func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, body string) (string, error) {
+func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, in DocumentAgentCompletion) (string, error) {
+	run, body := in.Run, in.Body
 	request, err := q.GetDocumentWritingRequest(
 		ctx,
 		db.GetDocumentWritingRequestParams{CompanyID: run.CompanyID, RunID: run.ID},
@@ -299,6 +311,7 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, bo
 	_, err = q.GetProjectPageChangeReceipt(
 		ctx,
 		db.GetProjectPageChangeReceiptParams{
+			PageID:      nullable(&request.PageID),
 			CompanyID:   run.CompanyID,
 			ProjectID:   document.ProjectID.UUID,
 			ActorUserID: run.ExecutionAuthorizedByUserID.UUID,
@@ -318,6 +331,14 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, bo
 	}
 	if err = json.Unmarshal(request.Target, &target); err != nil {
 		return "", err
+	}
+	draft, err := wiki.BlockDraftInTx(ctx, q, run.CompanyID, request.PageID)
+	if err != nil {
+		return "", err
+	}
+	if in.Authoring.Check(int(draft.SchemaVersion), base) != nil {
+		// Keep the terminal Run and queue moving, with an explicit staging notice.
+		return "The writing suggestion was not staged because Intelligent UI authoring is temporarily disabled.", nil
 	}
 	response := writingResponse(body)
 	if strings.TrimSpace(response) == "" || len(response) > 100000 {
@@ -343,18 +364,34 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, bo
 	if len(operations) > 32 {
 		return "The response could not be staged. Ask for a shorter, simpler replacement.", nil
 	}
-	state, err := wiki.EncodeBlocks(base)
-	if err != nil {
-		return "", err
+	state := draft.State
+	if request.Sequence != draft.HeadSeq {
+		prior, err := wiki.ReadDocumentHistoryInTx(
+			ctx,
+			q,
+			wiki.HistoryPoint{CompanyID: run.CompanyID, PageID: request.PageID, Sequence: request.Sequence},
+		)
+		if err != nil {
+			return "", err
+		}
+		state = prior.State
 	}
 	if _, _, err = wiki.ApplyBlockOperations(state, operations); err != nil {
 		return "The response does not fit this location. Select a paragraph and try again.", nil
 	}
 	_, err = insertPageProposal(ctx, q, pageProposal{
-		CompanyID: run.CompanyID, ProjectID: document.ProjectID.UUID, PageID: request.PageID,
-		RunID: run.ID, ActorUserID: run.ExecutionAuthorizedByUserID.UUID,
-		RequestKey: request.RequestKey, RequestHash: request.RunID.String(), Operations: operations,
-		BeforeContent: request.BeforeContent, Sequence: request.Sequence, Summary: "Suggested writing",
+		CompanyID:     run.CompanyID,
+		ProjectID:     document.ProjectID.UUID,
+		PageID:        request.PageID,
+		RunID:         run.ID,
+		ActorUserID:   run.ExecutionAuthorizedByUserID.UUID,
+		RequestKey:    request.RequestKey,
+		RequestHash:   request.RunID.String(),
+		Operations:    operations,
+		BeforeContent: request.BeforeContent,
+		BeforeState:   state,
+		Sequence:      request.Sequence,
+		Summary:       "Suggested writing",
 	})
 	return "", err
 }

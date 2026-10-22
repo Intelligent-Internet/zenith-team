@@ -79,11 +79,24 @@ func (s *DefaultDeliverableService) ListArtifacts(
 			for i, row := range found {
 				rows[i] = dbgen.ListConversationArtifactsRow(row)
 			}
-			rows, page.Next = pageArtifactRows(rows, params.RowLimit)
 			page.Items, err = artifactRunResults(ctx, q, principal.CompanyID, principal.UserID, rows)
 			if err != nil {
 				return err
 			}
+			page.Items, err = appendLiveArtifacts(ctx, q, page.Items, dbgen.ListLiveArtifactsParams{
+				CompanyID:       principal.CompanyID,
+				ActorUserID:     principal.UserID,
+				Ownership:       options.Ownership,
+				SourceType:      options.Source,
+				TitlePattern:    titlePattern,
+				BeforeCreatedAt: params.BeforeCreatedAt,
+				BeforeID:        params.BeforeID,
+				RowLimit:        params.RowLimit,
+			})
+			if err != nil {
+				return err
+			}
+			page.Items, page.Next = pageArtifactResults(page.Items, options.Limit)
 			return enrichArtifactLibrary(ctx, q, principal, page.Items)
 		},
 	)
@@ -120,6 +133,12 @@ func (s *DefaultDeliverableService) ResolveArtifacts(
 				rows[i] = dbgen.ListConversationArtifactsRow(row)
 			}
 			results, err = artifactRunResults(ctx, q, principal.CompanyID, principal.UserID, rows)
+			if err != nil {
+				return err
+			}
+			results, err = appendLiveArtifacts(ctx, q, results, dbgen.ListLiveArtifactsParams{
+				CompanyID: principal.CompanyID, ActorUserID: principal.UserID, Ids: ids, RowLimit: 50,
+			})
 			if err != nil {
 				return err
 			}
@@ -180,7 +199,9 @@ func enrichArtifactLibrary(
 		}
 	}
 	for i := range items {
-		items[i].Library = metadata[items[i].Artifact.ID]
+		if value, ok := metadata[items[i].Artifact.ID]; ok {
+			items[i].Library = value
+		}
 	}
 	return nil
 }

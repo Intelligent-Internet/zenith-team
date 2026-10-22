@@ -338,9 +338,8 @@ func TestBoardRetentionPurgesTombstonesAndReleasesFiles(t *testing.T) {
 	}
 }
 
-// A public download reads its authority in one short transaction and opens the
-// file after it, so it never holds a connection while asking for another.
-func TestBoardPublicFileDownloadNeedsOneConnection(t *testing.T) {
+// Independent Boards cannot be published through delivery public links.
+func TestBoardPublicFileDownloadRefusesIndependentBoard(t *testing.T) {
 	t.Parallel()
 	boards, pool, owner, _ := boardFixture(t)
 	ctx := t.Context()
@@ -365,12 +364,6 @@ func TestBoardPublicFileDownloadNeedsOneConnection(t *testing.T) {
 	if _, err := placeBoardFile(t, boards, owner, board.ID, "image", photo); err != nil {
 		t.Fatal(err)
 	}
-	// The Whiteboard Artifact's public link reads its Board.
-	var token uuid.UUID
-	if err := pool.QueryRow(ctx, `UPDATE outputs SET visibility='public',public_token=gen_random_uuid()
-		WHERE id=$1 RETURNING public_token`, board.ID).Scan(&token); err != nil {
-		t.Fatal(err)
-	}
 	config := pool.Config()
 	config.MaxConns, config.MinConns = 1, 0
 	single, err := pgxpool.NewWithConfig(ctx, config)
@@ -381,12 +374,9 @@ func TestBoardPublicFileDownloadNeedsOneConnection(t *testing.T) {
 	singleMedia, _ := newMedia(single)
 	bounded, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	file, err := singleMedia.PublicFileDownload(bounded, token, photo, false)
-	if err != nil {
-		t.Fatalf("public download on a one-connection pool = %v", err)
-	}
-	if err = file.Body.Close(); err != nil {
-		t.Fatal(err)
+	_, err = singleMedia.PublicFileDownload(bounded, board.ID, photo, false)
+	if !errors.Is(err, ErrBoardNotFound) {
+		t.Fatalf("public download = %v, want not found", err)
 	}
 }
 

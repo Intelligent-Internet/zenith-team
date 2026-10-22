@@ -982,7 +982,7 @@ func TestResolvedDownloadRevalidationAvoidsObjectStorage(t *testing.T) {
 	opened := false
 	objects.openHook = func() { opened = true }
 	downloadInput := ResolvedDownloadInput{
-		ID: initiated.Attachment.ID, CompanyID: input.CompanyID, OutputAccessResolved: true,
+		ID: initiated.Attachment.ID, CompanyID: input.CompanyID, ResourceAccessResolved: true,
 		KnownRevision: completed.Attachment.Revision,
 	}
 	result, err := service.DownloadResolved(ctx, downloadInput)

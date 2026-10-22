@@ -13,7 +13,7 @@ import (
 )
 
 const acceptArtifactCreation = `-- name: AcceptArtifactCreation :execrows
-UPDATE project_artifacts SET pending_creation=false WHERE company_id=$1 AND creation_change_id=$2 AND pending_creation
+UPDATE artifacts SET pending_creation=false WHERE company_id=$1 AND creation_change_id=$2 AND pending_creation
 `
 
 type AcceptArtifactCreationParams struct {
@@ -30,7 +30,7 @@ func (q *Queries) AcceptArtifactCreation(ctx context.Context, arg AcceptArtifact
 }
 
 const advanceArtifactCreationProposal = `-- name: AdvanceArtifactCreationProposal :exec
-UPDATE project_artifacts SET creation_change_id=$3 WHERE company_id=$1 AND creation_change_id=$2 AND pending_creation
+UPDATE artifacts SET creation_change_id=$3 WHERE company_id=$1 AND creation_change_id=$2 AND pending_creation
 `
 
 type AdvanceArtifactCreationProposalParams struct {
@@ -42,33 +42,6 @@ type AdvanceArtifactCreationProposalParams struct {
 func (q *Queries) AdvanceArtifactCreationProposal(ctx context.Context, arg AdvanceArtifactCreationProposalParams) error {
 	_, err := q.db.Exec(ctx, advanceArtifactCreationProposal, arg.CompanyID, arg.CreationChangeID, arg.CreationChangeID_2)
 	return err
-}
-
-const bindProjectPresentationOutput = `-- name: BindProjectPresentationOutput :execrows
-UPDATE project_presentations SET output_id=$4 WHERE company_id=$1 AND project_id=$2 AND id=$3
- AND source_run_id=$5 AND (output_id IS NULL OR output_id=$4)
-`
-
-type BindProjectPresentationOutputParams struct {
-	CompanyID   uuid.UUID     `json:"company_id"`
-	ProjectID   uuid.UUID     `json:"project_id"`
-	ID          uuid.UUID     `json:"id"`
-	OutputID    uuid.NullUUID `json:"output_id"`
-	SourceRunID uuid.NullUUID `json:"source_run_id"`
-}
-
-func (q *Queries) BindProjectPresentationOutput(ctx context.Context, arg BindProjectPresentationOutputParams) (int64, error) {
-	result, err := q.db.Exec(ctx, bindProjectPresentationOutput,
-		arg.CompanyID,
-		arg.ProjectID,
-		arg.ID,
-		arg.OutputID,
-		arg.SourceRunID,
-	)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected(), nil
 }
 
 const forgetPageManagedBlock = `-- name: ForgetPageManagedBlock :exec
@@ -87,7 +60,7 @@ func (q *Queries) ForgetPageManagedBlock(ctx context.Context, arg ForgetPageMana
 }
 
 const getOverviewArtifactTitle = `-- name: GetOverviewArtifactTitle :one
-SELECT title FROM project_artifacts WHERE company_id=$1 AND project_id=$2 AND id=$3
+SELECT title FROM artifacts WHERE company_id=$1 AND (project_id=$2::uuid OR type='wiki') AND id=$3
 `
 
 type GetOverviewArtifactTitleParams struct {
@@ -221,7 +194,7 @@ func (q *Queries) GetPresentationOutputType(ctx context.Context, arg GetPresenta
 const getProjectOverviewVersion = `-- name: GetProjectOverviewVersion :one
 SELECT v.id, v.company_id, v.project_id, v.artifact_id, v.number, v.source_type, v.wiki_page_id, v.wiki_revision_id, v.asset_version_id, v.output_id, v.base_version_id, v.created_by_user_id, v.created_at, v.branch_title, v.access_output_id FROM project_canvases c JOIN canvas_version_sources v
  ON v.company_id=c.company_id AND v.project_id=c.project_id AND v.wiki_page_id=c.overview_page_id
- WHERE c.company_id=$1 AND c.project_id=$2 ORDER BY v.number DESC LIMIT 1
+ WHERE c.company_id=$1 AND c.project_id=$2 AND v.source_type='wiki' ORDER BY v.number DESC LIMIT 1
 `
 
 type GetProjectOverviewVersionParams struct {
@@ -253,7 +226,7 @@ func (q *Queries) GetProjectOverviewVersion(ctx context.Context, arg GetProjectO
 }
 
 const getProjectPageChange = `-- name: GetProjectPageChange :one
-SELECT id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id FROM project_page_changes WHERE company_id=$1 AND project_id=$2 AND id=$3 FOR UPDATE
+SELECT id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id, crdt_updates FROM project_page_changes WHERE company_id=$1 AND project_id IS NOT DISTINCT FROM NULLIF($2::uuid,'00000000-0000-0000-0000-000000000000'::uuid) AND id=$3 FOR UPDATE
 `
 
 type GetProjectPageChangeParams struct {
@@ -285,19 +258,21 @@ func (q *Queries) GetProjectPageChange(ctx context.Context, arg GetProjectPageCh
 		&i.Decisions,
 		&i.SupersedesID,
 		&i.ActorAgentID,
+		&i.CrdtUpdates,
 	)
 	return i, err
 }
 
 const getProjectPageChangeReceipt = `-- name: GetProjectPageChangeReceipt :one
-SELECT id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id FROM project_page_changes WHERE company_id=$1 AND project_id=$2 AND actor_user_id=$3 AND request_key=$4
+SELECT id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id, crdt_updates FROM project_page_changes WHERE company_id=$1 AND project_id IS NOT DISTINCT FROM NULLIF($2::uuid,'00000000-0000-0000-0000-000000000000'::uuid) AND actor_user_id=$3 AND request_key=$4 AND (page_id=$5::uuid OR ($5::uuid IS NULL AND project_id IS NOT NULL))
 `
 
 type GetProjectPageChangeReceiptParams struct {
-	CompanyID   uuid.UUID `json:"company_id"`
-	ProjectID   uuid.UUID `json:"project_id"`
-	ActorUserID uuid.UUID `json:"actor_user_id"`
-	RequestKey  uuid.UUID `json:"request_key"`
+	CompanyID   uuid.UUID     `json:"company_id"`
+	ProjectID   uuid.UUID     `json:"project_id"`
+	ActorUserID uuid.UUID     `json:"actor_user_id"`
+	RequestKey  uuid.UUID     `json:"request_key"`
+	PageID      uuid.NullUUID `json:"page_id"`
 }
 
 func (q *Queries) GetProjectPageChangeReceipt(ctx context.Context, arg GetProjectPageChangeReceiptParams) (ProjectPageChange, error) {
@@ -306,6 +281,7 @@ func (q *Queries) GetProjectPageChangeReceipt(ctx context.Context, arg GetProjec
 		arg.ProjectID,
 		arg.ActorUserID,
 		arg.RequestKey,
+		arg.PageID,
 	)
 	var i ProjectPageChange
 	err := row.Scan(
@@ -328,12 +304,13 @@ func (q *Queries) GetProjectPageChangeReceipt(ctx context.Context, arg GetProjec
 		&i.Decisions,
 		&i.SupersedesID,
 		&i.ActorAgentID,
+		&i.CrdtUpdates,
 	)
 	return i, err
 }
 
 const getProjectPageChangeTitle = `-- name: GetProjectPageChangeTitle :one
-SELECT title FROM wiki_pages WHERE company_id=$1 AND project_id=$2 AND id=$3
+SELECT title FROM wiki_pages WHERE company_id=$1 AND project_id IS NOT DISTINCT FROM $2::uuid AND id=$3
 `
 
 type GetProjectPageChangeTitleParams struct {
@@ -350,7 +327,7 @@ func (q *Queries) GetProjectPageChangeTitle(ctx context.Context, arg GetProjectP
 }
 
 const getProjectPageMetadata = `-- name: GetProjectPageMetadata :one
-SELECT id,title,theme FROM wiki_pages WHERE company_id=$1 AND project_id=$2 AND id=$3 AND status='active'
+SELECT id,title,theme FROM wiki_pages WHERE company_id=$1 AND project_id IS NOT DISTINCT FROM $2::uuid AND id=$3 AND status='active'
 `
 
 type GetProjectPageMetadataParams struct {
@@ -374,8 +351,8 @@ func (q *Queries) GetProjectPageMetadata(ctx context.Context, arg GetProjectPage
 
 const getProjectPageVersion = `-- name: GetProjectPageVersion :one
 SELECT version.id, version.company_id, version.project_id, version.artifact_id, version.number, version.source_type, version.wiki_page_id, version.wiki_revision_id, version.asset_version_id, version.output_id, version.base_version_id, version.created_by_user_id, version.created_at, version.branch_title, version.access_output_id FROM canvas_version_sources version JOIN wiki_pages page ON page.id=version.wiki_page_id
- WHERE version.company_id=$1 AND version.project_id=$2 AND page.id=$3 AND page.project_id=$2
- AND version.access_output_id IS NULL ORDER BY version.number DESC LIMIT 1
+ WHERE version.company_id=$1 AND version.project_id IS NOT DISTINCT FROM NULLIF($2::uuid,'00000000-0000-0000-0000-000000000000'::uuid) AND page.id=$3 AND page.project_id IS NOT DISTINCT FROM NULLIF($2::uuid,'00000000-0000-0000-0000-000000000000'::uuid)
+ AND version.source_type='wiki' AND page.artifact_type='page' ORDER BY version.number DESC LIMIT 1
 `
 
 type GetProjectPageVersionParams struct {
@@ -408,7 +385,7 @@ func (q *Queries) GetProjectPageVersion(ctx context.Context, arg GetProjectPageV
 }
 
 const getProjectPresentation = `-- name: GetProjectPresentation :one
-SELECT id, company_id, project_id, page_id, page_version_id, theme, title, content, documents, export_markdown, source_sequence, fingerprint, request_key, created_by_user_id, source_run_id, output_id, export_attachment_id, created_at, shared_content, change_id, change_snapshot FROM project_presentations WHERE company_id=$1 AND project_id=$2 AND id=$3
+SELECT id, company_id, project_id, page_id, page_version_id, theme, title, content, documents, export_markdown, source_sequence, fingerprint, request_key, created_by_user_id, source_run_id, export_attachment_id, created_at, shared_content, change_id, change_snapshot, intelligent_evidence FROM project_presentations WHERE company_id=$1 AND project_id=$2 AND id=$3
 `
 
 type GetProjectPresentationParams struct {
@@ -436,12 +413,12 @@ func (q *Queries) GetProjectPresentation(ctx context.Context, arg GetProjectPres
 		&i.RequestKey,
 		&i.CreatedByUserID,
 		&i.SourceRunID,
-		&i.OutputID,
 		&i.ExportAttachmentID,
 		&i.CreatedAt,
 		&i.SharedContent,
 		&i.ChangeID,
 		&i.ChangeSnapshot,
+		&i.IntelligentEvidence,
 	)
 	return i, err
 }
@@ -463,7 +440,7 @@ func (q *Queries) GetProjectPresentationForAttachment(ctx context.Context, arg G
 }
 
 const getProjectPresentationForOutput = `-- name: GetProjectPresentationForOutput :one
-SELECT id, company_id, project_id, page_id, page_version_id, theme, title, content, documents, export_markdown, source_sequence, fingerprint, request_key, created_by_user_id, source_run_id, output_id, export_attachment_id, created_at, shared_content, change_id, change_snapshot FROM project_presentations WHERE company_id=$1 AND output_id=$2
+SELECT capture.id, capture.company_id, capture.project_id, capture.page_id, capture.page_version_id, capture.theme, capture.title, capture.content, capture.documents, capture.export_markdown, capture.source_sequence, capture.fingerprint, capture.request_key, capture.created_by_user_id, capture.source_run_id, capture.export_attachment_id, capture.created_at, capture.shared_content, capture.change_id, capture.change_snapshot, capture.intelligent_evidence FROM project_presentations capture JOIN delivery_snapshots link ON link.company_id=capture.company_id AND link.snapshot_id=capture.id WHERE capture.company_id=$1::uuid AND link.output_id=$2::uuid
 `
 
 type GetProjectPresentationForOutputParams struct {
@@ -490,18 +467,18 @@ func (q *Queries) GetProjectPresentationForOutput(ctx context.Context, arg GetPr
 		&i.RequestKey,
 		&i.CreatedByUserID,
 		&i.SourceRunID,
-		&i.OutputID,
 		&i.ExportAttachmentID,
 		&i.CreatedAt,
 		&i.SharedContent,
 		&i.ChangeID,
 		&i.ChangeSnapshot,
+		&i.IntelligentEvidence,
 	)
 	return i, err
 }
 
 const getProjectPresentationReceipt = `-- name: GetProjectPresentationReceipt :one
-SELECT id, company_id, project_id, page_id, page_version_id, theme, title, content, documents, export_markdown, source_sequence, fingerprint, request_key, created_by_user_id, source_run_id, output_id, export_attachment_id, created_at, shared_content, change_id, change_snapshot FROM project_presentations WHERE company_id=$1 AND project_id=$2 AND created_by_user_id=$3 AND request_key=$4
+SELECT id, company_id, project_id, page_id, page_version_id, theme, title, content, documents, export_markdown, source_sequence, fingerprint, request_key, created_by_user_id, source_run_id, export_attachment_id, created_at, shared_content, change_id, change_snapshot, intelligent_evidence FROM project_presentations WHERE company_id=$1 AND project_id=$2 AND created_by_user_id=$3 AND request_key=$4
 `
 
 type GetProjectPresentationReceiptParams struct {
@@ -535,20 +512,20 @@ func (q *Queries) GetProjectPresentationReceipt(ctx context.Context, arg GetProj
 		&i.RequestKey,
 		&i.CreatedByUserID,
 		&i.SourceRunID,
-		&i.OutputID,
 		&i.ExportAttachmentID,
 		&i.CreatedAt,
 		&i.SharedContent,
 		&i.ChangeID,
 		&i.ChangeSnapshot,
+		&i.IntelligentEvidence,
 	)
 	return i, err
 }
 
 const insertProjectPageChange = `-- name: InsertProjectPageChange :one
-INSERT INTO project_page_changes(company_id,project_id,page_id,run_id,actor_user_id,request_key,request_hash,operations,before_content,result,summary,status,before_theme,after_theme,actor_agent_id)
- VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,
- (SELECT agent_id FROM runs WHERE company_id=$1 AND id=$4)) RETURNING id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id
+INSERT INTO project_page_changes(company_id,project_id,page_id,run_id,actor_user_id,request_key,request_hash,operations,before_content,result,summary,status,before_theme,after_theme,crdt_updates,actor_agent_id)
+ VALUES($1,NULLIF($2::uuid,'00000000-0000-0000-0000-000000000000'::uuid),$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,
+ (SELECT agent_id FROM runs WHERE company_id=$1 AND id=$4)) RETURNING id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id, crdt_updates
 `
 
 type InsertProjectPageChangeParams struct {
@@ -566,6 +543,7 @@ type InsertProjectPageChangeParams struct {
 	Status        string        `json:"status"`
 	BeforeTheme   pgtype.Text   `json:"before_theme"`
 	AfterTheme    pgtype.Text   `json:"after_theme"`
+	CrdtUpdates   []byte        `json:"crdt_updates"`
 }
 
 func (q *Queries) InsertProjectPageChange(ctx context.Context, arg InsertProjectPageChangeParams) (ProjectPageChange, error) {
@@ -584,6 +562,7 @@ func (q *Queries) InsertProjectPageChange(ctx context.Context, arg InsertProject
 		arg.Status,
 		arg.BeforeTheme,
 		arg.AfterTheme,
+		arg.CrdtUpdates,
 	)
 	var i ProjectPageChange
 	err := row.Scan(
@@ -606,13 +585,26 @@ func (q *Queries) InsertProjectPageChange(ctx context.Context, arg InsertProject
 		&i.Decisions,
 		&i.SupersedesID,
 		&i.ActorAgentID,
+		&i.CrdtUpdates,
 	)
 	return i, err
 }
 
 const insertProjectPresentation = `-- name: InsertProjectPresentation :one
-INSERT INTO project_presentations(company_id,project_id,page_id,page_version_id,theme,title,content,documents,export_markdown,source_sequence,fingerprint,request_key,created_by_user_id,source_run_id)
- VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING id, company_id, project_id, page_id, page_version_id, theme, title, content, documents, export_markdown, source_sequence, fingerprint, request_key, created_by_user_id, source_run_id, output_id, export_attachment_id, created_at, shared_content, change_id, change_snapshot
+WITH allocated AS (
+ UPDATE artifacts SET next_number=next_number+1 WHERE company_id=$1::uuid AND id=$3::uuid
+ RETURNING next_number-1 AS number
+), snapshot AS (
+ INSERT INTO artifact_snapshots(company_id,project_id,artifact_id,number,source_type,title,theme,source_sequence,created_by_user_id,base_version_id)
+ SELECT $1::uuid,$2::uuid,$3::uuid,number,'capture',
+ $6::text,$5::text,$10::bigint,$13::uuid,$4::uuid FROM allocated
+ RETURNING id
+)
+INSERT INTO project_presentations(id,company_id,project_id,page_id,page_version_id,theme,title,content,documents,export_markdown,source_sequence,fingerprint,request_key,created_by_user_id,source_run_id)
+ SELECT snapshot.id,$1::uuid,$2::uuid,$3::uuid,$4::uuid,
+ $5::text,$6::text,$7::jsonb,$8::jsonb,$9::text,
+ $10::bigint,$11::text,$12::uuid,$13::uuid,$14::uuid
+ FROM snapshot RETURNING id, company_id, project_id, page_id, page_version_id, theme, title, content, documents, export_markdown, source_sequence, fingerprint, request_key, created_by_user_id, source_run_id, export_attachment_id, created_at, shared_content, change_id, change_snapshot, intelligent_evidence
 `
 
 type InsertProjectPresentationParams struct {
@@ -666,14 +658,115 @@ func (q *Queries) InsertProjectPresentation(ctx context.Context, arg InsertProje
 		&i.RequestKey,
 		&i.CreatedByUserID,
 		&i.SourceRunID,
-		&i.OutputID,
 		&i.ExportAttachmentID,
 		&i.CreatedAt,
 		&i.SharedContent,
 		&i.ChangeID,
 		&i.ChangeSnapshot,
+		&i.IntelligentEvidence,
 	)
 	return i, err
+}
+
+const listCaptureDeliveries = `-- name: ListCaptureDeliveries :many
+SELECT link.output_id FROM delivery_snapshots link
+JOIN output_access access ON access.company_id=link.company_id AND access.output_id=link.output_id AND access.user_id=$3
+WHERE link.company_id=$1 AND link.snapshot_id=$2 ORDER BY link.created_at,link.output_id
+`
+
+type ListCaptureDeliveriesParams struct {
+	CompanyID  uuid.UUID `json:"company_id"`
+	SnapshotID uuid.UUID `json:"snapshot_id"`
+	UserID     uuid.UUID `json:"user_id"`
+}
+
+func (q *Queries) ListCaptureDeliveries(ctx context.Context, arg ListCaptureDeliveriesParams) ([]uuid.UUID, error) {
+	rows, err := q.db.Query(ctx, listCaptureDeliveries, arg.CompanyID, arg.SnapshotID, arg.UserID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []uuid.UUID{}
+	for rows.Next() {
+		var output_id uuid.UUID
+		if err := rows.Scan(&output_id); err != nil {
+			return nil, err
+		}
+		items = append(items, output_id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listIntelligentCaptureTasks = `-- name: ListIntelligentCaptureTasks :many
+SELECT t.id,t.title,t.status,t.assignee_user_id,t.executed_by_agent_id,t.version,
+ COALESCE(member.display_name,'Former teammate') AS assignee_name,COALESCE(agent.name,'') AS agent_name
+ FROM tasks t LEFT JOIN users member ON member.id=t.assignee_user_id
+ LEFT JOIN agents agent ON agent.id=t.executed_by_agent_id AND agent.company_id=t.company_id
+ WHERE t.company_id=$1::uuid AND t.project_id=$2::uuid
+ AND CASE $3::text
+   WHEN 'active' THEN t.status NOT IN ('done','cancelled')
+   WHEN 'review' THEN t.status='in_review'
+   WHEN 'done' THEN t.status='done'
+   ELSE true
+ END
+ ORDER BY t.number DESC,t.id
+ LIMIT $4::int
+`
+
+type ListIntelligentCaptureTasksParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	ProjectID uuid.UUID `json:"project_id"`
+	Filter    string    `json:"filter"`
+	RowLimit  int32     `json:"row_limit"`
+}
+
+type ListIntelligentCaptureTasksRow struct {
+	ID                uuid.UUID     `json:"id"`
+	Title             string        `json:"title"`
+	Status            string        `json:"status"`
+	AssigneeUserID    uuid.UUID     `json:"assignee_user_id"`
+	ExecutedByAgentID uuid.NullUUID `json:"executed_by_agent_id"`
+	Version           int64         `json:"version"`
+	AssigneeName      string        `json:"assignee_name"`
+	AgentName         string        `json:"agent_name"`
+}
+
+// The caller holds Project read authority in the capture transaction.
+func (q *Queries) ListIntelligentCaptureTasks(ctx context.Context, arg ListIntelligentCaptureTasksParams) ([]ListIntelligentCaptureTasksRow, error) {
+	rows, err := q.db.Query(ctx, listIntelligentCaptureTasks,
+		arg.CompanyID,
+		arg.ProjectID,
+		arg.Filter,
+		arg.RowLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []ListIntelligentCaptureTasksRow{}
+	for rows.Next() {
+		var i ListIntelligentCaptureTasksRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Title,
+			&i.Status,
+			&i.AssigneeUserID,
+			&i.ExecutedByAgentID,
+			&i.Version,
+			&i.AssigneeName,
+			&i.AgentName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listOverviewTasks = `-- name: ListOverviewTasks :many
@@ -739,18 +832,19 @@ SELECT change.id,change.page_id,change.run_id,change.summary,change.status,chang
  COALESCE((SELECT review.feedback FROM page_suggestion_reviews review WHERE review.company_id=change.company_id AND review.change_id=change.id AND review.feedback<>'' ORDER BY review.created_at DESC,review.id DESC LIMIT 1),'')::text AS feedback
  FROM project_page_changes change JOIN wiki_pages page ON page.id=change.page_id
  LEFT JOIN agents agent ON agent.company_id=change.company_id AND agent.id=change.actor_agent_id
- WHERE change.company_id=$1::uuid AND change.project_id=$2::uuid
- AND change.page_id=$3::uuid AND change.status NOT IN ('proposed','partially_applied','needs_update')
- AND ($4::timestamptz IS NULL OR (change.created_at,change.id)<($4::timestamptz,$5::uuid))
+ WHERE change.actor_user_id=$1::uuid AND change.company_id=$2::uuid AND change.project_id IS NOT DISTINCT FROM NULLIF($3::uuid,'00000000-0000-0000-0000-000000000000'::uuid)
+ AND change.page_id=$4::uuid AND change.status NOT IN ('proposed','partially_applied','needs_update')
+ AND ($5::timestamptz IS NULL OR (change.created_at,change.id)<($5::timestamptz,$6::uuid))
  ORDER BY change.created_at DESC,change.id DESC LIMIT 51
 `
 
 type ListPageChangeHistoryParams struct {
-	CompanyID  uuid.UUID          `json:"company_id"`
-	ProjectID  uuid.UUID          `json:"project_id"`
-	PageID     uuid.UUID          `json:"page_id"`
-	BeforeTime pgtype.Timestamptz `json:"before_time"`
-	BeforeID   uuid.NullUUID      `json:"before_id"`
+	ActorUserID uuid.UUID          `json:"actor_user_id"`
+	CompanyID   uuid.UUID          `json:"company_id"`
+	ProjectID   uuid.UUID          `json:"project_id"`
+	PageID      uuid.UUID          `json:"page_id"`
+	BeforeTime  pgtype.Timestamptz `json:"before_time"`
+	BeforeID    uuid.NullUUID      `json:"before_id"`
 }
 
 type ListPageChangeHistoryRow struct {
@@ -768,6 +862,7 @@ type ListPageChangeHistoryRow struct {
 
 func (q *Queries) ListPageChangeHistory(ctx context.Context, arg ListPageChangeHistoryParams) ([]ListPageChangeHistoryRow, error) {
 	rows, err := q.db.Query(ctx, listPageChangeHistory,
+		arg.ActorUserID,
 		arg.CompanyID,
 		arg.ProjectID,
 		arg.PageID,
@@ -841,10 +936,10 @@ func (q *Queries) ListPageManagedBlocks(ctx context.Context, arg ListPageManaged
 
 const listPageSourceVersions = `-- name: ListPageSourceVersions :many
 SELECT v.id AS version_id,v.artifact_id,latest.id AS latest_version_id,a.title
- FROM canvas_version_sources v JOIN project_artifacts a
+ FROM canvas_version_sources v JOIN artifacts a
  ON a.company_id=v.company_id AND a.project_id=v.project_id AND a.id=v.artifact_id
  JOIN LATERAL(SELECT candidate.id FROM canvas_version_sources candidate
- WHERE candidate.artifact_id=a.id AND (candidate.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access access
+ WHERE candidate.artifact_id=a.id AND candidate.source_type<>'capture' AND (candidate.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access access
      WHERE access.company_id=candidate.company_id AND access.output_id=candidate.access_output_id AND access.user_id=$1::uuid))
  ORDER BY candidate.number DESC LIMIT 1) latest ON true
  WHERE v.company_id=$2::uuid AND v.project_id=$3::uuid
@@ -898,7 +993,7 @@ func (q *Queries) ListPageSourceVersions(ctx context.Context, arg ListPageSource
 }
 
 const listPageSuggestionChanges = `-- name: ListPageSuggestionChanges :many
-SELECT id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id FROM project_page_changes WHERE company_id=$1 AND page_id=$2
+SELECT id, company_id, project_id, page_id, run_id, actor_user_id, request_key, request_hash, operations, before_content, before_theme, after_theme, result, summary, status, created_at, decisions, supersedes_id, actor_agent_id, crdt_updates FROM project_page_changes WHERE company_id=$1 AND page_id=$2
  AND status IN ('proposed','partially_applied','needs_update') ORDER BY id
 `
 
@@ -936,6 +1031,7 @@ func (q *Queries) ListPageSuggestionChanges(ctx context.Context, arg ListPageSug
 			&i.Decisions,
 			&i.SupersedesID,
 			&i.ActorAgentID,
+			&i.CrdtUpdates,
 		); err != nil {
 			return nil, err
 		}
@@ -1000,14 +1096,15 @@ SELECT change.id,change.page_id,change.run_id,change.summary,change.status,chang
  COALESCE((SELECT review.feedback FROM page_suggestion_reviews review WHERE review.company_id=change.company_id AND review.change_id=change.id AND review.feedback<>'' ORDER BY review.created_at DESC,review.id DESC LIMIT 1),'')::text AS feedback
  FROM project_page_changes change JOIN wiki_pages page ON page.id=change.page_id
  LEFT JOIN agents agent ON agent.company_id=change.company_id AND agent.id=change.actor_agent_id
- WHERE change.company_id=$1 AND change.project_id=$2 AND change.page_id=$3 AND change.status IN ('proposed','partially_applied','needs_update')
+ WHERE change.actor_user_id=$1::uuid AND change.company_id=$2 AND change.project_id IS NOT DISTINCT FROM NULLIF($3::uuid,'00000000-0000-0000-0000-000000000000'::uuid) AND change.page_id=$4 AND change.status IN ('proposed','partially_applied','needs_update')
  ORDER BY change.created_at DESC,change.id DESC
 `
 
 type ListPendingPageChangesParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	ProjectID uuid.UUID `json:"project_id"`
-	PageID    uuid.UUID `json:"page_id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
+	CompanyID   uuid.UUID `json:"company_id"`
+	ProjectID   uuid.UUID `json:"project_id"`
+	PageID      uuid.UUID `json:"page_id"`
 }
 
 type ListPendingPageChangesRow struct {
@@ -1024,7 +1121,12 @@ type ListPendingPageChangesRow struct {
 }
 
 func (q *Queries) ListPendingPageChanges(ctx context.Context, arg ListPendingPageChangesParams) ([]ListPendingPageChangesRow, error) {
-	rows, err := q.db.Query(ctx, listPendingPageChanges, arg.CompanyID, arg.ProjectID, arg.PageID)
+	rows, err := q.db.Query(ctx, listPendingPageChanges,
+		arg.ActorUserID,
+		arg.CompanyID,
+		arg.ProjectID,
+		arg.PageID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1056,9 +1158,9 @@ func (q *Queries) ListPendingPageChanges(ctx context.Context, arg ListPendingPag
 
 const listProjectPageChanges = `-- name: ListProjectPageChanges :many
 WITH candidates AS (
- SELECT change.id, change.company_id, change.project_id, change.page_id, change.run_id, change.actor_user_id, change.request_key, change.request_hash, change.operations, change.before_content, change.before_theme, change.after_theme, change.result, change.summary, change.status, change.created_at, change.decisions, change.supersedes_id, change.actor_agent_id,row_number() OVER(PARTITION BY status IN ('proposed','partially_applied','needs_update') ORDER BY created_at DESC,id DESC) AS rank
- FROM project_page_changes change WHERE company_id=$1::uuid AND project_id=$2::uuid
- AND ($3::uuid IS NULL OR page_id=$3::uuid)
+ SELECT change.id, change.company_id, change.project_id, change.page_id, change.run_id, change.actor_user_id, change.request_key, change.request_hash, change.operations, change.before_content, change.before_theme, change.after_theme, change.result, change.summary, change.status, change.created_at, change.decisions, change.supersedes_id, change.actor_agent_id, change.crdt_updates,row_number() OVER(PARTITION BY status IN ('proposed','partially_applied','needs_update') ORDER BY created_at DESC,id DESC) AS rank
+ FROM project_page_changes change WHERE actor_user_id=$1::uuid AND company_id=$2::uuid AND project_id IS NOT DISTINCT FROM NULLIF($3::uuid,'00000000-0000-0000-0000-000000000000'::uuid)
+ AND ($4::uuid IS NULL OR page_id=$4::uuid)
 )
 SELECT change.id,change.page_id,change.run_id,change.summary,change.status,change.created_at,page.title AS page_title,
  change.actor_agent_id,COALESCE(agent.name,'Former Agent')::text AS agent_name,
@@ -1069,9 +1171,10 @@ SELECT change.id,change.page_id,change.run_id,change.summary,change.status,chang
 `
 
 type ListProjectPageChangesParams struct {
-	CompanyID uuid.UUID     `json:"company_id"`
-	ProjectID uuid.UUID     `json:"project_id"`
-	PageID    uuid.NullUUID `json:"page_id"`
+	ActorUserID uuid.UUID     `json:"actor_user_id"`
+	CompanyID   uuid.UUID     `json:"company_id"`
+	ProjectID   uuid.UUID     `json:"project_id"`
+	PageID      uuid.NullUUID `json:"page_id"`
 }
 
 type ListProjectPageChangesRow struct {
@@ -1088,7 +1191,12 @@ type ListProjectPageChangesRow struct {
 }
 
 func (q *Queries) ListProjectPageChanges(ctx context.Context, arg ListProjectPageChangesParams) ([]ListProjectPageChangesRow, error) {
-	rows, err := q.db.Query(ctx, listProjectPageChanges, arg.CompanyID, arg.ProjectID, arg.PageID)
+	rows, err := q.db.Query(ctx, listProjectPageChanges,
+		arg.ActorUserID,
+		arg.CompanyID,
+		arg.ProjectID,
+		arg.PageID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1125,7 +1233,7 @@ SELECT DISTINCT change.page_id FROM project_page_changes change JOIN runs run ON
 
 type ListProjectPageContributionsParams struct {
 	CompanyID uuid.UUID     `json:"company_id"`
-	ProjectID uuid.UUID     `json:"project_id"`
+	ProjectID uuid.NullUUID `json:"project_id"`
 	TaskID    uuid.NullUUID `json:"task_id"`
 }
 
@@ -1150,9 +1258,10 @@ func (q *Queries) ListProjectPageContributions(ctx context.Context, arg ListProj
 }
 
 const listProjectPresentationDestinations = `-- name: ListProjectPresentationDestinations :many
-SELECT output_id,id,project_id,page_id FROM project_presentations
- WHERE company_id=$1::uuid AND output_id=ANY($2::uuid[])
-AND EXISTS(SELECT 1 FROM project_access access WHERE access.company_id=project_presentations.company_id AND access.project_id=project_presentations.project_id AND access.user_id=$3::uuid)
+SELECT link.output_id,capture.id,capture.project_id,capture.page_id FROM project_presentations capture
+ JOIN delivery_snapshots link ON link.company_id=capture.company_id AND link.snapshot_id=capture.id
+ WHERE capture.company_id=$1::uuid AND link.output_id=ANY($2::uuid[])
+AND EXISTS(SELECT 1 FROM project_access access WHERE access.company_id=capture.company_id AND access.project_id=capture.project_id AND access.user_id=$3::uuid)
 `
 
 type ListProjectPresentationDestinationsParams struct {
@@ -1162,10 +1271,10 @@ type ListProjectPresentationDestinationsParams struct {
 }
 
 type ListProjectPresentationDestinationsRow struct {
-	OutputID  uuid.NullUUID `json:"output_id"`
-	ID        uuid.UUID     `json:"id"`
-	ProjectID uuid.UUID     `json:"project_id"`
-	PageID    uuid.UUID     `json:"page_id"`
+	OutputID  uuid.UUID `json:"output_id"`
+	ID        uuid.UUID `json:"id"`
+	ProjectID uuid.UUID `json:"project_id"`
+	PageID    uuid.UUID `json:"page_id"`
 }
 
 func (q *Queries) ListProjectPresentationDestinations(ctx context.Context, arg ListProjectPresentationDestinationsParams) ([]ListProjectPresentationDestinationsRow, error) {
@@ -1234,14 +1343,16 @@ func (q *Queries) ListProjectPresentationSources(ctx context.Context, arg ListPr
 }
 
 const listProjectPresentations = `-- name: ListProjectPresentations :many
-SELECT id,page_id,theme,title,source_sequence,created_at,created_by_user_id,source_run_id,output_id
- FROM project_presentations WHERE company_id=$1 AND project_id=$2 AND ($3::uuid IS NULL OR page_id=$3::uuid) ORDER BY created_at DESC,id DESC
+SELECT capture.id,capture.page_id,capture.theme,capture.title,capture.source_sequence,capture.created_at,capture.created_by_user_id,capture.source_run_id,
+ ARRAY(SELECT link.output_id FROM delivery_snapshots link JOIN output_access access ON access.company_id=link.company_id AND access.output_id=link.output_id AND access.user_id=$1::uuid WHERE link.company_id=capture.company_id AND link.snapshot_id=capture.id ORDER BY link.created_at,link.output_id)::uuid[] AS delivery_ids
+ FROM project_presentations capture WHERE capture.company_id=$2::uuid AND capture.project_id=$3::uuid AND ($4::uuid IS NULL OR capture.page_id=$4::uuid) ORDER BY capture.created_at DESC,capture.id DESC
 `
 
 type ListProjectPresentationsParams struct {
-	CompanyID uuid.UUID     `json:"company_id"`
-	ProjectID uuid.UUID     `json:"project_id"`
-	PageID    uuid.NullUUID `json:"page_id"`
+	ActorUserID uuid.UUID     `json:"actor_user_id"`
+	CompanyID   uuid.UUID     `json:"company_id"`
+	ProjectID   uuid.UUID     `json:"project_id"`
+	PageID      uuid.NullUUID `json:"page_id"`
 }
 
 type ListProjectPresentationsRow struct {
@@ -1253,11 +1364,16 @@ type ListProjectPresentationsRow struct {
 	CreatedAt       pgtype.Timestamptz `json:"created_at"`
 	CreatedByUserID uuid.UUID          `json:"created_by_user_id"`
 	SourceRunID     uuid.NullUUID      `json:"source_run_id"`
-	OutputID        uuid.NullUUID      `json:"output_id"`
+	DeliveryIds     []uuid.UUID        `json:"delivery_ids"`
 }
 
 func (q *Queries) ListProjectPresentations(ctx context.Context, arg ListProjectPresentationsParams) ([]ListProjectPresentationsRow, error) {
-	rows, err := q.db.Query(ctx, listProjectPresentations, arg.CompanyID, arg.ProjectID, arg.PageID)
+	rows, err := q.db.Query(ctx, listProjectPresentations,
+		arg.ActorUserID,
+		arg.CompanyID,
+		arg.ProjectID,
+		arg.PageID,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1274,7 +1390,7 @@ func (q *Queries) ListProjectPresentations(ctx context.Context, arg ListProjectP
 			&i.CreatedAt,
 			&i.CreatedByUserID,
 			&i.SourceRunID,
-			&i.OutputID,
+			&i.DeliveryIds,
 		); err != nil {
 			return nil, err
 		}
@@ -1305,8 +1421,8 @@ func (q *Queries) PageChangeAuthorName(ctx context.Context, arg PageChangeAuthor
 }
 
 const pagePendingCreation = `-- name: PagePendingCreation :one
-SELECT EXISTS(SELECT 1 FROM project_artifacts a
- JOIN project_artifact_versions v ON v.company_id=a.company_id AND v.artifact_id=a.id
+SELECT EXISTS(SELECT 1 FROM artifacts a
+ JOIN artifact_snapshots v ON v.company_id=a.company_id AND v.artifact_id=a.id
  WHERE a.company_id=$1 AND v.wiki_page_id=$2 AND a.pending_creation)::boolean
 `
 
@@ -1417,7 +1533,7 @@ func (q *Queries) RecordPageSuggestionReview(ctx context.Context, arg RecordPage
 }
 
 const setArtifactCreationProposal = `-- name: SetArtifactCreationProposal :exec
-UPDATE project_artifacts SET pending_creation=true,creation_change_id=$3 WHERE company_id=$1 AND id=$2
+UPDATE artifacts SET pending_creation=true,creation_change_id=$3 WHERE company_id=$1 AND id=$2
 `
 
 type SetArtifactCreationProposalParams struct {
@@ -1466,6 +1582,28 @@ func (q *Queries) SetPageManagedBlock(ctx context.Context, arg SetPageManagedBlo
 		arg.BlockID,
 		arg.ContentHash,
 		arg.RunID,
+	)
+	return err
+}
+
+const setPresentationIntelligentEvidence = `-- name: SetPresentationIntelligentEvidence :exec
+UPDATE project_presentations SET intelligent_evidence=$4
+ WHERE company_id=$1 AND project_id=$2 AND id=$3
+`
+
+type SetPresentationIntelligentEvidenceParams struct {
+	CompanyID           uuid.UUID `json:"company_id"`
+	ProjectID           uuid.UUID `json:"project_id"`
+	ID                  uuid.UUID `json:"id"`
+	IntelligentEvidence []byte    `json:"intelligent_evidence"`
+}
+
+func (q *Queries) SetPresentationIntelligentEvidence(ctx context.Context, arg SetPresentationIntelligentEvidenceParams) error {
+	_, err := q.db.Exec(ctx, setPresentationIntelligentEvidence,
+		arg.CompanyID,
+		arg.ProjectID,
+		arg.ID,
+		arg.IntelligentEvidence,
 	)
 	return err
 }
@@ -1522,22 +1660,22 @@ func (q *Queries) SetProjectOverview(ctx context.Context, arg SetProjectOverview
 }
 
 const setProjectPageChangeStatus = `-- name: SetProjectPageChangeStatus :exec
-UPDATE project_page_changes SET status=$4 WHERE company_id=$1 AND project_id=$2 AND id=$3
+UPDATE project_page_changes SET status=$1 WHERE company_id=$2 AND project_id IS NOT DISTINCT FROM NULLIF($3::uuid,'00000000-0000-0000-0000-000000000000'::uuid) AND id=$4
 `
 
 type SetProjectPageChangeStatusParams struct {
+	Status    string    `json:"status"`
 	CompanyID uuid.UUID `json:"company_id"`
 	ProjectID uuid.UUID `json:"project_id"`
 	ID        uuid.UUID `json:"id"`
-	Status    string    `json:"status"`
 }
 
 func (q *Queries) SetProjectPageChangeStatus(ctx context.Context, arg SetProjectPageChangeStatusParams) error {
 	_, err := q.db.Exec(ctx, setProjectPageChangeStatus,
+		arg.Status,
 		arg.CompanyID,
 		arg.ProjectID,
 		arg.ID,
-		arg.Status,
 	)
 	return err
 }
@@ -1611,7 +1749,7 @@ func (q *Queries) UpdatePageSuggestionDecisions(ctx context.Context, arg UpdateP
 
 const updateProjectPageMetadata = `-- name: UpdateProjectPageMetadata :exec
 UPDATE wiki_pages SET title=COALESCE($1::text,title),theme=COALESCE($2::text,theme),updated_at=now()
- WHERE company_id=$3::uuid AND project_id=$4::uuid AND id=$5::uuid
+ WHERE company_id=$3::uuid AND project_id IS NOT DISTINCT FROM NULLIF($4::uuid,'00000000-0000-0000-0000-000000000000'::uuid) AND id=$5::uuid
 `
 
 type UpdateProjectPageMetadataParams struct {

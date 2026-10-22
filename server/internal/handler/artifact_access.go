@@ -172,7 +172,7 @@ func (h *Handler) downloadArtifactFile(c *gin.Context) {
 // artifact authorization before reaching this helper, even for a matching tag.
 func (h *Handler) downloadResolvedArtifact(c *gin.Context, companyID, attachmentID uuid.UUID) {
 	revalidate := c.GetHeader("X-Zenith-Team-Artifact-Cache") == "revalidate"
-	input := attachment.ResolvedDownloadInput{ID: attachmentID, CompanyID: companyID, OutputAccessResolved: true}
+	input := attachment.ResolvedDownloadInput{ID: attachmentID, CompanyID: companyID, ResourceAccessResolved: true}
 	if revalidate {
 		prefix := `"attachment:` + attachmentID.String() + ":"
 		tag := c.GetHeader("If-None-Match")
@@ -293,7 +293,7 @@ func (h *Handler) downloadPublicArtifact(c *gin.Context) {
 	}
 	result, err := h.AttachmentService.DownloadResolved(
 		c.Request.Context(),
-		attachment.ResolvedDownloadInput{ID: attachmentID, CompanyID: companyID, OutputAccessResolved: true},
+		attachment.ResolvedDownloadInput{ID: attachmentID, CompanyID: companyID, ResourceAccessResolved: true},
 	)
 	if err != nil {
 		writeAttachmentError(c, err)

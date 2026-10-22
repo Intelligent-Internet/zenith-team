@@ -52,6 +52,7 @@ Two structural rules explain most of the vocabulary:
 | Code | HTTP | What to do |
 |---|---|---|
 | `canvas_not_found` | 404 | Canvas, source or target is unavailable. Refresh authorized state; do not probe other Projects or Companies. |
+| `intelligent_ui_authoring_disabled` | 503 | Reactive document authoring is disabled for deployment or rollback. Preserve unsaved edits; saved content remains readable. Resume writing only after authoring is enabled. |
 | `canvas_forbidden` | 403 | The current membership cannot perform this action. Preserve unsaved edits and request the needed permission. |
 | `canvas_invalid` | 422 | Correct the operation or unsupported document content before retrying. |
 | `page_invalid_insert` | 422 | Correct the inserted native block or its structural parent. Headings and paragraphs cannot contain blocks; omit parentId for document-level siblings and position them with afterId or beforeId. Retry the corrected operation. |

@@ -32,23 +32,34 @@ func (s *DefaultPageService) ReviewPageChange(
 			ctx,
 			q,
 			p,
-			PageChangeDecision{ProjectID: project, PageID: pageID, ChangeID: id, Input: in},
+			PageChangeDecision{
+				Authoring:   s.authoring,
+				InvokeAgent: s.invokeDocumentAgent,
+				ProjectID:   project,
+				PageID:      pageID,
+				ChangeID:    id,
+				Input:       in,
+			},
 		)
 		return err
 	})
 	if err != nil {
 		return PageEditResult{}, err
 	}
-	s.bus.Publish(ctx, Topic, pending...)
+	for _, group := range events.GroupByTopic(pending) {
+		s.bus.Publish(ctx, group.Topic, group.Events...)
+	}
 	return result, nil
 }
 
 // PageChangeDecision identifies the exact document and proposal being reviewed.
 type PageChangeDecision struct {
-	ProjectID uuid.UUID             `json:"projectId"`
-	PageID    uuid.UUID             `json:"pageId"`
-	ChangeID  uuid.UUID             `json:"changeId"`
-	Input     PageChangeReviewInput `json:"input"`
+	InvokeAgent DocumentAgentInvoker   `json:"-"`
+	Authoring   wiki.UIAuthoringPolicy `json:"-"`
+	ProjectID   uuid.UUID              `json:"projectId"`
+	PageID      uuid.UUID              `json:"pageId"`
+	ChangeID    uuid.UUID              `json:"changeId"`
+	Input       PageChangeReviewInput  `json:"input"`
 }
 
 // ReviewPageChangeInTx joins a caller-owned transaction. The caller publishes
@@ -83,13 +94,24 @@ func ReviewPageChangeInTx(
 	var result PageEditResult
 	var pending []events.Event
 	err := func() error {
-		if _, err := authorize(ctx, q, p, project, true); err != nil {
+		var err error
+		project, err = pageReviewProject(ctx, q, p, pageReviewScope{ProjectID: project, PageID: pageID})
+		if err != nil {
 			return err
 		}
-		if _, err := q.EnsureProjectCanvas(
-			ctx,
-			generated.EnsureProjectCanvasParams{CompanyID: p.CompanyID, ProjectID: project},
-		); err != nil {
+		request.ProjectID = project
+		if project != uuid.Nil {
+			if _, err := authorize(ctx, q, p, project, true); err != nil {
+				return err
+			}
+			if _, err := q.EnsureProjectCanvas(
+				ctx,
+				generated.EnsureProjectCanvasParams{CompanyID: p.CompanyID, ProjectID: project},
+			); err != nil {
+				return err
+			}
+		}
+		if _, err := authorizeArtifactContent(ctx, q, p, pageID, true); err != nil {
 			return err
 		}
 		if _, err := editableProjectPage(ctx, q, p, project, pageID); err != nil {
@@ -119,7 +141,7 @@ func ReviewPageChangeInTx(
 		if err != nil {
 			return lookup(err)
 		}
-		if row.PageID != pageID {
+		if row.PageID != pageID || row.ActorUserID != p.UserID {
 			return ErrNotFound
 		}
 		draft, err := wiki.BlockDraftInTx(ctx, q, p.CompanyID, pageID)
@@ -148,12 +170,19 @@ func ReviewPageChangeInTx(
 		if err != nil {
 			return err
 		}
-		review, err := pageSuggestionState(row, current, metadata.Theme, peers)
+
+		review, err := pageSuggestionState(
+			row,
+			pageSuggestionSnapshot{
+				root:              current,
+				state:             draft.State,
+				theme:             metadata.Theme,
+				structureSequence: draft.StructureSeq,
+			},
+			peers,
+		)
 		if err != nil {
 			return err
-		}
-		if review.fingerprint != in.Fingerprint {
-			return ErrConflict
 		}
 		if in.Action == "undo" {
 			if row.Status != "applied" && row.Status != "partially_applied" && row.Status != "resolved" {
@@ -179,16 +208,31 @@ func ReviewPageChangeInTx(
 				return err
 			}
 		}
+		// Text acceptance merges the immutable proposal into the locked latest
+		// document. Other actions and structural selections retain exact review.
+		if review.fingerprint != in.Fingerprint && !acceptsLatestPageText(review, in.Action, indexes) {
+			return ErrConflict
+		}
 		selected := make([]wiki.BlockOperation, 0, len(indexes))
 		for _, i := range indexes {
+			if in.Action == "apply" && review.suggestions[i].Status == "already_reflected" {
+				continue
+			}
 			if review.operations[i].Type != "theme" {
-				selected = append(selected, review.operations[i])
+				op := review.operations[i]
+				if in.Action == "apply" && op.Type == "insert" {
+					op = insertionBesideAcceptedSibling(review, current, i, indexes)
+				}
+				selected = append(selected, op)
 			}
 		}
+		changesDocument := in.Action == "undo" ||
+			in.Action == "apply" &&
+				(len(selected) > 0 || row.AfterTheme.Valid && review.suggestions[0].Status == "pending")
 		var beforeRevision, resultRevision uuid.NullUUID
 		resultTheme := metadata.Theme
 		result = PageEditResult{ID: id, Status: row.Status, Sequence: draft.HeadSeq}
-		if in.Action == "apply" || in.Action == "undo" {
+		if changesDocument {
 			beforeRevision, err = captureReviewRevision(
 				ctx,
 				q,
@@ -229,24 +273,31 @@ func ReviewPageChangeInTx(
 				}
 				state, edited, err = undoPageOperations(draft.State, before, selected)
 			} else {
-				state, edited, err = wiki.ApplyBlockOperations(draft.State, selected)
+				state, edited, err = applyPageSuggestions(draft.State, review, indexes)
 			}
 			if err != nil {
 				return err
 			}
-			if err = validateBlockReferences(ctx, q, p, project, edited); err != nil {
+			if err = validateDocumentReferences(ctx, q, p, nullable(&project), edited); err != nil {
 				return err
 			}
 			structural := in.Action == "undo"
 			for _, op := range selected {
 				if op.Type != "insert" {
-					structural = true
+					// Only retained text objects can accept an older editor's edits.
+					old := wiki.FindBlock(current, op.BlockID)
+					if op.Type != "update" || old == nil || op.Content == nil ||
+						!wiki.IsTextBlockUpdate(*old, *op.Content) {
+						structural = true
+					}
 				}
 			}
 			if err = savePageEdit(
 				ctx,
 				q,
 				pageDraftEdit{
+					authoring:   request.Authoring,
+					savedSchema: int(draft.SchemaVersion),
 					principal:   p,
 					page:        pageID,
 					sequence:    draft.HeadSeq,
@@ -262,7 +313,7 @@ func ReviewPageChangeInTx(
 				return err
 			}
 			result.Sequence++
-			event, e := changeEvent(ctx, q, p, project, result.Sequence, pageID)
+			event, e := (documentTarget{PageID: pageID}).changed(ctx, q, p, result.Sequence, pageID)
 			if e != nil {
 				return e
 			}
@@ -270,7 +321,7 @@ func ReviewPageChangeInTx(
 				pending = append(pending, *event)
 			}
 		}
-		if in.Action == "apply" || in.Action == "undo" {
+		if changesDocument {
 			resultRevision, err = captureReviewRevision(
 				ctx,
 				q,
@@ -281,39 +332,25 @@ func ReviewPageChangeInTx(
 				return err
 			}
 		}
-		decision := map[string]string{"apply": "applied", "reject": "rejected", "resolve": "already_reflected", "undo": "undone"}[in.Action]
+		decision := map[string]string{"apply": "applied", "reject": "rejected", "resolve": "resolved", "undo": "undone"}[in.Action]
 		if in.Action == "request_changes" {
+			if err = requestPageRevision(
+				ctx,
+				q,
+				&pending,
+				pageRevisionRequest{principal: p, decision: request, change: row, indexes: indexes},
+			); err != nil {
+				return err
+			}
 			result.Status = "needs_update"
 		} else {
 			for _, index := range indexes {
 				review.decisions[index] = decision
-			}
-			result.Status = decision
-			if in.Action == "resolve" {
-				result.Status = "resolved"
-			}
-			if len(review.operations) > 0 {
-				unresolved, applied := 0, 0
-				for i := range review.operations {
-					if review.decisions[i] == "" {
-						unresolved++
-					}
-					if review.decisions[i] == "applied" {
-						applied++
-					}
-				}
-				switch {
-				case unresolved > 0:
-					result.Status = "proposed"
-					if applied > 0 {
-						result.Status = "partially_applied"
-					}
-				case applied == len(review.operations):
-					result.Status = "applied"
-				case applied > 0:
-					result.Status = "resolved"
+				if in.Action == "apply" && review.suggestions[index].Status == "already_reflected" {
+					review.decisions[index] = "resolved"
 				}
 			}
+			result.Status = suggestionDecisionStatus(len(review.operations), review.decisions, decision)
 		}
 		if result.Status == "applied" {
 			count, e := q.AcceptArtifactCreation(
@@ -327,17 +364,6 @@ func ReviewPageChangeInTx(
 				return e
 			}
 			if count > 0 {
-				version, e := q.GetProjectPageVersion(
-					ctx,
-					generated.GetProjectPageVersionParams{
-						CompanyID: p.CompanyID,
-						ProjectID: project,
-						ID:        pageID,
-					},
-				)
-				if e != nil {
-					return e
-				}
 				accepted, e := wiki.BlockDraftInTx(ctx, q, p.CompanyID, pageID)
 				if e != nil {
 					return e
@@ -354,7 +380,7 @@ func ReviewPageChangeInTx(
 				if e != nil {
 					return e
 				}
-				revision, e := wiki.CheckpointCanvasPageInTx(
+				snapshotID, e := wiki.CheckpointCanvasPageInTx(
 					ctx,
 					q,
 					wiki.CanvasCheckpointInput{
@@ -366,26 +392,6 @@ func ReviewPageChangeInTx(
 					},
 				)
 				if e != nil {
-					return e
-				}
-				number, e := q.AllocateCanvasVersion(ctx, version.ArtifactID)
-				if e != nil {
-					return e
-				}
-				if _, e = q.CreateCanvasVersion(
-					ctx,
-					generated.CreateCanvasVersionParams{
-						CompanyID:       p.CompanyID,
-						ProjectID:       project,
-						ArtifactID:      version.ArtifactID,
-						Number:          number,
-						SourceType:      "wiki",
-						WikiPageID:      nullable(&pageID),
-						WikiRevisionID:  nullable(&revision),
-						BaseVersionID:   nullable(&version.ID),
-						CreatedByUserID: p.UserID,
-					},
-				); e != nil {
 					return e
 				}
 				board, e := q.EnsureProjectCanvas(
@@ -403,9 +409,9 @@ func ReviewPageChangeInTx(
 							CompanyID:   p.CompanyID,
 							ActorUserID: p.UserID,
 						},
-						project: project,
-						board:   board.ID,
-						page:    pageID,
+						project:  project,
+						board:    board.ID,
+						snapshot: snapshotID,
 					},
 				)
 				if e != nil {
@@ -450,6 +456,13 @@ func ReviewPageChangeInTx(
 				ResultTheme:      util.StrToText(resultTheme),
 			},
 		); err != nil {
+			return err
+		}
+		if project == uuid.Nil {
+			event, err := (documentTarget{PageID: pageID}).changed(ctx, q, p, result.Sequence, pageID)
+			if event != nil {
+				pending = append(pending, *event)
+			}
 			return err
 		}
 		sequence, err := q.AdvanceCanvasHead(
@@ -510,4 +523,19 @@ func captureReviewRevision(
 		return uuid.NullUUID{}, err
 	}
 	return nullable(&revision), nil
+}
+
+// Selection validation runs first, retaining decision, grouping and applicability
+// checks even when a text preview has changed since it was fetched.
+func acceptsLatestPageText(review suggestionReviewState, action string, indexes []int) bool {
+	if action != "apply" || len(indexes) == 0 {
+		return false
+	}
+	for _, index := range indexes {
+		if review.operations[index].Type != "update" || index >= len(review.updates) ||
+			len(review.updates[index]) == 0 {
+			return false
+		}
+	}
+	return true
 }

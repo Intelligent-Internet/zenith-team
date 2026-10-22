@@ -3,18 +3,29 @@ import { agentAvailabilityLabel } from "@/features/agents/model/agent-binding";
 import type { ChatMentionMember } from "@/features/chat-panel/model/chat-mentions";
 import { useGetProjectQuery } from "@/features/company-plan/api/project-api";
 import { useProjectAccess } from "@/shared/permissions";
-import type { CanvasScope } from "../api/canvas-api";
+import { useLiveArtifactAccessQuery } from "../api/artifact-access-api";
+export type DocumentAgentScope = {
+  companyId: string;
+  projectId?: string;
+  pageId?: string;
+};
 
-export function useCanInvokeDocumentAgents(scope?: CanvasScope) {
+export function useCanInvokeDocumentAgents(scope?: DocumentAgentScope) {
   const project = useGetProjectQuery(
     { companyId: scope?.companyId ?? "", id: scope?.projectId ?? "" },
-    { skip: !scope },
+    { skip: !scope?.projectId },
+  );
+  const page = useLiveArtifactAccessQuery(
+    { companyId: scope?.companyId ?? "", artifactId: scope?.pageId ?? "" },
+    { skip: !scope?.pageId || !!scope?.projectId },
   );
   const access = useProjectAccess(project.currentData);
+  if (scope?.pageId && !scope.projectId)
+    return !page.isError && !!page.currentData?.canEdit;
   return !!scope && !project.isError && access.can("project.tasks.execute");
 }
 
-export function useDocumentAgents(scope?: CanvasScope) {
+export function useDocumentAgents(scope?: DocumentAgentScope) {
   const canInvoke = useCanInvokeDocumentAgents(scope);
   const companyId = canInvoke ? scope?.companyId : undefined;
   const query = useListCompanyAgentsQuery(companyId ?? "", {

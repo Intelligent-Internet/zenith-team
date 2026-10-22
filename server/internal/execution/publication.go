@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -304,7 +306,7 @@ func (s *DefaultPublicationService) Create(
 		return PublicationCreateResult{}, err
 	}
 	if result.Created {
-		s.bus.Publish(ctx, TopicArtifact, changed)
+		s.bus.Publish(ctx, artifactdomain.Topic, changed)
 	}
 	return result, nil
 }
@@ -367,7 +369,7 @@ func (s *DefaultPublicationService) Unpublish(
 	if err != nil {
 		return Publication{}, err
 	}
-	s.bus.Publish(ctx, TopicArtifact, changed)
+	s.bus.Publish(ctx, artifactdomain.Topic, changed)
 	return result, nil
 }
 

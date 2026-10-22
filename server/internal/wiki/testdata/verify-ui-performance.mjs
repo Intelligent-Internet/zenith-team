@@ -1,0 +1,61 @@
+import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import { fileURLToPath } from "node:url";
+const require = createRequire(new URL("../../../../frontend/package.json", import.meta.url));
+const { build } = require("esbuild");
+const source = new URL("../../../../frontend/src/features/project-canvas/documents/intelligent-ui/performance.ts", import.meta.url);
+const result = await build({ entryPoints: [fileURLToPath(source)], bundle: true, write: false, format: "esm", platform: "node", target: "es2022", logLevel: "silent" });
+const { measureUI, measureUIFrame, uiNow, createSourceRecoveryMeasurement } = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString("base64")}`);
+const name = "zenith.intelligent-ui.evaluation";
+for (let i = 0; i < 1000; i++) measureUI("evaluation", uiNow(), "ready");
+assert.equal(performance.getEntriesByName(name).length, 1, "timeline remains bounded");
+assert.deepEqual(performance.getEntriesByName(name)[0].detail, { outcome: "ready" });
+measureUI("evaluation", NaN, "failed");
+measureUI("evaluation", -1, "failed");
+measureUI("evaluation", Infinity, "failed");
+assert.equal(performance.getEntriesByName(name).length, 1);
+const callbacks = new Map();
+let id = 0;
+globalThis.requestAnimationFrame = (callback) => { callbacks.set(++id, callback); return id; };
+globalThis.cancelAnimationFrame = (id) => callbacks.delete(id);
+const tick = () => { const pending = [...callbacks.values()]; callbacks.clear(); for (const callback of pending) callback(); };
+const frameName = "zenith.intelligent-ui.input-to-frame";
+let completed = 0;
+let valid = true;
+const stop = measureUIFrame("input-to-frame", uiNow(), () => valid, () => completed++);
+tick();
+assert.equal(completed, 0, "first callback is not completion");
+stop(); tick();
+assert.equal(completed, 0);
+assert.equal(performance.getEntriesByName(frameName).length, 0);
+measureUIFrame("input-to-frame", uiNow(), () => valid, () => completed++);
+tick(); valid = false; tick();
+assert.equal(completed, 0, "superseded work does not report latency");
+valid = true;
+measureUIFrame("input-to-frame", uiNow(), () => valid, () => completed++);
+tick(); tick();
+assert.equal(completed, 1);
+assert.equal(callbacks.size, 0);
+assert.equal(performance.getEntriesByName(frameName).length, 1);
+const original = globalThis.performance;
+Object.defineProperty(globalThis, "performance", { configurable: true, value: { now: () => 10, clearMeasures: () => { throw new Error("unavailable"); } } });
+assert.doesNotThrow(() => measureUI("evaluation", 1, "failed"));
+Object.defineProperty(globalThis, "performance", { configurable: true, value: original });
+console.log("UI performance: bounded metadata, invalid timing, frame cancellation, stale generations, completion and restricted clients passed");
+
+const recoveryEvents = [];
+let clock = 10;
+const recovery = createSourceRecoveryMeasurement(() => clock, (...event) => recoveryEvents.push(event));
+recovery.applied(); recovery.close();
+assert.equal(recoveryEvents.length, 0, "ordinary edits do not claim stale recovery");
+recovery.stale(); clock = 20; recovery.stale(); clock = 30;
+recovery.applied(); recovery.close();
+assert.deepEqual(recoveryEvents, [
+  ["stale-edit-rejected", 10, "failed"],
+  ["stale-edit-rejected", 20, "failed"],
+  ["stale-edit-recovery", 10, "recovered"],
+]);
+recovery.stale(); clock = 40; recovery.close(); recovery.applied();
+assert.deepEqual(recoveryEvents.at(-1), ["stale-edit-recovery", 30, "closed"]);
+assert.equal(recoveryEvents.length, 5, "closed drafts are not reported as saved");
+console.log("source recovery: first rejection retained, acknowledged apply, close and no-op lifecycle passed");

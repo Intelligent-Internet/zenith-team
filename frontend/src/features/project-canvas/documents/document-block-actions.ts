@@ -1,4 +1,6 @@
-import type { Editor, JSONContent } from "@tiptap/react";
+import { Fragment, Slice } from "@tiptap/pm/model";
+import { copyDocumentSlice, copyDocumentDrop } from "./document-copy";
+import type { Editor } from "@tiptap/react";
 import { NodeSelection } from "@tiptap/pm/state";
 import type { ReviewAnchor } from "../review/annotation-overlay";
 
@@ -7,6 +9,10 @@ export function documentBlockActions(
   options: {
     onComment?: (anchor: ReviewAnchor) => void;
     onError: (message: string) => void;
+    identities?: {
+      ids: string[];
+      reserve: (count?: number, retry?: boolean) => void;
+    };
   },
 ) {
   const top = () => {
@@ -82,13 +88,21 @@ export function documentBlockActions(
       return;
     }
     if (action === "duplicate") {
-      const clone = node.toJSON() as JSONContent;
-      const clear = (n: JSONContent) => {
-        if (n.attrs) delete n.attrs.blockId;
-        n.content?.forEach(clear);
-      };
-      clear(clone);
-      editor.commands.insertContentAt(end, clone);
+      const identities = options.identities;
+      if (!identities) return;
+      const copied = copyDocumentSlice(
+        new Slice(Fragment.from(node), 0, 0),
+        identities.ids,
+      );
+      if (!copied.slice) {
+        identities.reserve(copied.needed, true);
+        options.onError(
+          "Preparing block identities. Retry duplication when the document is ready.",
+        );
+        return;
+      }
+      editor.view.dispatch(tr.insert(end, copied.slice.content));
+      if (identities.ids.length < 8) identities.reserve(32);
       return;
     }
     if (action === "up" && index > 0) {
@@ -98,7 +112,7 @@ export function documentBlockActions(
       const next = editor.state.doc.child(index + 1);
       tr.delete(start, end).insert(start + next.nodeSize, node);
     }
-    if (tr.docChanged) editor.view.dispatch(tr);
+    if (tr.docChanged) editor.view.dispatch(tr.setMeta("uiEvent", "move"));
   };
 
   const moveBlock = (from: number, destination: number) => {
@@ -109,10 +123,15 @@ export function documentBlockActions(
     editor.view.dispatch(
       editor.state.tr
         .delete(from, from + node.nodeSize)
-        .insert(destination - (from < destination ? node.nodeSize : 0), node),
+        .insert(destination - (from < destination ? node.nodeSize : 0), node)
+        .setMeta("uiEvent", "move"),
     );
   };
-  const dropBlock = (id: string, point: { left: number; top: number }) => {
+  const dropBlock = (
+    id: string,
+    point: { left: number; top: number },
+    copy = false,
+  ) => {
     if (!editor.isEditable) return;
     const hit = editor.view.posAtCoords({
       left: point.left,
@@ -132,17 +151,44 @@ export function documentBlockActions(
       if (point.top >= rect.top + rect.height / 2)
         destination += target.node(1).nodeSize;
     }
-    if (destination >= source.from && destination <= source.from + source.size)
+    if (
+      !copy &&
+      destination >= source.from &&
+      destination <= source.from + source.size
+    )
       return;
     const node = editor.state.doc.nodeAt(source.from);
     if (!node) return;
+    if (copy) {
+      const identities = options.identities;
+      if (!identities) return;
+      const copied = copyDocumentDrop(
+        editor.state,
+        new Slice(Fragment.from(node), 0, 0),
+        destination,
+        identities.ids,
+      );
+      if (!copied.transaction) {
+        if (copied.needed) {
+          identities.reserve(copied.needed, true);
+          options.onError(
+            "Preparing block identities. Retry copying when the document is ready.",
+          );
+        }
+        return;
+      }
+      editor.view.dispatch(copied.transaction);
+      if (identities.ids.length < 8) identities.reserve(32);
+      return true;
+    }
     editor.view.dispatch(
       editor.state.tr
         .delete(source.from, source.from + source.size)
         .insert(
           destination - (source.from < destination ? source.size : 0),
           node,
-        ),
+        )
+        .setMeta("uiEvent", "move"),
     );
     return true;
   };

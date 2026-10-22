@@ -77,6 +77,7 @@ func TestCanvasOutputDocument(t *testing.T) {
 	bus, _ := events.NewBus(events.BusOptions{})
 	body := "# Brief\n\nA **shared** draft.\n\n- [ ] Review\n\n```mermaid\nflowchart LR\n A --> B\n```\n"
 	service := newCanvasServices(store, bus, documentAttachments{body: body})
+	pages := NewPageService(store, bus)
 	owner := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
 	dbtest.GrantProject(t, ctx, pool, f.CompanyA, f.ProjectA, f.UserB)
 	member := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserB, Role: auth.CompanyRoleAdmin}
@@ -139,9 +140,12 @@ func TestCanvasOutputDocument(t *testing.T) {
 		)
 	}
 	history, err := service.History(ctx, owner, f.ProjectA, a.ID)
-	if err != nil || len(history.Versions) != 2 || history.Versions[0].BaseVersionID == nil ||
-		*history.Versions[0].BaseVersionID != original.ID {
-		t.Fatalf("original and imported history = %+v, %v", history, err)
+	if err != nil || len(history.Versions) != 1 || history.Versions[0].ID != original.ID {
+		t.Fatalf("source delivery history changed after import = %+v, %v", history, err)
+	}
+	importHistory, err := service.History(ctx, owner, f.ProjectA, draft.PageID)
+	if err != nil || len(importHistory.Versions) != 1 || importHistory.Versions[0].ID != results[0].ID {
+		t.Fatalf("imported Page owns its snapshots = %+v, %v", importHistory, err)
 	}
 	// Derived drafts must never become a Company Wiki publication or outlive access.
 	if _, err := store.Queries().
@@ -172,9 +176,21 @@ func TestCanvasOutputDocument(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var importedRevision int64
+	for _, artifact := range board.Artifacts {
+		if artifact.ID == draft.PageID {
+			importedRevision = artifact.Revision
+		}
+	}
+	if _, err := service.Mutate(ctx, member, f.ProjectA, Command{
+		RequestKey: uuid.New(), Type: "add_version", ArtifactID: &draft.PageID,
+		VersionID: &results[0].ID, OutputID: &output, ExpectedRevision: importedRevision,
+	}); !errors.Is(err, ErrInvalid) {
+		t.Fatalf("Page accepted a file delivery as its typed content: %v", err)
+	}
 	checkpoint, err := service.Mutate(ctx, member, f.ProjectA, Command{
-		RequestKey: uuid.New(), Type: "checkpoint", ArtifactID: &a.ID, VersionID: &results[0].ID,
-		WikiPageID: &draft.PageID, ExpectedRevision: board.Artifacts[0].Revision,
+		RequestKey: uuid.New(), Type: "checkpoint", ArtifactID: &draft.PageID, VersionID: &results[0].ID,
+		WikiPageID: &draft.PageID, ExpectedRevision: importedRevision,
 	})
 	if err != nil {
 		t.Fatalf("checkpoint imported document: %v", err)
@@ -189,15 +205,35 @@ func TestCanvasOutputDocument(t *testing.T) {
 		t.Fatalf("reopen should use latest checkpoint on the same draft: %+v, %v", reopen, err)
 	}
 	dbtest.MustExec(t, ctx, pool, `UPDATE outputs SET visibility='private' WHERE id=$1`, output)
-	if _, err := service.Document(ctx, member, f.ProjectA, results[0].ID, -1); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("revoked document read = %v", err)
+	// The source's sharing governs source evidence, never the independent live Page.
+	livePage, err := pages.Page(ctx, member, f.ProjectA, draft.PageID)
+	if err != nil || livePage.PageID != draft.PageID || !livePage.CanEdit {
+		t.Fatalf("imported Project Page after source revocation = %+v, %v", livePage, err)
 	}
-	hidden, err := service.Snapshot(ctx, member, f.ProjectA, 0)
-	if err != nil || len(hidden.Artifacts) != 0 || len(hidden.ArtifactIDs) != 0 || len(hidden.Items) != 0 {
-		t.Fatalf("revoked draft leaked in snapshot: %+v, %v", hidden, err)
+	title := "Independent Page title"
+	updatedPage, err := pages.UpdatePage(
+		ctx,
+		member,
+		f.ProjectA,
+		draft.PageID,
+		PageMetadataInput{Sequence: livePage.Sequence, Title: &title},
+	)
+	if err != nil || updatedPage.Title != title {
+		t.Fatalf("imported Page metadata after source revocation = %+v, %v", updatedPage, err)
 	}
-	if _, err := service.VersionBody(ctx, member, f.ProjectA, results[0].ID); !errors.Is(err, ErrNotFound) {
-		t.Fatalf("revoked checkpoint read = %v", err)
+	if _, err := pages.PageThreads(ctx, member, f.ProjectA, draft.PageID); err != nil {
+		t.Fatalf("imported Page discussions after source revocation = %v", err)
+	}
+
+	if _, err := service.Document(ctx, member, f.ProjectA, results[0].ID, -1); err != nil {
+		t.Fatalf("independent Page read after source revocation = %v", err)
+	}
+	visible, err := service.Snapshot(ctx, member, f.ProjectA, 0)
+	if err != nil || len(visible.Artifacts) != 1 || visible.Artifacts[0].ID != draft.PageID {
+		t.Fatalf("independent Page snapshot after source revocation = %+v, %v", visible, err)
+	}
+	if _, err := service.VersionBody(ctx, member, f.ProjectA, results[0].ID); err != nil {
+		t.Fatalf("independent checkpoint read after source revocation = %v", err)
 	}
 	if _, err := service.Mutate(ctx, member, f.ProjectA, commands[1]); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("revoked import = %v", err)
@@ -312,26 +348,47 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	if err != nil || throughProject.PageID != first {
 		t.Fatalf("placement document = %+v, %v; want %v", throughProject, err, first)
 	}
-	dbtest.MustExec(t, ctx, pool, `DELETE FROM project_artifacts WHERE id=$1`, artifact.ID)
+	dbtest.MustExec(t, ctx, pool, `DELETE FROM artifacts WHERE id=$1`, artifact.ID)
 	var project uuid.NullUUID
 	if err := pool.QueryRow(ctx, `SELECT project_id FROM wiki_pages WHERE id=$1`, first).
 		Scan(&project); err != nil ||
 		project.Valid {
 		t.Fatalf("document placement owns page: %v, %v", project, err)
 	}
-	draft, err := pages.ReadOutputDocument(
+	if _, err = pages.ReadPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
+		DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		ErrNotFound,
+	) {
+		t.Fatalf("delivery visibility granted live Page access: %v", err)
+	}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO artifact_grants(company_id,artifact_id,user_id,permission,granted_by_user_id) VALUES($1,$2,$3,'view',$4)`,
+		f.CompanyA,
+		first,
+		f.UserB,
+		f.UserA,
+	)
+	draft, err := pages.ReadPageDocument(
+		ctx,
+		reader,
+		first,
 		DocumentReadInput{Since: -1},
 	)
 	if err != nil || draft.CanEdit || !strings.Contains(draft.Markdown, "Shared Markdown") {
 		t.Fatalf("reader document = %+v, %v", draft, err)
 	}
-	if _, err = pages.ReserveOutputBlockIDs(
+	if _, err = pages.ReservePageBlockIDs(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		2,
 	); !errors.Is(
 		err,
@@ -349,19 +406,36 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 		f.UserB,
 		f.UserA,
 	)
-	draft, err = pages.ReadOutputDocument(
+	if read, err := pages.ReadPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
+		DocumentReadInput{Since: -1},
+	); err != nil ||
+		read.CanEdit {
+		t.Fatalf("delivery editor grant changed live Page authority: %+v, %v", read, err)
+	}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE artifact_grants SET permission='edit' WHERE artifact_id=$1 AND user_id=$2`,
+		first,
+		f.UserB,
+	)
+	draft, err = pages.ReadPageDocument(
+		ctx,
+		reader,
+		first,
 		DocumentReadInput{Since: -1},
 	)
 	if err != nil || !draft.CanEdit {
 		t.Fatalf("editor document = %+v, %v", draft, err)
 	}
-	if _, err = pages.ReserveOutputBlockIDs(
+	if _, err = pages.ReservePageBlockIDs(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		2,
 	); err != nil {
 		t.Fatal(err)
@@ -374,16 +448,16 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	}
 	text := client.GetXmlFragment("content").Children()[0].(*crdt.YXmlElement).Children()[0].(*crdt.YXmlText)
 	client.Transact(func(tx *crdt.Transaction) { text.Insert(tx, 0, "Edited ", nil) })
-	changed, err := pages.SyncOutputDocument(
+	changed, err := pages.SyncPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		DocumentSyncInput{Update: client.EncodeStateAsUpdate(), BaseSequence: draft.Sequence},
 	)
 	if err != nil || !strings.Contains(changed.Markdown, "Edited Original") {
 		t.Fatalf("saved content = %q, %v", changed.Markdown, err)
 	}
-	historyRef := DocumentHistoryRef{OutputID: output, ItemID: item}
+	historyRef := DocumentHistoryRef{PageID: first}
 	history, err := pages.DocumentHistory(ctx, reader, historyRef, DocumentHistoryInput{})
 	if err != nil || len(history.Items) < 2 || history.Items[0].ActorID == nil ||
 		*history.Items[0].ActorID != reader.UserID {
@@ -404,19 +478,19 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	) {
 		t.Fatalf("stale restore = %v", err)
 	}
-	version, err := pages.CheckpointOutputDocument(
+	version, err := pages.CheckpointPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		changed.Sequence,
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	repeated, err := pages.CheckpointOutputDocument(
+	repeated, err := pages.CheckpointPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		changed.Sequence,
 	)
 	if err != nil || repeated != version {
@@ -426,10 +500,10 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	if err != nil || !strings.Contains(exported.Body, "Edited Original") {
 		t.Fatalf("export = %q,%v", exported.Body, err)
 	}
-	if _, err = pages.CheckpointOutputDocument(
+	if _, err = pages.CheckpointPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		draft.Sequence,
 	); !errors.Is(
 		err,
@@ -437,15 +511,16 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	) {
 		t.Fatalf("stale checkpoint = %v", err)
 	}
-	thread, err := service.MutateOutputReview(
+	thread, err := pages.MutatePageReview(
 		ctx,
 		reader,
-		output,
+		first,
 		Command{
 			RequestKey: uuid.New(),
 			Type:       "comment",
 			PageID:     &changed.PageID,
 			Body:       "Working document comment",
+			Anchor:     []byte(`{"type":"version"}`),
 		},
 	)
 	if err != nil {
@@ -464,11 +539,17 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	liveThreads, err := pages.PageReview(ctx, reader, first)
+	if err != nil {
+		t.Fatal(err)
+	}
 	foundLive, foundVersion := false, false
-	for _, t := range review.Items {
-		if t.ID == thread.ID {
-			foundLive = t.PageID != nil && *t.PageID == changed.PageID
+	for _, live := range liveThreads {
+		if live.ID == thread.ID {
+			foundLive = live.PageID != nil && *live.PageID == changed.PageID
 		}
+	}
+	for _, t := range review.Items {
 		if t.ID == historical.ID {
 			foundVersion = t.PageID == nil && t.VersionID == version
 		}
@@ -480,10 +561,10 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	last := changed
 	for range 105 {
 		client.Transact(func(tx *crdt.Transaction) { text.Insert(tx, 0, "x", nil) })
-		last, err = pages.SyncOutputDocument(
+		last, err = pages.SyncPageDocument(
 			ctx,
 			owner,
-			OutputDocumentRef{OutputID: output, ItemID: item},
+			first,
 			DocumentSyncInput{Update: client.EncodeStateAsUpdate(), BaseSequence: last.Sequence},
 		)
 		if err != nil {
@@ -563,20 +644,20 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	if err != nil || !strings.Contains(preserved.Markdown, "xxxx") {
 		t.Fatalf("restore erased intervening history = %+v,%v", preserved, err)
 	}
-	replay, err := pages.SyncOutputDocument(
+	replay, err := pages.SyncPageDocument(
 		ctx,
 		owner,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		DocumentSyncInput{Update: client.EncodeStateAsUpdate(), BaseSequence: last.Sequence},
 	)
 	if err != nil || replay.Sequence != restored.Sequence || replay.Markdown != restored.Markdown {
 		t.Fatalf("replayed save changed restoration = %+v,%v", replay, err)
 	}
 	client.Transact(func(tx *crdt.Transaction) { text.Insert(tx, 0, "offline edit", nil) })
-	if _, err = pages.SyncOutputDocument(
+	if _, err = pages.SyncPageDocument(
 		ctx,
 		owner,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		DocumentSyncInput{Update: client.EncodeStateAsUpdate(), BaseSequence: last.Sequence},
 	); !errors.Is(
 		err,
@@ -588,14 +669,14 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 		t,
 		ctx,
 		pool,
-		`UPDATE output_grants SET permission='view' WHERE output_id=$1 AND user_id=$2`,
-		output,
+		`UPDATE artifact_grants SET permission='view' WHERE artifact_id=$1 AND user_id=$2`,
+		first,
 		f.UserB,
 	)
-	if _, err = pages.SyncOutputDocument(
+	if _, err = pages.SyncPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		DocumentSyncInput{Update: client.EncodeStateAsUpdate(), BaseSequence: draft.Sequence},
 	); !errors.Is(
 		err,
@@ -614,12 +695,37 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	) {
 		t.Fatalf("viewer restore = %v", err)
 	}
-	dbtest.MustExec(t, ctx, pool, `DELETE FROM output_grants WHERE output_id=$1`, output)
-	dbtest.MustExec(t, ctx, pool, `UPDATE outputs SET visibility='private' WHERE id=$1`, output)
-	if _, err = pages.ReadOutputDocument(
+	dbtest.MustExec(t, ctx, pool, `DELETE FROM artifact_grants WHERE artifact_id=$1`, first)
+	dbtest.GrantProject(t, ctx, pool, f.CompanyA, f.ProjectA, f.UserB)
+	if content, err := pages.VersionBlocks(ctx, reader, f.ProjectA, version); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("revoked Page snapshot = %s, %v; want not found", content, err)
+	}
+
+	if _, err = pages.ReadPageDocument(
 		ctx,
 		reader,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
+		DocumentReadInput{Since: -1},
+	); !errors.Is(
+		err,
+		ErrNotFound,
+	) {
+		t.Fatalf("delivery grant retained live Page access after revocation: %v", err)
+	}
+	if review, err := service.OutputReview(
+		ctx,
+		reader,
+		output,
+	); err != nil || len(review.Documents) != 0 ||
+		len(review.Versions) != 1 {
+		t.Fatalf("delivery review exposed live document history: %+v, %v", review, err)
+	}
+	dbtest.MustExec(t, ctx, pool, `DELETE FROM output_grants WHERE output_id=$1`, output)
+	dbtest.MustExec(t, ctx, pool, `UPDATE outputs SET visibility='private' WHERE id=$1`, output)
+	if _, err = pages.ReadPageDocument(
+		ctx,
+		reader,
+		first,
 		DocumentReadInput{Since: -1},
 	); !errors.Is(
 		err,
@@ -640,15 +746,45 @@ func TestOutputDocumentWithoutProject(t *testing.T) {
 	}
 	cross := owner
 	cross.CompanyID = f.CompanyB
-	if _, err = pages.ReadOutputDocument(
+	if _, err = pages.ReadPageDocument(
 		ctx,
 		cross,
-		OutputDocumentRef{OutputID: output, ItemID: item},
+		first,
 		DocumentReadInput{Since: -1},
 	); !errors.Is(
 		err,
 		ErrNotFound,
 	) {
 		t.Fatalf("cross-company read = %v", err)
+	}
+	// The live Page remains usable even when its owner loses access to the import source.
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE outputs SET owner_user_id=$2, visibility='private' WHERE id=$1`,
+		output,
+		f.UserB,
+	)
+	if _, err = service.OutputReview(ctx, owner, output); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("former delivery owner read = %v, want not found", err)
+	}
+	live, err := pages.ReadPageDocument(ctx, owner, first, DocumentReadInput{Since: -1})
+	if err != nil || !live.CanEdit {
+		t.Fatalf("independent Page read = %+v, %v", live, err)
+	}
+	if _, err = pages.ReservePageBlockIDs(ctx, owner, first, 1); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = pages.CheckpointPageDocument(ctx, owner, first, live.Sequence); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = pages.DocumentHistory(ctx, owner, historyRef, DocumentHistoryInput{}); err != nil {
+		t.Fatal(err)
+	}
+	dbtest.MustExec(t, ctx, pool, `DELETE FROM outputs WHERE id=$1`, output)
+	retained, err := pages.ReadPageDocument(ctx, owner, first, DocumentReadInput{Since: -1})
+	if err != nil || retained.PageID != first || retained.Markdown != live.Markdown || !retained.CanEdit {
+		t.Fatalf("Page after source deletion = %+v, %v; want retained editable content", retained, err)
 	}
 }

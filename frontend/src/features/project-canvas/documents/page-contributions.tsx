@@ -1,7 +1,9 @@
+import { useLocalSuggestions } from "./use-local-suggestions";
+import { hasTextDiff, SuggestionTextDiff } from "./suggestion-text-diff";
 import { useRef, useState } from "react";
 import type { Editor } from "@tiptap/react";
 import type { components } from "@/shared/api/generated/api.generated";
-import { PageConflictEditor } from "./page-conflict-editor";
+import { getZenithTeamQueryErrorMessage } from "@/shared/api/zenith-team-api";
 import { BlockDocument } from "./block-editor-schema";
 import {
   InlinePageSuggestion,
@@ -11,7 +13,7 @@ import {
   usePageChangesQuery,
   usePageChangeDetailQuery,
   useReviewPageChangeMutation,
-  type PageScope,
+  type PageReviewScope,
 } from "../api/page-api";
 import "./page-suggestions.css";
 
@@ -28,14 +30,12 @@ export function PageContributions({
   canEdit,
   dirty = false,
   initialChangeId = "",
-  onEditPage,
 }: {
-  scope: PageScope;
+  scope: PageReviewScope;
   editor?: Editor | null;
   canEdit: boolean;
   dirty?: boolean;
   initialChangeId?: string;
-  onEditPage?: () => void;
 }) {
   const feed = usePageChangesQuery(scope);
   const pending = feed.currentData?.pending ?? [];
@@ -65,12 +65,6 @@ export function PageContributions({
   if (!visibleIds.length) return null;
   return (
     <>
-      {dirty && (
-        <p className="pc-review-notice" role="status">
-          Saving your edits… Review actions will be available when the page is
-          saved.
-        </p>
-      )}
       {visibleIds.map((id) => (
         <PageProposal
           key={id}
@@ -81,7 +75,6 @@ export function PageContributions({
           busyId={busyId}
           onBusyChange={setBusyId}
           editor={editor}
-          onEditPage={onEditPage}
         />
       ))}
     </>
@@ -96,11 +89,9 @@ function PageProposal({
   busyId,
   onBusyChange,
   editor,
-  onEditPage,
 }: {
-  scope: PageScope;
+  scope: PageReviewScope;
   changeId: string;
-  onEditPage?: () => void;
   canEdit: boolean;
   dirty: boolean;
   busyId: string;
@@ -114,10 +105,11 @@ function PageProposal({
   const [review, reviewing] = useReviewPageChangeMutation();
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [conflictIndex, setConflictIndex] = useState<number | null>(null);
-  const [reviewMode, setReviewMode] = useState<"accept" | "merge">("accept");
+  const [revisionIndex, setRevisionIndex] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState("");
   const receipt = useRef<ReviewInput | null>(null);
   const detail = comparison.currentData;
+  const localSuggestions = useLocalSuggestions(editor, detail?.suggestions);
   const disabled = dirty || !!busyId || comparison.isFetching || !!error;
   const send = async (input: ReviewInput) => {
     if (dirty || busyId || reviewing.isLoading) return;
@@ -128,17 +120,24 @@ function PageProposal({
     try {
       await review({ ...scope, id: changeId, input }).unwrap();
       receipt.current = null;
+      setRevisionIndex(null);
+      setFeedback("");
       setNotice(
         input.action === "apply"
-          ? "Changes merged into your page."
+          ? "Changes accepted."
           : input.action === "reject"
-            ? "Suggestions dismissed."
-            : "Suggestions resolved.",
+            ? "Suggestions rejected."
+            : input.action === "request_changes"
+              ? "Revision requested. The Agent will reply in the page comments."
+              : "Suggestions accepted.",
       );
       await comparison.refetch();
-    } catch {
+    } catch (cause) {
       setError(
-        "The page may have changed, or your decision couldn’t be confirmed. Retry your decision or refresh before continuing.",
+        getZenithTeamQueryErrorMessage(
+          cause,
+          "Your decision couldn’t be confirmed. Retry it or refresh before continuing.",
+        ),
       );
     } finally {
       onBusyChange("");
@@ -146,18 +145,6 @@ function PageProposal({
   };
   const act = (action: ReviewInput["action"], indexes: number[]) => {
     if (!detail || disabled || !indexes.length) return;
-    if (action === "apply") {
-      const conflict = detail.suggestions.find(
-        (item) =>
-          indexes.includes(item.index) &&
-          (item.status !== "pending" || item.competingChangeIds.length > 0),
-      );
-      if (conflict) {
-        setReviewMode("accept");
-        setConflictIndex(conflict.index);
-        return;
-      }
-    }
     void send({
       requestKey: crypto.randomUUID(),
       fingerprint: detail.fingerprint,
@@ -178,7 +165,7 @@ function PageProposal({
         Loading changes…
       </p>
     );
-  const suggestions = detail.suggestions.filter((suggestion) =>
+  const suggestions = localSuggestions.filter((suggestion) =>
     reviewStatuses.has(suggestion.status),
   );
   return (
@@ -224,43 +211,69 @@ function PageProposal({
                   <div className="flex items-center flex-wrap gap-[6px] mb-[4px] text-[var(--pc-muted,_var(--muted-foreground))] [font:400_11px/1.5_var(--font-sans,_sans-serif)]">
                     <span className="ml-auto">
                       {suggestion.status === "needs_update"
-                        ? "Needs revision"
+                        ? detail.status === "needs_update"
+                          ? "Revision requested"
+                          : suggestion.type === "update" && !suggestion.current
+                            ? "Target removed—no changes to apply. Reject or ask the Agent to revise."
+                            : "This suggestion no longer fits the page. Ask the Agent to revise it."
                         : suggestion.status === "already_reflected"
                           ? "Already in page"
-                          : "Conflicting change"}
+                          : "Other suggestions for this passage"}
                     </span>
                   </div>
                 )}
                 <div className="pc-review-diff">
-                  {suggestion.before && !originalVisible && (
-                    <section
-                      className="pc-review-before"
-                      aria-label="Original content"
-                    >
-                      <BlockDocument
-                        scope={scope}
-                        content={{
-                          type: "doc",
-                          content: [suggestionPreview(suggestion.before)],
-                        }}
-                        mode="comparison"
-                      />
-                    </section>
-                  )}
-                  {suggestion.after && (
-                    <section
-                      className="[background:color-mix(in_srgb,_#398454_8%,_transparent)]"
-                      aria-label="Suggested content"
-                    >
-                      <BlockDocument
-                        scope={scope}
-                        content={{
-                          type: "doc",
-                          content: [suggestionPreview(suggestion.after)],
-                        }}
-                        mode="comparison"
-                      />
-                    </section>
+                  {hasTextDiff(
+                    suggestion.current ?? suggestion.before,
+                    suggestion.after,
+                  ) ? (
+                    <SuggestionTextDiff
+                      before={(suggestion.current ?? suggestion.before)!}
+                      after={suggestion.after!}
+                    />
+                  ) : (
+                    <>
+                      {(suggestion.current ?? suggestion.before) &&
+                        !originalVisible && (
+                          <section
+                            className="pc-review-before"
+                            aria-label="Current content"
+                          >
+                            <BlockDocument
+                              scope={scope}
+                              content={{
+                                type: "doc",
+                                content: [
+                                  suggestionPreview(
+                                    (suggestion.current ?? suggestion.before)!,
+                                  ),
+                                ],
+                              }}
+                              mode="comparison"
+                            />
+                          </section>
+                        )}
+                      {(suggestion.after ||
+                        (suggestion.type === "move" && suggestion.before)) && (
+                        <section
+                          className="[background:color-mix(in_srgb,_#398454_8%,_transparent)]"
+                          aria-label="Suggested content"
+                        >
+                          <BlockDocument
+                            scope={scope}
+                            content={{
+                              type: "doc",
+                              content: [
+                                suggestionPreview(
+                                  suggestion.after ?? suggestion.before!,
+                                ),
+                              ],
+                            }}
+                            mode="comparison"
+                          />
+                        </section>
+                      )}
+                    </>
                   )}
                   {suggestion.type === "theme" && (
                     <p>
@@ -282,86 +295,94 @@ function PageProposal({
                     }}
                   />
                 )}
-                {dirty && <small role="status">Saving your edits…</small>}
-                {canEdit && conflictIndex === suggestion.index && (
-                  <PageConflictEditor
-                    key={`${suggestion.index}:${reviewMode}`}
-                    initialMode={reviewMode}
-                    scope={scope}
-                    detail={detail}
-                    suggestion={suggestion}
-                    editor={editor}
-                    dirty={dirty}
-                    busy={!!busyId}
-                    onBusyChange={onBusyChange}
-                    onClose={() => setConflictIndex(null)}
-                    onEditPage={onEditPage}
-                  />
-                )}
-                <footer className="pc-review-change-actions">
-                  {canEdit && (
-                    <>
+                {canEdit && revisionIndex === suggestion.index ? (
+                  <form
+                    className="mt-3 flex flex-col gap-2"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (disabled || !feedback.trim()) return;
+                      void send({
+                        requestKey: crypto.randomUUID(),
+                        fingerprint: detail.fingerprint,
+                        action: "request_changes",
+                        indexes: suggestion.group,
+                        feedback: feedback.trim(),
+                      });
+                    }}
+                  >
+                    <label htmlFor={`revision-${changeId}-${suggestion.index}`}>
+                      What should the Agent change?
+                    </label>
+                    <textarea
+                      id={`revision-${changeId}-${suggestion.index}`}
+                      autoFocus
+                      required
+                      maxLength={4000}
+                      rows={3}
+                      value={feedback}
+                      disabled={!!busyId}
+                      onChange={(event) => setFeedback(event.target.value)}
+                      className="w-full rounded-md border border-border bg-background p-2 text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+                    />
+                    <div className="pc-review-change-actions">
                       <button
-                        className="pc-review-merge"
+                        className="pc-review-approve"
+                        disabled={disabled || !feedback.trim()}
+                        type="submit"
+                      >
+                        Request revision
+                      </button>
+                      <button
+                        type="button"
+                        disabled={!!busyId}
+                        onClick={() => setRevisionIndex(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  canEdit && (
+                    <footer className="pc-review-change-actions">
+                      <button
+                        className="pc-review-approve"
                         disabled={
-                          disabled || suggestion.status === "needs_update"
+                          disabled ||
+                          suggestion.group.some(
+                            (index) =>
+                              detail.suggestions[index]?.status ===
+                              "needs_update",
+                          )
                         }
                         title={
-                          suggestion.status === "needs_update"
-                            ? "Use Merge to revise this outdated version"
-                            : suggestion.group.length > 1
-                              ? "Accept this version and its linked changes"
-                              : undefined
+                          suggestion.group.length > 1
+                            ? "Accept this suggestion and its linked changes"
+                            : undefined
                         }
-                        onClick={() => {
-                          if (suggestion.status === "already_reflected") {
-                            act("resolve", suggestion.group);
-                            return;
-                          }
-                          const conflict = detail.suggestions.some(
-                            (item) =>
-                              suggestion.group.includes(item.index) &&
-                              (item.status !== "pending" ||
-                                item.competingChangeIds.length > 0),
-                          );
-                          if (conflict) {
-                            setReviewMode("accept");
-                            setConflictIndex(suggestion.index);
-                          } else act("apply", suggestion.group);
-                        }}
+                        onClick={() => act("apply", suggestion.group)}
                       >
-                        Accept this version
+                        Accept
                       </button>
                       <button
                         disabled={disabled}
-                        title={
-                          suggestion.group.length > 1
-                            ? "Reject this version and its linked changes"
-                            : undefined
-                        }
                         onClick={() => act("reject", suggestion.group)}
                       >
-                        Reject this version
+                        Reject
                       </button>
-                      {detail.suggestions.some(
-                        (item) =>
-                          suggestion.group.includes(item.index) &&
-                          (item.status === "needs_update" ||
-                            item.competingChangeIds.length > 0),
-                      ) && (
-                        <button
-                          disabled={disabled}
-                          onClick={() => {
-                            setReviewMode("merge");
-                            setConflictIndex(suggestion.index);
-                          }}
-                        >
-                          Merge
-                        </button>
-                      )}
-                    </>
-                  )}
-                </footer>
+                      <button
+                        disabled={disabled || !detail.agentId}
+                        title={
+                          !detail.agentId
+                            ? "The authoring Agent is unavailable"
+                            : undefined
+                        }
+                        onClick={() => setRevisionIndex(suggestion.index)}
+                      >
+                        Revise
+                      </button>
+                    </footer>
+                  )
+                )}
               </article>
             )}
           </InlinePageSuggestion>

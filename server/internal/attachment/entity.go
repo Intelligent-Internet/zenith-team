@@ -55,14 +55,14 @@ type DownloadInput struct {
 // ResolvedDownloadInput names an Attachment after another domain has already
 // resolved the caller's authority to the exact file.
 type ResolvedDownloadInput struct {
-	ID                   uuid.UUID
-	CompanyID            uuid.UUID
-	OutputAccessResolved bool
+	ID                     uuid.UUID
+	CompanyID              uuid.UUID
+	ResourceAccessResolved bool
 	// KnownRevision permits revalidation of ready, immutable bytes after access
 	// has been resolved. Zero always opens storage.
 	KnownRevision int64
 	// RequestedByUserID is the frozen execution authorizer for a run reference.
-	// Its current artifact grants are checked when OutputAccessResolved is false.
+	// Its current artifact grants are checked when ResourceAccessResolved is false.
 	RequestedByUserID uuid.UUID
 }
 

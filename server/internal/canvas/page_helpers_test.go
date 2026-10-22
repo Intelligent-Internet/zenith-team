@@ -3,6 +3,7 @@ package canvas
 import (
 	"context"
 	"encoding/json"
+	"testing"
 
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 func readOverviewForRun(s *canvasServices, ctx context.Context, p auth.UserPrincipal, run uuid.UUID) (Page, error) {
@@ -85,10 +87,14 @@ func newCanvasServices(
 	attachments attachment.AttachmentService,
 	catalog ...func(string) (json.RawMessage, error),
 ) *canvasServices {
+	var options []PresentationServiceOption
+	for _, lookup := range catalog {
+		options = append(options, WithPresentationWorkflowLookup(lookup))
+	}
 	return &canvasServices{
 		NewCanvasService(store, bus, attachments),
 		NewPageService(store, bus),
-		NewPresentationService(store, bus, attachments, catalog...),
+		NewPresentationService(store, bus, attachments, options...),
 	}
 }
 
@@ -206,4 +212,15 @@ func createAndAcceptPageForRun(
 	page.Sequence = current.Sequence
 	page.ChangeID = nil
 	return page, err
+}
+
+// Native scenario contracts remain internal capture/storage fixtures. Public
+// authoring tests use the inline language instead of retired wrapper syntax.
+func nativeScenarioFixture(t *testing.T, source string) wiki.BlockNode {
+	t.Helper()
+	var root wiki.BlockNode
+	if err := json.Unmarshal([]byte(source), &root); err != nil {
+		t.Fatal(err)
+	}
+	return root
 }

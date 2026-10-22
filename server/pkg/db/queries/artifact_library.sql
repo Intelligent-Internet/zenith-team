@@ -34,12 +34,23 @@ LEFT JOIN users owner_account ON owner_account.id=output.owner_user_id
 WHERE output.company_id=sqlc.arg(company_id)::uuid AND output.id=ANY(sqlc.arg(output_ids)::uuid[]);
 
 -- name: GetArtifactForMessage :one
-SELECT output.id
-FROM outputs output
-JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
- AND access.user_id=sqlc.arg(actor_user_id)::uuid AND access.access_level>=3
-WHERE output.company_id=sqlc.arg(company_id)::uuid AND output.id=sqlc.arg(output_id)::uuid
-FOR SHARE OF output;
+WITH delivery_reference AS (
+ SELECT output.id FROM outputs output
+  JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+   AND access.user_id=sqlc.arg(actor_user_id)::uuid AND access.access_level>=3
+  WHERE output.company_id=sqlc.arg(company_id)::uuid AND output.id=sqlc.arg(output_id)::uuid
+  FOR SHARE OF output
+), artifact_reference AS (
+ SELECT artifact.id FROM artifacts artifact
+  JOIN artifact_access access ON access.company_id=artifact.company_id AND access.artifact_id=artifact.id
+   AND access.user_id=sqlc.arg(actor_user_id)::uuid AND access.access_level>=3
+  WHERE artifact.company_id=sqlc.arg(company_id)::uuid AND artifact.id=sqlc.arg(output_id)::uuid
+   AND artifact.archived_at IS NULL
+  FOR SHARE OF artifact
+)
+SELECT id FROM delivery_reference
+UNION ALL
+SELECT id FROM artifact_reference;
 
 -- name: ListRunChannelArtifacts :many
 -- The Artifact references a channel or group-DM Run freezes: those its
@@ -69,16 +80,25 @@ JOIN outputs output ON output.company_id=reference.company_id AND output.id=refe
 JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
  AND access.user_id=sqlc.arg(actor_user_id)::uuid
 WHERE message.deleted_at IS NULL
-ORDER BY reference.message_id, output.created_at, output.id;
+UNION ALL
+SELECT link.message_id, artifact.id
+FROM discussion_artifacts link
+JOIN conversation_items message ON message.company_id=link.company_id AND message.id=link.message_id
+JOIN artifacts artifact ON artifact.company_id=link.company_id AND artifact.id=link.artifact_id
+JOIN artifact_access access ON access.company_id=artifact.company_id AND access.artifact_id=artifact.id
+ AND access.user_id=sqlc.arg(actor_user_id)::uuid
+WHERE link.company_id=sqlc.arg(company_id)::uuid AND link.message_id=ANY(sqlc.arg(message_ids)::uuid[])
+ AND message.deleted_at IS NULL AND artifact.archived_at IS NULL
+ORDER BY message_id, id;
 
 -- name: ListRunChannelWhiteboards :many
 -- The Whiteboards shared into the chat that tagged a Run and its caller, the
 -- Run's Authorizer, may open, newest first: the Run's prompt names them.
 SELECT output.id, output.title
-FROM outputs output
-JOIN output_conversation_grants shared ON shared.company_id=output.company_id AND shared.output_id=output.id
+FROM artifacts output
+JOIN artifact_conversation_grants shared ON shared.company_id=output.company_id AND shared.artifact_id=output.id
  AND shared.conversation_id=sqlc.arg(conversation_id)::uuid
-JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+JOIN artifact_access access ON access.company_id=output.company_id AND access.artifact_id=output.id
  AND access.user_id=sqlc.arg(actor_user_id)::uuid
 WHERE output.company_id=sqlc.arg(company_id)::uuid AND output.type='whiteboard'
 ORDER BY output.created_at DESC, output.id DESC
@@ -88,8 +108,8 @@ LIMIT 20;
 -- The Whiteboards made in the Agent or Task chat a Run answers that the Run's
 -- Authorizer may open, newest first: the Run's prompt names them.
 SELECT output.id, output.title
-FROM outputs output
-JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+FROM artifacts output
+JOIN artifact_access access ON access.company_id=output.company_id AND access.artifact_id=output.id
  AND access.user_id=sqlc.arg(actor_user_id)::uuid
 WHERE output.company_id=sqlc.arg(company_id)::uuid
   AND output.conversation_id=sqlc.arg(conversation_id)::uuid AND output.type='whiteboard'

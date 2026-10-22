@@ -18,14 +18,15 @@ import (
 type (
 	OutputDocumentRef struct{ OutputID, ItemID uuid.UUID }
 	DocumentSyncInput struct {
-		Update       []byte
-		BaseSequence int64
+		SchemaVersion int
+		Update        []byte
+		BaseSequence  int64
 	}
 )
 
 // A target resolves an entry point to one saved page. Document merge, block IDs,
 // recovery and comment reconciliation do not depend on where that page is opened.
-type documentTarget struct{ ProjectID, VersionID, OutputID, ItemID uuid.UUID }
+type documentTarget struct{ ProjectID, VersionID, PageID uuid.UUID }
 
 func (t documentTarget) resolve(
 	ctx context.Context,
@@ -33,28 +34,12 @@ func (t documentTarget) resolve(
 	p auth.UserPrincipal,
 	write bool,
 ) (generated.WikiPage, bool, error) {
-	var id uuid.UUID
+	id := t.PageID
 	var canEdit bool
-	if t.OutputID != uuid.Nil {
-		allowed, err := authorizeOutputDocument(ctx, q, p, t.OutputID, write)
-		if err != nil {
-			return generated.WikiPage{}, false, err
-		}
-		canEdit = allowed
-		doc, err := q.GetOutputDocument(
-			ctx,
-			generated.GetOutputDocumentParams{
-				CompanyID:    p.CompanyID,
-				OutputID:     t.OutputID,
-				OutputItemID: t.ItemID,
-			},
-		)
-		if err != nil {
-			return generated.WikiPage{}, false, lookup(err)
-		}
-		id = doc.PageID
-	} else {
-		access, err := authorize(ctx, q, p, t.ProjectID, write)
+	switch {
+	case id != uuid.Nil:
+	default:
+		_, err := authorize(ctx, q, p, t.ProjectID, false)
 		if err != nil {
 			return generated.WikiPage{}, false, err
 		}
@@ -76,20 +61,16 @@ func (t documentTarget) resolve(
 			return generated.WikiPage{}, false, ErrInvalid
 		}
 		id = v.WikiPageID.UUID
-		canEdit = access.Can(auth.ProjectPermissionTasksWrite)
 	}
 	page, err := q.GetCanvasWikiPage(ctx, generated.GetCanvasWikiPageParams{CompanyID: p.CompanyID, ID: id})
 	if err != nil {
 		return page, false, lookup(err)
 	}
-	if page.SourceOutputID.Valid {
-		allowed, e := authorizeOutputDocument(ctx, q, p, page.SourceOutputID.UUID, write)
-		if e != nil {
-			return page, false, e
-		}
-		canEdit = allowed
+	canEdit, err = authorizeArtifactContent(ctx, q, p, page.ID, write)
+	if err != nil {
+		return page, false, err
 	}
-	if !page.ProjectID.Valid && !page.SourceOutputID.Valid {
+	if page.ArtifactType == "wiki" {
 		canEdit = false
 	}
 	pendingCreation, err := q.PagePendingCreation(
@@ -109,6 +90,31 @@ func (t documentTarget) resolve(
 	return page, canEdit, nil
 }
 
+// Live content uses Artifact authority, independently of its entry point.
+func authorizeArtifactContent(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	id uuid.UUID,
+	write bool,
+) (bool, error) {
+	resolve := auth.ResolveArtifactAccess
+	if write {
+		resolve = auth.LockArtifactAccess
+	}
+	access, err := resolve(ctx, q, p, id)
+	if err != nil {
+		return false, err
+	}
+	if !access.Read {
+		return false, ErrNotFound
+	}
+	if write && !access.Edit {
+		return false, ErrForbidden
+	}
+	return access.Edit, nil
+}
+
 func (t documentTarget) changed(
 	ctx context.Context,
 	q *generated.Queries,
@@ -120,32 +126,24 @@ func (t documentTarget) changed(
 	if err != nil {
 		return nil, lookup(err)
 	}
-	if owner.SourceOutputID.Valid {
-		t.OutputID = owner.SourceOutputID.UUID
+	if owner.ProjectID.Valid {
+		return changeEvent(ctx, q, p, owner.ProjectID.UUID, sequence, page)
 	}
-	if t.OutputID != uuid.Nil {
-		readers, err := q.OutputDocumentReaders(
-			ctx,
-			generated.OutputDocumentReadersParams{CompanyID: p.CompanyID, OutputID: t.OutputID},
-		)
-		if err != nil {
-			return nil, err
-		}
-		return &events.Event{
-			EntityType: Topic,
-			Name:       EventDocumentChanged,
-			CompanyID:  p.CompanyID,
-			Actor:      events.UserActor(p.UserID.String()),
-			CreatedAt:  time.Now().UTC(),
-			Payload: OutputDocumentChanged{
-				ProjectFrame: auth.ProjectFrame{Audience: &auth.ProjectAudience{UserIDs: readers}},
-				OutputID:     t.OutputID,
-				PageID:       page,
-				Sequence:     sequence,
-			},
-		}, nil
+	readers, err := q.ListArtifactReaders(
+		ctx,
+		generated.ListArtifactReadersParams{CompanyID: p.CompanyID, ArtifactID: page},
+	)
+	if err != nil {
+		return nil, err
 	}
-	return changeEvent(ctx, q, p, t.ProjectID, sequence, page)
+	return &events.Event{
+		EntityType: Topic, Name: EventDocumentChanged, CompanyID: p.CompanyID,
+		Actor: events.UserActor(p.UserID.String()), CreatedAt: time.Now().UTC(),
+		Payload: DocumentChanged{
+			ProjectFrame: auth.ProjectFrame{Audience: &auth.ProjectAudience{UserIDs: readers}},
+			PageID:       page, Sequence: sequence,
+		},
+	}, nil
 }
 
 func validateDocumentReferences(
@@ -161,48 +159,23 @@ func validateDocumentReferences(
 	return wiki.ValidateStandaloneBlocks(root)
 }
 
-func (s *DefaultPageService) ReadOutputDocument(
+func (s *DefaultPageService) CheckpointPageDocument(
 	ctx context.Context,
 	p auth.UserPrincipal,
-	ref OutputDocumentRef,
-	input DocumentReadInput,
-) (Document, error) {
-	return s.readDocument(ctx, p, documentTarget{OutputID: ref.OutputID, ItemID: ref.ItemID}, input)
+	page uuid.UUID,
+	sequence int64,
+) (uuid.UUID, error) {
+	return s.checkpointDocument(ctx, p, documentTarget{PageID: page}, sequence)
 }
 
-func (s *DefaultPageService) SyncOutputDocument(
+func (s *DefaultPageService) checkpointDocument(
 	ctx context.Context,
 	p auth.UserPrincipal,
-	ref OutputDocumentRef,
-	input DocumentSyncInput,
-) (Document, error) {
-	return s.syncDocument(
-		ctx,
-		p,
-		documentTarget{OutputID: ref.OutputID, ItemID: ref.ItemID},
-		input.Update,
-		input.BaseSequence,
-	)
-}
-
-func (s *DefaultPageService) ReserveOutputBlockIDs(
-	ctx context.Context,
-	p auth.UserPrincipal,
-	ref OutputDocumentRef,
-	count int32,
-) ([]uuid.UUID, error) {
-	return s.reserveDocumentBlockIDs(ctx, p, documentTarget{OutputID: ref.OutputID, ItemID: ref.ItemID}, count)
-}
-
-func (s *DefaultPageService) CheckpointOutputDocument(
-	ctx context.Context,
-	p auth.UserPrincipal,
-	ref OutputDocumentRef,
+	target documentTarget,
 	sequence int64,
 ) (uuid.UUID, error) {
 	var revision uuid.UUID
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		target := documentTarget{OutputID: ref.OutputID, ItemID: ref.ItemID}
 		page, _, err := target.resolve(ctx, q, p, true)
 		if err != nil {
 			return err
@@ -223,9 +196,9 @@ func (s *DefaultPageService) CheckpointOutputDocument(
 		if draft.HeadSeq != sequence {
 			return ErrConflict
 		}
-		existing, e := q.OutputDocumentCheckpoint(
+		existing, e := q.PageDocumentCheckpoint(
 			ctx,
-			generated.OutputDocumentCheckpointParams{
+			generated.PageDocumentCheckpointParams{
 				CompanyID:  p.CompanyID,
 				PageID:     page.ID,
 				ThroughSeq: sequence,
@@ -261,15 +234,16 @@ func (s *DefaultPageService) OutputDocumentVersion(
 ) (DocumentVersion, error) {
 	var result DocumentVersion
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := authorizeOutputDocument(ctx, q, p, output, false); err != nil {
+		if err := authorizeOutputDocument(ctx, q, p, output, false); err != nil {
 			return err
 		}
 		row, err := q.GetOutputDocumentVersion(
 			ctx,
 			generated.GetOutputDocumentVersionParams{
-				CompanyID: p.CompanyID,
-				OutputID:  output,
-				ID:        revision,
+				ActorUserID: p.UserID,
+				CompanyID:   p.CompanyID,
+				OutputID:    output,
+				ID:          revision,
 			},
 		)
 		if err != nil {

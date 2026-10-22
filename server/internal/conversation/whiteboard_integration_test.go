@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
@@ -44,8 +45,8 @@ func TestDiscussionMessageMakesAWhiteboard(t *testing.T) {
 	access := func(userID uuid.UUID) int {
 		t.Helper()
 		var level int
-		if err := f.pool.QueryRow(f.ctx, `SELECT COALESCE((SELECT access_level FROM output_access
-			WHERE output_id=$1 AND user_id=$2),0)`, board, userID).Scan(&level); err != nil {
+		if err := f.pool.QueryRow(f.ctx, `SELECT COALESCE((SELECT access_level FROM artifact_access
+			WHERE artifact_id=$1 AND user_id=$2),0)`, board, userID).Scan(&level); err != nil {
 			t.Fatal(err)
 		}
 		return level
@@ -64,10 +65,34 @@ func TestDiscussionMessageMakesAWhiteboard(t *testing.T) {
 		t.Fatalf("replay = %+v, %v", replay, err)
 	}
 	var whiteboards int
-	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM outputs WHERE type='whiteboard' AND conversation_id=$1`,
-		group.Conversation.ID).Scan(&whiteboards); err != nil || whiteboards != 1 {
+	if err := f.pool.QueryRow(f.ctx, `SELECT count(*) FROM artifacts WHERE type='whiteboard' AND conversation_id=$1`,
+		group.Conversation.ID).
+		Scan(&whiteboards); err != nil ||
+		whiteboards != 1 {
 		t.Fatalf("Whiteboards after a retry = %d, %v; want one", whiteboards, err)
 	}
+	sharing := artifact.NewArtifactService(f.store, f.bus)
+	grants, err := sharing.Access(f.ctx, f.a, board)
+	if err != nil || grants.Type != "whiteboard" || len(grants.ConversationGrants) != 1 {
+		t.Fatalf("Whiteboard sharing = %+v, %v", grants, err)
+	}
+	if _, err := sharing.ChangeAccess(f.ctx, f.b, artifact.AccessChange{
+		ArtifactID: board, ExpectedRevision: grants.Revision, RevokeConversationID: &group.Conversation.ID,
+	}); !errors.Is(err, artifact.ErrForbidden) {
+		t.Fatalf("reader revocation = %v", err)
+	}
+	if _, err := sharing.ChangeAccess(f.ctx, f.a, artifact.AccessChange{
+		ArtifactID: board, ExpectedRevision: grants.Revision, RevokeConversationID: &group.Conversation.ID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if got := access(f.b.UserID); got != 0 {
+		t.Fatalf("revoked chat access = %d", got)
+	}
+	if got := access(f.a.UserID); got != 3 {
+		t.Fatalf("revocation removed ownership: %d", got)
+	}
+
 	reply := DiscussionSendInput{
 		RequestKey:   uuid.New(),
 		Body:         DiscussionBody{Version: 1},
@@ -135,7 +160,7 @@ func TestCreateWhiteboardInAgentAndTaskChats(t *testing.T) {
 		var title, kind string
 		var owner, conversationID uuid.UUID
 		if err := pool.QueryRow(ctx, `SELECT o.title, o.type, o.owner_user_id, o.conversation_id
-			FROM outputs o JOIN boards b ON b.company_id = o.company_id AND b.id = o.id WHERE o.id = $1`,
+			FROM artifacts o JOIN boards b ON b.company_id = o.company_id AND b.id = o.id WHERE o.id = $1`,
 			created.ArtifactID).Scan(&title, &kind, &owner, &conversationID); err != nil {
 			t.Fatalf("read the new Whiteboard: %v", err)
 		}

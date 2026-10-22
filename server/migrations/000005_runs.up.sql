@@ -419,16 +419,16 @@ CREATE TABLE review_threads (
     CONSTRAINT review_threads_company_id_project_id_id_key UNIQUE (company_id, project_id, id),
     CONSTRAINT review_threads_company_key UNIQUE (company_id, id),
     CONSTRAINT review_threads_anchor_check CHECK (jsonb_typeof(anchor) = 'object'),
-    CONSTRAINT review_threads_document_subject_check CHECK ((document_revision_id IS NULL) OR ((output_id IS NOT NULL) AND (page_id IS NULL))),
-    CONSTRAINT review_threads_resolution_check CHECK (((status = 'open') AND (resolved_at IS NULL) AND (resolved_by_user_id IS NULL)) OR ((status = 'resolved') AND (resolved_at IS NOT NULL) AND (resolved_by_user_id IS NOT NULL))),
+    CONSTRAINT review_threads_document_subject_check CHECK (document_revision_id IS NULL OR output_id IS NOT NULL AND page_id IS NULL),
+    CONSTRAINT review_threads_resolution_check CHECK (status = 'open' AND resolved_at IS NULL AND resolved_by_user_id IS NULL OR status = 'resolved' AND resolved_at IS NOT NULL AND resolved_by_user_id IS NOT NULL),
     CONSTRAINT review_threads_status_check CHECK (status IN ('open', 'resolved')),
-    CONSTRAINT review_threads_subject_check CHECK (((project_id IS NOT NULL) AND (artifact_version_id IS NOT NULL) AND (output_id IS NULL)) OR ((project_id IS NULL) AND (artifact_version_id IS NULL) AND (output_id IS NOT NULL))),
-    CONSTRAINT review_threads_company_id_project_id_artifact_version_id_fkey FOREIGN KEY (company_id, project_id, artifact_version_id) REFERENCES project_artifact_versions(company_id, project_id, id) ON DELETE CASCADE,
-    CONSTRAINT review_threads_output_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE CASCADE
+    CONSTRAINT review_threads_subject_check CHECK (project_id IS NOT NULL AND artifact_version_id IS NOT NULL AND output_id IS NULL AND page_id IS NULL OR project_id IS NULL AND artifact_version_id IS NULL AND output_id IS NOT NULL AND page_id IS NULL OR page_id IS NOT NULL AND artifact_version_id IS NULL AND output_id IS NULL AND document_revision_id IS NULL),
+    CONSTRAINT review_threads_project_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE,
+    CONSTRAINT review_threads_snapshot_fkey FOREIGN KEY (company_id, artifact_version_id) REFERENCES artifact_snapshots(company_id, id) ON DELETE CASCADE
 );
-CREATE INDEX review_threads_output ON review_threads (output_id, created_at, id) WHERE (output_id IS NOT NULL);
-CREATE INDEX review_threads_page ON review_threads (page_id, created_at, id) WHERE (page_id IS NOT NULL);
 CREATE INDEX review_threads_version ON review_threads (artifact_version_id, created_at, id);
+CREATE INDEX review_threads_page ON review_threads (page_id, created_at, id) WHERE (page_id IS NOT NULL);
+CREATE INDEX review_threads_output ON review_threads (output_id, created_at, id) WHERE (output_id IS NOT NULL);
 
 CREATE TABLE review_comments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -485,7 +485,8 @@ CREATE TABLE artifact_review_decisions (
     created_at timestamptz DEFAULT now() NOT NULL,
     CONSTRAINT artifact_review_decisions_pkey PRIMARY KEY (id),
     CONSTRAINT artifact_review_decisions_action_check CHECK (action IN ('accept', 'reject', 'request_changes', 'keep_variant')),
-    CONSTRAINT artifact_review_decisions_company_id_project_id_artifact_i_fkey FOREIGN KEY (company_id, project_id, artifact_id, version_id) REFERENCES project_artifact_versions(company_id, project_id, artifact_id, id) ON DELETE CASCADE
+    CONSTRAINT artifact_review_decisions_project_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE,
+    CONSTRAINT artifact_review_decisions_snapshot_fkey FOREIGN KEY (company_id, artifact_id, version_id) REFERENCES artifact_snapshots(company_id, artifact_id, id) ON DELETE CASCADE
 );
 CREATE INDEX artifact_review_decisions_project_time ON artifact_review_decisions (project_id, created_at DESC, id DESC);
 CREATE INDEX artifact_review_decisions_version_time ON artifact_review_decisions (version_id, created_at DESC, id DESC);
@@ -544,7 +545,29 @@ CREATE TABLE run_wiki_writes (
 );
 CREATE INDEX run_wiki_writes_company_created_idx ON run_wiki_writes (company_id, created_at, key);
 
+CREATE TABLE delivery_snapshots (
+    company_id uuid NOT NULL,
+    output_id uuid NOT NULL,
+    snapshot_id uuid NOT NULL,
+    ordinal integer NOT NULL,
+    created_at timestamptz DEFAULT statement_timestamp() NOT NULL,
+    CONSTRAINT delivery_snapshots_pkey PRIMARY KEY (output_id, ordinal),
+    CONSTRAINT delivery_snapshots_output_id_snapshot_id_key UNIQUE (output_id, snapshot_id),
+    CONSTRAINT delivery_snapshots_ordinal_check CHECK (ordinal >= 0),
+    CONSTRAINT delivery_snapshots_company_id_snapshot_id_fkey FOREIGN KEY (company_id, snapshot_id) REFERENCES artifact_snapshots(company_id, id)
+);
+CREATE INDEX delivery_snapshots_snapshot ON delivery_snapshots (snapshot_id);
+
 -- Links to these tables from tables created earlier.
+ALTER TABLE artifact_snapshots ADD CONSTRAINT project_artifact_versions_company_id_asset_version_id_fkey FOREIGN KEY (company_id, asset_version_id) REFERENCES asset_versions(company_id, id) ON DELETE SET NULL (asset_version_id);
+ALTER TABLE artifact_snapshots ADD CONSTRAINT project_artifact_versions_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE SET NULL (output_id);
+ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_company_id_asset_version_id_fkey FOREIGN KEY (company_id, asset_version_id) REFERENCES asset_versions(company_id, id);
+ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id);
+ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_company_id_export_attachment_id_fkey FOREIGN KEY (company_id, export_attachment_id) REFERENCES attachments(company_id, id);
+ALTER TABLE conversations ADD CONSTRAINT conversations_document_thread_fkey FOREIGN KEY (company_id, document_thread_id) REFERENCES review_threads(company_id, id) ON DELETE CASCADE;
+ALTER TABLE discussion_artifacts ADD CONSTRAINT discussion_artifacts_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE CASCADE;
+ALTER TABLE review_threads ADD CONSTRAINT review_threads_output_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE CASCADE;
+ALTER TABLE delivery_snapshots ADD CONSTRAINT delivery_snapshots_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE CASCADE;
 ALTER TABLE companies ADD CONSTRAINT companies_avatar_attachment_fkey FOREIGN KEY (id, avatar_attachment_id) REFERENCES attachments(company_id, id) ON DELETE SET NULL (avatar_attachment_id);
 ALTER TABLE company_reference_documents ADD CONSTRAINT company_reference_documents_attachment_fkey FOREIGN KEY (company_id, attachment_id) REFERENCES attachments(company_id, id) ON DELETE CASCADE;
 ALTER TABLE company_initializations ADD CONSTRAINT company_initializations_company_id_research_run_id_fkey FOREIGN KEY (company_id, research_run_id) REFERENCES runs(company_id, id) ON DELETE SET NULL (research_run_id);
@@ -557,16 +580,8 @@ ALTER TABLE project_files ADD CONSTRAINT project_files_company_id_attachment_id_
 ALTER TABLE project_file_assets ADD CONSTRAINT project_file_assets_company_id_asset_id_fkey FOREIGN KEY (company_id, asset_id) REFERENCES assets(company_id, id) ON DELETE CASCADE;
 ALTER TABLE task_merge_jobs ADD CONSTRAINT task_merge_jobs_run_fkey FOREIGN KEY (company_id, run_id) REFERENCES runs(company_id, id) ON DELETE CASCADE;
 ALTER TABLE task_result_items ADD CONSTRAINT task_result_items_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id);
-ALTER TABLE project_artifact_versions ADD CONSTRAINT project_artifact_versions_company_id_asset_version_id_fkey FOREIGN KEY (company_id, asset_version_id) REFERENCES asset_versions(company_id, id) ON DELETE SET NULL (asset_version_id);
-ALTER TABLE project_artifact_versions ADD CONSTRAINT project_artifact_versions_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE SET NULL (output_id);
-ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_company_id_export_attachment_id_fkey FOREIGN KEY (company_id, export_attachment_id) REFERENCES attachments(company_id, id);
-ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE SET NULL (output_id);
-ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_company_id_asset_version_id_fkey FOREIGN KEY (company_id, asset_version_id) REFERENCES asset_versions(company_id, id);
-ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id);
-ALTER TABLE conversations ADD CONSTRAINT conversations_document_thread_fkey FOREIGN KEY (company_id, document_thread_id) REFERENCES review_threads(company_id, id) ON DELETE CASCADE;
 ALTER TABLE conversation_run_queue_attachments ADD CONSTRAINT conversation_run_queue_attachments_attachment_fkey FOREIGN KEY (company_id, attachment_id) REFERENCES attachments(company_id, id) ON DELETE CASCADE;
 ALTER TABLE message_attachments ADD CONSTRAINT message_attachments_attachment_fkey FOREIGN KEY (company_id, attachment_id) REFERENCES attachments(company_id, id) ON DELETE CASCADE;
-ALTER TABLE discussion_artifacts ADD CONSTRAINT discussion_artifacts_company_id_output_id_fkey FOREIGN KEY (company_id, output_id) REFERENCES outputs(company_id, id) ON DELETE CASCADE;
 ALTER TABLE huddle_work_proposals ADD CONSTRAINT huddle_work_proposals_company_id_submitted_run_id_fkey FOREIGN KEY (company_id, submitted_run_id) REFERENCES runs(company_id, id) ON DELETE SET NULL (submitted_run_id);
 
 -- The same rule for one Run, from its own row: its Authorizer and the chat
@@ -605,6 +620,7 @@ END $$;
 -- reaches only that Project's readers, directly or through a Group. A public
 -- token is a separate anonymous entry point, not company-wide discovery. An
 -- aggregate export keeps the access of every source it flattens.
+
 CREATE VIEW output_access AS
 WITH direct_access AS NOT MATERIALIZED (
 SELECT output.company_id, output.id AS output_id, member.user_id,
@@ -665,8 +681,9 @@ SELECT access.company_id,access.output_id,access.user_id,access.access_level
 FROM direct_access access
 WHERE NOT EXISTS (
  SELECT 1 FROM project_presentations presentation
+ JOIN delivery_snapshots delivery ON delivery.company_id=presentation.company_id AND delivery.snapshot_id=presentation.id
  JOIN project_presentation_sources source ON source.presentation_id=presentation.id
- WHERE presentation.company_id=access.company_id AND presentation.output_id=access.output_id
+ WHERE presentation.company_id=access.company_id AND delivery.output_id=access.output_id
  -- Sharing the result authorizes its primary snapshot, not other retained Pages.
  AND source.version_id <> presentation.page_version_id
  AND ((source.output_id IS NOT NULL

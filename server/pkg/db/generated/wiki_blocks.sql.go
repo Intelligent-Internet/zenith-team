@@ -115,8 +115,8 @@ func (q *Queries) DeleteCanvasTemplate(ctx context.Context, arg DeleteCanvasTemp
 }
 
 const getCanvasBlockBody = `-- name: GetCanvasBlockBody :one
-SELECT COALESCE(wr.block_content,'{}'::jsonb) AS block_content FROM project_artifact_versions v LEFT JOIN wiki_revisions wr ON wr.id=v.wiki_revision_id
-WHERE v.company_id=$1 AND v.project_id=$2 AND v.id=$3
+SELECT COALESCE(wr.block_content,'{}'::jsonb) AS block_content FROM artifact_snapshots v LEFT JOIN document_snapshots wr ON wr.id=v.wiki_revision_id
+WHERE v.company_id=$1 AND (v.project_id=$2::uuid OR v.project_id IS NULL) AND v.id=$3
 `
 
 type GetCanvasBlockBodyParams struct {
@@ -133,9 +133,9 @@ func (q *Queries) GetCanvasBlockBody(ctx context.Context, arg GetCanvasBlockBody
 }
 
 const getCanvasReference = `-- name: GetCanvasReference :one
-SELECT v.artifact_id,a.accepted_version_id FROM project_artifact_versions v
-JOIN project_artifacts a ON a.id=v.artifact_id
-WHERE v.company_id=$1 AND v.project_id=$2 AND v.id=$3
+SELECT v.artifact_id,a.accepted_version_id FROM artifact_snapshots v
+JOIN artifacts a ON a.id=v.artifact_id
+WHERE v.company_id=$1::uuid AND (v.project_id=$2::uuid OR v.project_id IS NULL) AND v.id=$3::uuid
 `
 
 type GetCanvasReferenceParams struct {
@@ -304,8 +304,8 @@ func (q *Queries) ListCanvasTemplates(ctx context.Context, arg ListCanvasTemplat
 
 const listRemovedCanvasItems = `-- name: ListRemovedCanvasItems :many
 SELECT i.id,i.title,i.artifact_id,COALESCE(i.pinned_version_id,a.accepted_version_id) AS source_version_id,i.content_revision
-FROM canvas_items i LEFT JOIN project_artifacts a ON a.id=i.artifact_id
-WHERE i.company_id=$1 AND i.project_id=$2 AND i.deleted_at IS NOT NULL ORDER BY i.deleted_at DESC LIMIT 100
+FROM canvas_items i LEFT JOIN artifacts a ON a.id=i.artifact_id
+WHERE i.company_id=$1 AND i.project_id=$2::uuid AND i.deleted_at IS NOT NULL ORDER BY i.deleted_at DESC LIMIT 100
 `
 
 type ListRemovedCanvasItemsParams struct {
@@ -348,7 +348,7 @@ func (q *Queries) ListRemovedCanvasItems(ctx context.Context, arg ListRemovedCan
 }
 
 const lockWikiDraft = `-- name: LockWikiDraft :one
-SELECT company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, legacy_state, legacy_markdown, structure_seq, title, summary, collection_id, restored_revision_id FROM wiki_canvas_drafts WHERE company_id=$1 AND page_id=$2 FOR UPDATE
+SELECT company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, structure_seq, title, summary, collection_id, restored_revision_id FROM wiki_canvas_drafts WHERE company_id=$1 AND page_id=$2 FOR UPDATE
 `
 
 type LockWikiDraftParams struct {
@@ -369,8 +369,6 @@ func (q *Queries) LockWikiDraft(ctx context.Context, arg LockWikiDraftParams) (W
 		&i.UpdatedAt,
 		&i.SchemaVersion,
 		&i.Content,
-		&i.LegacyState,
-		&i.LegacyMarkdown,
 		&i.StructureSeq,
 		&i.Title,
 		&i.Summary,
@@ -460,28 +458,28 @@ func (q *Queries) RestoreCanvasItem(ctx context.Context, arg RestoreCanvasItemPa
 }
 
 const setCanvasBranchTitle = `-- name: SetCanvasBranchTitle :exec
-UPDATE project_artifact_versions SET branch_title=$4 WHERE company_id=$1 AND project_id=$2 AND id=$3
+UPDATE artifact_snapshots SET branch_title=$1 WHERE company_id=$2 AND project_id=$3::uuid AND id=$4
 `
 
 type SetCanvasBranchTitleParams struct {
+	BranchTitle string    `json:"branch_title"`
 	CompanyID   uuid.UUID `json:"company_id"`
 	ProjectID   uuid.UUID `json:"project_id"`
 	ID          uuid.UUID `json:"id"`
-	BranchTitle string    `json:"branch_title"`
 }
 
 func (q *Queries) SetCanvasBranchTitle(ctx context.Context, arg SetCanvasBranchTitleParams) error {
 	_, err := q.db.Exec(ctx, setCanvasBranchTitle,
+		arg.BranchTitle,
 		arg.CompanyID,
 		arg.ProjectID,
 		arg.ID,
-		arg.BranchTitle,
 	)
 	return err
 }
 
 const setWikiRevisionBlocks = `-- name: SetWikiRevisionBlocks :exec
-UPDATE wiki_revisions SET block_content=$3,body=$4 WHERE company_id=$1 AND id=$2 AND block_content='{}'::jsonb
+UPDATE document_snapshots SET block_content=$3,body=$4 WHERE company_id=$1 AND id=$2 AND block_content='{}'::jsonb
 `
 
 type SetWikiRevisionBlocksParams struct {
@@ -503,18 +501,20 @@ func (q *Queries) SetWikiRevisionBlocks(ctx context.Context, arg SetWikiRevision
 
 const updateWikiBlockDraft = `-- name: UpdateWikiBlockDraft :execrows
 UPDATE wiki_canvas_drafts SET state=$3,content=$4,markdown=$5,head_seq=head_seq+1,updated_at=clock_timestamp()
- ,structure_seq=CASE WHEN $7::boolean THEN head_seq+1 ELSE structure_seq END
-WHERE company_id=$1 AND page_id=$2 AND head_seq=$6 AND schema_version=1
+ ,schema_version=GREATEST(schema_version,$7::integer)
+ ,structure_seq=CASE WHEN $8::boolean THEN head_seq+1 ELSE structure_seq END
+WHERE company_id=$1 AND page_id=$2 AND head_seq=$6 AND schema_version IN (1,2)
 `
 
 type UpdateWikiBlockDraftParams struct {
-	CompanyID  uuid.UUID `json:"company_id"`
-	PageID     uuid.UUID `json:"page_id"`
-	State      []byte    `json:"state"`
-	Content    []byte    `json:"content"`
-	Markdown   string    `json:"markdown"`
-	HeadSeq    int64     `json:"head_seq"`
-	Structural bool      `json:"structural"`
+	CompanyID     uuid.UUID `json:"company_id"`
+	PageID        uuid.UUID `json:"page_id"`
+	State         []byte    `json:"state"`
+	Content       []byte    `json:"content"`
+	Markdown      string    `json:"markdown"`
+	HeadSeq       int64     `json:"head_seq"`
+	SchemaVersion int32     `json:"schema_version"`
+	Structural    bool      `json:"structural"`
 }
 
 func (q *Queries) UpdateWikiBlockDraft(ctx context.Context, arg UpdateWikiBlockDraftParams) (int64, error) {
@@ -525,54 +525,13 @@ func (q *Queries) UpdateWikiBlockDraft(ctx context.Context, arg UpdateWikiBlockD
 		arg.Content,
 		arg.Markdown,
 		arg.HeadSeq,
+		arg.SchemaVersion,
 		arg.Structural,
 	)
 	if err != nil {
 		return 0, err
 	}
 	return result.RowsAffected(), nil
-}
-
-const upgradeWikiDraft = `-- name: UpgradeWikiDraft :one
-UPDATE wiki_canvas_drafts SET legacy_state=state,legacy_markdown=markdown,state=$3,content=$4,
- schema_version=1,head_seq=head_seq+1,structure_seq=head_seq+1,updated_at=clock_timestamp()
-WHERE company_id=$1 AND page_id=$2 AND schema_version=0 RETURNING company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, legacy_state, legacy_markdown, structure_seq, title, summary, collection_id, restored_revision_id
-`
-
-type UpgradeWikiDraftParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	PageID    uuid.UUID `json:"page_id"`
-	State     []byte    `json:"state"`
-	Content   []byte    `json:"content"`
-}
-
-func (q *Queries) UpgradeWikiDraft(ctx context.Context, arg UpgradeWikiDraftParams) (WikiCanvasDraft, error) {
-	row := q.db.QueryRow(ctx, upgradeWikiDraft,
-		arg.CompanyID,
-		arg.PageID,
-		arg.State,
-		arg.Content,
-	)
-	var i WikiCanvasDraft
-	err := row.Scan(
-		&i.CompanyID,
-		&i.PageID,
-		&i.State,
-		&i.Markdown,
-		&i.HeadSeq,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.SchemaVersion,
-		&i.Content,
-		&i.LegacyState,
-		&i.LegacyMarkdown,
-		&i.StructureSeq,
-		&i.Title,
-		&i.Summary,
-		&i.CollectionID,
-		&i.RestoredRevisionID,
-	)
-	return i, err
 }
 
 const validateWikiBlockIDs = `-- name: ValidateWikiBlockIDs :one

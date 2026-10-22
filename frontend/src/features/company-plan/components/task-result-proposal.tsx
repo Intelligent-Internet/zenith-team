@@ -68,7 +68,13 @@ export function TaskResultProposal({
   if (!pending.length) return null;
   const canApply = pending.every((item) => item.status === "pending");
   const needsNewDelivery = pending.some((item) =>
-    ["rejected", "already_reflected", "superseded"].includes(item.status),
+    [
+      "rejected",
+      "already_reflected",
+      "superseded",
+      "resolved",
+      "undone",
+    ].includes(item.status),
   );
   const checked = decision?.input.fingerprint === value.fingerprint;
   return (
@@ -79,12 +85,17 @@ export function TaskResultProposal({
       <h4 className="mb-2 text-sm font-semibold">Changes to {output.title}</h4>
       {pending.map((suggestion) => (
         <div key={suggestion.index} className="my-3 grid gap-3 md:grid-cols-2">
-          {suggestion.before && (
-            <section aria-label="Original content">
-              <p className="text-xs font-semibold">Original</p>
+          {(suggestion.current ?? suggestion.before) && (
+            <section aria-label="Current content">
+              <p className="text-xs font-semibold">Current</p>
               <BlockDocument
                 scope={scope}
-                content={{ type: "doc", content: [suggestion.before] } as Block}
+                content={
+                  {
+                    type: "doc",
+                    content: [suggestion.current ?? suggestion.before],
+                  } as Block
+                }
                 mode="comparison"
               />
             </section>
@@ -112,7 +123,9 @@ export function TaskResultProposal({
                   ? "This change is already in the document, but was not accepted as part of this delivery."
                   : suggestion.status === "superseded"
                     ? "A newer proposal replaces this delivered suggestion."
-                    : "The document has changed. This suggestion needs an update."}
+                    : ["resolved", "undone"].includes(suggestion.status)
+                      ? "This proposal no longer supplies an accepted change for this delivery."
+                      : "The document has changed. Ask the Agent to revise this suggestion."}
             </p>
           )}
         </div>

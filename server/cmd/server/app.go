@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 	"github.com/jackc/pgx/v5"
@@ -422,7 +424,8 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	if err != nil {
 		return fmt.Errorf("construct Company resource service: %w", err)
 	}
-	taskService, err := task.NewTaskService(databaseStore, bus, inboxPresenter)
+	uiAuthoring := wiki.UIAuthoringPolicy{Disabled: !cfg.IntelligentUIAuthoringEnabled}
+	taskService, err := task.NewTaskService(databaseStore, bus, inboxPresenter, uiAuthoring)
 	if err != nil {
 		return fmt.Errorf("construct Task service: %w", err)
 	}
@@ -471,7 +474,7 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	if err != nil {
 		return fmt.Errorf("construct Group service: %w", err)
 	}
-	wikiService, err := wiki.NewWikiService(databaseStore, bus)
+	wikiService, err := wiki.NewWikiService(databaseStore, bus, uiAuthoring)
 	if err != nil {
 		return fmt.Errorf("construct Wiki service: %w", err)
 	}
@@ -479,7 +482,7 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	if err != nil {
 		return fmt.Errorf("construct Wiki agent read service: %w", err)
 	}
-	wikiAgentWriteService, err := wiki.NewAgentWriteService(databaseStore, bus)
+	wikiAgentWriteService, err := wiki.NewAgentWriteService(databaseStore, bus, uiAuthoring)
 	if err != nil {
 		return fmt.Errorf("construct Wiki agent write service: %w", err)
 	}
@@ -602,6 +605,7 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 			taskMessageRuns,
 			run,
 			output,
+			uiAuthoring,
 		)
 		return promotion.RunID, err
 	}))
@@ -753,6 +757,12 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 	realtime.SetAllowedOrigins(cfg.WebOrigins)
 	realtime.SetTrustedProxies(cfg.TrustedProxies)
 	boardService := canvas.NewBoardService(databaseStore, bus)
+	pageService := canvas.NewPageService(databaseStore, bus,
+		canvas.WithPageDocumentAgentInvoker(conversation.InvokeDocumentAgentInTx),
+		canvas.WithPageUIAuthoringPolicy(uiAuthoring),
+		canvas.WithPagePreviewObserver(registry.ObservePagePreview),
+		canvas.WithPageSourceObserver(registry.ObservePageSource),
+	)
 	httpHandler := handler.New(handler.Handler{
 		LiveKitAPIKey:         cfg.LiveKit.APIKey,
 		LiveKitAPISecret:      cfg.LiveKit.APISecret,
@@ -800,22 +810,24 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 			bus,
 			attachmentService,
 			canvas.WithDocumentAgentInvoker(conversation.InvokeDocumentAgentInTx),
+			canvas.WithCanvasUIAuthoringPolicy(uiAuthoring),
 		),
 		BoardService:      boardService,
 		BoardMediaService: canvas.NewBoardMediaService(databaseStore, attachmentService),
 		EphemeralRelay:    ephemeralRelay,
-		PageService:       canvas.NewPageService(databaseStore, bus),
+		PageService:       pageService,
 		PresentationService: canvas.NewPresentationService(
 			databaseStore,
 			bus,
 			attachmentService,
-			func(key string) (json.RawMessage, error) {
+			canvas.WithPresentationWorkflowLookup(func(key string) (json.RawMessage, error) {
 				definition, err := workflow.Get(key)
 				if err != nil {
 					return nil, err
 				}
 				return json.Marshal(definition)
-			},
+			}),
+			canvas.WithPresentationCaptureObserver(registry.ObservePresentationCapture),
 		),
 		CanvasPresence:           canvasPresence,
 		WikiService:              wikiService,
@@ -842,6 +854,7 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 		ActivityFeed:             activity.NewFeed(queries),
 		InboxService:             inboxService,
 		AttachmentService:        attachmentService,
+		ArtifactService:          artifact.NewArtifactService(databaseStore, bus),
 		DeliverableService:       deliverableService,
 		PublicationService:       publicationService,
 		MailboxService:           mailboxParts.service,
@@ -949,6 +962,13 @@ func run(ctx context.Context, lookup config.LookupEnv, logDestination io.Writer)
 			sweepOnce(ctx, queries, runService, runtimeService)
 		}),
 		repeating("attachment-cleanup", attachmentCleanupInterval, attachmentCleanup.Tick),
+		repeating("page-preview-retention", 30*time.Second, func(ctx context.Context) {
+			cleanupCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			if _, err := pageService.PurgeExpiredPagePreviews(cleanupCtx); err != nil && ctx.Err() == nil {
+				logger.WarnContext(ctx, "Page preview retention failed", "error", err)
+			}
+		}),
 		repeating("crash-report-retention", crashRetentionInterval, crashReportRetention.Tick),
 		humanInputWorker,
 		{name: "schedule-sweep", run: scheduleParts.firingWorker.Run},

@@ -36,7 +36,7 @@ func (q *Queries) CreateOutputDocument(ctx context.Context, arg CreateOutputDocu
 }
 
 const getOutputDocument = `-- name: GetOutputDocument :one
-SELECT d.page_id, (SELECT r.id FROM wiki_revisions r WHERE r.company_id=d.company_id AND r.page_id=d.page_id ORDER BY r.number DESC LIMIT 1)::uuid AS current_revision_id FROM output_documents d
+SELECT d.page_id, (SELECT r.id FROM document_snapshots r WHERE r.company_id=d.company_id AND r.page_id=d.page_id ORDER BY r.number DESC LIMIT 1)::uuid AS current_revision_id FROM output_documents d
 JOIN wiki_pages p ON p.company_id=d.company_id AND p.id=d.page_id
 WHERE d.company_id=$1 AND d.output_id=$2 AND d.output_item_id=$3
 `
@@ -56,6 +56,27 @@ func (q *Queries) GetOutputDocument(ctx context.Context, arg GetOutputDocumentPa
 	row := q.db.QueryRow(ctx, getOutputDocument, arg.CompanyID, arg.OutputID, arg.OutputItemID)
 	var i GetOutputDocumentRow
 	err := row.Scan(&i.PageID, &i.CurrentRevisionID)
+	return i, err
+}
+
+const getOutputDocumentOwnership = `-- name: GetOutputDocumentOwnership :one
+SELECT owner_user_id,project_id FROM outputs WHERE company_id=$1 AND id=$2
+`
+
+type GetOutputDocumentOwnershipParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	ID        uuid.UUID `json:"id"`
+}
+
+type GetOutputDocumentOwnershipRow struct {
+	OwnerUserID uuid.NullUUID `json:"owner_user_id"`
+	ProjectID   uuid.NullUUID `json:"project_id"`
+}
+
+func (q *Queries) GetOutputDocumentOwnership(ctx context.Context, arg GetOutputDocumentOwnershipParams) (GetOutputDocumentOwnershipRow, error) {
+	row := q.db.QueryRow(ctx, getOutputDocumentOwnership, arg.CompanyID, arg.ID)
+	var i GetOutputDocumentOwnershipRow
+	err := row.Scan(&i.OwnerUserID, &i.ProjectID)
 	return i, err
 }
 
@@ -95,44 +116,53 @@ func (q *Queries) GetOutputDocumentSource(ctx context.Context, arg GetOutputDocu
 }
 
 const getOutputDocumentVersion = `-- name: GetOutputDocumentVersion :one
-SELECT r.body,r.block_content FROM output_documents d
-JOIN wiki_revisions r ON r.company_id=d.company_id AND r.page_id=d.page_id
+SELECT r.page_id,r.body,r.block_content FROM output_documents d
+JOIN document_snapshots r ON r.company_id=d.company_id AND r.page_id=d.page_id
+JOIN artifact_access access ON access.company_id=d.company_id AND access.artifact_id=d.page_id AND access.user_id=$4::uuid
 WHERE d.company_id=$1 AND d.output_id=$2 AND r.id=$3
 `
 
 type GetOutputDocumentVersionParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	OutputID  uuid.UUID `json:"output_id"`
-	ID        uuid.UUID `json:"id"`
+	CompanyID   uuid.UUID `json:"company_id"`
+	OutputID    uuid.UUID `json:"output_id"`
+	ID          uuid.UUID `json:"id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
 }
 
 type GetOutputDocumentVersionRow struct {
-	Body         string `json:"body"`
-	BlockContent []byte `json:"block_content"`
+	PageID       uuid.UUID `json:"page_id"`
+	Body         string    `json:"body"`
+	BlockContent []byte    `json:"block_content"`
 }
 
 func (q *Queries) GetOutputDocumentVersion(ctx context.Context, arg GetOutputDocumentVersionParams) (GetOutputDocumentVersionRow, error) {
-	row := q.db.QueryRow(ctx, getOutputDocumentVersion, arg.CompanyID, arg.OutputID, arg.ID)
+	row := q.db.QueryRow(ctx, getOutputDocumentVersion,
+		arg.CompanyID,
+		arg.OutputID,
+		arg.ID,
+		arg.ActorUserID,
+	)
 	var i GetOutputDocumentVersionRow
-	err := row.Scan(&i.Body, &i.BlockContent)
+	err := row.Scan(&i.PageID, &i.Body, &i.BlockContent)
 	return i, err
 }
 
 const linkPresentationDocument = `-- name: LinkPresentationDocument :exec
 INSERT INTO output_documents(company_id,output_id,output_item_id,page_id,submitted_sequence,submitted_content)
-SELECT capture.company_id,capture.output_id,item.id,capture.page_id,capture.source_sequence,capture.shared_content
+SELECT capture.company_id,$1::uuid,item.id,capture.page_id,capture.source_sequence,capture.shared_content
 FROM project_presentations capture
-JOIN output_items item ON item.company_id=capture.company_id AND item.output_id=capture.output_id AND item.role='primary'
-WHERE capture.company_id=$1 AND capture.id=$2
+JOIN output_items item ON item.company_id=capture.company_id AND item.output_id=$1::uuid AND item.role='primary'
+WHERE capture.company_id=$2::uuid AND capture.id=$3::uuid
 `
 
 type LinkPresentationDocumentParams struct {
+	OutputID  uuid.UUID `json:"output_id"`
 	CompanyID uuid.UUID `json:"company_id"`
 	ID        uuid.UUID `json:"id"`
 }
 
 func (q *Queries) LinkPresentationDocument(ctx context.Context, arg LinkPresentationDocumentParams) error {
-	_, err := q.db.Exec(ctx, linkPresentationDocument, arg.CompanyID, arg.ID)
+	_, err := q.db.Exec(ctx, linkPresentationDocument, arg.OutputID, arg.CompanyID, arg.ID)
 	return err
 }
 
@@ -180,12 +210,7 @@ func (q *Queries) ListDeliveryAttribution(ctx context.Context, arg ListDeliveryA
 
 const listOutputDocumentFreshness = `-- name: ListOutputDocumentFreshness :many
 SELECT d.output_id, d.page_id, p.project_id,p.source_output_id,
- (p.status='active' AND (
- EXISTS(SELECT 1 FROM project_access a WHERE a.company_id=p.company_id AND a.project_id=p.project_id AND a.user_id=$1::uuid)
- OR EXISTS(SELECT 1 FROM output_access a JOIN outputs o ON o.company_id=a.company_id AND o.id=a.output_id
-  WHERE a.company_id=p.company_id AND a.output_id=p.source_output_id AND a.user_id=$1::uuid
- AND (o.project_id IS NULL OR EXISTS(SELECT 1 FROM project_access access WHERE access.company_id=p.company_id AND access.project_id=o.project_id AND access.user_id=$1::uuid)))
- ))::boolean AS can_read_live,
+ (p.status='active' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=p.company_id AND access.artifact_id=p.id AND access.user_id=$1::uuid))::boolean AS can_read_live,
  (CASE
  WHEN proposal.status IN ('needs_update','superseded','rejected','undone') THEN true
  WHEN proposal.status IN ('applied','resolved') THEN
@@ -201,7 +226,8 @@ SELECT d.output_id, d.page_id, p.project_id,p.source_output_id,
 FROM output_documents d
 JOIN wiki_pages p ON p.company_id=d.company_id AND p.id=d.page_id
 JOIN wiki_canvas_drafts head ON head.company_id=d.company_id AND head.page_id=d.page_id
-LEFT JOIN project_presentations capture ON capture.company_id=d.company_id AND capture.output_id=d.output_id
+LEFT JOIN delivery_snapshots delivery ON delivery.company_id=d.company_id AND delivery.output_id=d.output_id
+LEFT JOIN project_presentations capture ON capture.company_id=delivery.company_id AND capture.id=delivery.snapshot_id
 LEFT JOIN project_page_changes proposal ON proposal.company_id=capture.company_id AND proposal.id=capture.change_id
 WHERE d.company_id=$2::uuid AND d.output_id=ANY($3::uuid[])
 `
@@ -250,13 +276,15 @@ func (q *Queries) ListOutputDocumentFreshness(ctx context.Context, arg ListOutpu
 
 const listOutputDocumentVersions = `-- name: ListOutputDocumentVersions :many
 SELECT d.output_item_id,r.id,r.page_id,r.number,r.title,left(r.body,1600)::text AS excerpt,r.created_at
-FROM output_documents d JOIN wiki_revisions r ON r.company_id=d.company_id AND r.page_id=d.page_id
+FROM output_documents d JOIN document_snapshots r ON r.company_id=d.company_id AND r.page_id=d.page_id
+JOIN artifact_access access ON access.company_id=d.company_id AND access.artifact_id=d.page_id AND access.user_id=$3::uuid
 WHERE d.company_id=$1 AND d.output_id=$2 ORDER BY r.created_at DESC,r.id DESC LIMIT 100
 `
 
 type ListOutputDocumentVersionsParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	OutputID  uuid.UUID `json:"output_id"`
+	CompanyID   uuid.UUID `json:"company_id"`
+	OutputID    uuid.UUID `json:"output_id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
 }
 
 type ListOutputDocumentVersionsRow struct {
@@ -270,7 +298,7 @@ type ListOutputDocumentVersionsRow struct {
 }
 
 func (q *Queries) ListOutputDocumentVersions(ctx context.Context, arg ListOutputDocumentVersionsParams) ([]ListOutputDocumentVersionsRow, error) {
-	rows, err := q.db.Query(ctx, listOutputDocumentVersions, arg.CompanyID, arg.OutputID)
+	rows, err := q.db.Query(ctx, listOutputDocumentVersions, arg.CompanyID, arg.OutputID, arg.ActorUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -300,12 +328,14 @@ func (q *Queries) ListOutputDocumentVersions(ctx context.Context, arg ListOutput
 const listOutputDocuments = `-- name: ListOutputDocuments :many
 SELECT d.output_item_id,d.page_id,p.title,p.current_revision_id FROM output_documents d
 JOIN wiki_pages p ON p.company_id=d.company_id AND p.id=d.page_id
+JOIN artifact_access access ON access.company_id=d.company_id AND access.artifact_id=d.page_id AND access.user_id=$3::uuid
 WHERE d.company_id=$1 AND d.output_id=$2 ORDER BY d.created_at,d.page_id
 `
 
 type ListOutputDocumentsParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	OutputID  uuid.UUID `json:"output_id"`
+	CompanyID   uuid.UUID `json:"company_id"`
+	OutputID    uuid.UUID `json:"output_id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
 }
 
 type ListOutputDocumentsRow struct {
@@ -316,7 +346,7 @@ type ListOutputDocumentsRow struct {
 }
 
 func (q *Queries) ListOutputDocuments(ctx context.Context, arg ListOutputDocumentsParams) ([]ListOutputDocumentsRow, error) {
-	rows, err := q.db.Query(ctx, listOutputDocuments, arg.CompanyID, arg.OutputID)
+	rows, err := q.db.Query(ctx, listOutputDocuments, arg.CompanyID, arg.OutputID, arg.ActorUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -340,35 +370,24 @@ func (q *Queries) ListOutputDocuments(ctx context.Context, arg ListOutputDocumen
 	return items, nil
 }
 
-const outputDocumentCheckpoint = `-- name: OutputDocumentCheckpoint :one
-SELECT revision_id FROM wiki_canvas_checkpoints WHERE company_id=$1 AND page_id=$2 AND through_seq=$3 ORDER BY created_at,revision_id LIMIT 1
-`
-
-type OutputDocumentCheckpointParams struct {
-	CompanyID  uuid.UUID `json:"company_id"`
-	PageID     uuid.UUID `json:"page_id"`
-	ThroughSeq int64     `json:"through_seq"`
-}
-
-func (q *Queries) OutputDocumentCheckpoint(ctx context.Context, arg OutputDocumentCheckpointParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, outputDocumentCheckpoint, arg.CompanyID, arg.PageID, arg.ThroughSeq)
-	var revision_id uuid.UUID
-	err := row.Scan(&revision_id)
-	return revision_id, err
-}
-
 const outputDocumentPageExists = `-- name: OutputDocumentPageExists :one
-SELECT EXISTS(SELECT 1 FROM output_documents WHERE company_id=$1 AND output_id=$2 AND page_id=$3)::boolean
+SELECT EXISTS(SELECT 1 FROM output_documents WHERE output_documents.company_id=$1 AND output_documents.output_id=$2 AND output_documents.page_id=$3 AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=output_documents.company_id AND access.artifact_id=output_documents.page_id AND access.user_id=$4::uuid))::boolean
 `
 
 type OutputDocumentPageExistsParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	OutputID  uuid.UUID `json:"output_id"`
-	PageID    uuid.UUID `json:"page_id"`
+	CompanyID   uuid.UUID `json:"company_id"`
+	OutputID    uuid.UUID `json:"output_id"`
+	PageID      uuid.UUID `json:"page_id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
 }
 
 func (q *Queries) OutputDocumentPageExists(ctx context.Context, arg OutputDocumentPageExistsParams) (bool, error) {
-	row := q.db.QueryRow(ctx, outputDocumentPageExists, arg.CompanyID, arg.OutputID, arg.PageID)
+	row := q.db.QueryRow(ctx, outputDocumentPageExists,
+		arg.CompanyID,
+		arg.OutputID,
+		arg.PageID,
+		arg.ActorUserID,
+	)
 	var column_1 bool
 	err := row.Scan(&column_1)
 	return column_1, err
@@ -391,35 +410,19 @@ func (q *Queries) OutputDocumentProject(ctx context.Context, arg OutputDocumentP
 	return project_id, err
 }
 
-const outputDocumentReaders = `-- name: OutputDocumentReaders :many
-SELECT a.user_id FROM output_access a
-JOIN outputs o ON o.company_id=a.company_id AND o.id=a.output_id
-WHERE a.company_id=$1 AND a.output_id=$2
-AND (o.project_id IS NULL OR EXISTS(SELECT 1 FROM project_access p WHERE p.company_id=a.company_id AND p.project_id=o.project_id AND p.user_id=a.user_id))
-ORDER BY a.user_id
+const pageDocumentCheckpoint = `-- name: PageDocumentCheckpoint :one
+SELECT revision_id FROM wiki_canvas_checkpoints WHERE company_id=$1 AND page_id=$2 AND through_seq=$3 ORDER BY created_at,revision_id LIMIT 1
 `
 
-type OutputDocumentReadersParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	OutputID  uuid.UUID `json:"output_id"`
+type PageDocumentCheckpointParams struct {
+	CompanyID  uuid.UUID `json:"company_id"`
+	PageID     uuid.UUID `json:"page_id"`
+	ThroughSeq int64     `json:"through_seq"`
 }
 
-func (q *Queries) OutputDocumentReaders(ctx context.Context, arg OutputDocumentReadersParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, outputDocumentReaders, arg.CompanyID, arg.OutputID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []uuid.UUID{}
-	for rows.Next() {
-		var user_id uuid.UUID
-		if err := rows.Scan(&user_id); err != nil {
-			return nil, err
-		}
-		items = append(items, user_id)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) PageDocumentCheckpoint(ctx context.Context, arg PageDocumentCheckpointParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, pageDocumentCheckpoint, arg.CompanyID, arg.PageID, arg.ThroughSeq)
+	var revision_id uuid.UUID
+	err := row.Scan(&revision_id)
+	return revision_id, err
 }

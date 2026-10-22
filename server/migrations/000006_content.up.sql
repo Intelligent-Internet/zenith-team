@@ -38,20 +38,19 @@ CREATE TABLE canvas_items (
     deleted_at timestamptz,
     CONSTRAINT canvas_items_pkey PRIMARY KEY (id),
     CONSTRAINT canvas_items_company_id_project_id_canvas_id_id_key UNIQUE (company_id, project_id, canvas_id, id),
-    CONSTRAINT canvas_items_check CHECK (((item_type = 'frame') AND (artifact_id IS NULL) AND (pinned_version_id IS NULL)) OR ((item_type = 'artifact') AND (artifact_id IS NOT NULL))),
+    CONSTRAINT canvas_items_check CHECK (item_type = 'frame' AND artifact_id IS NULL AND pinned_version_id IS NULL OR item_type = 'artifact' AND artifact_id IS NOT NULL),
     CONSTRAINT canvas_items_check1 CHECK (parent_frame_id IS DISTINCT FROM id),
     CONSTRAINT canvas_items_item_type_check CHECK (item_type IN ('artifact', 'frame')),
     CONSTRAINT canvas_items_representation_check CHECK (representation IN ('compact', 'excerpt', 'preview')),
-    CONSTRAINT canvas_items_version_policy_check CHECK (version_policy IN ('pinned', 'accepted', 'draft')),
-    CONSTRAINT canvas_items_version_selection_check CHECK ((version_policy <> 'accepted') OR (pinned_version_id IS NULL)),
+    CONSTRAINT canvas_items_version_policy_check CHECK (version_policy IN ('pinned', 'draft')),
     CONSTRAINT canvas_items_view_config_check CHECK (jsonb_typeof(view_config) = 'object'),
-    CONSTRAINT canvas_items_company_id_project_id_artifact_id_fkey FOREIGN KEY (company_id, project_id, artifact_id) REFERENCES project_artifacts(company_id, project_id, id) ON DELETE CASCADE,
-    CONSTRAINT canvas_items_company_id_project_id_artifact_id_pinned_vers_fkey FOREIGN KEY (company_id, project_id, artifact_id, pinned_version_id) REFERENCES project_artifact_versions(company_id, project_id, artifact_id, id) ON DELETE SET NULL (pinned_version_id),
+    CONSTRAINT canvas_items_artifact_fkey FOREIGN KEY (company_id, artifact_id) REFERENCES artifacts(company_id, id) ON DELETE CASCADE,
     CONSTRAINT canvas_items_company_id_project_id_canvas_id_fkey FOREIGN KEY (company_id, project_id, canvas_id) REFERENCES project_canvases(company_id, project_id, id) ON DELETE CASCADE,
-    CONSTRAINT canvas_items_company_id_project_id_canvas_id_parent_frame__fkey FOREIGN KEY (company_id, project_id, canvas_id, parent_frame_id) REFERENCES canvas_items(company_id, project_id, canvas_id, id) ON DELETE SET NULL (parent_frame_id)
+    CONSTRAINT canvas_items_company_id_project_id_canvas_id_parent_frame__fkey FOREIGN KEY (company_id, project_id, canvas_id, parent_frame_id) REFERENCES canvas_items(company_id, project_id, canvas_id, id) ON DELETE SET NULL (parent_frame_id),
+    CONSTRAINT canvas_items_snapshot_fkey FOREIGN KEY (company_id, artifact_id, pinned_version_id) REFERENCES artifact_snapshots(company_id, artifact_id, id) ON DELETE SET NULL (pinned_version_id)
 );
-CREATE INDEX canvas_items_artifact ON canvas_items (artifact_id) WHERE (deleted_at IS NULL);
 CREATE INDEX canvas_items_board ON canvas_items (canvas_id, id) WHERE (deleted_at IS NULL);
+CREATE INDEX canvas_items_artifact ON canvas_items (artifact_id) WHERE (deleted_at IS NULL);
 
 CREATE TABLE canvas_edges (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
@@ -105,10 +104,12 @@ CREATE TABLE boards (
     head_seq bigint DEFAULT 0 NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL,
+    artifact_type text DEFAULT 'whiteboard' NOT NULL,
     CONSTRAINT boards_pkey PRIMARY KEY (id),
     CONSTRAINT boards_company_id_id_key UNIQUE (company_id, id),
-    CONSTRAINT boards_company_id_fkey FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-    CONSTRAINT boards_output_fkey FOREIGN KEY (company_id, id) REFERENCES outputs(company_id, id) ON DELETE CASCADE
+    CONSTRAINT boards_artifact_type_check CHECK (artifact_type = 'whiteboard'),
+    CONSTRAINT boards_artifact_fkey FOREIGN KEY (company_id, artifact_type, id) REFERENCES artifacts(company_id, type, id) ON DELETE CASCADE,
+    CONSTRAINT boards_company_id_fkey FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
 
 CREATE TABLE board_files (
@@ -268,7 +269,7 @@ CREATE TABLE board_changes (
 );
 
 CREATE TABLE wiki_pages (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    id uuid NOT NULL,
     company_id uuid NOT NULL,
     collection_id uuid,
     slug text NOT NULL,
@@ -282,31 +283,33 @@ CREATE TABLE wiki_pages (
     updated_at timestamptz DEFAULT now() NOT NULL,
     archived_at timestamptz,
     search_vector tsvector DEFAULT ''::tsvector NOT NULL,
-    next_revision_number bigint DEFAULT 1 NOT NULL,
     source_output_id uuid,
     project_id uuid,
     theme text DEFAULT 'default' NOT NULL,
+    artifact_type text NOT NULL,
     CONSTRAINT wiki_pages_pkey PRIMARY KEY (id),
     CONSTRAINT wiki_pages_company_id_id_key UNIQUE (company_id, id),
     CONSTRAINT wiki_pages_company_slug_key UNIQUE (company_id, slug),
     CONSTRAINT wiki_pages_output_document_key UNIQUE (company_id, source_output_id, id),
     CONSTRAINT wiki_project_page_key UNIQUE (company_id, project_id, id),
-    CONSTRAINT wiki_pages_document_owner_check CHECK ((source_output_id IS NULL) OR (project_id IS NULL)),
-    CONSTRAINT wiki_pages_status_archived_check CHECK (((status = 'active') AND (archived_at IS NULL)) OR ((status = 'archived') AND (archived_at IS NOT NULL))),
+    CONSTRAINT wiki_pages_artifact_type_check CHECK (artifact_type IN ('page', 'wiki')),
+    CONSTRAINT wiki_pages_page_collection_check CHECK (artifact_type <> 'page' OR collection_id IS NULL),
+    CONSTRAINT wiki_pages_status_archived_check CHECK (status = 'active' AND archived_at IS NULL OR status = 'archived' AND archived_at IS NOT NULL),
     CONSTRAINT wiki_pages_status_check CHECK (status IN ('active', 'archived')),
     CONSTRAINT wiki_pages_theme_check CHECK (theme IN ('default', 'editorial', 'compact')),
-    CONSTRAINT wiki_pages_collection_fkey FOREIGN KEY (company_id, collection_id) REFERENCES wiki_collections(company_id, id) ON DELETE SET NULL (collection_id),
+    CONSTRAINT wiki_pages_wiki_scope_check CHECK (artifact_type <> 'wiki' OR project_id IS NULL AND source_output_id IS NULL),
     CONSTRAINT wiki_pages_company_id_fkey FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
-    CONSTRAINT wiki_pages_source_output_fkey FOREIGN KEY (company_id, source_output_id) REFERENCES outputs(company_id, id) ON DELETE CASCADE,
+    CONSTRAINT wiki_pages_source_output_fkey FOREIGN KEY (company_id, source_output_id) REFERENCES outputs(company_id, id) ON DELETE SET NULL (source_output_id),
+    CONSTRAINT wiki_pages_type_fkey FOREIGN KEY (company_id, artifact_type, id) REFERENCES artifacts(company_id, type, id) ON DELETE CASCADE,
     CONSTRAINT wiki_project_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE
 );
-CREATE INDEX wiki_pages_collection_idx ON wiki_pages (company_id, collection_id, updated_at DESC, id DESC);
-CREATE INDEX wiki_pages_company_status_updated_idx ON wiki_pages (company_id, status, updated_at DESC, id DESC);
-CREATE INDEX wiki_pages_search_idx ON wiki_pages USING gin (search_vector);
 CREATE INDEX wiki_pages_source_output_idx ON wiki_pages (source_output_id) WHERE (source_output_id IS NOT NULL);
+CREATE INDEX wiki_pages_company_status_updated_idx ON wiki_pages (company_id, status, updated_at DESC, id DESC);
+CREATE INDEX wiki_pages_collection_idx ON wiki_pages (company_id, collection_id, updated_at DESC, id DESC);
+CREATE INDEX wiki_pages_search_idx ON wiki_pages USING gin (search_vector);
 
-CREATE TABLE wiki_revisions (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
+CREATE TABLE document_snapshots (
+    id uuid NOT NULL,
     company_id uuid NOT NULL,
     page_id uuid NOT NULL,
     number bigint NOT NULL,
@@ -324,10 +327,9 @@ CREATE TABLE wiki_revisions (
     CONSTRAINT wiki_revisions_company_page_id_key UNIQUE (company_id, page_id, id),
     CONSTRAINT wiki_revisions_page_number_key UNIQUE (page_id, number),
     CONSTRAINT wiki_revisions_block_content_check CHECK (jsonb_typeof(block_content) = 'object'),
-    CONSTRAINT wiki_revisions_collection_fkey FOREIGN KEY (company_id, collection_id) REFERENCES wiki_collections(company_id, id) ON DELETE SET NULL (collection_id),
-    CONSTRAINT wiki_revisions_page_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE
+    CONSTRAINT document_snapshots_identity_fkey FOREIGN KEY (company_id, page_id, id) REFERENCES artifact_snapshots(company_id, artifact_id, id) ON DELETE CASCADE
 );
-CREATE INDEX wiki_revisions_collection_idx ON wiki_revisions (company_id, collection_id) WHERE (collection_id IS NOT NULL);
+CREATE INDEX wiki_revisions_collection_idx ON document_snapshots (company_id, collection_id) WHERE (collection_id IS NOT NULL);
 
 CREATE TABLE wiki_links (
     company_id uuid NOT NULL,
@@ -373,10 +375,8 @@ CREATE TABLE wiki_canvas_drafts (
     head_seq bigint DEFAULT 1 NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL,
-    schema_version integer DEFAULT 0 NOT NULL,
+    schema_version integer DEFAULT 1 NOT NULL,
     content jsonb DEFAULT '{}'::jsonb NOT NULL,
-    legacy_state bytea,
-    legacy_markdown text,
     structure_seq bigint DEFAULT 0 NOT NULL,
     title text DEFAULT '' NOT NULL,
     summary text DEFAULT '' NOT NULL,
@@ -384,11 +384,8 @@ CREATE TABLE wiki_canvas_drafts (
     restored_revision_id uuid,
     CONSTRAINT wiki_canvas_drafts_pkey PRIMARY KEY (page_id),
     CONSTRAINT wiki_canvas_drafts_content_check CHECK (jsonb_typeof(content) = 'object'),
-    CONSTRAINT wiki_canvas_drafts_schema_version_check CHECK (schema_version = ANY (ARRAY[0, 1])),
-    CONSTRAINT wiki_canvas_drafts_structure_seq_check CHECK ((structure_seq >= 0) AND (structure_seq <= head_seq)),
-    CONSTRAINT wiki_canvas_drafts_collection_fkey FOREIGN KEY (company_id, collection_id) REFERENCES wiki_collections(company_id, id) ON DELETE SET NULL (collection_id),
-    CONSTRAINT wiki_canvas_drafts_company_id_page_id_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE,
-    CONSTRAINT wiki_canvas_drafts_restored_revision_fkey FOREIGN KEY (company_id, page_id, restored_revision_id) REFERENCES wiki_revisions(company_id, page_id, id)
+    CONSTRAINT wiki_canvas_drafts_schema_version_check CHECK (schema_version IN (1, 2)),
+    CONSTRAINT wiki_canvas_drafts_structure_seq_check CHECK (structure_seq >= 0 AND structure_seq <= head_seq)
 );
 CREATE INDEX wiki_canvas_drafts_collection_idx ON wiki_canvas_drafts (company_id, collection_id) WHERE (collection_id IS NOT NULL);
 
@@ -399,7 +396,7 @@ CREATE TABLE wiki_canvas_checkpoints (
     through_seq bigint NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     CONSTRAINT wiki_canvas_checkpoints_pkey PRIMARY KEY (revision_id),
-    CONSTRAINT wiki_canvas_checkpoints_company_id_page_id_revision_id_fkey FOREIGN KEY (company_id, page_id, revision_id) REFERENCES wiki_revisions(company_id, page_id, id) ON DELETE CASCADE
+    CONSTRAINT wiki_canvas_checkpoints_company_id_page_id_revision_id_fkey FOREIGN KEY (company_id, page_id, revision_id) REFERENCES document_snapshots(company_id, page_id, id) ON DELETE CASCADE
 );
 CREATE INDEX wiki_canvas_checkpoints_page_seq_idx ON wiki_canvas_checkpoints (company_id, page_id, through_seq);
 
@@ -439,9 +436,7 @@ CREATE TABLE page_suggestion_reviews (
     CONSTRAINT page_suggestion_reviews_before_sequence_check CHECK (before_sequence >= 0),
     CONSTRAINT page_suggestion_reviews_before_theme_check CHECK (before_theme IN ('default', 'editorial', 'compact')),
     CONSTRAINT page_suggestion_reviews_result_theme_check CHECK (result_theme IN ('default', 'editorial', 'compact')),
-    CONSTRAINT page_suggestion_reviews_before_revision_fkey FOREIGN KEY (company_id, before_revision_id) REFERENCES wiki_revisions(company_id, id),
-    CONSTRAINT page_suggestion_reviews_company_id_change_id_fkey FOREIGN KEY (company_id, change_id) REFERENCES project_page_changes(company_id, id) ON DELETE CASCADE,
-    CONSTRAINT page_suggestion_reviews_result_revision_fkey FOREIGN KEY (company_id, result_revision_id) REFERENCES wiki_revisions(company_id, id)
+    CONSTRAINT page_suggestion_reviews_company_id_change_id_fkey FOREIGN KEY (company_id, change_id) REFERENCES project_page_changes(company_id, id) ON DELETE CASCADE
 );
 CREATE INDEX page_suggestion_review_history ON page_suggestion_reviews (company_id, change_id, created_at, id);
 
@@ -485,21 +480,163 @@ CREATE TABLE document_writing_requests (
     CONSTRAINT document_writing_requests_company_id_run_id_fkey FOREIGN KEY (company_id, run_id) REFERENCES runs(company_id, id) ON DELETE CASCADE
 );
 
+CREATE TABLE artifact_conversation_grants (
+    company_id uuid NOT NULL,
+    artifact_id uuid NOT NULL,
+    conversation_id uuid NOT NULL,
+    granted_by_user_id uuid NOT NULL,
+    created_at timestamptz DEFAULT statement_timestamp() NOT NULL,
+    CONSTRAINT artifact_conversation_grants_pkey PRIMARY KEY (company_id, artifact_id, conversation_id),
+    CONSTRAINT artifact_conversation_grants_company_id_artifact_id_fkey FOREIGN KEY (company_id, artifact_id) REFERENCES artifacts(company_id, id) ON DELETE CASCADE,
+    CONSTRAINT artifact_conversation_grants_company_id_conversation_id_fkey FOREIGN KEY (company_id, conversation_id) REFERENCES conversations(company_id, id) ON DELETE CASCADE
+);
+CREATE INDEX artifact_conversation_grants_conversation_idx ON artifact_conversation_grants (company_id, conversation_id, artifact_id);
+
+CREATE TABLE artifact_grants (
+    company_id uuid NOT NULL,
+    artifact_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    permission text NOT NULL,
+    granted_by_user_id uuid NOT NULL,
+    created_at timestamptz DEFAULT statement_timestamp() NOT NULL,
+    updated_at timestamptz DEFAULT statement_timestamp() NOT NULL,
+    CONSTRAINT artifact_grants_pkey PRIMARY KEY (company_id, artifact_id, user_id),
+    CONSTRAINT artifact_grants_permission_check CHECK (permission IN ('view', 'edit', 'manage')),
+    CONSTRAINT artifact_grants_company_id_artifact_id_fkey FOREIGN KEY (company_id, artifact_id) REFERENCES artifacts(company_id, id) ON DELETE CASCADE,
+    CONSTRAINT artifact_grants_company_id_user_id_fkey FOREIGN KEY (company_id, user_id) REFERENCES company_members(company_id, user_id) ON DELETE CASCADE
+);
+CREATE INDEX artifact_grants_recipient_idx ON artifact_grants (company_id, user_id, artifact_id);
+
+CREATE TABLE retained_snapshots (
+    company_id uuid NOT NULL,
+    id uuid NOT NULL,
+    artifact_id uuid NOT NULL,
+    content_type text NOT NULL,
+    summary text NOT NULL,
+    payload jsonb NOT NULL,
+    created_at timestamptz DEFAULT statement_timestamp() NOT NULL,
+    CONSTRAINT retained_snapshots_pkey PRIMARY KEY (id),
+    CONSTRAINT retained_snapshots_company_id_id_key UNIQUE (company_id, id),
+    CONSTRAINT retained_snapshots_content_type_check CHECK (content_type IN ('file', 'text', 'media', 'app')),
+    CONSTRAINT retained_snapshots_company_id_artifact_id_id_fkey FOREIGN KEY (company_id, artifact_id, id) REFERENCES artifact_snapshots(company_id, artifact_id, id) ON DELETE CASCADE
+);
+
+CREATE TABLE artifact_snapshot_items (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    company_id uuid NOT NULL,
+    snapshot_id uuid NOT NULL,
+    ordinal integer NOT NULL,
+    role text NOT NULL,
+    label text NOT NULL,
+    asset_version_id uuid NOT NULL,
+    created_at timestamptz DEFAULT statement_timestamp() NOT NULL,
+    CONSTRAINT artifact_snapshot_items_pkey PRIMARY KEY (id),
+    CONSTRAINT artifact_snapshot_items_company_id_snapshot_id_id_key UNIQUE (company_id, snapshot_id, id),
+    CONSTRAINT artifact_snapshot_items_snapshot_id_ordinal_key UNIQUE (snapshot_id, ordinal),
+    CONSTRAINT artifact_snapshot_items_ordinal_check CHECK (ordinal >= 0),
+    CONSTRAINT artifact_snapshot_items_role_check CHECK (role IN ('primary', 'final', 'supporting')),
+    CONSTRAINT artifact_snapshot_items_company_id_asset_version_id_fkey FOREIGN KEY (company_id, asset_version_id) REFERENCES asset_versions(company_id, id)
+);
+CREATE INDEX artifact_snapshot_items_asset ON artifact_snapshot_items (asset_version_id);
+CREATE UNIQUE INDEX artifact_snapshot_items_primary ON artifact_snapshot_items (snapshot_id) WHERE (role = 'primary');
+
+CREATE TABLE page_review_operations (
+    company_id uuid NOT NULL,
+    page_id uuid NOT NULL,
+    actor_user_id uuid NOT NULL,
+    request_key uuid NOT NULL,
+    fingerprint bytea NOT NULL,
+    result_id uuid NOT NULL,
+    created_at timestamptz DEFAULT now() NOT NULL,
+    CONSTRAINT page_review_operations_pkey PRIMARY KEY (page_id, actor_user_id, request_key)
+);
+
+CREATE TABLE project_page_source_previews (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    company_id uuid NOT NULL,
+    project_id uuid,
+    page_id uuid NOT NULL,
+    run_id uuid NOT NULL,
+    conversation_id uuid NOT NULL,
+    created_by_user_id uuid NOT NULL,
+    request_key uuid NOT NULL,
+    protocol_version integer DEFAULT 1 NOT NULL,
+    language_version integer DEFAULT 1 NOT NULL,
+    revision bigint DEFAULT 0 NOT NULL,
+    source text DEFAULT '' NOT NULL,
+    discarded boolean DEFAULT false NOT NULL,
+    last_request_key uuid,
+    last_request_hash text,
+    created_at timestamptz DEFAULT clock_timestamp() NOT NULL,
+    updated_at timestamptz DEFAULT clock_timestamp() NOT NULL,
+    expires_at timestamptz DEFAULT (clock_timestamp() + '00:15:00'::interval) NOT NULL,
+    CONSTRAINT project_page_source_previews_pkey PRIMARY KEY (id),
+    CONSTRAINT project_page_source_previews_company_id_id_key UNIQUE (company_id, id),
+    CONSTRAINT project_page_source_previews_company_id_run_id_request_key_key UNIQUE (company_id, run_id, request_key),
+    CONSTRAINT project_page_source_previews_discard_check CHECK (NOT discarded OR source = ''),
+    CONSTRAINT project_page_source_previews_expiry_check CHECK (expires_at > created_at AND expires_at <= (created_at + '01:00:00'::interval)),
+    CONSTRAINT project_page_source_previews_language_version_check CHECK (language_version = 1),
+    CONSTRAINT project_page_source_previews_protocol_version_check CHECK (protocol_version = 1),
+    CONSTRAINT project_page_source_previews_receipt_check CHECK (last_request_key IS NULL AND last_request_hash IS NULL AND revision = 0 OR last_request_key IS NOT NULL AND last_request_hash IS NOT NULL AND last_request_hash ~ '^[0-9a-f]{64}$' AND revision > 0),
+    CONSTRAINT project_page_source_previews_revision_check CHECK (revision >= 0 AND revision <= 4096),
+    CONSTRAINT project_page_source_previews_source_check CHECK (octet_length(source) <= 262144),
+    CONSTRAINT project_page_source_previews_company_id_conversation_id_fkey FOREIGN KEY (company_id, conversation_id) REFERENCES conversations(company_id, id) ON DELETE CASCADE,
+    CONSTRAINT project_page_source_previews_company_id_project_id_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE,
+    CONSTRAINT project_page_source_previews_company_id_run_id_fkey FOREIGN KEY (company_id, run_id) REFERENCES runs(company_id, id) ON DELETE CASCADE
+);
+CREATE INDEX project_page_source_previews_expiry ON project_page_source_previews (expires_at);
+CREATE INDEX project_page_source_previews_conversation ON project_page_source_previews (company_id, conversation_id);
+CREATE INDEX project_page_source_previews_page ON project_page_source_previews (company_id, page_id, run_id);
+
+CREATE TABLE project_presentation_publications (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    company_id uuid NOT NULL,
+    project_id uuid NOT NULL,
+    presentation_id uuid NOT NULL,
+    public_token uuid DEFAULT gen_random_uuid() NOT NULL,
+    html text NOT NULL,
+    created_by_user_id uuid NOT NULL,
+    request_key uuid NOT NULL,
+    created_at timestamptz DEFAULT now() NOT NULL,
+    revoked_at timestamptz,
+    revoked_by_user_id uuid,
+    CONSTRAINT project_presentation_publications_pkey PRIMARY KEY (id),
+    CONSTRAINT project_presentation_publicat_company_id_project_id_present_key UNIQUE (company_id, project_id, presentation_id, created_by_user_id, request_key),
+    CONSTRAINT project_presentation_publications_public_token_key UNIQUE (public_token),
+    CONSTRAINT project_presentation_publications_html_check CHECK (octet_length(html) >= 1 AND octet_length(html) <= 67108864),
+    CONSTRAINT project_presentation_publications_revocation_check CHECK ((revoked_at IS NULL) = (revoked_by_user_id IS NULL)),
+    CONSTRAINT project_presentation_publicat_company_id_project_id_presen_fkey FOREIGN KEY (company_id, project_id, presentation_id) REFERENCES project_presentations(company_id, project_id, id) ON DELETE CASCADE
+);
+CREATE UNIQUE INDEX project_presentation_publications_active ON project_presentation_publications (company_id, project_id, presentation_id) WHERE (revoked_at IS NULL);
+
 -- Links to these tables from tables created earlier.
-ALTER TABLE project_canvases ADD CONSTRAINT project_overview_page_fkey FOREIGN KEY (company_id, project_id, overview_page_id) REFERENCES wiki_pages(company_id, project_id, id) ON DELETE SET NULL (overview_page_id);
+ALTER TABLE artifact_snapshots ADD CONSTRAINT artifact_snapshots_document_fkey FOREIGN KEY (company_id, wiki_page_id, wiki_revision_id) REFERENCES document_snapshots(company_id, page_id, id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE project_page_changes ADD CONSTRAINT page_changes_page_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
 ALTER TABLE project_page_changes ADD CONSTRAINT project_page_changes_company_id_project_id_page_id_fkey FOREIGN KEY (company_id, project_id, page_id) REFERENCES wiki_pages(company_id, project_id, id);
-ALTER TABLE project_page_managed_blocks ADD CONSTRAINT project_page_managed_blocks_company_id_page_id_block_id_fkey FOREIGN KEY (company_id, page_id, block_id) REFERENCES wiki_block_ids(company_id, page_id, id) ON DELETE CASCADE;
-ALTER TABLE project_artifact_versions ADD CONSTRAINT project_artifact_versions_company_id_wiki_page_id_wiki_rev_fkey FOREIGN KEY (company_id, wiki_page_id, wiki_revision_id) REFERENCES wiki_revisions(company_id, page_id, id) ON DELETE SET NULL (wiki_page_id, wiki_revision_id);
+ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_company_id_wiki_page_id_wiki__fkey FOREIGN KEY (company_id, wiki_page_id, wiki_revision_id) REFERENCES document_snapshots(company_id, page_id, id);
 ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_company_id_project_id_page_id_fkey FOREIGN KEY (company_id, project_id, page_id) REFERENCES wiki_pages(company_id, project_id, id);
-ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_company_id_wiki_page_id_wiki__fkey FOREIGN KEY (company_id, wiki_page_id, wiki_revision_id) REFERENCES wiki_revisions(company_id, page_id, id);
-ALTER TABLE run_wiki_reads ADD CONSTRAINT run_wiki_reads_page_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
-ALTER TABLE run_wiki_reads ADD CONSTRAINT run_wiki_reads_revision_id_fkey FOREIGN KEY (revision_id) REFERENCES wiki_revisions(id) ON DELETE CASCADE;
 ALTER TABLE review_threads ADD CONSTRAINT review_threads_document_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
-ALTER TABLE review_threads ADD CONSTRAINT review_threads_document_revision_fkey FOREIGN KEY (company_id, document_revision_id) REFERENCES wiki_revisions(company_id, id) ON DELETE CASCADE;
+ALTER TABLE review_threads ADD CONSTRAINT review_threads_document_revision_fkey FOREIGN KEY (company_id, document_revision_id) REFERENCES document_snapshots(company_id, id) ON DELETE CASCADE;
 ALTER TABLE review_threads ADD CONSTRAINT review_threads_page_fkey FOREIGN KEY (company_id, project_id, page_id) REFERENCES wiki_pages(company_id, project_id, id) ON DELETE CASCADE;
+ALTER TABLE document_snapshots ADD CONSTRAINT wiki_revisions_collection_fkey FOREIGN KEY (company_id, collection_id) REFERENCES wiki_collections(company_id, id) ON DELETE SET NULL (collection_id);
+ALTER TABLE document_snapshots ADD CONSTRAINT wiki_revisions_page_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
+ALTER TABLE page_suggestion_reviews ADD CONSTRAINT page_suggestion_reviews_before_revision_fkey FOREIGN KEY (company_id, before_revision_id) REFERENCES document_snapshots(company_id, id);
+ALTER TABLE page_suggestion_reviews ADD CONSTRAINT page_suggestion_reviews_result_revision_fkey FOREIGN KEY (company_id, result_revision_id) REFERENCES document_snapshots(company_id, id);
+ALTER TABLE wiki_canvas_drafts ADD CONSTRAINT wiki_canvas_drafts_collection_fkey FOREIGN KEY (company_id, collection_id) REFERENCES wiki_collections(company_id, id) ON DELETE SET NULL (collection_id);
+ALTER TABLE wiki_canvas_drafts ADD CONSTRAINT wiki_canvas_drafts_company_id_page_id_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
+ALTER TABLE wiki_canvas_drafts ADD CONSTRAINT wiki_canvas_drafts_restored_revision_fkey FOREIGN KEY (company_id, page_id, restored_revision_id) REFERENCES document_snapshots(company_id, page_id, id);
+ALTER TABLE wiki_pages ADD CONSTRAINT wiki_pages_collection_fkey FOREIGN KEY (company_id, collection_id) REFERENCES wiki_collections(company_id, id) ON DELETE SET NULL (collection_id);
+ALTER TABLE wiki_pages ADD CONSTRAINT wiki_pages_current_revision_fkey FOREIGN KEY (company_id, id, current_revision_id) REFERENCES document_snapshots(company_id, page_id, id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE artifact_snapshot_items ADD CONSTRAINT artifact_snapshot_items_company_id_snapshot_id_fkey FOREIGN KEY (company_id, snapshot_id) REFERENCES retained_snapshots(company_id, id) ON DELETE CASCADE;
+ALTER TABLE page_review_operations ADD CONSTRAINT page_review_operations_company_id_page_id_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
+ALTER TABLE project_page_source_previews ADD CONSTRAINT page_previews_page_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
+ALTER TABLE project_page_source_previews ADD CONSTRAINT project_page_source_previews_company_id_project_id_page_id_fkey FOREIGN KEY (company_id, project_id, page_id) REFERENCES wiki_pages(company_id, project_id, id) ON DELETE CASCADE;
+ALTER TABLE project_canvases ADD CONSTRAINT project_overview_page_fkey FOREIGN KEY (company_id, project_id, overview_page_id) REFERENCES wiki_pages(company_id, project_id, id) ON DELETE SET NULL (overview_page_id);
+ALTER TABLE project_page_managed_blocks ADD CONSTRAINT project_page_managed_blocks_company_id_page_id_block_id_fkey FOREIGN KEY (company_id, page_id, block_id) REFERENCES wiki_block_ids(company_id, page_id, id) ON DELETE CASCADE;
+ALTER TABLE run_wiki_reads ADD CONSTRAINT run_wiki_reads_page_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
+ALTER TABLE run_wiki_reads ADD CONSTRAINT run_wiki_reads_revision_id_fkey FOREIGN KEY (revision_id) REFERENCES document_snapshots(id) ON DELETE CASCADE;
 ALTER TABLE output_documents ADD CONSTRAINT output_documents_company_id_page_id_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
 ALTER TABLE run_wiki_writes ADD CONSTRAINT run_wiki_writes_page_fkey FOREIGN KEY (company_id, page_id) REFERENCES wiki_pages(company_id, id) ON DELETE CASCADE;
-ALTER TABLE wiki_pages ADD CONSTRAINT wiki_pages_current_revision_fkey FOREIGN KEY (company_id, id, current_revision_id) REFERENCES wiki_revisions(company_id, page_id, id) DEFERRABLE INITIALLY DEFERRED;
 
 -- attachment_access: who may read a file. A file with an active project_files
 -- row follows the readers of those Projects and nobody else, wherever it was
@@ -517,6 +654,128 @@ ALTER TABLE wiki_pages ADD CONSTRAINT wiki_pages_current_revision_fkey FOREIGN K
 -- the chat id into the UNION ALL arms, and every file lookup would build the
 -- person's whole readable set of chats before matching the one chat. One row
 -- per file and reader.
+
+CREATE VIEW artifact_access AS
+SELECT artifact.company_id, artifact.id AS artifact_id, member.user_id,
+ CASE WHEN artifact.project_id IS NULL AND artifact.type<>'wiki' THEN
+   CASE WHEN artifact.owner_user_id=member.user_id OR grant_row.permission='manage' THEN 3
+        WHEN grant_row.permission='edit' THEN 2 ELSE 1 END
+ ELSE 1 END::integer AS access_level
+FROM artifacts artifact
+JOIN companies company ON company.id=artifact.company_id AND company.deleting_at IS NULL
+JOIN company_members member ON member.company_id=artifact.company_id AND member.status='active'
+JOIN users account ON account.id=member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
+LEFT JOIN artifact_grants grant_row ON grant_row.company_id=artifact.company_id
+ AND grant_row.artifact_id=artifact.id AND grant_row.user_id=member.user_id
+ AND grant_row.updated_at>=COALESCE(member.reactivated_at,member.created_at)
+WHERE artifact.type='wiki'
+ OR (artifact.project_id IS NOT NULL AND EXISTS(SELECT 1 FROM project_access reader
+     WHERE reader.company_id=artifact.company_id AND reader.project_id=artifact.project_id AND reader.user_id=member.user_id))
+ OR (artifact.project_id IS NULL AND artifact.type<>'wiki' AND (
+     artifact.owner_user_id=member.user_id OR grant_row.permission IS NOT NULL OR artifact.visibility='company'
+     OR EXISTS(SELECT 1 FROM artifact_conversation_grants shared
+       JOIN conversation_members participant ON participant.company_id=shared.company_id
+        AND participant.conversation_id=shared.conversation_id AND participant.user_id=member.user_id
+        AND participant.status='active'
+       JOIN conversations conversation ON conversation.company_id=shared.company_id AND conversation.id=shared.conversation_id
+        AND conversation.kind IN ('channel','human_direct')
+       WHERE shared.company_id=artifact.company_id AND shared.artifact_id=artifact.id)
+ ));
+
+-- conversation_readers: who reads a chat, by kind. One row per chat and person.
+--
+-- attachment_access, conversation_readers and project_access_paths are UNION
+-- ALL views whose arms Postgres plans on their own. A join clause from the
+-- outer query is not pushed into the arms, so a plain JOIN or EXISTS against
+-- one of them builds the caller's whole readable set first. A query that
+-- checks a list of rows must reach them through a correlated lookup that names
+-- both the row and the person, for example:
+--   CROSS JOIN LATERAL (SELECT 1 FROM attachment_access AS access
+--       WHERE access.company_id = link.company_id
+--         AND access.attachment_id = link.attachment_id
+--         AND access.user_id = @actor LIMIT 1) AS readable
+-- (or a scalar subquery of the same shape). The lookup then uses each arm's
+-- indexes. A check of one row with constant ids is fine either way.
+
+CREATE VIEW conversation_readers AS
+-- Task chats follow their Project.
+SELECT conversation.company_id, conversation.id AS conversation_id, access.user_id
+FROM conversations AS conversation
+JOIN project_access AS access
+  ON access.company_id = conversation.company_id AND access.project_id = conversation.project_id
+WHERE conversation.kind = 'task'
+UNION ALL
+-- Task chats retained after Task deletion follow active Company membership.
+SELECT conversation.company_id, conversation.id, member.user_id
+FROM conversations AS conversation
+JOIN companies AS company
+  ON company.id = conversation.company_id AND company.deleting_at IS NULL
+JOIN company_members AS member
+  ON member.company_id = conversation.company_id AND member.status = 'active'
+JOIN users AS account
+  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
+WHERE conversation.kind = 'task' AND conversation.project_id IS NULL AND conversation.task_id IS NULL
+UNION ALL
+-- Channels, human direct messages and Huddle chats follow their active
+-- participants, as ListDiscussionAccess does.
+SELECT conversation.company_id, conversation.id, participant.user_id
+FROM conversations AS conversation
+JOIN companies AS company
+  ON company.id = conversation.company_id AND company.deleting_at IS NULL
+JOIN conversation_members AS participant
+  ON participant.company_id = conversation.company_id
+ AND participant.conversation_id = conversation.id
+ AND participant.status = 'active'
+JOIN company_members AS member
+  ON member.company_id = conversation.company_id
+ AND member.user_id = participant.user_id
+ AND member.status = 'active'
+JOIN users AS account
+  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
+WHERE conversation.kind IN ('channel', 'human_direct', 'huddle')
+UNION ALL
+-- A channel Agent's execution chat is read by the callers of its live
+-- invocations: the live-caller arm of LockHumanInputOriginConversation. The
+-- member who created the channel Agent chat is deliberately not a reader
+-- through that role alone (ADR 0017).
+SELECT conversation.company_id, conversation.id, member.user_id
+FROM conversations AS conversation
+JOIN companies AS company
+  ON company.id = conversation.company_id AND company.deleting_at IS NULL
+JOIN company_members AS member
+  ON member.company_id = conversation.company_id AND member.status = 'active'
+JOIN users AS account
+  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
+WHERE conversation.kind = 'channel_agent'
+  AND EXISTS (
+      SELECT 1
+      FROM channel_invocations AS invocation
+      WHERE invocation.company_id = conversation.company_id
+        AND invocation.conversation_id = conversation.id
+        AND invocation.caller_user_id = member.user_id
+        AND invocation.status IN ('active', 'waiting_input')
+  )
+UNION ALL
+-- Direct and Schedule chats are their creator's alone.
+SELECT conversation.company_id, conversation.id, member.user_id
+FROM conversations AS conversation
+JOIN companies AS company
+  ON company.id = conversation.company_id AND company.deleting_at IS NULL
+JOIN company_members AS member
+  ON member.company_id = conversation.company_id
+ AND member.user_id = conversation.created_by_user_id
+ AND member.status = 'active'
+JOIN users AS account
+  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
+WHERE conversation.kind IN ('direct', 'schedule')
+ -- Keep this a correlated probe: EXISTS can become a hashed subplan that
+ -- enumerates all Artifact readers in every caller of conversation_readers.
+ AND (conversation.document_thread_id IS NULL OR (SELECT 1
+  FROM review_threads thread JOIN artifact_access access
+   ON access.company_id=thread.company_id AND access.artifact_id=thread.page_id
+  WHERE thread.company_id=conversation.company_id AND thread.id=conversation.document_thread_id
+   AND access.user_id=member.user_id LIMIT 1) IS NOT NULL);
+
 CREATE VIEW attachment_access AS
 SELECT arm.company_id, arm.attachment_id, arm.user_id
 FROM (
@@ -528,9 +787,9 @@ FROM (
       ON candidate.company_id = file.company_id
     CROSS JOIN LATERAL (
         SELECT 1
-        FROM output_access AS access
+        FROM artifact_access AS access
         WHERE access.company_id = file.company_id
-          AND access.output_id = file.board_id
+          AND access.artifact_id = file.board_id
           AND access.user_id = candidate.user_id
         LIMIT 1
     ) AS reads_board
@@ -541,9 +800,9 @@ FROM (
       ON candidate.company_id = file.company_id
     CROSS JOIN LATERAL (
         SELECT 1
-        FROM output_access AS access
+        FROM artifact_access AS access
         WHERE access.company_id = file.company_id
-          AND access.output_id = file.board_id
+          AND access.artifact_id = file.board_id
           AND access.user_id = candidate.user_id
         LIMIT 1
     ) AS reads_board
@@ -616,7 +875,7 @@ WHERE NOT EXISTS (
 );
 
 CREATE VIEW canvas_version_sources AS
- SELECT v.*, COALESCE(v.output_id,p.source_output_id) AS access_output_id
- FROM project_artifact_versions v LEFT JOIN wiki_pages p ON p.company_id=v.company_id AND p.id=v.wiki_page_id;
+ SELECT v.id,v.company_id,v.project_id,v.artifact_id,v.number,v.source_type,v.wiki_page_id,v.wiki_revision_id,v.asset_version_id,v.output_id,v.base_version_id,v.created_by_user_id,v.created_at,v.branch_title,v.output_id AS access_output_id
+ FROM artifact_snapshots v;
 
-CREATE VIEW company_wiki_pages AS SELECT * FROM wiki_pages WHERE source_output_id IS NULL AND project_id IS NULL;
+CREATE VIEW company_wiki_pages AS SELECT * FROM wiki_pages WHERE artifact_type='wiki';

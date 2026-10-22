@@ -201,6 +201,16 @@ WHERE attachments.id = $3::uuid
           LIMIT 1) IS NULL
     LIMIT 1
 ) IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM project_presentations AS presentation,
+      jsonb_array_elements_text(presentation.intelligent_evidence->'projects') AS dependency(project_id)
+    WHERE presentation.company_id=$4::uuid
+      AND presentation.export_attachment_id=$3::uuid
+      AND NOT EXISTS (SELECT 1 FROM project_access AS access
+        WHERE access.company_id=presentation.company_id
+          AND access.project_id=dependency.project_id::uuid
+          AND access.user_id=$2::uuid)
+  )
   AND (
       EXISTS (
           SELECT 1
@@ -614,6 +624,15 @@ SELECT EXISTS (SELECT 1 WHERE EXISTS (
       AND NOT EXISTS (SELECT 1 FROM output_access AS access
           WHERE access.company_id=source.company_id AND access.output_id=source.output_id
             AND access.user_id=$3::uuid)
+) OR EXISTS (
+    SELECT 1 FROM project_presentations AS presentation,
+      jsonb_array_elements_text(presentation.intelligent_evidence->'projects') AS dependency(project_id)
+    WHERE presentation.company_id=$2::uuid
+      AND presentation.export_attachment_id=$1::uuid
+      AND NOT EXISTS (SELECT 1 FROM project_access AS access
+        WHERE access.company_id=presentation.company_id
+          AND access.project_id=dependency.project_id::uuid
+          AND access.user_id=$3::uuid)
 )) AS inaccessible
 `
 

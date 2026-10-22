@@ -9,6 +9,20 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
+func TestRunPromptAuthorsRawInlineComponents(t *testing.T) {
+	t.Parallel()
+	doc := RunContext{ExecutionProfile: RunExecutionProfileContext{Source: "message"}}
+	prompt := buildRunSystemPrompt(doc, "/scratch", runMemoryContext{})
+	if !strings.Contains(prompt, "zenith-intelligent-ui") {
+		t.Fatal("ordinary chat cannot discover its inline authoring guide")
+	}
+	for _, retired := range []string{"fenced zenith-ui", "Continue only prepares"} {
+		if strings.Contains(prompt, retired) {
+			t.Errorf("chat prompt retains retired instruction %q", retired)
+		}
+	}
+}
+
 func TestDocumentRunToolPolicy(t *testing.T) {
 	t.Parallel()
 	for _, writing := range []bool{false, true} {
@@ -23,7 +37,14 @@ func TestDocumentRunToolPolicy(t *testing.T) {
 			}}
 			var wantTools, wantServers []string
 			if !writing {
-				wantTools = []string{"page_read", "page_edit", "source_read"}
+				wantTools = []string{
+					"page_read",
+					"page_edit",
+					"source_read",
+					"page_source_preview_start",
+					"page_source_preview_read",
+					"page_source_preview_patch",
+				}
 				wantServers = []string{zenithTeamMCPServerName}
 			}
 			if got := zenithTeamMCPToolsForRun(doc); !slices.Equal(got, wantTools) {
@@ -135,6 +156,7 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"page_create",
 				"page_read",
 				"page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 		},
 		{
@@ -150,11 +172,11 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 			},
 			forbid: []string{
 				"mark_task_failed",
-				"search_skills",
 				"project_read",
 				"page_create",
 				"page_read",
 				"page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 		},
 		{
@@ -174,6 +196,7 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"list_agents",
 				"mark_task_failed",
 				"project_read", "page_create", "page_read", "page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 		},
 		{
@@ -226,6 +249,7 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"page_create",
 				"page_read",
 				"page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 			forbid: []string{"company_plan_transaction_apply", "list_agents"},
 		},

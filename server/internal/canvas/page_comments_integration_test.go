@@ -227,8 +227,7 @@ func TestPageCommentRetainedWithoutSelectedText(t *testing.T) {
 			owner,
 			f.ProjectA,
 			page.VersionID,
-			doc.EncodeStateAsUpdate(),
-			saved.Sequence,
+			DocumentSyncInput{Update: doc.EncodeStateAsUpdate(), BaseSequence: saved.Sequence},
 		)
 		if err != nil {
 			t.Fatal(err)

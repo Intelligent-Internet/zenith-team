@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	dbgen "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
@@ -108,7 +110,7 @@ func TestPublicationServiceQueuesApprovedPrimaryZIPAndRevalidatesOwner(t *testin
 	bus := publicationTestBus(t)
 	hints := 0
 	if err := bus.Subscribe(
-		EventArtifactChanged,
+		artifactdomain.EventChanged,
 		func(context.Context, events.Event) error { hints++; return nil },
 	); err != nil {
 		t.Fatal(err)

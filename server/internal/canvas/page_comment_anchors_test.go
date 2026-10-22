@@ -130,3 +130,65 @@ func TestPageCommentAnchorDoesNotFollowDuplicateInAnotherBlock(t *testing.T) {
 		t.Fatalf("anchor = %s, want page-level discussion", got[0])
 	}
 }
+
+func TestPageCommentSurvivesApprovedTextUpdate(t *testing.T) {
+	t.Parallel()
+	for _, blockType := range []string{"paragraph", "uiDocument"} {
+		t.Run(blockType, func(t *testing.T) {
+			t.Parallel()
+			root := wiki.BlocksFromMarkdown("Old opening, quoted passage, old ending.")
+			root.Content[0].Type = blockType
+			if blockType == "uiDocument" {
+				root.Content[0].Attrs = map[string]any{"catalogVersion": 1}
+			}
+			wiki.AssignBlockIDs(&root, uuid.NewString)
+			before, err := wiki.EncodeBlocks(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			block := root.Content[0]
+			blockID, ok := block.Attrs["blockId"].(string)
+			if !ok {
+				t.Fatal("paragraph block ID is not a string")
+			}
+			block.Content = []wiki.BlockNode{
+				{Type: "text", Text: "New opening, quoted passage, new ending."},
+			}
+			after, _, err := wiki.ApplyBlockOperations(
+				before,
+				[]wiki.BlockOperation{
+					{
+						Type:         "update",
+						BlockID:      blockID,
+						ExpectedHash: wiki.BlockHash(root.Content[0]),
+						Content:      &block,
+					},
+				},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			anchor, _ := json.Marshal(
+				map[string]any{
+					"type":    "textQuote",
+					"exact":   "quoted passage",
+					"blockId": block.Attrs["blockId"],
+				},
+			)
+			anchors, err := reconcileCommentQuotes(before, after, []json.RawMessage{anchor})
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got struct {
+				Type  string `json:"type"`
+				Exact string `json:"exact"`
+			}
+			if err = json.Unmarshal(anchors[0], &got); err != nil {
+				t.Fatal(err)
+			}
+			if got.Type != "textQuote" || got.Exact != "quoted passage" {
+				t.Fatalf("anchor = %s", anchors[0])
+			}
+		})
+	}
+}

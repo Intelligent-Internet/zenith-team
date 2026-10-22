@@ -217,6 +217,7 @@ func crossCompanyMatrix() map[string]crossCompanyRouteSpec {
 		"GET /api/v1/companies/:companyId/schedules/:scheduleId/runs":    memberDenied,
 		"POST /api/v1/companies/:companyId/schedules/:scheduleId/runs":   memberDenied,
 
+		"POST /api/v1/companies/:companyId/chat-ui-preview":                         memberDenied,
 		"GET /api/v1/companies/:companyId/conversations":                            memberDenied,
 		"GET /api/v1/companies/:companyId/conversations/pins":                       memberDenied,
 		"GET /api/v1/companies/:companyId/conversations/states":                     memberDenied,

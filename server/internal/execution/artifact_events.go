@@ -5,27 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 
 	"github.com/google/uuid"
 )
-
-const (
-	TopicArtifact              = "artifact"
-	EventArtifactAccessChanged = "artifact.access_changed"
-	EventArtifactChanged       = "artifact.changed"
-)
-
-type ArtifactAccessChanged struct {
-	RecipientUserIDs []uuid.UUID `json:"-"`
-}
-
-// ArtifactChanged is an opaque invalidation. Readers check current access
-// before loading publication state, including after a concurrent revocation.
-type ArtifactChanged struct {
-	RecipientUserIDs []uuid.UUID `json:"-"`
-}
 
 func publicationChangedInTx(ctx context.Context, q *db.Queries, row db.OutputPublication) (events.Event, error) {
 	return artifactChangedInTx(ctx, q, row.CompanyID, row.OutputID, row.UpdatedAt.Time)
@@ -44,8 +30,8 @@ func artifactChangedInTx(
 		return events.Event{}, fmt.Errorf("resolve Artifact event recipients: %w", err)
 	}
 	return events.Event{
-		EntityType: TopicArtifact, Name: EventArtifactChanged, CompanyID: companyID,
+		EntityType: artifactdomain.Topic, Name: artifactdomain.EventChanged, CompanyID: companyID,
 		CreatedAt: changedAt, Actor: events.SystemActor(),
-		Payload: ArtifactChanged{RecipientUserIDs: recipients},
+		Payload: artifactdomain.Changed{RecipientUserIDs: recipients},
 	}, nil
 }

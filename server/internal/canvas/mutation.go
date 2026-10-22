@@ -494,11 +494,13 @@ func (s *DefaultCanvasService) apply(ctx context.Context, q *generated.Queries, 
 					ctx,
 					q,
 					pageDraftEdit{
-						principal: p,
-						page:      page.ID,
-						sequence:  draft.HeadSeq,
-						state:     draft.State,
-						root:      root,
+						authoring:   s.authoring,
+						savedSchema: int(draft.SchemaVersion),
+						principal:   p,
+						page:        page.ID,
+						sequence:    draft.HeadSeq,
+						state:       draft.State,
+						root:        root,
 					},
 				); err != nil {
 					return uuid.Nil, err
@@ -530,20 +532,6 @@ func authorizedItem(ctx context.Context, q *generated.Queries, m mutation, id uu
 	}
 	if item.ItemType == "artifact" {
 		v := item.PinnedVersionID
-		if item.VersionPolicy == "accepted" {
-			a, err := q.LockCanvasArtifact(
-				ctx,
-				generated.LockCanvasArtifactParams{
-					CompanyID: m.Principal.CompanyID,
-					ProjectID: m.ProjectID,
-					ID:        item.ArtifactID.UUID,
-				},
-			)
-			if err != nil {
-				return item, err
-			}
-			v = a.AcceptedVersionID
-		}
 		if !v.Valid {
 			return item, ErrNotFound
 		}
@@ -561,23 +549,22 @@ func reviewComment(ctx context.Context, q *generated.Queries, m mutation) (uuid.
 		var id uuid.UUID
 		var e error
 		if c.PageID != nil {
-			source, err := editableProjectPage(ctx, q, p, m.ProjectID, *c.PageID)
-			if err != nil {
+			if _, err := editableProjectPage(ctx, q, p, m.ProjectID, *c.PageID); err != nil {
 				return uuid.Nil, err
 			}
-			id = source.ID
-			var anchor struct {
-				Type string `json:"type"`
+			if err := lockPageCommentAccess(ctx, q, p, *c.PageID); err != nil {
+				return uuid.Nil, err
 			}
-			if json.Unmarshal(c.Anchor, &anchor) != nil ||
-				!slices.Contains([]string{"version", "textQuote", "block"}, anchor.Type) {
-				return uuid.Nil, ErrInvalid
-			}
-		} else {
-			id, e = requireID(c.VersionID)
-			if e != nil {
-				return uuid.Nil, e
-			}
+			m.Changes.Artifacts = append(m.Changes.Artifacts, *c.PageID)
+			return mutatePageComment(
+				ctx,
+				q,
+				pageCommentMutation{Principal: p, PageID: *c.PageID, Command: c},
+			)
+		}
+		id, e = requireID(c.VersionID)
+		if e != nil {
+			return uuid.Nil, e
 		}
 		if c.PageID == nil {
 			if e = canVersion(ctx, q, p, m.ProjectID, id); e != nil {
@@ -639,6 +626,27 @@ func reviewComment(ctx context.Context, q *generated.Queries, m mutation) (uuid.
 		if e != nil {
 			return uuid.Nil, e
 		}
+		owner, e := q.GetDocumentThreadForInvocation(
+			ctx,
+			generated.GetDocumentThreadForInvocationParams{CompanyID: p.CompanyID, ID: id},
+		)
+		if e != nil {
+			return uuid.Nil, lookup(e)
+		}
+		if owner.PageID.Valid {
+			if owner.ProjectID.UUID != m.ProjectID {
+				return uuid.Nil, ErrNotFound
+			}
+			if err := lockPageCommentAccess(ctx, q, p, owner.PageID.UUID); err != nil {
+				return uuid.Nil, err
+			}
+			m.Changes.Artifacts = append(m.Changes.Artifacts, owner.PageID.UUID)
+			return mutatePageComment(
+				ctx,
+				q,
+				pageCommentMutation{Principal: p, PageID: owner.PageID.UUID, Command: c},
+			)
+		}
 		thread, err = q.LockReviewThread(
 			ctx,
 			generated.LockReviewThreadParams{
@@ -648,11 +656,7 @@ func reviewComment(ctx context.Context, q *generated.Queries, m mutation) (uuid.
 			},
 		)
 		if err == nil {
-			if thread.PageID.Valid {
-				_, err = editableProjectPage(ctx, q, p, m.ProjectID, thread.PageID.UUID)
-			} else {
-				err = canVersion(ctx, q, p, m.ProjectID, thread.ArtifactVersionID.UUID)
-			}
+			err = canVersion(ctx, q, p, m.ProjectID, thread.ArtifactVersionID.UUID)
 		}
 	}
 	if err != nil {
@@ -785,9 +789,36 @@ func reviewComment(ctx context.Context, q *generated.Queries, m mutation) (uuid.
 func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Queries, m mutation) (uuid.UUID, error) {
 	c := m.Input
 	p := m.Principal
-	var artifact generated.ProjectArtifact
+	var artifact generated.Artifact
 	var err error
+	contentType := "file"
+	if c.OutputID != nil {
+		contentType, err = q.GetCanvasOutputArtifactType(
+			ctx,
+			generated.GetCanvasOutputArtifactTypeParams{
+				CompanyID:   p.CompanyID,
+				ID:          *c.OutputID,
+				ActorUserID: p.UserID,
+			},
+		)
+		if err != nil {
+			return uuid.Nil, lookup(err)
+		}
+	}
 	if c.ArtifactID != nil {
+		identity, e := q.GetArtifactIdentity(
+			ctx,
+			generated.GetArtifactIdentityParams{CompanyID: p.CompanyID, ID: *c.ArtifactID},
+		)
+		if e != nil {
+			return uuid.Nil, lookup(e)
+		}
+		if identity.Type == "wiki" {
+			return uuid.Nil, ErrForbidden
+		}
+		if identity.Type != contentType && (c.AttachmentID != nil || c.OutputID != nil) {
+			return uuid.Nil, ErrInvalid
+		}
 		artifact, err = q.LockCanvasArtifact(
 			ctx,
 			generated.LockCanvasArtifactParams{
@@ -810,7 +841,7 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 		}
 		if c.Type == "import_output_document" {
 			id, e := q.GetCanvasImportedDocument(ctx, generated.GetCanvasImportedDocumentParams{
-				CompanyID: p.CompanyID, ArtifactID: artifact.ID, OutputItemID: *c.OutputItemID,
+				CompanyID: p.CompanyID, OutputItemID: *c.OutputItemID,
 			})
 			if e == nil {
 				return id, nil
@@ -837,18 +868,21 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 		if c.Title == "" {
 			return uuid.Nil, ErrInvalid
 		}
-		artifact, err = q.CreateCanvasArtifact(
-			ctx,
-			generated.CreateCanvasArtifactParams{
-				CompanyID:       p.CompanyID,
-				ProjectID:       m.ProjectID,
-				Title:           c.Title,
-				CreatedByUserID: p.UserID,
-				TaskID:          nullable(c.TaskID),
-			},
-		)
-		if err != nil {
-			return uuid.Nil, err
+		if c.Type != "create_document" && c.WikiPageID == nil {
+			artifact, err = q.CreateCanvasArtifact(
+				ctx,
+				generated.CreateCanvasArtifactParams{
+					Type:            contentType,
+					CompanyID:       p.CompanyID,
+					ProjectID:       m.ProjectID,
+					Title:           c.Title,
+					CreatedByUserID: p.UserID,
+					TaskID:          nullable(c.TaskID),
+				},
+			)
+			if err != nil {
+				return uuid.Nil, err
+			}
 		}
 	}
 	count, e := q.CountCanvasVersions(ctx, artifact.ID)
@@ -858,19 +892,33 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 	if count >= 200 {
 		return uuid.Nil, ErrLimit
 	}
-	source := generated.CreateCanvasVersionParams{
+	source := struct {
+		generated.CreateCanvasVersionParams
+		WikiPageID     uuid.NullUUID
+		WikiRevisionID uuid.NullUUID
+	}{CreateCanvasVersionParams: generated.CreateCanvasVersionParams{
 		CompanyID:       p.CompanyID,
 		ProjectID:       m.ProjectID,
 		ArtifactID:      artifact.ID,
 		CreatedByUserID: p.UserID,
 		BaseVersionID:   nullable(c.VersionID),
-	}
+	}}
 	switch {
 	case c.Type == "import_output_document":
 		page, revision, e := importOutputDocumentInTx(ctx, q, m)
 		if e != nil {
 			return uuid.Nil, e
 		}
+		artifact, err = q.GetArtifactIdentity(
+			ctx,
+			generated.GetArtifactIdentityParams{CompanyID: p.CompanyID, ID: page},
+		)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		source.ArtifactID = artifact.ID
+		source.BaseVersionID = uuid.NullUUID{}
+
 		source.SourceType = "wiki"
 		source.WikiPageID = nullable(&page)
 		source.WikiRevisionID = nullable(&revision)
@@ -917,17 +965,27 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 			ctx,
 			q,
 			wiki.CanvasPageInput{
-				ProjectID:      m.ProjectID,
-				Principal:      p,
-				Title:          artifact.Title,
-				Body:           revision.Body,
-				Content:        &root,
-				SourceOutputID: outputSource(prior.AccessOutputID),
+				Authoring: s.authoring,
+				ProjectID: m.ProjectID,
+				Principal: p,
+				Title:     artifact.Title,
+				Body:      revision.Body,
+				Content:   &root,
 			},
 		)
 		if e != nil {
 			return uuid.Nil, e
 		}
+		artifact, err = q.LockCanvasArtifact(
+			ctx,
+			generated.LockCanvasArtifactParams{CompanyID: p.CompanyID, ProjectID: m.ProjectID, ID: page},
+		)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		source.ArtifactID = page
+		source.BaseVersionID = uuid.NullUUID{}
+
 		source.SourceType = "wiki"
 		source.WikiPageID = nullable(&page)
 		source.WikiRevisionID = nullable(&rev)
@@ -957,19 +1015,11 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 			if err != nil {
 				return uuid.Nil, lookup(err)
 			}
-			if !page.ProjectID.Valid && !page.SourceOutputID.Valid {
+			if page.ArtifactType == "wiki" {
 				return uuid.Nil, ErrForbidden
 			}
-			if page.SourceOutputID.Valid {
-				if _, err = authorizeOutputDocument(
-					ctx,
-					q,
-					p,
-					page.SourceOutputID.UUID,
-					true,
-				); err != nil {
-					return uuid.Nil, err
-				}
+			if _, err = authorizeArtifactContent(ctx, q, p, page.ID, true); err != nil {
+				return uuid.Nil, err
 			}
 		}
 		source.SourceType = prior.SourceType
@@ -981,16 +1031,7 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 		if !m.Access.Can(auth.ProjectPermissionTasksWrite) {
 			return uuid.Nil, ErrForbidden
 		}
-		var sourceOutputID *uuid.UUID
-		if c.VersionID != nil {
-			prior, e := q.GetCanvasVersion(ctx, generated.GetCanvasVersionParams{
-				CompanyID: p.CompanyID, ProjectID: m.ProjectID, ID: *c.VersionID,
-			})
-			if e != nil {
-				return uuid.Nil, e
-			}
-			sourceOutputID = outputSource(prior.AccessOutputID)
-		}
+
 		var native, snapshot *wiki.BlockNode
 		if len(c.Content) > 0 {
 			native = &wiki.BlockNode{}
@@ -1014,18 +1055,29 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 			ctx,
 			q,
 			wiki.CanvasPageInput{
+				Authoring:       s.authoring,
+				TaskID:          c.TaskID,
 				ProjectID:       m.ProjectID,
 				Principal:       p,
 				Title:           c.Title,
 				Body:            c.Body,
 				Content:         native,
 				SnapshotContent: snapshot,
-				SourceOutputID:  sourceOutputID,
 			},
 		)
 		if e != nil {
 			return uuid.Nil, e
 		}
+		artifact, err = q.LockCanvasArtifact(
+			ctx,
+			generated.LockCanvasArtifactParams{CompanyID: p.CompanyID, ProjectID: m.ProjectID, ID: page},
+		)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		source.ArtifactID = page
+		source.BaseVersionID = uuid.NullUUID{}
+
 		source.SourceType = "wiki"
 		source.WikiPageID = nullable(&page)
 		source.WikiRevisionID = nullable(&revision)
@@ -1057,13 +1109,11 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 		if e != nil {
 			return uuid.Nil, lookup(e)
 		}
-		if !page.ProjectID.Valid && !page.SourceOutputID.Valid {
+		if page.ArtifactType == "wiki" {
 			return uuid.Nil, ErrForbidden
 		}
-		if page.SourceOutputID.Valid {
-			if _, e = authorizeOutputDocument(ctx, q, p, page.SourceOutputID.UUID, true); e != nil {
-				return uuid.Nil, e
-			}
+		if _, e = authorizeArtifactContent(ctx, q, p, page.ID, true); e != nil {
+			return uuid.Nil, e
 		}
 		if _, e = q.LockCanvasWikiPage(
 			ctx,
@@ -1163,6 +1213,16 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 		if !page.ProjectID.Valid && !selected.PublishedAt.Valid {
 			return uuid.Nil, ErrNotFound
 		}
+		artifact, err = q.GetArtifactIdentity(
+			ctx,
+			generated.GetArtifactIdentityParams{CompanyID: p.CompanyID, ID: page.ID},
+		)
+		if err != nil {
+			return uuid.Nil, err
+		}
+		source.ArtifactID = artifact.ID
+		source.BaseVersionID = uuid.NullUUID{}
+
 		source.SourceType = "wiki"
 		source.WikiPageID = nullable(&page.ID)
 		source.WikiRevisionID = revision
@@ -1208,12 +1268,18 @@ func (s *DefaultCanvasService) register(ctx context.Context, q *generated.Querie
 	default:
 		return uuid.Nil, ErrInvalid
 	}
-	number, err := q.AllocateCanvasVersion(ctx, artifact.ID)
-	if err != nil {
-		return uuid.Nil, err
+	var version generated.ArtifactSnapshot
+	if source.SourceType == "wiki" {
+		version, err = q.GetArtifactSnapshot(
+			ctx,
+			generated.GetArtifactSnapshotParams{CompanyID: p.CompanyID, ID: source.WikiRevisionID.UUID},
+		)
+	} else {
+		source.Number, err = q.AllocateCanvasVersion(ctx, artifact.ID)
+		if err == nil {
+			version, err = q.CreateCanvasVersion(ctx, source.CreateCanvasVersionParams)
+		}
 	}
-	source.Number = number
-	version, err := q.CreateCanvasVersion(ctx, source)
 	if err != nil {
 		return uuid.Nil, err
 	}

@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
@@ -143,6 +144,61 @@ func TestTaskRoutesCreateAndUpdateStrictContracts(t *testing.T) {
 	}
 }
 
+func TestParseTaskListOptionsSupportsBoundedPages(t *testing.T) {
+	t.Parallel()
+
+	request := httptest.NewRequest(
+		http.MethodGet,
+		"/?project_id=0198aa00-0000-4000-8000-000000000001&limit=50&before_number=123&exclude_status=done,cancelled",
+		nil,
+	)
+	context, _ := gin.CreateTestContext(httptest.NewRecorder())
+	context.Request = request
+	options, err := parseTaskListOptions(context)
+	if err != nil {
+		t.Fatalf("parseTaskListOptions() error = %v", err)
+	}
+	if options.Limit != 50 || options.BeforeNumber != 123 || len(options.ExcludedStatuses) != 2 ||
+		options.ExcludedStatuses[0] != task.StatusDone || options.ExcludedStatuses[1] != task.StatusCancelled {
+		t.Fatalf("parseTaskListOptions() = %+v", options)
+	}
+
+	for _, raw := range []string{"limit=0", "limit=1002", "before_number=0", "before_number=5"} {
+		context.Request = httptest.NewRequest(http.MethodGet, "/?"+raw, nil)
+		if _, err := parseTaskListOptions(context); err == nil {
+			t.Errorf("parseTaskListOptions(%q) error = nil", raw)
+		}
+	}
+}
+
+func TestTaskListResponseIncludesBoundedPageCursor(t *testing.T) {
+	t.Parallel()
+
+	principal := phase4Principal(uuid.Must(uuid.NewV7()), uuid.Must(uuid.NewV7()))
+	projectID := uuid.Must(uuid.NewV7())
+	service := &taskServiceStub{
+		list: func(_ context.Context, got auth.UserPrincipal, options task.ListOptions, run *task.RunScope) (task.Page, error) {
+			if got != principal || run != nil || options.ProjectID == nil ||
+				*options.ProjectID != projectID ||
+				options.Limit != 1 {
+				t.Fatalf("List() = %+v, %+v, %+v", got, options, run)
+			}
+			cursor := int64(17)
+			return task.Page{Tasks: []task.Response{}, NextCursor: &cursor}, nil
+		},
+	}
+	handler := phase4TaskHandler(t, principal, service)
+	response := serveBearerRequest(
+		handler,
+		http.MethodGet,
+		"/api/v1/companies/"+principal.CompanyID.String()+"/tasks?project_id="+projectID.String()+"&limit=1",
+		nil,
+	)
+	if response.Code != http.StatusOK || response.Body.String() != `{"items":[],"nextCursor":17}` {
+		t.Fatalf("bounded list response = %d %s", response.Code, response.Body.String())
+	}
+}
+
 func TestTaskRouteStartsAssignedAgentExecution(t *testing.T) {
 	t.Parallel()
 
@@ -239,7 +295,8 @@ func TestTaskRoutesListUsesStrictFiltersAndNonDisclosingErrors(t *testing.T) {
 		t.Fatalf("list response = %d %s", response.Code, response.Body.String())
 	}
 	for _, query := range []string{
-		"?limit=25", "?department_key=engineering",
+		"?department_key=engineering", "?limit=0", "?limit=1002",
+		"?before_number=1",
 		// The kind went with the Agent assignee: the filter is the member.
 		"?assignee_kind=agent&assignee_id=" + agentID.String(),
 		"?assignee_id=not-a-uuid", "?executed_by_agent_id=not-a-uuid",

@@ -10,6 +10,10 @@ import {
 import { readSessionSnapshot } from "@/shared/session/session";
 import { documentRecovery } from "./document-recovery";
 import {
+  canEditWithDocumentCapability,
+  documentAuthoringCapability,
+} from "./document-authoring-capability";
+import {
   notifyDocumentMutation,
   watchDocumentChanges,
 } from "../api/canvas-sync";
@@ -34,6 +38,8 @@ export type DocumentSessionStatus = {
   connection: DocumentConnection | null;
   ready: boolean;
   canEdit: boolean;
+  intelligentUIAuthoringEnabled: boolean;
+  reactiveReadOnly: boolean;
   saved: boolean;
   error: string;
   recoveryError: string;
@@ -44,6 +50,8 @@ export const initialDocumentStatus: DocumentSessionStatus = {
   connection: null,
   ready: false,
   canEdit: false,
+  intelligentUIAuthoringEnabled: false,
+  reactiveReadOnly: false,
   saved: true,
   error: "",
   recoveryError: "",
@@ -59,7 +67,8 @@ export function createDocumentSession(options: {
   isReadOnly: () => boolean;
   onUnsavedClose: () => void;
 }) {
-  const { scope, versionId, isReadOnly } = options;
+  const { scope, isReadOnly } = options;
+  const versionId = "pageId" in scope ? scope.pageId : options.versionId;
   let pageId = "";
   let status = { ...initialDocumentStatus };
   const listeners = new Set<(status: DocumentSessionStatus) => void>();
@@ -70,7 +79,9 @@ export function createDocumentSession(options: {
   const setReady = (value: DocumentSessionStatus["ready"]) =>
     publish({ ready: value });
   const setCanEdit = (value: DocumentSessionStatus["canEdit"]) =>
-    publish({ canEdit: value });
+    publish({
+      canEdit: canEditWithDocumentCapability(value, status.reactiveReadOnly),
+    });
   const setSaved = (value: DocumentSessionStatus["saved"]) =>
     publish({ saved: value });
   const setError = (value: DocumentSessionStatus["error"]) =>
@@ -88,7 +99,7 @@ export function createDocumentSession(options: {
   const awareness = new Awareness(doc);
   const ids: string[] = [];
   const controller = new AbortController();
-  const url = blockDocumentPath(scope, versionId);
+  const url = blockDocumentPath(scope);
   const scopeKey = documentScopeKey(scope);
   const userId = readSessionSnapshot().userId;
   const recovery = documentRecovery({
@@ -104,6 +115,7 @@ export function createDocumentSession(options: {
   let pendingUpdates: Uint8Array[] = [];
   let saveTimer: ReturnType<typeof setTimeout> | undefined;
   let refreshRequested = false;
+  let authoringSuspended = false;
   let initializationState: "pending" | "loading" | "ready" = "pending";
   let initialization: Promise<void> | undefined;
   let predecessorReady = !priorFinish;
@@ -164,18 +176,34 @@ export function createDocumentSession(options: {
         : "retrying";
     if (isClosing()) return;
     if (isDenied()) setCanEdit(false);
+    const authoringDisabled =
+      reason instanceof ApiClientError &&
+      reason.code === "intelligent_ui_authoring_disabled";
+    if (authoringDisabled) {
+      authoringSuspended = true;
+      const capability = documentAuthoringCapability(
+        snapshot?.schemaVersion ?? 1,
+        false,
+      );
+      publish({
+        ...capability,
+        ...(capability.reactiveReadOnly ? { canEdit: false } : {}),
+      });
+    }
     const rejectionDetail =
       reason instanceof ApiClientError && reason.code !== "canvas_invalid"
         ? reason.body?.detail
         : undefined;
     setError(
-      reason instanceof ApiClientError && reason.status === 409
-        ? "The document was moved or restructured while you were editing. Export your draft, then reload the saved version to reconcile the changes."
-        : isDenied()
-          ? "Access changed. Export your unsaved draft before closing."
-          : isInvalid()
-            ? `The server rejected this document edit.${rejectionDetail ? ` ${rejectionDetail}` : ""} Your draft is still open. Undo the last change or export your draft before reloading.`
-            : "Connection interrupted. Edits remain in this open document. Reconnecting…",
+      authoringDisabled
+        ? "Reactive editing is temporarily unavailable. Your unsaved changes are still here. Export your draft before reloading, or keep this document open until editing resumes."
+        : reason instanceof ApiClientError && reason.status === 409
+          ? "The document was moved or restructured while you were editing. Export your draft, then reload the saved version to reconcile the changes."
+          : isDenied()
+            ? "Access changed. Export your unsaved draft before closing."
+            : isInvalid()
+              ? `The server rejected this document edit.${rejectionDetail ? ` ${rejectionDetail}` : ""} Your draft is still open. Undo the last change or export your draft before reloading.`
+              : "Connection interrupted. Edits remain in this open document. Reconnecting…",
     );
   };
   const discard = async () => {
@@ -202,6 +230,7 @@ export function createDocumentSession(options: {
       discarding ||
       !isEditable() ||
       isReadOnly() ||
+      status.reactiveReadOnly ||
       ids.length >= count ||
       isDenied()
     )
@@ -225,7 +254,8 @@ export function createDocumentSession(options: {
         !discarding &&
         !isDenied() &&
         isEditable() &&
-        !isReadOnly()
+        !isReadOnly() &&
+        !status.reactiveReadOnly
       ) {
         const result = await apiClient.post<
           components["schemas"]["CanvasBlockIDs"]
@@ -243,7 +273,8 @@ export function createDocumentSession(options: {
         !isClosing() &&
         !discarding &&
         !isDenied() &&
-        isEditable()
+        isEditable() &&
+        !status.reactiveReadOnly
       ) {
         setCanEdit(!isReadOnly());
         if (waitingForIDs)
@@ -258,10 +289,23 @@ export function createDocumentSession(options: {
       waitingForIDs = false;
     }
   };
+  const applyAuthoringCapability = (result: Document) => {
+    const capability = documentAuthoringCapability(
+      result.schemaVersion,
+      result.intelligentUIAuthoringEnabled === true,
+    );
+    publish({
+      ...capability,
+      ...(capability.reactiveReadOnly ? { canEdit: false } : {}),
+    });
+    if (capability.reactiveReadOnly) authoringSuspended = true;
+    else if (result.intelligentUIAuthoringEnabled) authoringSuspended = false;
+  };
   const apply = (result: Document) => {
     if (isClosed()) return;
-    if (result.schemaVersion !== 1)
+    if (result.schemaVersion !== 1 && result.schemaVersion !== 2)
       throw new Error("Unsupported document schema");
+    applyAuthoringCapability(result);
     pageId = result.pageId;
     sequence = result.sequence;
     permission = result.canEdit ? "editable" : "readonly";
@@ -286,9 +330,28 @@ export function createDocumentSession(options: {
     busy = true;
     writeOutcome = "saving";
     try {
-      const sent = generation;
+      let sent = generation;
       if (loaded && sent > acknowledged) {
+        if (!isEditable() || authoringSuspended) {
+          const current = await apiClient.get<Document>(url, {
+            params: {
+              after_seq: sequence,
+              state_vector: encodeUpdate(Y.encodeStateVector(acceptedDoc)),
+            },
+            signal: controller.signal,
+          });
+          if (isClosed() || discarding) return false;
+          // Refresh authority without merging remote structure into pending edits
+          // or advancing their base sequence. The normal write fence still applies.
+          applyAuthoringCapability(current);
+          permission = current.canEdit ? "editable" : "readonly";
+          if (!isClosing()) setCanEdit(isEditable() && !isReadOnly());
+          if (authoringSuspended && !current.intelligentUIAuthoringEnabled)
+            return false;
+          authoringSuspended = false;
+        }
         if (!isEditable() || isReadOnly()) return false;
+        sent = generation;
         const priorSequence = sequence;
         const count = pendingUpdates.length;
         const update = Y.encodeStateAsUpdate(
@@ -299,7 +362,7 @@ export function createDocumentSession(options: {
           url,
           {
             update: encodeUpdate(update),
-            schemaVersion: 1,
+            schemaVersion: 2,
             baseSequence: sequence,
             stateVector: encodeUpdate(Y.encodeStateVector(doc)),
           },
@@ -403,6 +466,9 @@ export function createDocumentSession(options: {
   const changed = (update: Uint8Array, origin: unknown) => {
     if (origin === remote || !loaded) return;
     generation++;
+    // An undo may remove the reactive addition that was refused. Let the server
+    // evaluate the new draft once before suspending repeated writes again.
+    authoringSuspended = false;
     pendingUpdates.push(update);
     writeOutcome = "idle";
     setNotice("");
@@ -464,6 +530,7 @@ export function createDocumentSession(options: {
               signal: controller.signal,
             });
       if (isClosed() || discarding) return;
+      applyAuthoringCapability(current);
       permission = current.canEdit ? "editable" : "readonly";
       if (!generation) {
         if (current.state)
@@ -478,14 +545,18 @@ export function createDocumentSession(options: {
         if (isEditable() && !isReadOnly())
           restoreDocumentIdentities(doc, acceptedDoc);
         setCanEdit(isEditable() && !isReadOnly());
-        if (!isEditable())
-          setError(
-            "You can no longer edit this document. Export the recovered draft before closing.",
-          );
       }
       initializationState = "ready";
       if (!isClosing()) lifecycle = "active";
-      if (!generation || isEditable()) setError("");
+      if (generation && status.reactiveReadOnly)
+        setError(
+          "Reactive editing is temporarily unavailable. This draft is not saved. Keep it open or export it before reloading.",
+        );
+      else if (generation && !isEditable())
+        setError(
+          "You can no longer edit this document. Export the recovered draft before closing.",
+        );
+      else setError("");
       if (isEditable() && !isReadOnly()) void reserve();
       if (generation) refreshRequested = true;
     } catch (reason) {
@@ -587,6 +658,9 @@ export function createDocumentSession(options: {
       return () => {
         listeners.delete(listener);
       };
+    },
+    get sequence() {
+      return sequence;
     },
     get pageId() {
       return pageId;

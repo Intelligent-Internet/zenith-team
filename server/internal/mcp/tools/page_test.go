@@ -204,3 +204,49 @@ func TestPagePresentationBoundsTitles(t *testing.T) {
 		})
 	}
 }
+
+func TestPageSourceTravelsThroughRunChannel(t *testing.T) {
+	t.Parallel()
+	api := new(pageAPIStub)
+	service, err := NewPageToolService(
+		api,
+		RunContext{CompanyID: "company", ConversationID: "conversation", RunID: "run", AgentID: "agent"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	source := "<TaskCollection filter=\"active\" />"
+	input := PageEditInput{
+		PageID:     "page",
+		Sequence:   7,
+		Summary:    "Show active work",
+		Operations: []PageOperation{{Type: "insert", Source: &source, LanguageVersion: 1}},
+	}
+	for range 2 {
+		if _, err = service.EditPage(t.Context(), input); err != nil {
+			t.Fatal(err)
+		}
+	}
+	var request struct {
+		Operations []PageOperation `json:"operations"`
+	}
+	if err = json.Unmarshal(api.requests[0], &request); err != nil {
+		t.Fatal(err)
+	}
+	if len(request.Operations) != 1 || request.Operations[0].Source == nil ||
+		*request.Operations[0].Source != source ||
+		request.Operations[0].LanguageVersion != 1 ||
+		request.Operations[0].Content != nil {
+		t.Fatalf("request = %s", api.requests[0])
+	}
+	if api.keys[0] != api.keys[1] {
+		t.Fatal("source replay changed request key")
+	}
+	input.Operations[0].Content = &PageBlock{Type: "paragraph"}
+	if _, err = service.EditPage(t.Context(), input); err == nil {
+		t.Fatal("accepted both source and content")
+	}
+	if len(api.requests) != 2 {
+		t.Fatal("invalid source authority reached transport")
+	}
+}

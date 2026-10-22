@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -30,25 +31,15 @@ func (h *Handler) registerCanvasRoutes(api *gin.RouterGroup) {
 		middleware.RequireHumanActor(),
 	)
 	outputs.GET("", h.outputReview)
-	outputs.PUT("/items/:outputItemId/document/presence", h.outputDocumentPresence)
-	outputs.POST("/items/:outputItemId/document/checkpoints", h.checkpointOutputDocument)
 	outputs.GET("/versions/:versionId/body", h.outputDocumentVersion)
 	outputs.POST("/operations", h.mutateOutputReview)
 	outputs.POST("/items/:outputItemId/document/open", h.openOutputDocument)
-	outputs.GET("/items/:outputItemId/document/history", h.documentHistory)
-	outputs.GET("/items/:outputItemId/document/history/:sequence", h.documentHistoryState)
-	outputs.POST("/items/:outputItemId/document/history/:sequence/restore", h.restoreDocumentHistory)
-	outputs.PUT("/items/:outputItemId/document/history/:sequence/name", h.nameDocumentHistory)
-	outputs.GET("/items/:outputItemId/document", h.readOutputDocument)
-	outputs.POST("/items/:outputItemId/document", h.syncOutputDocument)
-	outputs.POST("/items/:outputItemId/document/ids", h.reserveOutputBlockIDs)
 	routes := api.Group(
 		"/companies/:companyId/projects/:projectId/canvas",
 		middleware.RequireUserAuth(h.AuthService),
 		middleware.RequireCompanyMember(h.CompanyService),
 		middleware.RequireHumanActor(),
 	)
-	edit := middleware.RequireProjectPermission(h.ProjectService, auth.ProjectPermissionTasksWrite)
 	routes.GET("", h.getCanvas)
 	routes.GET("/timeline", h.canvasTimeline)
 	routes.GET("/library", h.canvasLibrary)
@@ -57,13 +48,7 @@ func (h *Handler) registerCanvasRoutes(api *gin.RouterGroup) {
 	routes.GET("/artifacts/:artifactId/history", h.canvasHistory)
 	routes.GET("/versions/:versionId/threads", h.canvasThreads)
 	routes.GET("/versions/:versionId/body", h.canvasBody)
-	routes.GET("/versions/:versionId/document/history", h.documentHistory)
-	routes.GET("/versions/:versionId/document/history/:sequence", h.documentHistoryState)
-	routes.POST("/versions/:versionId/document/history/:sequence/restore", edit, h.restoreDocumentHistory)
-	routes.PUT("/versions/:versionId/document/history/:sequence/name", edit, h.nameDocumentHistory)
 	routes.GET("/versions/:versionId/document", h.canvasDocument)
-	routes.POST("/versions/:versionId/document", edit, h.syncCanvasDocument)
-	routes.POST("/versions/:versionId/document/ids", edit, h.reserveCanvasBlockIDs)
 	routes.PUT("/presence", h.canvasPresence)
 }
 
@@ -254,79 +239,17 @@ func (h *Handler) canvasDocument(c *gin.Context) {
 type blockDocumentRequest struct {
 	BaseSequence  int64  `json:"baseSequence"  binding:"gte=0"`
 	Update        []byte `json:"update"        binding:"required"`
-	SchemaVersion int    `json:"schemaVersion" binding:"required,eq=1"`
+	SchemaVersion int    `json:"schemaVersion" binding:"required,oneof=1 2"`
 	StateVector   []byte `json:"stateVector"   binding:"max=65536"`
 }
 
-func (h *Handler) syncCanvasDocument(c *gin.Context) {
-	p, project, ok := canvasPath(c)
-	if !ok {
-		return
-	}
-	id, ok := canvasID(c, "versionId")
-	if !ok {
-		return
-	}
-	input, err := bindRequest[blockDocumentRequest](c, 12<<20)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	if !wiki.ValidBlockStateVector(input.StateVector) {
-		writeCanvasError(c, canvas.ErrInvalid)
-		return
-	}
-	result, err := h.PageService.SyncDocument(
-		c.Request.Context(),
-		p,
-		project,
-		id,
-		input.Update,
-		input.BaseSequence,
-	)
-	if err != nil {
-		writeCanvasError(c, err)
-		return
-	}
-	result.State, result.StateVector, err = wiki.BlockStateDelta(result.State, input.StateVector)
-	if err != nil {
-		writeCanvasError(c, canvas.ErrInvalid)
-		return
-	}
-	if len(input.StateVector) > 0 {
-		result.Content = nil
-		result.Markdown = ""
-	}
-	c.JSON(http.StatusOK, result)
-}
-
-func (h *Handler) reserveCanvasBlockIDs(c *gin.Context) {
-	p, project, ok := canvasPath(c)
-	if !ok {
-		return
-	}
-	id, ok := canvasID(c, "versionId")
-	if !ok {
-		return
-	}
-	input, err := bindRequest[struct {
-		Count int32 `json:"count" binding:"required,min=1,max=256"`
-	}](c, 1024)
-	if err != nil {
-		writeRequestError(c, err)
-		return
-	}
-	ids, err := h.PageService.ReserveBlockIDs(c.Request.Context(), p, project, id, input.Count)
-	if err != nil {
-		writeCanvasError(c, err)
-		return
-	}
-	c.JSON(http.StatusOK, struct {
-		IDs []uuid.UUID `json:"ids"`
-	}{ids})
-}
-
 var canvasErrorMappings = []errorMapping{
+	{
+		wiki.ErrUIAuthoringDisabled,
+		http.StatusServiceUnavailable,
+		"Intelligent UI authoring is temporarily disabled",
+		"intelligent_ui_authoring_disabled",
+	},
 	projectPermissionRequiredMapping,
 	{
 		wiki.ErrArtifactRefUnavailable,
@@ -364,6 +287,11 @@ var canvasErrorMappings = []errorMapping{
 }
 
 func writeCanvasError(c *gin.Context, err error) {
+	var diagnostic *wiki.SourceDiagnostic
+	if errors.As(err, &diagnostic) {
+		writeBoundaryErrorDetail(c, boundaryErrorValidationFailed, diagnostic.Error())
+		return
+	}
 	writeMappedError(c, err, canvasErrorMappings, internalErrorFallback)
 }
 

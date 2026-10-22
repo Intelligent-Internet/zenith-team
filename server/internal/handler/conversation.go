@@ -238,6 +238,13 @@ func (h *Handler) registerConversationRoutes(group *gin.RouterGroup) {
 	}
 
 	if h.CompanyService != nil {
+		group.POST(
+			"/companies/:companyId/chat-ui-preview",
+			middleware.RequireUserAuth(h.AuthService),
+			middleware.RequireCompanyMember(h.CompanyService),
+			middleware.RequireHumanActor(),
+			h.previewChatUI,
+		)
 		conversations := group.Group(
 			"/companies/:companyId/conversations",
 			middleware.RequireUserAuth(h.AuthService),

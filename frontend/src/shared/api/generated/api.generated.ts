@@ -4,6 +4,321 @@
  */
 
 export interface paths {
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read current retained content or an exact snapshot using live Artifact access */
+        get: operations["getRetainedArtifactContent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/snapshots/{snapshotId}/items/{itemId}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download one exact snapshot item using live Artifact access */
+        get: operations["downloadRetainedArtifactItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/artifacts/{artifactId}/access": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read live Artifact ownership and sharing */
+        get: operations["getLiveArtifactAccess"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change standalone Artifact access at an exact revision */
+        patch: operations["changeLiveArtifactAccess"];
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List readable Pages independently of placements and deliveries */
+        get: operations["listReadablePages"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/changes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read pending and recent contributions to this Page */
+        get: operations["listPageChanges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/changes/{changeId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read before and after content for a Page contribution */
+        get: operations["getPageChange"];
+        put?: never;
+        /** Apply reject or undo a contribution to this Page */
+        post: operations["reviewPageChange"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/source-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read authorized transient source previews */
+        get: operations["directListPagePreviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/source-previews/{generationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one authorized transient source preview */
+        get: operations["directReadPagePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the Page review state */
+        get: operations["pageReview"];
+        put?: never;
+        /** Update the Page review state */
+        post: operations["mutatePageReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read the authorized working document */
+        get: operations["readPageDocument"];
+        put?: never;
+        /** Merge edits after rechecking Editor permission */
+        post: operations["syncPageDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/ids": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reserve identities for new blocks */
+        post: operations["reservePageBlockIds"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/checkpoints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save an immutable review version */
+        post: operations["checkpointPageDocument"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/presence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Share ephemeral cursors after checking document access */
+        put: operations["updatePageDocumentPresence"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List shared document history */
+        get: operations["pageDocumentHistoryList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/history/{sequence}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State shared document history */
+        get: operations["pageDocumentHistoryState"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/history/{sequence}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore shared document history */
+        post: operations["pageDocumentHistoryRestore"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/pages/{pageId}/document/history/{sequence}/name": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Name shared document history */
+        put: operations["pageDocumentHistoryName"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/chat-ui-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compile inline assistant UI source without saving a document
+         * @description Compiles only caller-supplied text. Does not read product data or grant access to live sources.
+         */
+        post: operations["previewChatUI"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/{companyId}/message-connectors": {
         parameters: {
             query?: never;
@@ -37,142 +352,6 @@ export interface paths {
          */
         get: operations["listMessageSkills"];
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List shared document history */
-        get: operations["outputDocumentHistoryList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** State shared document history */
-        get: operations["outputDocumentHistoryState"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Restore shared document history */
-        post: operations["outputDocumentHistoryRestore"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/history/{sequence}/name": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Name shared document history */
-        put: operations["outputDocumentHistoryName"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List shared document history */
-        get: operations["projectDocumentHistoryList"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** State shared document history */
-        get: operations["projectDocumentHistoryState"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}/restore": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Restore shared document history */
-        post: operations["projectDocumentHistoryRestore"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/history/{sequence}/name": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Name shared document history */
-        put: operations["projectDocumentHistoryName"];
         post?: never;
         delete?: never;
         options?: never;
@@ -692,12 +871,50 @@ export interface paths {
         /** Read one native Page by stable identity */
         get: operations["getProjectPage"];
         put?: never;
-        post?: never;
+        /**
+         * Read or compile a guarded selected-block source draft without saving
+         * @description Compilation may reserve database identities for new descendants. It does not change the canonical document. Existing descendant IDs must belong to the selected subtree and retain their types; the selected root type and ID remain unchanged.
+         */
+        post: operations["previewProjectPageSource"];
         delete?: never;
         options?: never;
         head?: never;
         /** Update Page title or presentation preset */
         patch: operations["updateProjectPage"];
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/source-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read authorized transient source previews */
+        get: operations["listPagePreviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/source-previews/{generationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one authorized transient source preview */
+        get: operations["readPagePreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/companies/{companyId}/projects/{projectId}/pages/{pageId}/threads": {
@@ -762,7 +979,8 @@ export interface paths {
         /** Preview a selected Page with exact retained evidence */
         get: operations["previewProjectPresentation"];
         put?: never;
-        post?: never;
+        /** Preview a Page at an acknowledged sequence using selected scenario inputs */
+        post: operations["previewProjectScenario"];
         delete?: never;
         options?: never;
         head?: never;
@@ -804,6 +1022,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}/publication": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read capture publication status (results.publish required) */
+        get: operations["getPresentationPublication"];
+        put?: never;
+        /** Explicitly publish an immutable HTML capture (results.publish required) */
+        post: operations["publishPresentation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}/publication/{publicationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke the exact public capture URL (results.publish required) */
+        delete: operations["revokePresentationPublication"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/captures/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read only the explicitly published immutable HTML capture */
+        get: operations["publicPresentation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/companies/{companyId}/projects/{projectId}/presentations/{presentationId}": {
         parameters: {
             query?: never;
@@ -828,7 +1098,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Download the immutable Markdown export with current source access */
+        /** Download an immutable Markdown or standalone HTML export with current source access */
         get: operations["exportProjectPresentation"];
         put?: never;
         post?: never;
@@ -901,6 +1171,41 @@ export interface paths {
         put?: never;
         /** Contribute focused blocks to a Page with live Task Run proof */
         post: operations["editProjectPageForRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/source-previews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start a transient source preview under live Run authority */
+        post: operations["createPagePreviewForRun"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/companies/{companyId}/runs/{runId}/agent-pages/{pageId}/source-previews/{generationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Resume an unexpired source preview under live Run authority */
+        get: operations["readPagePreviewForRun"];
+        put?: never;
+        /** Apply a bounded source preview patch without changing the Page */
+        post: operations["patchPagePreviewForRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1377,28 +1682,7 @@ export interface paths {
          */
         get: operations["getCanvasDocument"];
         put?: never;
-        /**
-         * sync Canvas Document
-         * @description Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted.
-         */
-        post: operations["syncCanvasDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/projects/{projectId}/canvas/versions/{versionId}/document/ids": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reserve server-generated identities for native document blocks */
-        post: operations["reserveCanvasBlockIDs"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5801,8 +6085,10 @@ export interface paths {
          *     reads, with the caller's filters as asked. The server
          *     decides this from the token.
          *
-         *     All matching tasks are returned in one response. The query parameters
-         *     below are filters, not pagination controls.
+         *     By default, all matching tasks are returned for existing board clients.
+         *     Callers can request bounded pages with `limit`; `nextCursor` is the
+         *     last task number in the page and is passed as `before_number` to read
+         *     older tasks. Cursors are stable because task numbers are immutable.
          */
         get: operations["listTasks"];
         put?: never;
@@ -7540,58 +7826,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Read the authorized working document */
-        get: operations["readOutputDocument"];
-        put?: never;
-        /** Merge edits after rechecking Editor permission */
-        post: operations["syncOutputDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/ids": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Reserve identities for new blocks */
-        post: operations["reserveOutputBlockIds"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/checkpoints": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Save an immutable review version */
-        post: operations["checkpointOutputDocument"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/versions/{versionId}/body": {
         parameters: {
             query?: never;
@@ -7602,23 +7836,6 @@ export interface paths {
         /** Read or export an immutable document version */
         get: operations["getOutputDocumentVersion"];
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/companies/{companyId}/artifacts/{artifactId}/review/items/{outputItemId}/document/presence": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Share ephemeral cursors after checking document access */
-        put: operations["updateOutputDocumentPresence"];
         post?: never;
         delete?: never;
         options?: never;
@@ -10209,6 +10426,67 @@ export interface components {
              */
             stopAfterMs?: number;
         };
+        LiveArtifactGrant: {
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            /** @enum {string} */
+            permission: "view" | "edit" | "manage";
+        };
+        LiveArtifactAccess: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** @enum {string} */
+            ownership: "person" | "project" | "company";
+            /** Format: uuid */
+            projectId?: string;
+            /** Format: uuid */
+            ownerUserId?: string;
+            /** @enum {string} */
+            visibility: "private" | "company";
+            canManage: boolean;
+            /** Format: int64 */
+            revision: number;
+            grants: components["schemas"]["LiveArtifactGrant"][];
+            /** @enum {string} */
+            type: "page" | "wiki" | "whiteboard" | "file" | "media" | "app";
+            conversationGrants: {
+                /** Format: uuid */
+                conversationId: string;
+                title: string;
+            }[];
+            canEdit: boolean;
+        };
+        LiveArtifactGrantChange: {
+            /** Format: uuid */
+            userId: string;
+            /** @enum {string|null} */
+            permission: "view" | "edit" | "manage" | null;
+        };
+        LiveArtifactAccessChange: {
+            /** Format: int64 */
+            expectedRevision: number;
+            /** @enum {string} */
+            visibility?: "private" | "company";
+            grant?: components["schemas"]["LiveArtifactGrantChange"];
+            /** Format: uuid */
+            revokeConversationId?: string;
+        };
+        PageSummary: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            /** Format: uuid */
+            projectId?: string;
+            /** Format: uuid */
+            ownerUserId?: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PageList: {
+            items: components["schemas"]["PageSummary"][];
+        };
         TaskCalendarSchedule: {
             /** Format: uuid */
             id: string;
@@ -11008,11 +11286,21 @@ export interface components {
             content?: components["schemas"]["CanvasBlock"];
             /** @description Optional sibling insertion/move anchor, mutually exclusive with afterId. */
             beforeId?: string;
+            /** @description Versioned Zenith Markdown/component source, mutually exclusive with content and markdown. Updates preserve descendant identities using Native nodes. */
+            source?: string;
+            /**
+             * @description Required with source; omit otherwise.
+             * @enum {integer}
+             */
+            languageVersion?: 1;
         };
         PageEditInput: {
             /** Format: uuid */
             requestKey: string;
-            /** Format: int64 */
+            /**
+             * Format: int64
+             * @description Base revision returned by page_read. Operation hashes must match this revision. Concurrent content edits are compared during per-block review; theme changes require the current revision.
+             */
             sequence: number;
             summary: string;
             operations?: components["schemas"]["PageOperation"][];
@@ -11043,8 +11331,6 @@ export interface components {
             /** Format: uuid */
             runId: string | null;
             /** Format: uuid */
-            outputId: string | null;
-            /** Format: uuid */
             pageId: string;
             /** @enum {string} */
             theme: "default" | "editorial" | "compact";
@@ -11053,6 +11339,23 @@ export interface components {
              * @description The exact proposal captured or awaiting acceptance; absent for shared content.
              */
             changeId?: string;
+            deliveryIds: string[];
+        };
+        PresentationPublication: {
+            /** Format: uuid */
+            id: string | null;
+            /** Format: uuid */
+            publicToken: string | null;
+            /** Format: date-time */
+            createdAt: string | null;
+            revoked: boolean;
+            canPublish: boolean;
+        };
+        PresentationPublicationInput: {
+            /** Format: uuid */
+            requestKey: string;
+            /** @enum {boolean} */
+            confirmPublicExposure: true;
         };
         ProjectPresentation: {
             /** Format: uuid */
@@ -11064,8 +11367,6 @@ export interface components {
             createdAt: string;
             /** Format: uuid */
             runId: string | null;
-            /** Format: uuid */
-            outputId: string | null;
             content: components["schemas"]["CanvasBlock"];
             documents: {
                 [key: string]: components["schemas"]["CanvasBlock"];
@@ -11085,6 +11386,11 @@ export interface components {
             changeId?: string;
             /** @description Suggestion indexes pending in this immutable capture. Later rejection or resolution does not remove an index; Task completion requires their application unless assigned proposal-only. Empty for shared-content captures. */
             requiredSuggestionIndexes: number[];
+            /** @description Immutable reactive evaluations keyed by page for the primary document, or the retained document key. Omitted for native-only captures and when source access prevents disclosing complete evidence. Captures retain explicitly selected inputs, falling back to authored defaults for omitted inputs. */
+            evaluations?: {
+                [key: string]: components["schemas"]["IntelligentCapture"];
+            };
+            deliveryIds: string[];
         };
         PresentationInput: {
             /** Format: uuid */
@@ -11097,6 +11403,7 @@ export interface components {
              * @description The exact proposal captured or awaiting acceptance; absent for shared content.
              */
             changeId?: string;
+            selected?: components["schemas"]["PresentationSelections"];
         };
         PageChangeDetail: {
             /** Format: uuid */
@@ -11168,7 +11475,14 @@ export interface components {
             markdown?: string;
             /** @enum {string} */
             theme?: "default" | "editorial" | "compact";
-        } & (unknown | unknown);
+            /** @description Versioned Zenith Markdown/component source, mutually exclusive with content and markdown. Updates preserve descendant identities using Native nodes. */
+            source?: string;
+            /**
+             * @description Required with source; omit otherwise.
+             * @enum {integer}
+             */
+            languageVersion?: 1;
+        } & (unknown | unknown | unknown);
         PageCreateResult: {
             /** Format: uuid */
             versionId: string;
@@ -11206,6 +11520,10 @@ export interface components {
             changes: components["schemas"]["PageChange"][];
             canReviewSuggestions: boolean;
             pendingCreation: boolean;
+            /** @description Lossless Native source with existing block identities. */
+            source?: string;
+            /** @enum {integer} */
+            languageVersion?: 1;
         };
         ProjectRead: {
             /** Format: uuid */
@@ -11246,7 +11564,7 @@ export interface components {
             threadId?: string | null;
             attachmentId?: string | null;
             outputId?: string | null;
-            /** @description Required by import_output_document. The server reads this exact immutable Markdown file, retaining the Output ACL and returning the existing shared document on repeat opens. Body is ignored. Requires artifactId and the source output versionId. */
+            /** @description Required by import_output_document. The server reads this exact immutable Markdown file, retaining import provenance and returning an existing Page only when its Artifact access permits it. Body is ignored. Requires artifactId and the source output versionId. */
             outputItemId?: string | null;
             wikiPageId?: string | null;
             wikiRevisionId?: string | null;
@@ -11314,7 +11632,7 @@ export interface components {
             artifactId: string;
             number: number;
             sourceType: string;
-            /** @description Original Output whose current access rules govern this version, including imported native drafts. These documents are not Company Wiki publications. */
+            /** @description Original Output retained as provenance. Live Page access follows the Artifact; access to the Output does not grant live editing authority. */
             sourceOutputId: string | null;
             /** Format: uuid */
             outputItemId?: string;
@@ -11466,8 +11784,10 @@ export interface components {
             decisions: components["schemas"]["CanvasDecision"][];
         };
         CanvasDocument: {
-            /** @constant */
-            schemaVersion: 1;
+            /** @description Deployment capability for reactive authoring. Does not grant editing permission. */
+            intelligentUIAuthoringEnabled: boolean;
+            /** @enum {integer} */
+            schemaVersion: 1 | 2;
             content?: components["schemas"]["CanvasBlock"];
             /** Format: uuid */
             pageId: string;
@@ -11533,8 +11853,8 @@ export interface components {
              * @description Client vector used to return only missing changes after acknowledgement.
              */
             stateVector?: string;
-            /** @constant */
-            schemaVersion: 1;
+            /** @enum {integer} */
+            schemaVersion: 1 | 2;
             /** Format: byte */
             update: string;
         };
@@ -12740,19 +13060,6 @@ export interface components {
             type: "mailbox.draft_changed";
             payload: components["schemas"]["MailboxDraftChangedPayload"];
         };
-        MessageConnector: {
-            /** Format: uuid */
-            id: string;
-            name: string;
-            iconUrl?: string;
-            /** @enum {string} */
-            provider: "codex" | "claude";
-            eligibleAgentIds: string[];
-            agentNames: string[];
-        };
-        MessageConnectorCollection: {
-            items: components["schemas"]["MessageConnector"][];
-        };
         /**
          * @description The single error envelope used by every endpoint.
          * @example {
@@ -12772,173 +13079,133 @@ export interface components {
              */
             requestId?: string | null;
         };
-        MessageSkill: {
+        RetainedArtifactItem: {
+            role: string;
+            label: string;
+            filename: string;
+            contentType: string;
             /** Format: uuid */
             id: string;
             /** Format: uuid */
-            agentId: string;
+            assetVersionId: string;
+            ordinal: number;
+            /** Format: int64 */
+            sizeBytes: number;
+        };
+        RetainedArtifactContent: {
+            type: string;
+            title: string;
+            summary: string;
             /** Format: uuid */
-            versionId: string;
-            name: string;
-            description: string;
-            agentName: string;
+            artifactId: string;
+            /** Format: uuid */
+            snapshotId: string;
+            number: number;
+            /** Format: date-time */
+            createdAt: string;
+            payload: {
+                [key: string]: unknown;
+            };
+            items: components["schemas"]["RetainedArtifactItem"][];
         };
-        MessageSkillCollection: {
-            items: components["schemas"]["MessageSkill"][];
+        PageSuggestion: {
+            index: number;
+            type: string;
+            blockId: string;
+            /** @enum {string} */
+            status: "pending" | "needs_update" | "already_reflected" | "applied" | "rejected" | "undone" | "superseded" | "resolved";
+            before?: components["schemas"]["CanvasBlock"];
+            after?: components["schemas"]["CanvasBlock"];
+            group: number[];
+            competingChangeIds: string[];
+            currentHash: string;
+            current?: components["schemas"]["CanvasBlock"];
+            /**
+             * Format: byte
+             * @description Immutable text-only Yjs update for an isolated local review preview. Never apply to the live document before acceptance.
+             */
+            crdtUpdate?: string;
         };
-        DocumentSuggestionReview: {
+        PageChangeReview: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
-            changeId: string;
+            actorUserId: string;
+            /** @enum {string} */
+            action: "apply" | "reject" | "undo" | "resolve" | "request_changes";
+            indexes: number[];
+            feedback: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        PageChangeReviewInput: {
             /** Format: uuid */
-            projectId: string;
+            requestKey: string;
+            /** @description Fingerprint of the fetched review. Apply selections consisting entirely of stored text CRDT updates merge into the latest Page even when this differs; structural selections and other actions require a match. */
+            fingerprint: string;
+            /** @enum {string} */
+            action: "apply" | "reject" | "undo" | "request_changes" | "resolve";
+            indexes?: number[];
+            feedback?: string;
+        };
+        PagePreviewSummary: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            projectId?: string;
             /** Format: uuid */
             pageId: string;
             /** Format: uuid */
-            agentId?: string;
-            agentName: string;
-            /** @enum {string} */
-            action: "apply" | "undo";
-            /** Format: int64 */
-            beforeSequence: number;
+            runId: string;
             /** Format: uuid */
-            beforeRevisionId?: string;
-            /** Format: uuid */
-            resultRevisionId?: string;
-            beforeTheme: string;
-            resultTheme: string;
-        };
-        DocumentHistoryEntry: {
+            conversationId: string;
             /** Format: int64 */
-            sequence: number;
+            revision: number;
+            discarded: boolean;
             /** Format: date-time */
-            savedAt: string;
+            expiresAt: string;
+        };
+        PageSourceDiagnostic: {
+            code: string;
             /** @enum {string} */
-            actorType: "user" | "agent" | "system";
+            severity: "error";
+            /** @description UTF-8 byte offset. */
+            start: number;
+            /** @description Exclusive UTF-8 byte offset. */
+            end: number;
+            repair: string;
             /** Format: uuid */
-            actorId?: string;
-            actorName: string;
-            /** @enum {string} */
-            changeType: "initial" | "edit" | "restore";
-            label: string;
-            suggestionReview?: components["schemas"]["DocumentSuggestionReview"];
+            blockId?: string;
+            operationIndex?: number;
         };
-        DocumentContributor: {
-            /** @enum {string} */
-            actorType: "user" | "agent";
-            /** Format: uuid */
-            actorId: string;
-            actorName: string;
+        SourcePreview: {
+            content?: components["schemas"]["CanvasBlock"];
+            complete: boolean;
+            acceptedBytes: number;
+            diagnostics: components["schemas"]["PageSourceDiagnostic"][];
         };
-        DocumentHistory: {
-            items: components["schemas"]["DocumentHistoryEntry"][];
-            contributors: components["schemas"]["DocumentContributor"][];
-            /** Format: int64 */
-            nextBeforeSequence: number;
-            /** Format: int64 */
-            currentSequence: number;
-            canEdit: boolean;
-        };
-        /** @description Exact retained before and result of an acceptance or undo, redacted against current source access. */
-        DocumentSuggestionCapture: {
-            beforeContent: components["schemas"]["CanvasBlock"];
-            resultContent: components["schemas"]["CanvasBlock"];
-            beforeMarkdown: string;
-            resultMarkdown: string;
-        };
-        DocumentHistoryState: {
-            /** Format: int64 */
-            sequence: number;
-            /** Format: int64 */
-            previousSequence: number;
-            markdown: string;
-            content: components["schemas"]["CanvasBlock"];
-            suggestionCapture?: components["schemas"]["DocumentSuggestionCapture"];
-        };
-        DocumentHistoryRestore: {
-            /** Format: int64 */
-            expectedSequence: number;
-        };
-        DocumentHistoryName: {
-            label: string;
-        };
-        /**
-         * @description How a lifeline's head is drawn: actor is an actor's figure over its name, a person or an outside system taking part in a sequence. Absent is a box.
-         * @enum {string}
-         */
-        BoardHeadType: "actor";
-        /**
-         * @description Who did something. Carries a display name so a row renders without a
-         *     second read — there is no user-resolution endpoint and there does not
-         *     need to be. One wire type for every actor slot in the API; `avatarUrl`
-         *     is `null` when the actor has no avatar, never absent.
-         */
-        ActorRef: {
+        PagePreviewGeneration: {
             /** Format: uuid */
             id: string;
-            /** @enum {string} */
-            kind: "user" | "agent";
-            name: string;
-            avatarUrl: string | null;
-        };
-        CanvasDocumentCursor: {
-            clientId: number;
-            /** Format: byte */
-            anchor: string;
-            /** Format: byte */
-            head: string;
-        };
-        BoardVisualRegion: {
-            index: number;
-            /** @description Crop in board coordinates. Adjacent detail tiles overlap to preserve boundary context. */
-            bounds: {
-                x: number;
-                y: number;
-                width: number;
-                height: number;
-            };
-            itemIds: string[];
-            pixelWidth: number;
-            pixelHeight: number;
-            /** @enum {string} */
-            mimeType: "image/png";
-            /**
-             * Format: byte
-             * @description Base64 PNG. MCP returns these bytes as native image content, not JSON text.
-             */
-            data: string;
-        };
-        /** @description On-demand images, never persisted as captures or attachments. At most four region images and 6 MiB of PNG bytes per response, separate from the text maxBytes budget. Context and images are read in separate snapshots; visuals.sequence is the state the images show. */
-        BoardVisuals: {
-            /** Format: int64 */
-            sequence: number;
-            regions: components["schemas"]["BoardVisualRegion"][];
-            totalRegions: number;
-            nextOffset: number | null;
-            hasMore: boolean;
-            /** @description The Board moved past the expected sequence; this page shows the latest committed state. */
-            changed: boolean;
-            /** @description Why no images accompany otherwise complete context. */
-            unavailable?: string;
-            /** @description Identifies the region plan; it changes when regions are added, removed or moved. */
-            planHash: string;
-            /** @description The region plan differs from the one the expected sequence produced; read again from offset 0 to be sure every region was seen. */
-            regionsShifted: boolean;
-            /** @description First page only: the whole Board at low resolution, for choosing where to look. */
-            overview?: components["schemas"]["BoardVisualRegion"] | null;
-        };
-        AgentSkillPreviewVersion: {
             /** Format: uuid */
-            versionId: string;
-            name: string;
-            description: string;
-            contentHash: string;
+            projectId?: string;
+            /** Format: uuid */
+            pageId: string;
+            /** Format: uuid */
+            runId: string;
+            /** Format: uuid */
+            conversationId: string;
+            /** @enum {integer} */
+            protocolVersion: 1;
+            /** @enum {integer} */
+            languageVersion: 1;
             /** Format: int64 */
-            sizeBytes: number;
-            files: components["schemas"]["AgentSkillFile"][];
-            sourcePath: string;
-            instructions: string;
+            revision: number;
+            source: string;
+            discarded: boolean;
+            /** Format: date-time */
+            expiresAt: string;
+            preview: components["schemas"]["SourcePreview"];
         };
         /** @description Existing version, quote, and viewport anchors; viewport coordinates are not media coordinates. */
         CanvasLegacyAnchor: {
@@ -12999,37 +13266,314 @@ export interface components {
             shapes: components["schemas"]["CanvasAnchorShape"][];
         };
         CanvasAnchor: components["schemas"]["CanvasLegacyAnchor"] | components["schemas"]["CanvasMediaAnchor"];
-        PageSuggestion: {
-            index: number;
-            type: string;
+        /** @description Captured text block and UTF-16 selection offsets. Empty ranges insert at the cursor. The server checks the captured text before starting generation and stages the response for human review. */
+        DocumentWritingTarget: {
             blockId: string;
-            /** @enum {string} */
-            status: "pending" | "needs_update" | "already_reflected" | "applied" | "rejected" | "undone" | "superseded";
-            before?: components["schemas"]["CanvasBlock"];
-            after?: components["schemas"]["CanvasBlock"];
-            group: number[];
-            competingChangeIds: string[];
+            from: number;
+            to: number;
+            text: string;
         };
-        PageChangeReview: {
+        CanvasDocumentCursor: {
+            clientId: number;
+            /** Format: byte */
+            anchor: string;
+            /** Format: byte */
+            head: string;
+        };
+        /**
+         * @description Who did something. Carries a display name so a row renders without a
+         *     second read — there is no user-resolution endpoint and there does not
+         *     need to be. One wire type for every actor slot in the API; `avatarUrl`
+         *     is `null` when the actor has no avatar, never absent.
+         */
+        ActorRef: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "user" | "agent";
+            name: string;
+            avatarUrl: string | null;
+        };
+        DocumentSuggestionReview: {
             /** Format: uuid */
             id: string;
             /** Format: uuid */
-            actorUserId: string;
+            changeId: string;
+            /** Format: uuid */
+            projectId?: string;
+            /** Format: uuid */
+            pageId: string;
+            /** Format: uuid */
+            agentId?: string;
+            agentName: string;
             /** @enum {string} */
-            action: "apply" | "reject" | "undo" | "resolve" | "request_changes";
-            indexes: number[];
-            feedback: string;
-            /** Format: date-time */
-            createdAt: string;
+            action: "apply" | "undo";
+            /** Format: int64 */
+            beforeSequence: number;
+            /** Format: uuid */
+            beforeRevisionId?: string;
+            /** Format: uuid */
+            resultRevisionId?: string;
+            beforeTheme: string;
+            resultTheme: string;
         };
-        PageChangeReviewInput: {
+        DocumentHistoryEntry: {
+            /** Format: int64 */
+            sequence: number;
+            /** Format: date-time */
+            savedAt: string;
+            /** @enum {string} */
+            actorType: "user" | "agent" | "system";
+            /** Format: uuid */
+            actorId?: string;
+            actorName: string;
+            /** @enum {string} */
+            changeType: "initial" | "edit" | "restore";
+            label: string;
+            suggestionReview?: components["schemas"]["DocumentSuggestionReview"];
+        };
+        DocumentContributor: {
+            /** @enum {string} */
+            actorType: "user" | "agent";
+            /** Format: uuid */
+            actorId: string;
+            actorName: string;
+        };
+        DocumentHistory: {
+            items: components["schemas"]["DocumentHistoryEntry"][];
+            contributors: components["schemas"]["DocumentContributor"][];
+            /** Format: int64 */
+            nextBeforeSequence: number;
+            /** Format: int64 */
+            currentSequence: number;
+            canEdit: boolean;
+        };
+        /** @description Exact retained before and result of an acceptance or undo, redacted against current source access. */
+        DocumentSuggestionCapture: {
+            /** @enum {integer} */
+            beforeSchemaVersion: 1 | 2;
+            /** @enum {integer} */
+            resultSchemaVersion: 1 | 2;
+            beforeContent: components["schemas"]["CanvasBlock"];
+            resultContent: components["schemas"]["CanvasBlock"];
+            beforeMarkdown: string;
+            resultMarkdown: string;
+        };
+        DocumentHistoryState: {
+            /** @enum {integer} */
+            schemaVersion: 1 | 2;
+            /** Format: int64 */
+            sequence: number;
+            /** Format: int64 */
+            previousSequence: number;
+            markdown: string;
+            content: components["schemas"]["CanvasBlock"];
+            suggestionCapture?: components["schemas"]["DocumentSuggestionCapture"];
+        };
+        DocumentHistoryRestore: {
+            /**
+             * @description Client document capability; omission means 1. Must support both the current draft and the historical content.
+             * @enum {integer}
+             */
+            schemaVersion?: 1 | 2;
+            /** Format: int64 */
+            expectedSequence: number;
+        };
+        DocumentHistoryName: {
+            label: string;
+        };
+        MessageConnector: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            iconUrl?: string;
+            /** @enum {string} */
+            provider: "codex" | "claude";
+            eligibleAgentIds: string[];
+            agentNames: string[];
+        };
+        MessageConnectorCollection: {
+            items: components["schemas"]["MessageConnector"][];
+        };
+        MessageSkill: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            agentId: string;
+            /** Format: uuid */
+            versionId: string;
+            name: string;
+            description: string;
+            agentName: string;
+        };
+        MessageSkillCollection: {
+            items: components["schemas"]["MessageSkill"][];
+        };
+        /**
+         * @description How a lifeline's head is drawn: actor is an actor's figure over its name, a person or an outside system taking part in a sequence. Absent is a box.
+         * @enum {string}
+         */
+        BoardHeadType: "actor";
+        BoardVisualRegion: {
+            index: number;
+            /** @description Crop in board coordinates. Adjacent detail tiles overlap to preserve boundary context. */
+            bounds: {
+                x: number;
+                y: number;
+                width: number;
+                height: number;
+            };
+            itemIds: string[];
+            pixelWidth: number;
+            pixelHeight: number;
+            /** @enum {string} */
+            mimeType: "image/png";
+            /**
+             * Format: byte
+             * @description Base64 PNG. MCP returns these bytes as native image content, not JSON text.
+             */
+            data: string;
+        };
+        /** @description On-demand images, never persisted as captures or attachments. At most four region images and 6 MiB of PNG bytes per response, separate from the text maxBytes budget. Context and images are read in separate snapshots; visuals.sequence is the state the images show. */
+        BoardVisuals: {
+            /** Format: int64 */
+            sequence: number;
+            regions: components["schemas"]["BoardVisualRegion"][];
+            totalRegions: number;
+            nextOffset: number | null;
+            hasMore: boolean;
+            /** @description The Board moved past the expected sequence; this page shows the latest committed state. */
+            changed: boolean;
+            /** @description Why no images accompany otherwise complete context. */
+            unavailable?: string;
+            /** @description Identifies the region plan; it changes when regions are added, removed or moved. */
+            planHash: string;
+            /** @description The region plan differs from the one the expected sequence produced; read again from offset 0 to be sure every region was seen. */
+            regionsShifted: boolean;
+            /** @description First page only: the whole Board at low resolution, for choosing where to look. */
+            overview?: components["schemas"]["BoardVisualRegion"] | null;
+        };
+        AgentSkillPreviewVersion: {
+            /** Format: uuid */
+            versionId: string;
+            name: string;
+            description: string;
+            contentHash: string;
+            /** Format: int64 */
+            sizeBytes: number;
+            files: components["schemas"]["AgentSkillFile"][];
+            sourcePath: string;
+            instructions: string;
+        };
+        /** @description Omit source to read a selected block. To compile a draft, supply source, languageVersion, expectedSequence and expectedHash from the read. This operation never saves content. */
+        PageSourcePreviewInput: {
+            /** Format: uuid */
+            blockId: string;
+            source?: string;
+            /** @enum {integer} */
+            languageVersion?: 1;
+            /** Format: int64 */
+            expectedSequence?: number;
+            expectedHash?: string;
+        };
+        PageSourcePreview: {
+            /** Format: uuid */
+            blockId: string;
+            source: string;
+            /** @enum {integer} */
+            languageVersion: 1;
+            /** @enum {integer} */
+            schemaVersion: 1 | 2;
+            /** Format: int64 */
+            sequence: number;
+            expectedHash: string;
+            content?: components["schemas"]["CanvasBlock"];
+            diagnostics: components["schemas"]["PageSourceDiagnostic"][];
+        };
+        IntelligentCapturedScope: {
+            name: string;
+            path: string;
+            selected: {
+                [key: string]: string | number | boolean | null;
+            };
+            computed: {
+                [key: string]: unknown;
+            };
+        };
+        IntelligentSourceCoverage: {
+            rowCount: number;
+            limit: number;
+            /** @description True only when the retained rows include every matching source row at observation time. False means calculations describe a bounded sample, not a complete aggregate. */
+            complete: boolean;
+        };
+        IntelligentSourceSnapshot: {
+            value: unknown;
+            version: string;
+            /** Format: date-time */
+            observedAt: string;
+            /** @description Result coverage at observation time. Absent for older captures whose coverage was not recorded. */
+            coverage?: components["schemas"]["IntelligentSourceCoverage"];
+        };
+        IntelligentCapturedSource: {
+            scopePath: string;
+            name: string;
+            descriptor: {
+                [key: string]: unknown;
+            };
+            snapshot: components["schemas"]["IntelligentSourceSnapshot"];
+        };
+        IntelligentCapture: {
+            /** @enum {integer} */
+            schemaVersion: 2;
+            /** @enum {integer} */
+            languageVersion: 1;
+            /** @enum {integer} */
+            catalogVersion: 1;
+            definitionHash: string;
+            definition: components["schemas"]["CanvasBlock"];
+            content: components["schemas"]["CanvasBlock"];
+            scopes: components["schemas"]["IntelligentCapturedScope"][];
+            sources: components["schemas"]["IntelligentCapturedSource"][];
+            values: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Selected scalar inputs keyed by retained document key (page for the primary document), then exact scope path from the evaluation manifest, then locally declared state name. Missing inputs use authored defaults. Unknown paths, names or incompatible scalar types are rejected. */
+        PresentationSelections: {
+            [key: string]: {
+                [key: string]: {
+                    [key: string]: string | number | boolean | null;
+                };
+            };
+        };
+        PresentationScenarioInput: {
+            /** Format: int64 */
+            sequence: number;
+            selected?: components["schemas"]["PresentationSelections"];
+        };
+        PagePreviewCreateInput: {
             /** Format: uuid */
             requestKey: string;
-            fingerprint: string;
-            /** @enum {string} */
-            action: "apply" | "reject" | "undo" | "request_changes" | "resolve";
-            indexes?: number[];
-            feedback?: string;
+            /** @enum {integer} */
+            protocolVersion: 1;
+            /** @enum {integer} */
+            languageVersion: 1;
+        };
+        PagePreviewPatchInput: {
+            /** Format: uuid */
+            requestKey: string;
+            /** @enum {integer} */
+            protocolVersion: 1;
+            /** @enum {integer} */
+            languageVersion: 1;
+            /** Format: int64 */
+            expectedRevision: number;
+            /** @description UTF-8 byte offset. */
+            start?: number;
+            deleteBytes?: number;
+            /** @description Replacement text; additionally limited to 65536 UTF-8 bytes. */
+            text?: string;
+            discard?: boolean;
         };
         StudioEditorHumanRequest: {
             /** @constant */
@@ -13457,13 +14001,6 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description Captured text block and UTF-16 selection offsets. Empty ranges insert at the cursor. The server checks the captured text before starting generation and stages the response for human review. */
-        DocumentWritingTarget: {
-            blockId: string;
-            from: number;
-            to: number;
-            text: string;
-        };
         /**
          * Format: int64
          * @description Optimistic-concurrency token. Increments on every write.
@@ -13521,7 +14058,7 @@ export interface components {
          *     a member made in a chat. A Run presents only the first four.
          * @enum {string}
          */
-        ArtifactType: "app" | "media" | "text" | "file" | "whiteboard";
+        ArtifactType: "app" | "media" | "text" | "file" | "whiteboard" | "page";
         PublicArtifactItem: {
             /** @enum {string} */
             role: "primary" | "final";
@@ -18102,6 +18639,11 @@ export interface components {
             app?: components["schemas"]["PresentRunAppOutput"];
             /**
              * Format: uuid
+             * @description Existing editable file, media or app identity to snapshot. Omit to create new work. Mutually exclusive with presentationId.
+             */
+            artifactId?: string;
+            /**
+             * Format: uuid
              * @description Optional native Project presentation prepared by this exact Run; requires type=text and its canonical primary export.
              */
             presentationId?: string;
@@ -18119,8 +18661,21 @@ export interface components {
             app?: Record<string, never>;
         });
         PresentRunOutputResponse: {
-            /** Format: uuid */
+            /**
+             * Format: uuid
+             * @description Immutable Run delivery identity.
+             */
             outputId: string;
+            /**
+             * Format: uuid
+             * @description Stable identity of retained file/media/app work.
+             */
+            artifactId?: string;
+            /**
+             * Format: uuid
+             * @description Exact saved content linked to this delivery.
+             */
+            snapshotId?: string;
         };
         StudioCanvasNode: {
             id: string;
@@ -19132,14 +19687,16 @@ export interface components {
             sequence: number;
             /** Format: int64 */
             structureSequence: number;
-            /** @constant */
-            schemaVersion: 1;
+            /** @enum {integer} */
+            schemaVersion: 1 | 2;
             /** Format: byte */
             state: string | null;
             /** Format: byte */
             stateVector?: string;
             content?: components["schemas"]["CanvasBlock"];
             markdown: string;
+            /** @description Deployment capability for reactive authoring. Does not grant editing permission. */
+            intelligentUIAuthoringEnabled: boolean;
             canEdit: boolean;
             title: string;
             summary: string;
@@ -19151,8 +19708,8 @@ export interface components {
             baseSequence: number;
             /** Format: byte */
             update: string;
-            /** @constant */
-            schemaVersion: 1;
+            /** @enum {integer} */
+            schemaVersion: 1 | 2;
             /** Format: byte */
             stateVector?: string;
         };
@@ -19226,6 +19783,11 @@ export interface components {
             total: number;
         };
         WikiRestoreRevisionRequest: {
+            /**
+             * @description Client document capability; omission means 1. Must support both the current draft and restored content.
+             * @enum {integer}
+             */
+            schemaVersion?: 1 | 2;
             /** Format: int64 */
             expectedRevision: number;
             /** Format: int64 */
@@ -19483,10 +20045,35 @@ export interface components {
     };
     responses: {
         /**
+         * @description `400 invalid_request` — malformed transport: unparsable JSON, wrong JSON
+         *     shape for a hand-decoded field, unparsable identifier.
+         */
+        BadRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /**
          * @description `401` — `authentication_required` (no credential), `session_invalid`
          *     (expired, rotated, or replayed), or `invalid_credentials`.
          */
         Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /**
+         * @description `403` — `csrf_invalid`, `origin_forbidden`, `company_permission_required`,
+         *     `company_access_required`, or `human_actor_required` when a Run proof
+         *     (`X-Zenith-Team-Run-Token`) reaches a route that does not accept a Run.
+         */
+        Forbidden: {
             headers: {
                 [name: string]: unknown;
             };
@@ -19511,19 +20098,6 @@ export interface components {
          *     (`validation_failed`), or a malformed cursor (`invalid_cursor`).
          */
         ValidationFailed: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-        /**
-         * @description `403` — `csrf_invalid`, `origin_forbidden`, `company_permission_required`,
-         *     `company_access_required`, or `human_actor_required` when a Run proof
-         *     (`X-Zenith-Team-Run-Token`) reaches a route that does not accept a Run.
-         */
-        Forbidden: {
             headers: {
                 [name: string]: unknown;
             };
@@ -19556,18 +20130,6 @@ export interface components {
          *     caller.
          */
         UnauthorizedRunProof: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["Error"];
-            };
-        };
-        /**
-         * @description `400 invalid_request` — malformed transport: unparsable JSON, wrong JSON
-         *     shape for a hand-decoded field, unparsable identifier.
-         */
-        BadRequest: {
             headers: {
                 [name: string]: unknown;
             };
@@ -19776,6 +20338,776 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    getRetainedArtifactContent: {
+        parameters: {
+            query?: {
+                snapshotId?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved content. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetainedArtifactContent"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    downloadRetainedArtifactItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                artifactId: string;
+                snapshotId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retained file bytes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getLiveArtifactAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized saved state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveArtifactAccess"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    changeLiveArtifactAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                artifactId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveArtifactAccessChange"];
+            };
+        };
+        responses: {
+            /** @description Authorized saved state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LiveArtifactAccess"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listReadablePages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized saved state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageList"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listPageChanges: {
+        parameters: {
+            query?: {
+                /** @description History cursor returned by the previous response. */
+                cursor?: string;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageChangeFeed"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    getPageChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageChangeDetail"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reviewPageChange: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+                changeId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageChangeReviewInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageEditResult"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    directListPagePreviews: {
+        parameters: {
+            query: {
+                runId: string;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePreviewSummary"][];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    directReadPagePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+                generationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePreviewGeneration"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    pageReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Live Page discussions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanvasThreadList"];
+                };
+            };
+        };
+    };
+    mutatePageReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CanvasCommand"];
+            };
+        };
+        responses: {
+            /** @description Saved comment operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanvasResult"];
+                };
+            };
+        };
+    };
+    readPageDocument: {
+        parameters: {
+            query?: {
+                after_seq?: number;
+                state_vector?: string;
+                projection?: boolean;
+                block_id?: string;
+                preview?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized document result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanvasDocument"];
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    syncPageDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CanvasDocumentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Authorized document result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanvasDocument"];
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    reservePageBlockIds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    count: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Authorized document result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanvasBlockIDs"];
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    checkpointPageDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    sequence: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Authorized document result */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id: string;
+                    };
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updatePageDocumentPresence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CanvasPresenceInput"];
+            };
+        };
+        responses: {
+            /** @description Current document sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanvasPresenceList"];
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    pageDocumentHistoryList: {
+        parameters: {
+            query?: {
+                actor_id?: string;
+                after?: string;
+                before?: string;
+                before_sequence?: number;
+            };
+            header?: never;
+            path: {
+                companyId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved document history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentHistory"];
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    pageDocumentHistoryState: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                pageId: string;
+                sequence: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Saved document history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentHistoryState"];
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    pageDocumentHistoryRestore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                pageId: string;
+                sequence: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentHistoryRestore"];
+            };
+        };
+        responses: {
+            /** @description Saved document history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentHistoryState"];
+                };
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    pageDocumentHistoryName: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                pageId: string;
+                sequence: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentHistoryName"];
+            };
+        };
+        responses: {
+            /** @description Checkpoint name saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request could not be completed */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    previewChatUI: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    source: string;
+                    /** @enum {integer} */
+                    languageVersion: 1;
+                };
+            };
+        };
+        responses: {
+            /** @description Complete or partial validated source with diagnostics. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourcePreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
     listMessageConnectors: {
         parameters: {
             query?: {
@@ -19836,298 +21168,6 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
-        };
-    };
-    outputDocumentHistoryList: {
-        parameters: {
-            query?: {
-                actor_id?: string;
-                after?: string;
-                before?: string;
-                before_sequence?: number;
-            };
-            header?: never;
-            path: {
-                companyId: string;
-                artifactId: string;
-                outputItemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Saved document history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocumentHistory"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    outputDocumentHistoryState: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                companyId: string;
-                artifactId: string;
-                outputItemId: string;
-                sequence: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Saved document history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocumentHistoryState"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    outputDocumentHistoryRestore: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                companyId: string;
-                artifactId: string;
-                outputItemId: string;
-                sequence: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DocumentHistoryRestore"];
-            };
-        };
-        responses: {
-            /** @description Saved document history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocumentHistoryState"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    outputDocumentHistoryName: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                companyId: string;
-                artifactId: string;
-                outputItemId: string;
-                sequence: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DocumentHistoryName"];
-            };
-        };
-        responses: {
-            /** @description Checkpoint name saved */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    projectDocumentHistoryList: {
-        parameters: {
-            query?: {
-                actor_id?: string;
-                after?: string;
-                before?: string;
-                before_sequence?: number;
-            };
-            header?: never;
-            path: {
-                companyId: string;
-                projectId: string;
-                versionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Saved document history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocumentHistory"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    projectDocumentHistoryState: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                companyId: string;
-                projectId: string;
-                versionId: string;
-                sequence: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Saved document history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocumentHistoryState"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    projectDocumentHistoryRestore: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                companyId: string;
-                projectId: string;
-                versionId: string;
-                sequence: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DocumentHistoryRestore"];
-            };
-        };
-        responses: {
-            /** @description Saved document history */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["DocumentHistoryState"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    projectDocumentHistoryName: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                companyId: string;
-                projectId: string;
-                versionId: string;
-                sequence: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["DocumentHistoryName"];
-            };
-        };
-        responses: {
-            /** @description Checkpoint name saved */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
         };
     };
     getWhiteboard: {
@@ -21420,6 +22460,44 @@ export interface operations {
             };
         };
     };
+    previewProjectPageSource: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                projectId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PageSourcePreviewInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized source or compiled preview. Compilation errors appear in diagnostics and omit content. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageSourcePreview"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     updateProjectPage: {
         parameters: {
             query?: never;
@@ -21445,6 +22523,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Page"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listPagePreviews: {
+        parameters: {
+            query: {
+                runId: string;
+            };
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                projectId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePreviewSummary"][];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    readPagePreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                projectId: string;
+                pageId: string;
+                generationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePreviewGeneration"];
                 };
             };
             /** @description Request could not be completed. */
@@ -21639,6 +22788,44 @@ export interface operations {
             };
         };
     };
+    previewProjectScenario: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                projectId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationScenarioInput"];
+            };
+        };
+        responses: {
+            /** @description Authorized committed state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectPresentation"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     listPagePresentations: {
         parameters: {
             query?: never;
@@ -21744,6 +22931,142 @@ export interface operations {
             };
         };
     };
+    getPresentationPublication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                projectId: string;
+                presentationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current immutable publication receipt. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationPublication"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    publishPresentation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                projectId: string;
+                presentationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationPublicationInput"];
+            };
+        };
+        responses: {
+            /** @description Current immutable publication receipt. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationPublication"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    revokePresentationPublication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                projectId: string;
+                presentationId: string;
+                publicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Publication revoked or already inactive. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    publicPresentation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Static HTML; no private source reads. No-store; revocation blocks subsequent reads. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     getProjectPresentation: {
         parameters: {
             query?: never;
@@ -21780,7 +23103,9 @@ export interface operations {
     };
     exportProjectPresentation: {
         parameters: {
-            query?: never;
+            query?: {
+                format?: "markdown" | "html";
+            };
             header?: never;
             path: {
                 /** @description Company the request is scoped to. A non-member sees `404`. */
@@ -21799,6 +23124,7 @@ export interface operations {
                 };
                 content: {
                     "text/markdown": string;
+                    "text/html": string;
                 };
             };
             /** @description Request could not be completed. */
@@ -21977,6 +23303,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PageEditResult"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createPagePreviewForRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                runId: string;
+                pageId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PagePreviewCreateInput"];
+            };
+        };
+        responses: {
+            /** @description Transient preview state; no canonical Page changes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePreviewGeneration"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    readPagePreviewForRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                runId: string;
+                pageId: string;
+                generationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Transient preview state; no canonical Page changes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePreviewGeneration"];
+                };
+            };
+            /** @description Request could not be completed. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    patchPagePreviewForRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Company the request is scoped to. A non-member sees `404`. */
+                companyId: components["parameters"]["companyId"];
+                runId: string;
+                pageId: string;
+                generationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PagePreviewPatchInput"];
+            };
+        };
+        responses: {
+            /** @description Transient preview state; no canonical Page changes. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PagePreviewGeneration"];
                 };
             };
             /** @description Request could not be completed. */
@@ -23379,156 +24817,6 @@ export interface operations {
             };
             /** @description Request could not be completed. */
             500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    syncCanvasDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                projectId: string;
-                versionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CanvasDocumentUpdate"];
-            };
-        };
-        responses: {
-            /** @description Authorized canvas state. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CanvasDocument"];
-                };
-            };
-            /** @description Request could not be completed. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            413: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            415: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            /** @description Request could not be completed. */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    reserveCanvasBlockIDs: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                projectId: string;
-                versionId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    count: number;
-                };
-            };
-        };
-        responses: {
-            /** @description A bounded pool scoped to the live document */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CanvasBlockIDs"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -35916,6 +37204,12 @@ export interface operations {
                  *     The whole set travels in one value — repeating the parameter is `422`.
                  */
                 status?: components["schemas"]["TaskStatus"][];
+                /** @description Comma-separated statuses to omit, like `status`. */
+                exclude_status?: components["schemas"]["TaskStatus"][];
+                /** @description Maximum number of tasks to return, from 1 to 1000. */
+                limit?: number;
+                /** @description Return tasks with a smaller immutable task number. */
+                before_number?: number;
                 /** @description Comma-separated set, like `status`. */
                 priority?: components["schemas"]["TaskPriority"][];
                 /** @description Only tasks assigned to this member. */
@@ -35944,7 +37238,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description All matching tasks. */
+            /** @description Matching tasks, optionally bounded to one page. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -35952,6 +37246,11 @@ export interface operations {
                 content: {
                     "application/json": {
                         items: components["schemas"]["Task"][];
+                        /**
+                         * Format: int64
+                         * @description Last task number when more matching tasks remain.
+                         */
+                        nextCursor?: number;
                     };
                 };
             };
@@ -39851,167 +41150,6 @@ export interface operations {
             };
         };
     };
-    readOutputDocument: {
-        parameters: {
-            query?: {
-                after_seq?: number;
-                state_vector?: string;
-                projection?: boolean;
-                block_id?: string;
-                preview?: boolean;
-            };
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                artifactId: string;
-                outputItemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Authorized document result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CanvasDocument"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    syncOutputDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                artifactId: string;
-                outputItemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CanvasDocumentUpdate"];
-            };
-        };
-        responses: {
-            /** @description Authorized document result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CanvasDocument"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    reserveOutputBlockIds: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                artifactId: string;
-                outputItemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    count: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Authorized document result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CanvasBlockIDs"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    checkpointOutputDocument: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                artifactId: string;
-                outputItemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": {
-                    sequence: number;
-                };
-            };
-        };
-        responses: {
-            /** @description Authorized document result */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /** Format: uuid */
-                        id: string;
-                    };
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     getOutputDocumentVersion: {
         parameters: {
             query?: never;
@@ -40033,44 +41171,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CanvasBody"];
-                };
-            };
-            /** @description Request could not be completed */
-            default: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    updateOutputDocumentPresence: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description Company the request is scoped to. A non-member sees `404`. */
-                companyId: components["parameters"]["companyId"];
-                artifactId: string;
-                outputItemId: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CanvasPresenceInput"];
-            };
-        };
-        responses: {
-            /** @description Current document sessions */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CanvasPresenceList"];
                 };
             };
             /** @description Request could not be completed */

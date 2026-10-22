@@ -326,7 +326,7 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 	}
 	var registered, placed, sequence int64
 	if err := pool.QueryRow(ctx, `
-        SELECT (SELECT count(*) FROM project_artifact_versions WHERE output_id=$1),
+        SELECT (SELECT count(*) FROM delivery_snapshots WHERE output_id=$1),
                (SELECT count(*) FROM canvas_items WHERE project_id=$2),
                (SELECT head_seq FROM project_canvases WHERE project_id=$2)`,
 		presented.OutputID, fixture.ProjectA,
@@ -339,7 +339,7 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 	if len(notifications) != 1 || notifications[0].Sequence != 1 {
 		t.Fatalf("registration/replay notifications = %+v", notifications)
 	}
-	// Automatic placement inherits the Output ACL, including later grant changes.
+	// Project-owned work follows Project access; delivery grants are independent.
 	dbtest.MustExec(t, ctx, pool,
 		`INSERT INTO company_members(company_id,user_id,role) VALUES($1,$2,'member')`,
 		fixture.CompanyA, fixture.UserB)
@@ -353,7 +353,7 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 		want      int
 	}{
 		{"owner", principal, 1},
-		{"other member", reader, 0},
+		{"other member", reader, 1},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := canvasService.Snapshot(ctx, tc.principal, fixture.ProjectA, 0)
@@ -384,8 +384,12 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 	}
 	dbtest.MustExec(t, ctx, pool, `DELETE FROM output_grants WHERE output_id=$1`, presented.OutputID)
 	revoked, err := canvasService.Snapshot(ctx, reader, fixture.ProjectA, 0)
-	if err != nil || len(revoked.Items) != 0 || len(revoked.Artifacts) != 0 {
-		t.Fatalf("revoked automatic canvas = %+v, %v; want no cards or artifacts", revoked, err)
+	if err != nil || len(revoked.Items) != 1 || len(revoked.Artifacts) != 1 {
+		t.Fatalf(
+			"delivery grant revocation changed Project work = %+v, %v; want 1 card and artifact",
+			revoked,
+			err,
+		)
 	}
 	replacementAttachmentID := insertReadyDeliverableAttachment(
 		t, ctx, pool, fixture.CompanyA, fixture.UserA, "launch-preview.pdf",
@@ -417,13 +421,14 @@ func TestDeliverablePresentationAndReplay(t *testing.T) {
 		ArtifactListOptions{Limit: 10},
 	)
 	if err != nil || len(artifacts.Items) != 2 ||
-		artifacts.Items[0].Artifact.ID != replaced.OutputID ||
-		artifacts.Items[1].Artifact.ID != presented.OutputID {
+		replaced.ArtifactID == nil || presented.ArtifactID == nil ||
+		artifacts.Items[0].Artifact.ID != *replaced.ArtifactID ||
+		artifacts.Items[1].Artifact.ID != *presented.ArtifactID {
 		t.Fatalf("ListConversationArtifacts() = %+v, %v", artifacts, err)
 	}
 	for _, item := range artifacts.Items {
-		if item.Artifact.CanvasURL == nil {
-			t.Fatalf("Output %s has no canvas destination", item.Artifact.ID)
+		if item.Artifact.LiveURL == nil || item.RunID != nil {
+			t.Fatalf("Artifact %s has no live destination or reports a delivery Run", item.Artifact.ID)
 		}
 	}
 
@@ -616,7 +621,7 @@ func TestTaskRunAuthorizerCanViewTheArtifactItPresented(t *testing.T) {
 				ctx, runner, fixture.ConversationA, ArtifactListOptions{Limit: 10},
 			)
 			if err != nil || len(artifacts.Items) != 1 ||
-				artifacts.Items[0].Artifact.ID != presented.OutputID {
+				presented.ArtifactID == nil || artifacts.Items[0].Artifact.ID != *presented.ArtifactID {
 				t.Fatalf("ListConversationArtifacts(runner) = %+v, %v", artifacts, err)
 			}
 			results, err := service.ListTaskResults(

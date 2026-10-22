@@ -29,7 +29,7 @@ func TestSchemaEnforcesRealtimeProjectionAndAccessGenerationContracts(t *testing
 	// version. Execution state machines use status/lifecycle CAS predicates
 	// instead, so runs and runtimes remain unversioned.
 	wantVersioned := map[string]bool{
-		"project_artifacts": true, "canvas_edges": true, "review_threads": true, "review_comments": true,
+		"artifacts": true, "canvas_edges": true, "review_threads": true, "review_comments": true,
 		"calendar_events":     true,
 		"social_connections":  true,
 		"company_invitations": true,

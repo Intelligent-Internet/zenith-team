@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -151,7 +153,7 @@ func (w *PublicationWorker) ProcessOnce(ctx context.Context) (bool, error) {
 	if err != nil {
 		return false, errors.Join(errPublicationStoreFailed, err)
 	}
-	w.options.Bus.Publish(ctx, TopicArtifact, pending...)
+	w.options.Bus.Publish(ctx, artifactdomain.Topic, pending...)
 	if !claimed {
 		return expired, nil
 	}
@@ -197,7 +199,7 @@ func (w *PublicationWorker) mutate(
 	if err != nil {
 		return err
 	}
-	w.options.Bus.Publish(ctx, TopicArtifact, pending)
+	w.options.Bus.Publish(ctx, artifactdomain.Topic, pending)
 	return nil
 }
 

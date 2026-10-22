@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
@@ -131,6 +132,54 @@ func (s *DefaultDeliverableService) Present(
 		if !active {
 			return ErrDeliverableNotFound
 		}
+		if normalized.PresentationID == nil {
+			var artifactID uuid.NullUUID
+			if normalized.ArtifactID != nil {
+				artifactID = uuid.NullUUID{UUID: *normalized.ArtifactID, Valid: true}
+			}
+			projects, err := tx.ListRetainedPresentationProjects(
+				ctx,
+				dbgen.ListRetainedPresentationProjectsParams{
+					CompanyID: origin.CompanyID, RunID: origin.RunID, ArtifactID: artifactID,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			// Canvas mutations lock Canvas before Artifact. Follow that order even
+			// when re-delivering work owned by a different Project.
+			for _, project := range projects {
+				if _, err = auth.LockProjectAccess(ctx, tx, principal, project); err != nil {
+					if errors.Is(err, auth.ErrProjectNotVisible) {
+						return ErrDeliverableNotFound
+					}
+					return err
+				}
+			}
+			for _, project := range projects {
+				if _, err = tx.EnsureProjectCanvas(
+					ctx,
+					dbgen.EnsureProjectCanvasParams{
+						CompanyID: origin.CompanyID,
+						ProjectID: project,
+					},
+				); err != nil {
+					return err
+				}
+			}
+		}
+		if normalized.ArtifactID != nil {
+			access, err := auth.LockArtifactAccess(ctx, tx, principal, *normalized.ArtifactID)
+			if err != nil {
+				return err
+			}
+			if !access.Read {
+				return ErrDeliverableNotFound
+			}
+			if !access.Edit {
+				return ErrDeliverableForbidden
+			}
+		}
 		if normalized.PresentationID != nil {
 			if err := canvas.AdmitPresentationRunInTx(ctx, tx, principal, origin.RunID); err != nil {
 				return mapPresentationError(err)
@@ -162,6 +211,17 @@ func (s *DefaultDeliverableService) Present(
 		)
 		if err == nil {
 			result = DeliverablePresentResult{OutputID: existing.ID}
+			snapshots, err := tx.ListDeliverySnapshots(
+				ctx,
+				dbgen.ListDeliverySnapshotsParams{CompanyID: origin.CompanyID, OutputID: existing.ID},
+			)
+			if err != nil {
+				return err
+			}
+			if len(snapshots) > 0 {
+				result.ArtifactID = &snapshots[0].ArtifactID
+				result.SnapshotID = &snapshots[0].ID
+			}
 			canvasEvent, err := canvas.RegisterOutputInTx(ctx, tx, canvas.OutputRegistrationInput{
 				CompanyID: origin.CompanyID, OutputID: existing.ID, ActorUserID: principal.UserID,
 			})
@@ -264,6 +324,62 @@ func (s *DefaultDeliverableService) Present(
 			}
 		}
 		result = DeliverablePresentResult{OutputID: output.ID, Created: true}
+		if normalized.PresentationID != nil {
+			snapshots, err := tx.ListDeliverySnapshots(
+				ctx,
+				dbgen.ListDeliverySnapshotsParams{CompanyID: origin.CompanyID, OutputID: output.ID},
+			)
+			if err != nil {
+				return err
+			}
+			result.ArtifactID = &snapshots[0].ArtifactID
+			result.SnapshotID = &snapshots[0].ID
+		}
+		if normalized.PresentationID == nil {
+			projectID := output.ProjectID
+			if !output.TaskID.Valid {
+				projectID = uuid.NullUUID{}
+			}
+			retained, err := artifact.RetainInTx(ctx, tx, artifact.RetainedInput{
+				CompanyID:      origin.CompanyID,
+				ActorUserID:    principal.UserID,
+				ArtifactID:     normalized.ArtifactID,
+				ProjectID:      projectID,
+				OwnerUserID:    output.OwnerUserID,
+				ConversationID: output.ConversationID,
+				TaskID:         output.TaskID,
+				SourceRunID:    output.SourceRunID,
+				Type:           output.Type,
+				Title:          output.Title,
+				Summary:        output.Summary,
+				Payload:        output.Payload,
+				PrimaryAssetVersionID: uuid.NullUUID{
+					UUID:  primaryAsset,
+					Valid: primaryAsset != uuid.Nil,
+				},
+			})
+			if errors.Is(err, artifact.ErrInvalid) {
+				return ErrDeliverableInvalidInput
+			}
+			if err != nil {
+				return err
+			}
+			if err = tx.RetainDeliverySnapshotItems(ctx, dbgen.RetainDeliverySnapshotItemsParams{
+				CompanyID: origin.CompanyID, OutputID: output.ID, SnapshotID: retained.SnapshotID,
+			}); err != nil {
+				return err
+			}
+			if err = tx.LinkDeliverySnapshot(ctx, dbgen.LinkDeliverySnapshotParams{
+				CompanyID:  origin.CompanyID,
+				OutputID:   output.ID,
+				SnapshotID: retained.SnapshotID,
+				Ordinal:    0,
+			}); err != nil {
+				return err
+			}
+			result.ArtifactID = &retained.ArtifactID
+			result.SnapshotID = &retained.SnapshotID
+		}
 		canvasEvent, err := canvas.RegisterOutputInTx(ctx, tx, canvas.OutputRegistrationInput{
 			CompanyID: origin.CompanyID, OutputID: output.ID, ActorUserID: principal.UserID,
 		})
@@ -608,15 +724,15 @@ func loadOutputItems(
 		return nil, fmt.Errorf("list Output canvas destinations: %w", err)
 	}
 	for _, destination := range destinations {
-		content := itemsByOutput[destination.OutputID.UUID]
+		content := itemsByOutput[destination.OutputID]
 		url := fmt.Sprintf(
 			"/projects/%s/canvas?artifactId=%s&versionId=%s",
-			destination.ProjectID,
+			destination.ProjectID.UUID,
 			destination.ArtifactID,
 			destination.ID,
 		)
 		content.canvasURL = &url
-		itemsByOutput[destination.OutputID.UUID] = content
+		itemsByOutput[destination.OutputID] = content
 	}
 	presentations, err := queries.ListProjectPresentationDestinations(
 		ctx,
@@ -630,10 +746,10 @@ func loadOutputItems(
 		return nil, err
 	}
 	for _, row := range presentations {
-		content := itemsByOutput[row.OutputID.UUID]
+		content := itemsByOutput[row.OutputID]
 		url := fmt.Sprintf("/projects/%s/pages?pageId=%s&presentationId=%s", row.ProjectID, row.PageID, row.ID)
 		content.presentationURL = &url
-		itemsByOutput[row.OutputID.UUID] = content
+		itemsByOutput[row.OutputID] = content
 	}
 	freshness, err := queries.ListOutputDocumentFreshness(
 		ctx,

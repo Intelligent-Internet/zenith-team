@@ -1134,6 +1134,38 @@ func mcpToolDrivers(
 			_, err := pages.ReadSource(ctx, tools.SourceReadInput{VersionID: uuid.NewString()})
 			return err
 		},
+		"page_source_preview_start": func(ctx context.Context) error {
+			_, err := pages.StartSourcePreview(
+				ctx,
+				tools.PageSourcePreviewStartInput{
+					PageID:          pageID,
+					DraftKey:        "attempt",
+					ProtocolVersion: 1,
+					LanguageVersion: 1,
+				},
+			)
+			return err
+		},
+		"page_source_preview_read": func(ctx context.Context) error {
+			_, err := pages.ReadSourcePreview(
+				ctx,
+				tools.PageSourcePreviewReadInput{PageID: pageID, GenerationID: uuid.NewString()},
+			)
+			return err
+		},
+		"page_source_preview_patch": func(ctx context.Context) error {
+			_, err := pages.PatchSourcePreview(
+				ctx,
+				tools.PageSourcePreviewPatchInput{
+					PageID:          pageID,
+					GenerationID:    uuid.NewString(),
+					ProtocolVersion: 1,
+					LanguageVersion: 1,
+					Text:            "# Preview",
+				},
+			)
+			return err
+		},
 		"page_preview": func(ctx context.Context) error {
 			_, err := pages.PreviewPage(ctx, tools.PageReadInput{PageID: pageID})
 			return err

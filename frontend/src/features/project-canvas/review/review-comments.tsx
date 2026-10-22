@@ -1,4 +1,4 @@
-import type { CanvasScope } from "../api/canvas-api";
+import type { DocumentAgentScope } from "../documents/use-document-agents";
 import { useChatMentions } from "@/features/chat-panel/hooks/use-chat-mentions";
 import { ChatMentionSuggestions } from "@/features/chat-panel/components/chat-mention-suggestions";
 import {
@@ -124,7 +124,7 @@ export function CommentComposer({
     requestKey: string,
     agentIds?: string[],
   ) => Promise<void>;
-  agentScope?: CanvasScope;
+  agentScope?: DocumentAgentScope;
   placeholder: string;
   initialBody?: string;
   contextKey?: string;
@@ -299,7 +299,7 @@ export function ReviewThread({
   agentScope,
 }: {
   page?: boolean;
-  agentScope?: CanvasScope;
+  agentScope?: DocumentAgentScope;
   thread: ReviewThreadData;
   canEdit: boolean;
   currentUserId?: string;

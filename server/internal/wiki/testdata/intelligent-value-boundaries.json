@@ -1,0 +1,13 @@
+[
+ {"name":"large ASCII input","unit":"x","repeat":65536,"rows":15,"value":15},
+ {"name":"oversized ASCII input","unit":"x","repeat":65536,"rows":16,"code":"value.size"},
+ {"name":"large UTF8 input","unit":"🌱","repeat":16384,"rows":15,"value":15},
+ {"name":"oversized UTF8 input","unit":"🌱","repeat":16384,"rows":16,"code":"value.size"},
+ {"name":"escaped input fits","unit":"\n","repeat":65536,"rows":7,"value":7},
+ {"name":"escaped input exceeds wire budget","unit":"\n","repeat":65536,"rows":8,"code":"value.size"},
+ {"name":"HTML escaping fits","unit":"<","repeat":65536,"rows":2,"value":2},
+ {"name":"HTML escaping exceeds wire budget","unit":"<","repeat":65536,"rows":3,"code":"value.size"},
+ {"name":"individual string bound","unit":"x","repeat":65537,"rows":1,"code":"string.size"},
+ {"name":"exact native envelope bound","unit":"x","repeat":65536,"rows":16,"lastRepeat":65363,"value":16},
+ {"name":"one byte beyond native envelope","unit":"x","repeat":65536,"rows":16,"lastRepeat":65364,"code":"value.size"}
+]

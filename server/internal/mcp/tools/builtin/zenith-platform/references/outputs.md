@@ -112,3 +112,11 @@ Native submitted Pages include pinned canonical export files where available;
 inspect their file items and document destinations. An app with no file items
 cannot be fetched as a file; inspect its URL/destination instead. These tools
 do not start another machine's local preview or copy its workspace.
+
+For ordinary file/media/app work, the result also returns `artifactId` and
+`snapshotId`. Keep `outputId` for Task result selection: it identifies this Run's
+immutable delivery. Pass the returned `artifactId` on a later `present_output`
+call to save a new snapshot of the same work; omit it for a distinct Artifact.
+The authorizer must still be able to edit that Artifact. Do not send `artifactId`
+with a native `page` capture. App snapshots currently retain launch configuration;
+they do not retain an executable application bundle.

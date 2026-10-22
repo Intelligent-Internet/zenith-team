@@ -19,9 +19,11 @@ import (
 // its SKILL.md; the description is pinned here because the daemon's prompts
 // and the app quote it, and search_skills matches queries against it.
 const (
-	zenithPlatformSkillKey         = "zenith-platform"
-	zenithPlatformSkillName        = "Zenith platform"
-	zenithPlatformSkillDescription = "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on."
+	zenithIntelligentUISkillKey         = "zenith-intelligent-ui"
+	zenithIntelligentUISkillDescription = "Author inline interactive responses and Zenith Team Pages with component markup, bounded state and callbacks."
+	zenithPlatformSkillKey              = "zenith-platform"
+	zenithPlatformSkillName             = "Zenith platform"
+	zenithPlatformSkillDescription      = "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on."
 	// The Workflow playbooks ship as a second platform skill. A Task launched
 	// from the Workflows page names its playbook in the description; the Run
 	// loads <workflow-key>/playbook.md from it. Its files, name and
@@ -42,7 +44,7 @@ const ZenithPlatformSkillKey = zenithPlatformSkillKey
 // reservedPlatformSkillKeys is the static floor of reserved keys. A Run's
 // Skill snapshot can never take one, whether or not that skill is linked into
 // this binary or verified at start.
-var reservedPlatformSkillKeys = []string{zenithPlatformSkillKey, zenithWorkflowsSkillKey}
+var reservedPlatformSkillKeys = []string{zenithPlatformSkillKey, zenithIntelligentUISkillKey, zenithWorkflowsSkillKey}
 
 // platformSkill names one release-owned procedure zenith-team-mcp serves.
 // Keys are reserved: a custom Skill can never shadow one.
@@ -65,6 +67,12 @@ var compiledPlatformSkills = []platformSkill{
 	{
 		Key: zenithPlatformSkillKey, Name: zenithPlatformSkillName,
 		Description: zenithPlatformSkillDescription, Files: compiledSkillFiles("builtin/zenith-platform"),
+	},
+	{
+		Key:         zenithIntelligentUISkillKey,
+		Name:        "Zenith Intelligent UI",
+		Description: zenithIntelligentUISkillDescription,
+		Files:       compiledSkillFiles("builtin/zenith-intelligent-ui"),
 	},
 }
 
@@ -123,10 +131,10 @@ func PlatformSkills(bundles []PlatformBundle) ([]PlatformSkillSummary, error) {
 
 // platformSkillFiles is release-owned and compiled into zenith-team-mcp so Task
 // Runs can load security-critical platform procedures without a Run-scoped
-// Skill snapshot or a network dependency. The pattern names zenith-platform
-// alone, so a stray directory under builtin/ can never join the skills.
+// Skill snapshot or a network dependency. Only explicitly named skill
+// directories can join the compiled catalog.
 //
-//go:embed all:builtin/zenith-platform
+//go:embed all:builtin/zenith-platform all:builtin/zenith-intelligent-ui
 var platformSkillFiles embed.FS
 
 func compiledSkillFiles(root string) fs.FS {

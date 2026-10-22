@@ -97,15 +97,24 @@ func TestWritingOperationsReviewAndUndo(t *testing.T) {
 				Decisions:     []byte("{}"),
 				Status:        "proposed",
 			}
-			review, err := pageSuggestionState(row, base, "default", nil)
+			review, err := pageSuggestionState(
+				row,
+				pageSuggestionSnapshot{root: base, theme: "default"},
+				nil,
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
+			groupSize := len(operations)
+			if test.name == "paragraphs" {
+				groupSize = 1
+			}
 			for _, suggestion := range review.suggestions {
-				if suggestion.Status != "pending" || len(suggestion.Group) != len(operations) {
+				if suggestion.Status != "pending" || len(suggestion.Group) != groupSize {
 					t.Fatalf(
-						"review = %+v, want all operations pending in one group",
+						"review = %+v, want pending groups of %d",
 						review.suggestions,
+						groupSize,
 					)
 				}
 			}

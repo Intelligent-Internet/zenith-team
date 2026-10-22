@@ -5,6 +5,8 @@ import (
 	"errors"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -104,7 +106,7 @@ func (s *DefaultDeliverableService) SetArtifactVisibility(
 	if err != nil {
 		return ArtifactAccess{}, err
 	}
-	s.bus.Publish(ctx, TopicArtifact, pending)
+	s.bus.Publish(ctx, artifactdomain.Topic, pending)
 	return s.getArtifactAccess(ctx, p, id)
 }
 
@@ -207,7 +209,7 @@ func (s *DefaultDeliverableService) RevokeArtifactConversation(
 		return ArtifactAccess{}, err
 	}
 	if pending.Name != "" {
-		s.bus.Publish(ctx, TopicArtifact, pending)
+		s.bus.Publish(ctx, artifactdomain.Topic, pending)
 	}
 	return s.getArtifactAccess(ctx, p, id)
 }
@@ -218,12 +220,12 @@ func artifactAccessEvent(ctx context.Context, q *dbgen.Queries, p auth.UserPrinc
 		return events.Event{}, err
 	}
 	return events.Event{
-		EntityType: TopicArtifact,
-		Name:       EventArtifactAccessChanged,
+		EntityType: artifactdomain.Topic,
+		Name:       artifactdomain.EventAccessChanged,
 		CompanyID:  p.CompanyID,
 		CreatedAt:  time.Now().UTC(),
 		Actor:      events.UserActor(p.UserID.String()),
-		Payload:    ArtifactAccessChanged{RecipientUserIDs: recipients},
+		Payload:    artifactdomain.AccessChanged{RecipientUserIDs: recipients},
 	}, nil
 }
 

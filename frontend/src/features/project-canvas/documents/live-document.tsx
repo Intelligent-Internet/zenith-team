@@ -1,3 +1,5 @@
+import { SourceEditor } from "./source-editor";
+import { ScenarioCapture } from "./scenario-capture";
 import { useCanInvokeDocumentAgents } from "./use-document-agents";
 import {
   DocumentWritingPrompt,
@@ -263,12 +265,19 @@ export function LiveDocument({
       {statusContainer === undefined
         ? status
         : statusContainer && createPortal(status, statusContainer)}
+      {state.ready && state.reactiveReadOnly && (
+        <p role="status" className="px-4 py-2 text-sm text-workspace-muted">
+          Reactive editing is temporarily unavailable. You can still read and
+          export this document.
+        </p>
+      )}
       {state.connection && state.ready ? (
         <NativeEditor
           key={state.connection.doc.guid}
           scope={scope}
           connection={state.connection}
           canEdit={state.canEdit}
+          intelligentUIAuthoringEnabled={state.intelligentUIAuthoringEnabled}
           onPlaceBlock={onPlaceBlock}
           focusId={focusId}
           title={title}
@@ -291,6 +300,7 @@ export function LiveDocument({
           titleContent={titleContent}
           sources={sources}
           onEditor={onEditor}
+          getAcknowledgedSequence={() => state.getSequence.current()}
           pageId={state.pageId.current}
           onAgentThread={onAgentThread}
           versionId={versionId}
@@ -312,6 +322,7 @@ function NativeEditor({
   scope,
   connection,
   canEdit,
+  intelligentUIAuthoringEnabled,
   onTitlePendingChange,
   onTitleErrorChange,
   actionsContainer,
@@ -329,10 +340,12 @@ function NativeEditor({
   flush,
   pageId,
   onAgentThread,
+  getAcknowledgedSequence,
 }: {
   scope: DocumentScope;
   connection: NonNullable<ReturnType<typeof useBlockDocument>["connection"]>;
   canEdit: boolean;
+  intelligentUIAuthoringEnabled: boolean;
   onTitlePendingChange: (pending: boolean) => void;
   onTitleErrorChange: (error: string) => void;
   actionsContainer?: HTMLElement | null;
@@ -349,16 +362,21 @@ function NativeEditor({
   onEditor?: (editor: Editor | null) => void;
   flush: () => Promise<boolean>;
   pageId: string;
+  getAcknowledgedSequence: () => number;
   onAgentThread?: (threadId: string) => void;
 }) {
   const navigate = useNavigate();
   const { userId } = useSessionSnapshot();
   const editable = canEdit;
   const canInvokeAgents = useCanInvokeDocumentAgents(
-    "projectId" in scope ? scope : undefined,
+    "projectId" in scope || "pageId" in scope
+      ? { ...scope, pageId }
+      : undefined,
   );
   const canWriteWithAgent =
     editable && canInvokeAgents && !!pageId && !!onAgentThread;
+  const [showCapture, setShowCapture] = useState(false);
+  const [sourceBlock, setSourceBlock] = useState<string>();
   const [writing, setWriting] = useState<WritingRequest | null>(null);
   const [writingAgent, setWritingAgent] = useState("");
   const commentShortcut = /Mac|iPhone|iPad/.test(navigator.platform)
@@ -615,6 +633,7 @@ function NativeEditor({
   };
   commandRef.current = { items, pick, choice, open: !!slash || showBlocks };
   const actions = documentBlockActions(editor, {
+    identities: connection,
     onComment,
     onError: setActionError,
   });
@@ -631,13 +650,19 @@ function NativeEditor({
     setHover(null);
   };
   const exportDocument = (html = false) => {
+    let schemaVersion = 1;
+    editor.state.doc.descendants((node) => {
+      if (
+        node.type.name.startsWith("ui") ||
+        (node.type.name === "taskCollection" &&
+          node.attrs.filter !== null &&
+          typeof node.attrs.filter === "object")
+      )
+        schemaVersion = 2;
+    });
     const value = html
       ? `<!doctype html><html><head><meta charset="utf-8"><title>Zenith document</title></head><body>${editor.getHTML()}</body></html>`
-      : JSON.stringify(
-          { schemaVersion: 1, content: editor.getJSON() },
-          null,
-          2,
-        );
+      : JSON.stringify({ schemaVersion, content: editor.getJSON() }, null, 2);
     downloadDocument(
       value,
       html ? "document.html" : "document.blocks.json",
@@ -761,6 +786,21 @@ function NativeEditor({
       >
         Insert image from URL
       </button>
+      {editable && pageId && "projectId" in scope && (
+        <>
+          <button
+            onClick={() => {
+              const id = selectedBlockId();
+              if (id) setSourceBlock(id);
+            }}
+          >
+            Edit block source…
+          </button>
+          <button onClick={() => setShowCapture(true)}>
+            Capture scenario…
+          </button>
+        </>
+      )}
       <button onClick={() => exportDocument()}>
         <Download size={15} /> Export native document
       </button>
@@ -771,20 +811,44 @@ function NativeEditor({
     <BlockScopeProvider value={scope} content={documentContent}>
       <WorkBlockScope.Provider value={"projectId" in scope ? scope : null}>
         <BlockLiveProvider value={true}>
-          {writing && canWriteWithAgent && "projectId" in scope && (
-            <DocumentWritingPrompt
+          {sourceBlock && editable && pageId && "projectId" in scope && (
+            <SourceEditor
+              key={`${pageId}:${sourceBlock}`}
               scope={{ ...scope, pageId }}
-              request={writing}
-              agentId={writingAgent}
-              onAgentChange={setWritingAgent}
+              blockId={sourceBlock}
+              intelligentUIAuthoringEnabled={intelligentUIAuthoringEnabled}
+              editor={editor}
               flush={flush}
-              onClose={() => {
-                setWriting(null);
-                editor.commands.focus();
-              }}
-              onSubmitted={(id) => onAgentThread?.(id)}
+              getSequence={getAcknowledgedSequence}
+              onClose={() => setSourceBlock(undefined)}
             />
           )}
+          {showCapture && editable && pageId && "projectId" in scope && (
+            <ScenarioCapture
+              key={pageId}
+              scope={{ ...scope, pageId }}
+              editor={editor}
+              flush={flush}
+              getSequence={getAcknowledgedSequence}
+              onClose={() => setShowCapture(false)}
+            />
+          )}
+          {writing &&
+            canWriteWithAgent &&
+            ("projectId" in scope || "pageId" in scope) && (
+              <DocumentWritingPrompt
+                scope={{ ...scope, pageId }}
+                request={writing}
+                agentId={writingAgent}
+                onAgentChange={setWritingAgent}
+                flush={flush}
+                onClose={() => {
+                  setWriting(null);
+                  editor.commands.focus();
+                }}
+                onSubmitted={(id) => onAgentThread?.(id)}
+              />
+            )}
           {(editable || onComment) && (
             <BubbleMenu
               editor={editor}
@@ -897,8 +961,11 @@ function NativeEditor({
                   event.dataTransfer.types.includes(
                     "application/x-zenith-block-id",
                   )
-                )
+                ) {
                   event.preventDefault();
+                  event.dataTransfer.dropEffect =
+                    event.altKey || event.ctrlKey ? "copy" : "move";
+                }
               }}
               onDrop={(event) => {
                 const id = event.dataTransfer.getData(
@@ -907,10 +974,14 @@ function NativeEditor({
                 if (!editable || !id) return;
                 event.preventDefault();
                 if (
-                  actions.dropBlock(id, {
-                    left: event.clientX,
-                    top: event.clientY,
-                  })
+                  actions.dropBlock(
+                    id,
+                    {
+                      left: event.clientX,
+                      top: event.clientY,
+                    },
+                    event.altKey || event.ctrlKey,
+                  )
                 ) {
                   setHover(null);
                   setBlockMenu(false);
@@ -1067,8 +1138,8 @@ function NativeEditor({
                     <Plus size={16} />
                   </button>
                   <button
-                    title="Drag to move · click for actions"
-                    aria-label="Move or edit selection"
+                    title="Drag to move · Alt/Ctrl-drag to copy · click for actions"
+                    aria-label="Move, copy or edit selection"
                     aria-expanded={blockMenu}
                     draggable
                     onDragStart={(event) => {
@@ -1080,7 +1151,7 @@ function NativeEditor({
                         "application/x-zenith-block-id",
                         hover.id,
                       );
-                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.effectAllowed = "copyMove";
                     }}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => {

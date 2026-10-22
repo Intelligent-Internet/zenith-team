@@ -1,6 +1,8 @@
 # ADR 0019: Artifact document ownership and editing authority
 
-Status: Accepted
+Status: Superseded for Page identity and live editing authority by [ADR 0021](0021-artifact-identities-and-snapshots.md).
+The historical Output-derived authorization and ownership rules below no longer
+govern live Pages. Output delivery review remains active during the remaining cutover.
 
 An artifact's supported Markdown can be edited regardless of Project placement.
 This change targets a fresh database; it does not backfill existing installations.
@@ -13,8 +15,8 @@ canonical document for that Output item, recorded in `output_documents`.
 PostgreSQL owns its block content, CRDT state, block identities and revisions.
 The source file is never overwritten by human edits.
 
-An Output owns its document page through `wiki_pages.source_output_id`. A Project
-artifact version is a placement or review checkpoint, not the document's owner.
+An Output owns its document page through `wiki_pages.source_output_id`. The Page has its own same-ID Artifact root and document snapshots; a Project
+placement is not its owner.
 Deleting a placement or its Project cannot delete a standalone Output's document.
 The schema pins the Company, Output, item and page together with foreign keys,
 and uniqueness prevents two canonical documents for one item. Opens serialize

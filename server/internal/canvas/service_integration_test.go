@@ -133,7 +133,7 @@ func TestCanvasTaskArtifactCreation(t *testing.T) {
 	}
 	artifact := got.Artifacts[0]
 	if _, err := service.Mutate(ctx, p, f.ProjectA, Command{
-		RequestKey: uuid.New(), Type: "add_version", ArtifactID: &artifact.ID, VersionID: &first.ID,
+		RequestKey: uuid.New(), Type: "checkpoint", ArtifactID: &artifact.ID, VersionID: &first.ID,
 		WikiPageID: artifact.LatestVersion.WikiPageID, ExpectedRevision: artifact.Revision,
 	}); err != nil {
 		t.Fatal(err)
@@ -375,30 +375,15 @@ func TestCanvasReviewFlow(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Simulate a retained pre-block draft. Opening it must upgrade exactly once
-	// and preserve the original authoring bytes, not rewrite its review version.
-	legacyDoc := crdt.New()
-	legacyText := legacyDoc.GetText("markdown")
-	legacyDoc.Transact(func(tx *crdt.Transaction) { legacyText.Insert(tx, 0, command.Body, nil) })
-	legacyState := legacyDoc.EncodeStateAsUpdate()
-	legacyDoc.Destroy()
+	if draft.SchemaVersion != 1 {
+		t.Fatalf("new document uses schema %d, want native blocks", draft.SchemaVersion)
+	}
 	if _, err = pool.Exec(
 		ctx,
-		`UPDATE wiki_canvas_drafts SET schema_version=0,content='{}',state=$2 WHERE page_id=$1`,
+		`UPDATE wiki_canvas_drafts SET schema_version=0 WHERE page_id=$1`,
 		draft.PageID,
-		legacyState,
-	); err != nil {
-		t.Fatal(err)
-	}
-	draft, err = service.Document(ctx, p, project, version, -1)
-	if err != nil || draft.SchemaVersion != 1 {
-		t.Fatalf("migration: %v", err)
-	}
-	var preserved bool
-	if err = pool.QueryRow(ctx, `SELECT legacy_state=$2 AND legacy_markdown=$3 FROM wiki_canvas_drafts WHERE page_id=$1`, draft.PageID, legacyState, command.Body).
-		Scan(&preserved); err != nil ||
-		!preserved {
-		t.Fatalf("legacy preservation: %v", err)
+	); err == nil {
+		t.Fatal("fresh schema accepted a legacy Markdown draft")
 	}
 	updates := make([][]byte, 2)
 	for i, word := range []string{"First editor. ", "Second editor. "} {
@@ -416,7 +401,13 @@ func TestCanvasReviewFlow(t *testing.T) {
 	var edits errgroup.Group
 	for _, update := range updates {
 		edits.Go(func() error {
-			_, err := service.SyncDocument(ctx, p, project, version, update, draft.Sequence)
+			_, err := service.SyncDocument(
+				ctx,
+				p,
+				project,
+				version,
+				DocumentSyncInput{Update: update, BaseSequence: draft.Sequence},
+			)
 			return err
 		})
 	}
@@ -527,13 +518,13 @@ func TestCanvasReviewFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 	var human bool
-	if err = pool.QueryRow(ctx, `SELECT av.source_type='human' AND av.source_run_id IS NULL AND av.created_by_user_id=$2 FROM project_artifact_versions v JOIN asset_versions av ON av.id=v.asset_version_id WHERE v.id=$1`, file.ID, user).
+	if err = pool.QueryRow(ctx, `SELECT av.source_type='human' AND av.source_run_id IS NULL AND av.created_by_user_id=$2 FROM artifact_snapshots v JOIN asset_versions av ON av.id=v.asset_version_id WHERE v.id=$1`, file.ID, user).
 		Scan(&human); err != nil ||
 		!human {
 		t.Fatalf("upload provenance: %v, %v", human, err)
 	}
 	var assetVersion uuid.UUID
-	if err = pool.QueryRow(ctx, `SELECT asset_version_id FROM project_artifact_versions WHERE id=$1`, file.ID).
+	if err = pool.QueryRow(ctx, `SELECT asset_version_id FROM artifact_snapshots WHERE id=$1`, file.ID).
 		Scan(&assetVersion); err != nil {
 		t.Fatal(err)
 	}
@@ -693,7 +684,13 @@ func TestCanvasReviewFlow(t *testing.T) {
 		node.InsertText(tx, 0, text)
 		text.Insert(tx, 0, "Only the alternative", nil)
 	})
-	_, err = service.SyncDocument(ctx, p, project, branch.ID, client.EncodeStateAsUpdate(), alternative.Sequence)
+	_, err = service.SyncDocument(
+		ctx,
+		p,
+		project,
+		branch.ID,
+		DocumentSyncInput{Update: client.EncodeStateAsUpdate(), BaseSequence: alternative.Sequence},
+	)
 	client.Destroy()
 	if err != nil {
 		t.Fatal(err)
@@ -832,6 +829,15 @@ func TestCanvasReviewChangesRespectSourceAccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Run("Project editing does not grant private snapshot review", func(t *testing.T) {
+		dbtest.GrantProject(t, ctx, pool, f.CompanyA, f.ProjectA, f.UserB, "project.tasks.write")
+		_, err := service.Mutate(ctx, reader, f.ProjectA, Command{
+			RequestKey: uuid.New(), Type: "reply", ThreadID: &comment.ID, Body: "Unauthorized reply",
+		})
+		if !errors.Is(err, ErrNotFound) {
+			t.Fatalf("private snapshot reply = %v, want %v", err, ErrNotFound)
+		}
+	})
 	for _, tc := range []struct {
 		name      string
 		principal auth.UserPrincipal

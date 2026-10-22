@@ -126,7 +126,7 @@ function isAllowedRoute(routePath) {
     );
   }
   if (routePath.startsWith("/companies/")) {
-    return /^\/companies\/[0-9a-f-]{36}\/artifacts\/[0-9a-f-]{36}$/i.test(
+    return /^\/companies\/[0-9a-f-]{36}\/(?:artifacts|pages)\/[0-9a-f-]{36}$/i.test(
       routePath,
     );
   }

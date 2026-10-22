@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
-	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
@@ -70,18 +71,18 @@ func (s *DefaultConversationService) CreateWhiteboard(
 		// Only its owner reads it yet: their other windows refresh the
 		// chat's Artifacts.
 		pending = events.Event{
-			EntityType: execution.TopicArtifact,
-			Name:       execution.EventArtifactChanged,
+			EntityType: artifactdomain.Topic,
+			Name:       artifactdomain.EventChanged,
 			CompanyID:  resolved.CompanyID,
 			CreatedAt:  time.Now().UTC(),
 			Actor:      events.UserActor(principal.UserID.String()),
-			Payload:    execution.ArtifactChanged{RecipientUserIDs: []uuid.UUID{principal.UserID}},
+			Payload:    artifactdomain.Changed{RecipientUserIDs: []uuid.UUID{principal.UserID}},
 		}
 		return nil
 	})
 	if err != nil {
 		return CreatedWhiteboard{}, fmt.Errorf("create chat Whiteboard: %w", err)
 	}
-	s.bus.Publish(ctx, execution.TopicArtifact, pending)
+	s.bus.Publish(ctx, artifactdomain.Topic, pending)
 	return created, nil
 }

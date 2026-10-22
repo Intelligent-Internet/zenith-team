@@ -1,21 +1,20 @@
--- A Whiteboard is an Artifact: its Output carries the title, owner and
--- sharing, and the Board keeps the live scene under the Output's ID.
--- name: CreateWhiteboardOutput :one
-INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,owner_user_id,actor_type,actor_user_id,conversation_id)
-VALUES(sqlc.arg(company_id),sqlc.arg(title),'','','whiteboard',sqlc.arg(actor_user_id),'user',sqlc.arg(actor_user_id),sqlc.arg(conversation_id))
+-- Whiteboards own a typed Artifact identity; Runs deliver snapshots separately.
+-- name: CreateWhiteboardArtifact :one
+INSERT INTO artifacts(company_id,title,type,owner_user_id,created_by_user_id,conversation_id)
+VALUES(sqlc.arg(company_id),sqlc.arg(title),'whiteboard',sqlc.arg(actor_user_id),sqlc.arg(actor_user_id),sqlc.arg(conversation_id))
 RETURNING id;
 -- name: CreateBoard :exec
 INSERT INTO boards(company_id,id) VALUES($1,$2);
 -- The title lives on the Whiteboard Artifact; the caller holds the Board.
--- name: RenameWhiteboardOutput :exec
-UPDATE outputs SET title=sqlc.arg(title)::text
+-- name: RenameWhiteboardArtifact :exec
+UPDATE artifacts SET title=sqlc.arg(title)::text,version=version+1,updated_at=clock_timestamp()
 WHERE company_id=sqlc.arg(company_id)::uuid AND id=sqlc.arg(id)::uuid AND type='whiteboard';
 -- name: LockBoard :one
-SELECT sqlc.embed(b),o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+SELECT sqlc.embed(b),o.title FROM boards b JOIN artifacts o ON o.company_id=b.company_id AND o.id=b.id
 WHERE b.company_id=$1 AND b.id=$2 FOR UPDATE OF b;
 -- Reads run in REPEATABLE READ snapshots, so they never lock the Board row.
 -- name: ReadBoard :one
-SELECT sqlc.embed(b),o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+SELECT sqlc.embed(b),o.title FROM boards b JOIN artifacts o ON o.company_id=b.company_id AND o.id=b.id
 WHERE b.company_id=$1 AND b.id=$2;
 -- name: GetBoardReceipt :one
 SELECT request_hash,seq,ids FROM board_operations WHERE board_id=$1 AND actor_user_id=$2 AND actor_run_id=$3 AND request_key=$4;
@@ -106,7 +105,7 @@ WHERE e.company_id=$1 AND e.board_id=$2 AND (sqlc.arg(include_deleted)::boolean 
 
 -- Everyone who can open the Whiteboard Artifact hears of its changes.
 -- name: ListBoardAudience :many
-SELECT user_id FROM output_access WHERE company_id=$1 AND output_id=$2 ORDER BY user_id;
+SELECT user_id FROM artifact_access WHERE company_id=$1 AND artifact_id=$2 ORDER BY user_id;
 -- An unrevoked public Artifact link reads its Board.
 -- name: ReadPublicBoard :one
 SELECT sqlc.embed(b),o.title FROM boards b

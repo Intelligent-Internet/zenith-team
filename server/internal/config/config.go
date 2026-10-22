@@ -91,6 +91,8 @@ type Config struct {
 	ScheduleWorkers        int
 	ScheduleSweepInterval  time.Duration
 	RealtimeMetricsToken   string
+	// IntelligentUIAuthoringEnabled gates new reactive content and edits to saved schema-2 documents.
+	IntelligentUIAuthoringEnabled bool
 	// DaemonIDRequired makes daemon-plane runtime routes refuse a request
 	// that carries no X-Zenith-Team-Daemon-ID (400 invalid_request). Off is the
 	// warn-only rollout stage: a missing header is admitted and logged.
@@ -286,6 +288,10 @@ func Load(lookup LookupEnv) (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
+	intelligentUIAuthoringEnabled, err := boolean(lookup, "INTELLIGENT_UI_AUTHORING_ENABLED", true)
+	if err != nil {
+		return Config{}, err
+	}
 	daemonIDRequired, err := boolean(lookup, "APP_DAEMON_ID_REQUIRED", false)
 	if err != nil {
 		return Config{}, err
@@ -356,8 +362,9 @@ func Load(lookup LookupEnv) (Config, error) {
 		APIReplicas:     apiReplicas,
 		RedisURL:        redisURL,
 		ScheduleWorkers: scheduleWorkers, ScheduleSweepInterval: scheduleSweep,
-		RealtimeMetricsToken: valueOrDefault(lookup, "APP_REALTIME_METRICS_TOKEN", ""),
-		DaemonIDRequired:     daemonIDRequired,
+		RealtimeMetricsToken:          valueOrDefault(lookup, "APP_REALTIME_METRICS_TOKEN", ""),
+		IntelligentUIAuthoringEnabled: intelligentUIAuthoringEnabled,
+		DaemonIDRequired:              daemonIDRequired,
 		Auth: AuthConfig{
 			AccessTTL:             authAccessTTL,
 			RefreshTTL:            authRefreshTTL,

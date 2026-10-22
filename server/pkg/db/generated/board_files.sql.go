@@ -167,7 +167,7 @@ func (q *Queries) GetPublicBoardFile(ctx context.Context, arg GetPublicBoardFile
 
 const getReadableBoardFileSource = `-- name: GetReadableBoardFileSource :one
 SELECT f.company_id, f.board_id, f.attachment_id, f.preview_attachment_id, f.width, f.height, f.created_by, f.created_at FROM board_files f
-JOIN output_access access ON access.company_id=f.company_id AND access.output_id=f.board_id AND access.user_id=$1
+JOIN artifact_access access ON access.company_id=f.company_id AND access.artifact_id=f.board_id AND access.user_id=$1
 JOIN attachment_access readable ON readable.company_id=f.company_id AND readable.attachment_id=f.attachment_id
  AND readable.user_id=$1
 JOIN attachments a ON a.company_id=f.company_id AND a.id=f.attachment_id AND a.status='ready'

@@ -170,6 +170,63 @@ func TestTasksAreInvisibleOutsideTheirProject(t *testing.T) {
 	}
 }
 
+func TestTaskListPagesAreStableAndBounded(t *testing.T) {
+	ctx, _, fixture, service, owner := startTaskHarness(t)
+	projectID := fixture.ProjectA
+	for _, input := range []CreateInput{
+		{ProjectID: projectID, Key: "page-todo", Title: "Page todo", MilestoneType: MilestoneTypeProduct, Status: StatusTodo},
+		{ProjectID: projectID, Key: "page-done", Title: "Page done", MilestoneType: MilestoneTypeProduct, Status: StatusDone},
+	} {
+		if _, err := service.Create(ctx, owner, input); err != nil {
+			t.Fatalf("Create(%q) error = %v", input.Key, err)
+		}
+	}
+
+	done := StatusDone
+	first, err := service.List(ctx, owner, ListOptions{
+		ProjectID: &projectID, Statuses: []Status{done}, Limit: 1,
+	}, nil)
+	if err != nil || len(first.Tasks) != 1 || first.NextCursor != nil {
+		t.Fatalf(
+			"List(done, limit=1) = %d Tasks, cursor %v, %v; want one final row",
+			len(first.Tasks),
+			first.NextCursor,
+			err,
+		)
+	}
+	if first.Tasks[0].Key != "page-done" {
+		t.Fatalf("first page task = %q, want page-done", first.Tasks[0].Key)
+	}
+
+	page, err := service.List(ctx, owner, ListOptions{
+		ProjectID: &projectID, Statuses: []Status{done}, ExcludedStatuses: []Status{done}, Limit: 1,
+	}, nil)
+	if err != nil || len(page.Tasks) != 0 || page.NextCursor != nil {
+		t.Fatalf(
+			"List with included and excluded done = %d Tasks, cursor %v, %v; want empty",
+			len(page.Tasks),
+			page.NextCursor,
+			err,
+		)
+	}
+
+	first, err = service.List(ctx, owner, ListOptions{ProjectID: &projectID, Limit: 1}, nil)
+	if err != nil || len(first.Tasks) != 1 || first.NextCursor == nil {
+		t.Fatalf(
+			"List(limit=1) = %d Tasks, cursor %v, %v; want one row and cursor",
+			len(first.Tasks),
+			first.NextCursor,
+			err,
+		)
+	}
+	second, err := service.List(ctx, owner, ListOptions{
+		ProjectID: &projectID, Limit: 1, BeforeNumber: *first.NextCursor,
+	}, nil)
+	if err != nil || len(second.Tasks) != 1 || second.Tasks[0].Number >= first.Tasks[0].Number {
+		t.Fatalf("List(before=%d) = %+v, %v; want next older Task", *first.NextCursor, second, err)
+	}
+}
+
 // Creating and changing a Task needs project.tasks.write on its Project. A
 // reader without it gets the permission refusal and nothing is written. A
 // create by someone who cannot read the Project, a manager through the

@@ -81,6 +81,7 @@ help:
 	@echo "  make lint | typecheck | build   (all run in frontend/)"
 	@echo "  make api-lint    Validate docs/api/spec/openapi.yaml   make api-docs  Browse it locally"
 	@echo "  make api-generate  Regenerate TypeScript API types    make api-types-check  Check drift"
+	@echo "  make intelligent-ui-generate | intelligent-ui-check  Generate/check the shared UI catalog"
 	@echo ""
 	@echo "Platform bundles (ADR 0016; your own git credentials, PLUGINS_REPO=<url-or-path> to override):"
 	@echo "  make bundle-bump TAG=<plugin>--vX.Y.Z  Pin a plugins-repo release; summary in .dev/bundle-bump.md"
@@ -199,9 +200,9 @@ go-shape: tools-prepare
 	elif printf '%s\n' "$$zen_deps" | grep -qx 'github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle'; then \
 		echo "cmd/zen links internal/platformbundle; the zen CLI must never link Workflow bundle bytes (ADR 0016):"; \
 		(cd server && go list -deps -f '{{$$p := .ImportPath}}{{range .Imports}}{{if eq . "github.com/Intelligent-Internet/zenith-team/server/internal/platformbundle"}}{{$$p}} imports it{{"\n"}}{{end}}{{end}}' ./cmd/zen) | sed 's/^/  /'; fail=1; fi; \
-	if find server/internal/mcp/tools/builtin -mindepth 1 -maxdepth 1 ! -name zenith-platform ! -name .DS_Store | grep -q .; then \
-		echo "server/internal/mcp/tools/builtin holds only zenith-platform; pinned platform content lives in internal/platformbundle (ADR 0016):"; \
-		find server/internal/mcp/tools/builtin -mindepth 1 -maxdepth 1 ! -name zenith-platform ! -name .DS_Store | sed 's/^/  /'; fail=1; fi; \
+	if find server/internal/mcp/tools/builtin -mindepth 1 -maxdepth 1 ! -name zenith-platform ! -name zenith-intelligent-ui ! -name .DS_Store | grep -q .; then \
+		echo "server/internal/mcp/tools/builtin holds only zenith-platform and zenith-intelligent-ui; pinned platform content lives in internal/platformbundle (ADR 0016):"; \
+		find server/internal/mcp/tools/builtin -mindepth 1 -maxdepth 1 ! -name zenith-platform ! -name zenith-intelligent-ui ! -name .DS_Store | sed 's/^/  /'; fail=1; fi; \
 	exit $$fail
 
 # Install the pinned sqlc into .tools/bin when missing or outdated.
@@ -496,4 +497,13 @@ voice-gate:
 	cd voice-agent && uv run --frozen ruff format --check .
 	cd voice-agent && uv run --frozen python -m unittest -v
 
-gate: api-lint api-types-check voice-gate go-gate lint typecheck build
+gate: intelligent-ui-check api-lint api-types-check voice-gate go-gate lint typecheck build
+
+.PHONY: intelligent-ui-generate intelligent-ui-check
+intelligent-ui-generate:
+	node scripts/generate-intelligent-ui.mjs
+	node scripts/generate-inline-parser.mjs
+
+intelligent-ui-check:
+	node scripts/generate-intelligent-ui.mjs --check
+	node scripts/generate-inline-parser.mjs --check

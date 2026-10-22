@@ -206,7 +206,7 @@ func (q *Queries) SetRunWikiWriteSaved(ctx context.Context, arg SetRunWikiWriteS
 }
 
 const setWikiRevisionAuthorAgent = `-- name: SetWikiRevisionAuthorAgent :exec
-UPDATE wiki_revisions SET author_agent_id = $1::uuid
+UPDATE document_snapshots SET author_agent_id = $1::uuid
 WHERE company_id = $2::uuid AND id = $3::uuid
 `
 

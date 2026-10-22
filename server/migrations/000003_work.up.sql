@@ -412,7 +412,7 @@ CREATE TABLE project_canvas_operations (
 CREATE TABLE project_page_changes (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     company_id uuid NOT NULL,
-    project_id uuid NOT NULL,
+    project_id uuid,
     page_id uuid NOT NULL,
     run_id uuid,
     actor_user_id uuid NOT NULL,
@@ -429,17 +429,19 @@ CREATE TABLE project_page_changes (
     decisions jsonb DEFAULT '{}'::jsonb NOT NULL,
     supersedes_id uuid,
     actor_agent_id uuid,
+    crdt_updates jsonb DEFAULT '[]'::jsonb NOT NULL,
     CONSTRAINT project_page_changes_pkey PRIMARY KEY (id),
     CONSTRAINT project_page_changes_company_key UNIQUE (company_id, id),
     CONSTRAINT project_page_changes_project_id_actor_user_id_request_key_key UNIQUE (project_id, actor_user_id, request_key),
     CONSTRAINT project_page_changes_after_theme_check CHECK (after_theme IN ('default', 'editorial', 'compact')),
     CONSTRAINT project_page_changes_before_theme_check CHECK (before_theme IN ('default', 'editorial', 'compact')),
+    CONSTRAINT project_page_changes_crdt_updates_check CHECK (jsonb_typeof(crdt_updates) = 'array'),
     CONSTRAINT project_page_changes_status_check CHECK (status IN ('applied', 'proposed', 'rejected', 'undone', 'partially_applied', 'needs_update', 'superseded', 'resolved')),
-    CONSTRAINT project_page_changes_company_id_project_id_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE,
     CONSTRAINT project_page_changes_supersedes_fkey FOREIGN KEY (company_id, supersedes_id) REFERENCES project_page_changes(company_id, id)
 );
-CREATE UNIQUE INDEX project_page_change_successor ON project_page_changes (supersedes_id) WHERE (supersedes_id IS NOT NULL);
 CREATE INDEX project_page_pending_changes ON project_page_changes (project_id, page_id, created_at DESC) WHERE (status = 'proposed');
+CREATE UNIQUE INDEX project_page_change_successor ON project_page_changes (supersedes_id) WHERE (supersedes_id IS NOT NULL);
+CREATE UNIQUE INDEX page_change_request ON project_page_changes (page_id, actor_user_id, request_key);
 
 CREATE TABLE project_page_managed_blocks (
     company_id uuid NOT NULL,
@@ -661,10 +663,10 @@ CREATE TABLE task_schedules (
 CREATE INDEX task_schedules_due_idx ON task_schedules (next_occurrence_at, id) WHERE ((NOT paused) AND (next_occurrence_at IS NOT NULL));
 CREATE INDEX task_schedules_project_idx ON task_schedules (company_id, project_id);
 
-CREATE TABLE project_artifacts (
+CREATE TABLE artifacts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     company_id uuid NOT NULL,
-    project_id uuid NOT NULL,
+    project_id uuid,
     title text NOT NULL,
     accepted_version_id uuid,
     next_number bigint DEFAULT 1 NOT NULL,
@@ -677,19 +679,28 @@ CREATE TABLE project_artifacts (
     source_run_id uuid,
     pending_creation boolean DEFAULT false NOT NULL,
     creation_change_id uuid,
+    type text NOT NULL,
+    owner_user_id uuid,
+    visibility text DEFAULT 'private' NOT NULL,
+    access_version bigint DEFAULT 1 NOT NULL,
+    conversation_id uuid,
     CONSTRAINT project_artifacts_pkey PRIMARY KEY (id),
+    CONSTRAINT artifacts_company_id_id_key UNIQUE (company_id, id),
+    CONSTRAINT artifacts_company_type_id_key UNIQUE (company_id, type, id),
     CONSTRAINT project_artifacts_company_id_project_id_id_key UNIQUE (company_id, project_id, id),
-    CONSTRAINT project_artifacts_company_id_project_id_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE,
-    CONSTRAINT project_artifacts_creation_change_fkey FOREIGN KEY (company_id, creation_change_id) REFERENCES project_page_changes(company_id, id),
-    CONSTRAINT project_artifacts_task_fkey FOREIGN KEY (company_id, project_id, task_id) REFERENCES tasks(company_id, project_id, id) ON DELETE SET NULL (task_id)
+    CONSTRAINT artifacts_access_version_check CHECK (access_version > 0),
+    CONSTRAINT artifacts_ownership_check CHECK (type = 'wiki' AND project_id IS NULL AND owner_user_id IS NULL OR type <> 'wiki' AND (project_id IS NOT NULL AND owner_user_id IS NULL OR project_id IS NULL AND owner_user_id IS NOT NULL)),
+    CONSTRAINT artifacts_type_check CHECK (type IN ('page', 'wiki', 'whiteboard', 'file', 'media', 'app')),
+    CONSTRAINT artifacts_visibility_check CHECK (visibility IN ('private', 'company')),
+    CONSTRAINT artifacts_company_fkey FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
 );
-CREATE INDEX project_artifacts_list ON project_artifacts (project_id, updated_at DESC, id) WHERE (archived_at IS NULL);
-CREATE INDEX project_artifacts_task ON project_artifacts (task_id) WHERE (task_id IS NOT NULL);
+CREATE INDEX project_artifacts_list ON artifacts (project_id, updated_at DESC, id) WHERE (archived_at IS NULL);
+CREATE INDEX project_artifacts_task ON artifacts (task_id) WHERE (task_id IS NOT NULL);
 
-CREATE TABLE project_artifact_versions (
+CREATE TABLE artifact_snapshots (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
     company_id uuid NOT NULL,
-    project_id uuid NOT NULL,
+    project_id uuid,
     artifact_id uuid NOT NULL,
     number bigint NOT NULL,
     source_type text NOT NULL,
@@ -701,20 +712,27 @@ CREATE TABLE project_artifact_versions (
     created_by_user_id uuid NOT NULL,
     created_at timestamptz DEFAULT now() NOT NULL,
     branch_title text DEFAULT 'Main' NOT NULL,
+    title text NOT NULL,
+    theme text DEFAULT 'default' NOT NULL,
+    source_sequence bigint DEFAULT 0 NOT NULL,
+    schema_version integer DEFAULT 1 NOT NULL,
     CONSTRAINT project_artifact_versions_pkey PRIMARY KEY (id),
+    CONSTRAINT artifact_snapshots_company_artifact_id_key UNIQUE (company_id, artifact_id, id),
+    CONSTRAINT artifact_snapshots_company_id_id_key UNIQUE (company_id, id),
     CONSTRAINT project_artifact_versions_artifact_id_number_key UNIQUE (artifact_id, number),
     CONSTRAINT project_artifact_versions_company_id_project_id_artifact_id_key UNIQUE (company_id, project_id, artifact_id, id),
     CONSTRAINT project_artifact_versions_company_id_project_id_id_key UNIQUE (company_id, project_id, id),
-    CONSTRAINT project_artifact_versions_check CHECK (((source_type = 'wiki') AND (asset_version_id IS NULL) AND (output_id IS NULL) AND ((wiki_page_id IS NULL) = (wiki_revision_id IS NULL))) OR ((source_type = 'file') AND (wiki_page_id IS NULL) AND (wiki_revision_id IS NULL) AND (output_id IS NULL)) OR ((source_type = 'output') AND (wiki_page_id IS NULL) AND (wiki_revision_id IS NULL) AND (asset_version_id IS NULL))),
-    CONSTRAINT project_artifact_versions_source_type_check CHECK (source_type IN ('wiki', 'file', 'output')),
-    CONSTRAINT project_artifact_versions_company_id_project_id_artifact__fkey1 FOREIGN KEY (company_id, project_id, artifact_id, base_version_id) REFERENCES project_artifact_versions(company_id, project_id, artifact_id, id) ON DELETE SET NULL (base_version_id),
-    CONSTRAINT project_artifact_versions_company_id_project_id_artifact_i_fkey FOREIGN KEY (company_id, project_id, artifact_id) REFERENCES project_artifacts(company_id, project_id, id) ON DELETE CASCADE
+    CONSTRAINT artifact_snapshots_document_identity_check CHECK (source_type <> 'wiki' OR wiki_page_id IS NOT NULL AND wiki_revision_id IS NOT NULL AND wiki_page_id = artifact_id AND wiki_revision_id = id),
+    CONSTRAINT artifact_snapshots_source_check CHECK (source_type = 'wiki' AND asset_version_id IS NULL AND output_id IS NULL AND wiki_page_id IS NOT NULL AND wiki_revision_id IS NOT NULL OR (source_type IN ('file', 'retained')) AND wiki_page_id IS NULL AND wiki_revision_id IS NULL AND output_id IS NULL OR source_type = 'output' AND wiki_page_id IS NULL AND wiki_revision_id IS NULL AND asset_version_id IS NULL OR source_type = 'capture' AND num_nonnulls(wiki_page_id, wiki_revision_id, asset_version_id, output_id) = 0),
+    CONSTRAINT artifact_snapshots_source_sequence_check CHECK (source_sequence >= 0),
+    CONSTRAINT artifact_snapshots_source_type_check CHECK (source_type IN ('wiki', 'file', 'output', 'retained', 'capture')),
+    CONSTRAINT artifact_snapshots_base_fkey FOREIGN KEY (company_id, artifact_id, base_version_id) REFERENCES artifact_snapshots(company_id, artifact_id, id) ON DELETE SET NULL (base_version_id)
 );
-CREATE INDEX project_artifact_versions_output ON project_artifact_versions (company_id, output_id, project_id, created_at, id) WHERE (output_id IS NOT NULL);
-CREATE INDEX project_artifact_versions_project_time ON project_artifact_versions (project_id, created_at DESC, id DESC);
+CREATE INDEX project_artifact_versions_project_time ON artifact_snapshots (project_id, created_at DESC, id DESC);
+CREATE INDEX project_artifact_versions_output ON artifact_snapshots (company_id, output_id, project_id, created_at, id) WHERE (output_id IS NOT NULL);
 
 CREATE TABLE project_presentations (
-    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    id uuid NOT NULL,
     company_id uuid NOT NULL,
     project_id uuid NOT NULL,
     page_id uuid NOT NULL,
@@ -729,20 +747,17 @@ CREATE TABLE project_presentations (
     request_key uuid NOT NULL,
     created_by_user_id uuid NOT NULL,
     source_run_id uuid,
-    output_id uuid,
     export_attachment_id uuid,
     created_at timestamptz DEFAULT now() NOT NULL,
     shared_content jsonb,
     change_id uuid,
     change_snapshot jsonb,
+    intelligent_evidence jsonb DEFAULT '{"projects": [], "documents": {}}'::jsonb NOT NULL,
     CONSTRAINT project_presentations_pkey PRIMARY KEY (id),
     CONSTRAINT project_presentations_company_id_project_id_id_key UNIQUE (company_id, project_id, id),
-    CONSTRAINT project_presentations_output_id_key UNIQUE (output_id),
     CONSTRAINT project_presentations_project_id_created_by_user_id_request_key UNIQUE (project_id, created_by_user_id, request_key),
-    CONSTRAINT project_presentations_theme_check CHECK (theme IN ('default', 'editorial', 'compact')),
-    CONSTRAINT project_presentations_change_fkey FOREIGN KEY (company_id, change_id) REFERENCES project_page_changes(company_id, id),
-    CONSTRAINT project_presentations_company_id_project_id_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE,
-    CONSTRAINT project_presentations_company_id_project_id_page_version_i_fkey FOREIGN KEY (company_id, project_id, page_version_id) REFERENCES project_artifact_versions(company_id, project_id, id)
+    CONSTRAINT project_presentations_intelligent_evidence_object CHECK (jsonb_typeof(intelligent_evidence) = 'object'),
+    CONSTRAINT project_presentations_theme_check CHECK (theme IN ('default', 'editorial', 'compact'))
 );
 CREATE INDEX project_presentations_history ON project_presentations (project_id, created_at DESC, id DESC);
 
@@ -756,14 +771,23 @@ CREATE TABLE project_presentation_sources (
     asset_version_id uuid,
     output_id uuid,
     created_at timestamptz DEFAULT now() NOT NULL,
-    CONSTRAINT project_presentation_sources_pkey PRIMARY KEY (presentation_id, version_id),
-    CONSTRAINT project_presentation_sources_company_id_project_id_present_fkey FOREIGN KEY (company_id, project_id, presentation_id) REFERENCES project_presentations(company_id, project_id, id) ON DELETE CASCADE,
-    CONSTRAINT project_presentation_sources_company_id_project_id_version_fkey FOREIGN KEY (company_id, project_id, version_id) REFERENCES project_artifact_versions(company_id, project_id, id)
+    CONSTRAINT project_presentation_sources_pkey PRIMARY KEY (presentation_id, version_id)
 );
 
 -- Links to these tables from tables created earlier.
+ALTER TABLE artifact_snapshots ADD CONSTRAINT artifact_versions_artifact_fkey FOREIGN KEY (company_id, artifact_id) REFERENCES artifacts(company_id, id) ON DELETE CASCADE;
+ALTER TABLE artifacts ADD CONSTRAINT artifacts_snapshot_fkey FOREIGN KEY (company_id, id, accepted_version_id) REFERENCES artifact_snapshots(company_id, artifact_id, id) ON DELETE SET NULL (accepted_version_id) DEFERRABLE INITIALLY DEFERRED;
+ALTER TABLE artifacts ADD CONSTRAINT project_artifacts_company_id_project_id_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE;
+ALTER TABLE artifacts ADD CONSTRAINT project_artifacts_creation_change_fkey FOREIGN KEY (company_id, creation_change_id) REFERENCES project_page_changes(company_id, id);
+ALTER TABLE artifacts ADD CONSTRAINT project_artifacts_task_fkey FOREIGN KEY (company_id, project_id, task_id) REFERENCES tasks(company_id, project_id, id) ON DELETE SET NULL (task_id);
+ALTER TABLE project_page_changes ADD CONSTRAINT project_page_changes_company_id_project_id_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE;
+ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_company_id_project_id_present_fkey FOREIGN KEY (company_id, project_id, presentation_id) REFERENCES project_presentations(company_id, project_id, id) ON DELETE CASCADE;
+ALTER TABLE project_presentation_sources ADD CONSTRAINT project_presentation_sources_snapshot_fkey FOREIGN KEY (company_id, version_id) REFERENCES artifact_snapshots(company_id, id);
+ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_change_fkey FOREIGN KEY (company_id, change_id) REFERENCES project_page_changes(company_id, id);
+ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_company_id_project_id_fkey FOREIGN KEY (company_id, project_id) REFERENCES projects(company_id, id) ON DELETE CASCADE;
+ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_identity_fkey FOREIGN KEY (company_id, page_id, id) REFERENCES artifact_snapshots(company_id, artifact_id, id) ON DELETE CASCADE;
+ALTER TABLE project_presentations ADD CONSTRAINT project_presentations_snapshot_fkey FOREIGN KEY (company_id, page_version_id) REFERENCES artifact_snapshots(company_id, id);
 ALTER TABLE tasks ADD CONSTRAINT tasks_calendar_schedule_fk FOREIGN KEY (company_id, project_id, task_schedule_id) REFERENCES task_schedules(company_id, project_id, id) ON DELETE SET NULL (task_schedule_id) DEFERRABLE INITIALLY DEFERRED;
-ALTER TABLE project_artifacts ADD CONSTRAINT project_artifacts_accepted_fkey FOREIGN KEY (company_id, project_id, id, accepted_version_id) REFERENCES project_artifact_versions(company_id, project_id, artifact_id, id) ON DELETE SET NULL (accepted_version_id) DEFERRABLE INITIALLY DEFERRED;
 
 -- project_permission_held: the one per-permission predicate, for writes and
 -- the Run claim fence. A person holds a permission on a Project through their
@@ -888,7 +912,7 @@ WHERE read_row.user_id IS NOT NULL OR group_read.found OR project.visibility = '
 -- the person (see the note above conversation_readers).
 CREATE VIEW project_access_paths AS
 SELECT grant_row.company_id, grant_row.project_id, grant_row.user_id, grant_row.permission,
-       'grant'::text AS via, NULL::uuid AS group_id
+       'grant' AS via, NULL::uuid AS group_id
 FROM project_grants AS grant_row
 JOIN companies AS company
   ON company.id = grant_row.company_id AND company.deleting_at IS NULL
@@ -901,7 +925,7 @@ JOIN users AS account
 WHERE grant_row.updated_at >= COALESCE(member.reactivated_at, member.created_at)
 UNION ALL
 SELECT group_grant.company_id, group_grant.project_id, group_member.user_id, group_grant.permission,
-       'group'::text AS via, group_grant.group_id
+       'group' AS via, group_grant.group_id
 FROM company_group_members AS group_member
 JOIN project_group_grants AS group_grant
   ON group_grant.company_id = group_member.company_id

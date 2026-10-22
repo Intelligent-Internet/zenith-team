@@ -43,8 +43,9 @@ func TestPlatformSkillsListTheCatalogForMembers(t *testing.T) {
 	if err := json.Unmarshal(response.Body.Bytes(), &got); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
-	if len(got.Items) != 2 || got.Items[0].Key != tools.ZenithPlatformSkillKey ||
-		got.Items[1].Key != tools.ZenithWorkflowsSkillKey ||
+	if len(got.Items) != 3 || got.Items[0].Key != tools.ZenithPlatformSkillKey ||
+		got.Items[1].Key != "zenith-intelligent-ui" ||
+		got.Items[2].Key != tools.ZenithWorkflowsSkillKey ||
 		len(got.Items[0].References) == 0 || got.Items[0].Description == "" {
 		t.Fatalf("items = %+v", got.Items)
 	}

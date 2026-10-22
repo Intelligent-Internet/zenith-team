@@ -93,7 +93,7 @@ WITH artifact_references AS (
       AND message.id=ANY(sqlc.arg(message_ids)::uuid[])
       AND message.type='agent_text' AND message.run_id IS NULL
 )
-SELECT reference.message_id, output.id, output.title, output.type,
+SELECT reference.message_id, output.id, output.title, output.type, output.created_at,
   (SELECT count(*) FROM output_items item WHERE item.company_id=output.company_id AND item.output_id=output.id AND item.role <> 'supporting') AS file_count,
   COALESCE(file.filename, '')::text AS file_name, COALESCE(file.content_type, '')::text AS content_type,
   COALESCE((SELECT jsonb_agg(jsonb_build_object('fileName', version.filename, 'contentType', version.content_type) ORDER BY item.ordinal)
@@ -114,4 +114,14 @@ LEFT JOIN LATERAL (
   LIMIT 1
 ) file ON true
 WHERE message.deleted_at IS NULL
-ORDER BY reference.message_id, output.created_at, output.id;
+UNION ALL
+SELECT link.message_id, artifact.id, artifact.title, artifact.type, artifact.created_at,
+ 0::bigint AS file_count, ''::text AS file_name, ''::text AS content_type, '[]'::jsonb AS files
+FROM discussion_artifacts link
+JOIN conversation_items message ON message.company_id=link.company_id AND message.id=link.message_id
+JOIN artifacts artifact ON artifact.company_id=link.company_id AND artifact.id=link.artifact_id
+JOIN artifact_access access ON access.company_id=artifact.company_id AND access.artifact_id=artifact.id
+ AND access.user_id=sqlc.arg(actor_user_id)::uuid
+WHERE link.company_id=sqlc.arg(company_id)::uuid AND link.message_id=ANY(sqlc.arg(message_ids)::uuid[])
+ AND message.deleted_at IS NULL AND artifact.archived_at IS NULL
+ORDER BY message_id, created_at, id;

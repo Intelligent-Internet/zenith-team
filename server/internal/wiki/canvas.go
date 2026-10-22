@@ -11,14 +11,16 @@ import (
 )
 
 type CanvasPageInput struct {
-	Principal       auth.UserPrincipal
-	ProjectID       uuid.UUID
-	Theme           string
-	Title, Body     string
-	Content         *BlockNode
-	SnapshotContent *BlockNode
-	SourceOutputID  *uuid.UUID
-	HistoryAgentID  *uuid.UUID
+	Authoring           UIAuthoringPolicy
+	Principal           auth.UserPrincipal
+	ProjectID           uuid.UUID
+	TaskID, SourceRunID *uuid.UUID
+	Theme               string
+	Title, Body         string
+	Content             *BlockNode
+	SnapshotContent     *BlockNode
+	SourceOutputID      *uuid.UUID
+	HistoryAgentID      *uuid.UUID
 }
 
 // CreateCanvasPageInTx participates in the caller's Company/membership transaction.
@@ -26,6 +28,10 @@ func CreateCanvasPageInTx(ctx context.Context, q *generated.Queries, in CanvasPa
 	title, body, summary, err := normalizePageInput(in.Title, in.Body, "")
 	if err != nil {
 		return uuid.Nil, uuid.Nil, err
+	}
+	owner := uuid.NullUUID{}
+	if in.ProjectID == uuid.Nil {
+		owner = uuid.NullUUID{UUID: in.Principal.UserID, Valid: true}
 	}
 	if in.SourceOutputID != nil {
 		access, e := auth.OutputDocumentAccessInTx(ctx, q, in.Principal, *in.SourceOutputID)
@@ -35,7 +41,23 @@ func CreateCanvasPageInTx(ctx context.Context, q *generated.Queries, in CanvasPa
 		if !access.Edit {
 			return uuid.Nil, uuid.Nil, ErrPageForbidden
 		}
-		in.ProjectID = uuid.Nil
+		ownership, e := q.GetOutputDocumentOwnership(
+			ctx,
+			generated.GetOutputDocumentOwnershipParams{
+				CompanyID: in.Principal.CompanyID,
+				ID:        *in.SourceOutputID,
+			},
+		)
+		if e != nil {
+			return uuid.Nil, uuid.Nil, e
+		}
+		if ownership.ProjectID.Valid {
+			in.ProjectID = ownership.ProjectID.UUID
+			owner = uuid.NullUUID{}
+		} else {
+			in.ProjectID = uuid.Nil
+			owner = uuid.NullUUID{UUID: in.Principal.UserID, Valid: true}
+		}
 		for _, content := range []*BlockNode{in.Content, in.SnapshotContent} {
 			if content != nil {
 				if err := ValidateStandaloneBlocks(*content); err != nil {
@@ -55,10 +77,22 @@ func CreateCanvasPageInTx(ctx context.Context, q *generated.Queries, in CanvasPa
 			return uuid.Nil, uuid.Nil, err
 		}
 	}
+	for _, content := range []*BlockNode{in.Content, in.SnapshotContent} {
+		if content != nil {
+			if err := in.Authoring.Check(0, *content); err != nil {
+				return uuid.Nil, uuid.Nil, err
+			}
+		}
+	}
 	id, err := q.CreateWikiPage(
 		ctx,
 		generated.CreateWikiPageParams{
 			CompanyID:       in.Principal.CompanyID,
+			Type:            "page",
+			ProjectID:       uuid.NullUUID{UUID: in.ProjectID, Valid: in.ProjectID != uuid.Nil},
+			OwnerUserID:     owner,
+			TaskID:          nullableUUID(in.TaskID),
+			SourceRunID:     nullableUUID(in.SourceRunID),
 			Title:           title,
 			Summary:         summary,
 			CreatedByUserID: in.Principal.UserID,
@@ -130,7 +164,7 @@ func CreateCanvasPageInTx(ctx context.Context, q *generated.Queries, in CanvasPa
 	if err = replaceLinks(ctx, q, in.Principal.CompanyID, id, body); err != nil {
 		return uuid.Nil, uuid.Nil, err
 	}
-	draft, err := BlockDraftInTx(ctx, q, in.Principal.CompanyID, id)
+	draft, err := createBlockDraftInTx(ctx, q, in.Principal.CompanyID, id, body)
 	if err != nil {
 		return uuid.Nil, uuid.Nil, err
 	}
@@ -154,12 +188,13 @@ func CreateCanvasPageInTx(ctx context.Context, q *generated.Queries, in CanvasPa
 		_, err = q.UpdateWikiBlockDraft(
 			ctx,
 			generated.UpdateWikiBlockDraftParams{
-				CompanyID: in.Principal.CompanyID,
-				PageID:    id,
-				State:     state,
-				Content:   content,
-				Markdown:  BlocksMarkdown(root),
-				HeadSeq:   draft.HeadSeq,
+				SchemaVersion: int32(UIDocumentSchema(root)),
+				CompanyID:     in.Principal.CompanyID,
+				PageID:        id,
+				State:         state,
+				Content:       content,
+				Markdown:      BlocksMarkdown(root),
+				HeadSeq:       draft.HeadSeq,
 			},
 		)
 		if err != nil {
@@ -209,6 +244,11 @@ func CreateCanvasPageInTx(ctx context.Context, q *generated.Queries, in CanvasPa
 	if err != nil {
 		return uuid.Nil, uuid.Nil, err
 	}
+	if err = q.RecordCanvasCheckpoint(ctx, generated.RecordCanvasCheckpointParams{
+		CompanyID: in.Principal.CompanyID, PageID: id, RevisionID: revision.ID, ThroughSeq: current.HeadSeq,
+	}); err != nil {
+		return uuid.Nil, uuid.Nil, err
+	}
 	actorType, actorID := "user", in.Principal.UserID
 	if in.HistoryAgentID != nil {
 		actorType, actorID = "agent", *in.HistoryAgentID
@@ -241,6 +281,16 @@ type CanvasCheckpointInput struct {
 
 // CheckpointCanvasPageInTx creates an unpublished immutable revision of a saved draft.
 func CheckpointCanvasPageInTx(ctx context.Context, q *generated.Queries, in CanvasCheckpointInput) (uuid.UUID, error) {
+	access, err := auth.LockArtifactAccess(ctx, q, in.Principal, in.PageID)
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if !access.Read {
+		return uuid.Nil, ErrPageNotFound
+	}
+	if !access.Edit {
+		return uuid.Nil, ErrPageForbidden
+	}
 	page, err := q.LockCanvasWikiPage(
 		ctx,
 		generated.LockCanvasWikiPageParams{CompanyID: in.Principal.CompanyID, ID: in.PageID},
@@ -258,27 +308,7 @@ func CheckpointCanvasPageInTx(ctx context.Context, q *generated.Queries, in Canv
 	if err != nil {
 		return uuid.Nil, err
 	}
-	switch {
-	case detail.ProjectID.Valid:
-		if err = auth.RequireProjectPermissionHeld(
-			ctx,
-			q,
-			in.Principal.CompanyID,
-			detail.ProjectID.UUID,
-			in.Principal.UserID,
-			auth.ProjectPermissionTasksWrite,
-		); err != nil {
-			return uuid.Nil, err
-		}
-	case detail.SourceOutputID.Valid:
-		access, e := auth.OutputDocumentAccessInTx(ctx, q, in.Principal, detail.SourceOutputID.UUID)
-		if e != nil {
-			return uuid.Nil, e
-		}
-		if !access.Edit {
-			return uuid.Nil, ErrPageForbidden
-		}
-	default:
+	if detail.ArtifactType != "page" {
 		return uuid.Nil, ErrPageForbidden
 	}
 	title, body, summary, err := normalizePageInput(detail.Title, in.Body, detail.Summary)

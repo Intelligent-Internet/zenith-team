@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"testing"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
@@ -32,7 +34,7 @@ func TestAttachStudioCanvasPreservesOutputAndScopesAccess(t *testing.T) {
 	}
 	var changed int
 	if err := bus.Subscribe(
-		EventArtifactChanged,
+		artifactdomain.EventChanged,
 		func(_ context.Context, _ events.Event) error { changed++; return nil },
 	); err != nil {
 		t.Fatal(err)

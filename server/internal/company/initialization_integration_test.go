@@ -89,9 +89,9 @@ func pending(t *testing.T, store *db.Store, f dbtest.Fixture) bool {
 
 func seedWrite(t *testing.T, pool *pgxpool.Pool, f dbtest.Fixture, runID uuid.UUID, key string) uuid.UUID {
 	t.Helper()
-	var pageID uuid.UUID
-	if err := pool.QueryRow(t.Context(), `INSERT INTO wiki_pages(company_id,slug,title,created_by_user_id) VALUES($1,$2,$2,$3) RETURNING id`, f.CompanyA, key+"-"+runID.String(), f.UserA).
-		Scan(&pageID); err != nil {
+	pageID, err := generated.New(pool).
+		CreateWikiPage(t.Context(), generated.CreateWikiPageParams{CompanyID: f.CompanyA, Type: "wiki", Title: key + "-" + runID.String(), CreatedByUserID: f.UserA})
+	if err != nil {
 		t.Fatal(err)
 	}
 	dbtest.MustExec(

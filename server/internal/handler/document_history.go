@@ -14,16 +14,8 @@ import (
 )
 
 func historyPath(c *gin.Context) (auth.UserPrincipal, canvas.DocumentHistoryRef, bool) {
-	if c.Param("artifactId") != "" {
-		p, output, item, ok := outputDocumentPath(c)
-		return p, canvas.DocumentHistoryRef{OutputID: output, ItemID: item}, ok
-	}
-	p, project, ok := canvasPath(c)
-	if !ok {
-		return p, canvas.DocumentHistoryRef{}, false
-	}
-	version, ok := canvasID(c, "versionId")
-	return p, canvas.DocumentHistoryRef{ProjectID: project, VersionID: version}, ok
+	p, page, ok := pageDocumentPath(c)
+	return p, canvas.DocumentHistoryRef{PageID: page}, ok
 }
 
 func historySequence(c *gin.Context) (int64, bool) {
@@ -107,6 +99,7 @@ func (h *Handler) restoreDocumentHistory(c *gin.Context) {
 	}
 	input, err := bindRequest[struct {
 		ExpectedSequence int64 `json:"expectedSequence" binding:"required,min=1"`
+		SchemaVersion    int   `json:"schemaVersion,omitempty" binding:"omitempty,oneof=1 2"`
 	}](c, 1024)
 	if err != nil {
 		writeRequestError(c, err)
@@ -116,7 +109,11 @@ func (h *Handler) restoreDocumentHistory(c *gin.Context) {
 		c.Request.Context(),
 		p,
 		ref,
-		canvas.DocumentHistoryRestore{Sequence: sequence, ExpectedSequence: input.ExpectedSequence},
+		canvas.DocumentHistoryRestore{
+			Sequence:         sequence,
+			ExpectedSequence: input.ExpectedSequence,
+			SchemaVersion:    input.SchemaVersion,
+		},
 	)
 	if err != nil {
 		writeCanvasError(c, err)

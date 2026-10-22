@@ -27,16 +27,22 @@ class TaskService {
   async listTasks(
     companyId: string,
     options: TaskListOptions = {},
+    signal?: AbortSignal,
   ): Promise<TaskPageDto> {
     return apiClient.get<TaskPageDto>(
       `/companies/${encodeURIComponent(companyId)}/tasks`,
-      { params: options },
+      { params: options, signal },
     );
   }
 
-  async getTask(companyId: string, taskId: string): Promise<TaskDto> {
+  async getTask(
+    companyId: string,
+    taskId: string,
+    signal?: AbortSignal,
+  ): Promise<TaskDto> {
     return apiClient.get<TaskDto>(
       `/companies/${encodeURIComponent(companyId)}/tasks/${encodeURIComponent(taskId)}`,
+      { signal },
     );
   }
 

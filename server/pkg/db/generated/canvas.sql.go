@@ -13,7 +13,7 @@ import (
 )
 
 const advanceCanvasArtifact = `-- name: AdvanceCanvasArtifact :exec
-UPDATE project_artifacts SET version=version+1,updated_at=clock_timestamp() WHERE id=$1
+UPDATE artifacts SET version=version+1,updated_at=clock_timestamp() WHERE id=$1
 `
 
 func (q *Queries) AdvanceCanvasArtifact(ctx context.Context, id uuid.UUID) error {
@@ -38,7 +38,7 @@ func (q *Queries) AdvanceCanvasHead(ctx context.Context, arg AdvanceCanvasHeadPa
 }
 
 const allocateCanvasVersion = `-- name: AllocateCanvasVersion :one
-UPDATE project_artifacts SET next_number=next_number+1, version=version+1,updated_at=clock_timestamp()
+UPDATE artifacts SET next_number=next_number+1, version=version+1,updated_at=clock_timestamp()
 WHERE id=$1 RETURNING (next_number-1)::bigint AS number
 `
 
@@ -50,7 +50,8 @@ func (q *Queries) AllocateCanvasVersion(ctx context.Context, id uuid.UUID) (int6
 }
 
 const allocateWikiRevisionNumber = `-- name: AllocateWikiRevisionNumber :one
-UPDATE wiki_pages SET next_revision_number=next_revision_number+1 WHERE company_id=$1 AND id=$2 RETURNING (next_revision_number-1)::bigint AS number
+UPDATE artifacts SET next_number=next_number+1,version=version+1,updated_at=clock_timestamp()
+WHERE company_id=$1 AND id=$2 RETURNING (next_number-1)::bigint AS number
 `
 
 type AllocateWikiRevisionNumberParams struct {
@@ -68,9 +69,9 @@ func (q *Queries) AllocateWikiRevisionNumber(ctx context.Context, arg AllocateWi
 const canvasAnchorSource = `-- name: CanvasAnchorSource :one
 SELECT av.content_type FROM canvas_version_sources v
 JOIN asset_versions av ON av.company_id=v.company_id AND av.id=$1::uuid
-WHERE v.company_id=$2::uuid AND v.project_id=$3::uuid AND v.id=$4::uuid
+WHERE v.company_id=$2::uuid AND (v.project_id=$3::uuid OR v.source_type='retained') AND v.id=$4::uuid
 AND ((v.source_type='file' AND v.asset_version_id=av.id AND $5::uuid IS NULL)
-OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_items i WHERE i.company_id=v.company_id AND i.output_id=v.output_id AND i.id=$5::uuid AND i.asset_version_id=av.id)))
+OR (v.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_snapshot_items item WHERE item.company_id=v.company_id AND item.snapshot_id=v.id AND item.asset_version_id=av.id AND (item.id=$5::uuid OR ($5::uuid IS NULL AND item.role='primary')))) OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_items i WHERE i.company_id=v.company_id AND i.output_id=v.output_id AND i.id=$5::uuid AND i.asset_version_id=av.id)))
 `
 
 type CanvasAnchorSourceParams struct {
@@ -130,14 +131,14 @@ func (q *Queries) CanvasOutputAccess(ctx context.Context, arg CanvasOutputAccess
 
 const canvasVersionAccess = `-- name: CanvasVersionAccess :one
 SELECT EXISTS(SELECT 1 FROM canvas_version_sources v
-LEFT JOIN wiki_revisions w ON w.id=v.wiki_revision_id
+LEFT JOIN document_snapshots w ON w.id=v.wiki_revision_id
 LEFT JOIN wiki_pages page ON page.id=v.wiki_page_id
 LEFT JOIN asset_versions f ON f.id=v.asset_version_id
-WHERE v.company_id=$1::uuid AND v.project_id=$2::uuid AND v.id=$3::uuid
-AND (v.access_output_id IS NOT NULL OR EXISTS(SELECT 1 FROM project_access access WHERE access.company_id=v.company_id AND access.project_id=COALESCE(page.project_id,v.project_id) AND access.user_id=$4::uuid))
-AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$4::uuid))
-AND ((v.source_type='wiki' AND w.id IS NOT NULL AND (page.project_id IS NOT NULL OR page.source_output_id IS NOT NULL OR w.published_at IS NOT NULL)) OR (v.source_type='file' AND f.id IS NOT NULL AND EXISTS(SELECT 1 FROM project_file_assets pf WHERE pf.asset_id=f.asset_id AND pf.project_id=v.project_id))
-OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_access a WHERE a.output_id=v.output_id AND a.user_id=$4::uuid))))::boolean
+WHERE v.company_id=$1::uuid AND (v.project_id=$2::uuid OR v.project_id IS NULL OR v.source_type='retained') AND v.id=$3::uuid
+AND (v.source_type IN ('retained','wiki') OR v.access_output_id IS NOT NULL OR EXISTS(SELECT 1 FROM project_access access WHERE access.company_id=v.company_id AND access.project_id=COALESCE(page.project_id,v.project_id) AND access.user_id=$4::uuid))
+AND (v.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=v.company_id AND authority.artifact_id=v.artifact_id AND authority.user_id=$4::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=v.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$4::uuid))
+AND ((v.source_type='wiki' AND w.id IS NOT NULL AND (page.artifact_type<>'wiki' OR w.published_at IS NOT NULL)) OR (v.source_type='file' AND f.id IS NOT NULL AND EXISTS(SELECT 1 FROM project_file_assets pf WHERE pf.asset_id=f.asset_id AND pf.project_id=v.project_id))
+OR (v.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$4::uuid)) OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_access a WHERE a.output_id=v.output_id AND a.user_id=$4::uuid))))::boolean
 `
 
 type CanvasVersionAccessParams struct {
@@ -187,7 +188,7 @@ func (q *Queries) ConfigureCanvasItem(ctx context.Context, arg ConfigureCanvasIt
 }
 
 const countCanvasArtifacts = `-- name: CountCanvasArtifacts :one
-SELECT count(*) FROM project_artifacts WHERE project_id=$1 AND archived_at IS NULL
+SELECT count(*) FROM artifacts WHERE project_id=$1::uuid AND archived_at IS NULL
 `
 
 func (q *Queries) CountCanvasArtifacts(ctx context.Context, projectID uuid.UUID) (int64, error) {
@@ -274,7 +275,7 @@ func (q *Queries) CountVersionComments(ctx context.Context, arg CountVersionComm
 }
 
 const createCanvasArtifact = `-- name: CreateCanvasArtifact :one
-INSERT INTO project_artifacts(company_id,project_id,title,created_by_user_id,task_id,source_run_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id, company_id, project_id, title, accepted_version_id, next_number, version, created_by_user_id, created_at, updated_at, archived_at, task_id, source_run_id, pending_creation, creation_change_id
+INSERT INTO artifacts(company_id,project_id,title,created_by_user_id,task_id,source_run_id,type) VALUES ($1,$2::uuid,$3,$4,$5,$6,$7::text) RETURNING id, company_id, project_id, title, accepted_version_id, next_number, version, created_by_user_id, created_at, updated_at, archived_at, task_id, source_run_id, pending_creation, creation_change_id, type, owner_user_id, visibility, access_version, conversation_id
 `
 
 type CreateCanvasArtifactParams struct {
@@ -284,9 +285,10 @@ type CreateCanvasArtifactParams struct {
 	CreatedByUserID uuid.UUID     `json:"created_by_user_id"`
 	TaskID          uuid.NullUUID `json:"task_id"`
 	SourceRunID     uuid.NullUUID `json:"source_run_id"`
+	Type            string        `json:"type"`
 }
 
-func (q *Queries) CreateCanvasArtifact(ctx context.Context, arg CreateCanvasArtifactParams) (ProjectArtifact, error) {
+func (q *Queries) CreateCanvasArtifact(ctx context.Context, arg CreateCanvasArtifactParams) (Artifact, error) {
 	row := q.db.QueryRow(ctx, createCanvasArtifact,
 		arg.CompanyID,
 		arg.ProjectID,
@@ -294,8 +296,9 @@ func (q *Queries) CreateCanvasArtifact(ctx context.Context, arg CreateCanvasArti
 		arg.CreatedByUserID,
 		arg.TaskID,
 		arg.SourceRunID,
+		arg.Type,
 	)
-	var i ProjectArtifact
+	var i Artifact
 	err := row.Scan(
 		&i.ID,
 		&i.CompanyID,
@@ -312,21 +315,28 @@ func (q *Queries) CreateCanvasArtifact(ctx context.Context, arg CreateCanvasArti
 		&i.SourceRunID,
 		&i.PendingCreation,
 		&i.CreationChangeID,
+		&i.Type,
+		&i.OwnerUserID,
+		&i.Visibility,
+		&i.AccessVersion,
+		&i.ConversationID,
 	)
 	return i, err
 }
 
 const createCanvasDraft = `-- name: CreateCanvasDraft :one
-INSERT INTO wiki_canvas_drafts(company_id,page_id,state,markdown,title,summary,collection_id)
-SELECT $1,$2,$3,$4,p.title,p.summary,p.collection_id FROM wiki_pages p WHERE p.company_id=$1 AND p.id=$2
-ON CONFLICT(page_id) DO UPDATE SET page_id=wiki_canvas_drafts.page_id RETURNING company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, legacy_state, legacy_markdown, structure_seq, title, summary, collection_id, restored_revision_id
+INSERT INTO wiki_canvas_drafts(company_id,page_id,state,markdown,title,summary,collection_id,content,schema_version)
+SELECT $1,$2,$3,$4,p.title,p.summary,p.collection_id,$5::jsonb,$6::integer FROM wiki_pages p WHERE p.company_id=$1 AND p.id=$2
+ON CONFLICT(page_id) DO UPDATE SET page_id=wiki_canvas_drafts.page_id RETURNING company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, structure_seq, title, summary, collection_id, restored_revision_id
 `
 
 type CreateCanvasDraftParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	PageID    uuid.UUID `json:"page_id"`
-	State     []byte    `json:"state"`
-	Markdown  string    `json:"markdown"`
+	CompanyID     uuid.UUID `json:"company_id"`
+	PageID        uuid.UUID `json:"page_id"`
+	State         []byte    `json:"state"`
+	Markdown      string    `json:"markdown"`
+	Content       []byte    `json:"content"`
+	SchemaVersion int32     `json:"schema_version"`
 }
 
 func (q *Queries) CreateCanvasDraft(ctx context.Context, arg CreateCanvasDraftParams) (WikiCanvasDraft, error) {
@@ -335,6 +345,8 @@ func (q *Queries) CreateCanvasDraft(ctx context.Context, arg CreateCanvasDraftPa
 		arg.PageID,
 		arg.State,
 		arg.Markdown,
+		arg.Content,
+		arg.SchemaVersion,
 	)
 	var i WikiCanvasDraft
 	err := row.Scan(
@@ -347,8 +359,6 @@ func (q *Queries) CreateCanvasDraft(ctx context.Context, arg CreateCanvasDraftPa
 		&i.UpdatedAt,
 		&i.SchemaVersion,
 		&i.Content,
-		&i.LegacyState,
-		&i.LegacyMarkdown,
 		&i.StructureSeq,
 		&i.Title,
 		&i.Summary,
@@ -451,8 +461,12 @@ func (q *Queries) CreateCanvasItem(ctx context.Context, arg CreateCanvasItemPara
 }
 
 const createCanvasVersion = `-- name: CreateCanvasVersion :one
-INSERT INTO project_artifact_versions(company_id,project_id,artifact_id,number,source_type,wiki_page_id,wiki_revision_id,asset_version_id,output_id,base_version_id,created_by_user_id)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id, company_id, project_id, artifact_id, number, source_type, wiki_page_id, wiki_revision_id, asset_version_id, output_id, base_version_id, created_by_user_id, created_at, branch_title
+INSERT INTO artifact_snapshots(company_id,project_id,artifact_id,number,source_type,asset_version_id,output_id,base_version_id,created_by_user_id,title)
+SELECT $1::uuid,$2::uuid,$3::uuid,$4::bigint,$5::text,
+ $6::uuid,$7::uuid,$8::uuid,$9::uuid,artifact.title
+FROM artifacts artifact WHERE artifact.id=$3::uuid AND artifact.company_id=$1::uuid
+AND artifact.type NOT IN ('page','wiki','whiteboard')
+RETURNING id, company_id, project_id, artifact_id, number, source_type, wiki_page_id, wiki_revision_id, asset_version_id, output_id, base_version_id, created_by_user_id, created_at, branch_title, title, theme, source_sequence, schema_version
 `
 
 type CreateCanvasVersionParams struct {
@@ -461,29 +475,25 @@ type CreateCanvasVersionParams struct {
 	ArtifactID      uuid.UUID     `json:"artifact_id"`
 	Number          int64         `json:"number"`
 	SourceType      string        `json:"source_type"`
-	WikiPageID      uuid.NullUUID `json:"wiki_page_id"`
-	WikiRevisionID  uuid.NullUUID `json:"wiki_revision_id"`
 	AssetVersionID  uuid.NullUUID `json:"asset_version_id"`
 	OutputID        uuid.NullUUID `json:"output_id"`
 	BaseVersionID   uuid.NullUUID `json:"base_version_id"`
 	CreatedByUserID uuid.UUID     `json:"created_by_user_id"`
 }
 
-func (q *Queries) CreateCanvasVersion(ctx context.Context, arg CreateCanvasVersionParams) (ProjectArtifactVersion, error) {
+func (q *Queries) CreateCanvasVersion(ctx context.Context, arg CreateCanvasVersionParams) (ArtifactSnapshot, error) {
 	row := q.db.QueryRow(ctx, createCanvasVersion,
 		arg.CompanyID,
 		arg.ProjectID,
 		arg.ArtifactID,
 		arg.Number,
 		arg.SourceType,
-		arg.WikiPageID,
-		arg.WikiRevisionID,
 		arg.AssetVersionID,
 		arg.OutputID,
 		arg.BaseVersionID,
 		arg.CreatedByUserID,
 	)
-	var i ProjectArtifactVersion
+	var i ArtifactSnapshot
 	err := row.Scan(
 		&i.ID,
 		&i.CompanyID,
@@ -499,6 +509,10 @@ func (q *Queries) CreateCanvasVersion(ctx context.Context, arg CreateCanvasVersi
 		&i.CreatedByUserID,
 		&i.CreatedAt,
 		&i.BranchTitle,
+		&i.Title,
+		&i.Theme,
+		&i.SourceSequence,
+		&i.SchemaVersion,
 	)
 	return i, err
 }
@@ -702,8 +716,80 @@ func (q *Queries) EnsureProjectCanvas(ctx context.Context, arg EnsureProjectCanv
 	return i, err
 }
 
+const getArtifactIdentity = `-- name: GetArtifactIdentity :one
+SELECT id, company_id, project_id, title, accepted_version_id, next_number, version, created_by_user_id, created_at, updated_at, archived_at, task_id, source_run_id, pending_creation, creation_change_id, type, owner_user_id, visibility, access_version, conversation_id FROM artifacts WHERE company_id=$1 AND id=$2 AND archived_at IS NULL
+`
+
+type GetArtifactIdentityParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	ID        uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetArtifactIdentity(ctx context.Context, arg GetArtifactIdentityParams) (Artifact, error) {
+	row := q.db.QueryRow(ctx, getArtifactIdentity, arg.CompanyID, arg.ID)
+	var i Artifact
+	err := row.Scan(
+		&i.ID,
+		&i.CompanyID,
+		&i.ProjectID,
+		&i.Title,
+		&i.AcceptedVersionID,
+		&i.NextNumber,
+		&i.Version,
+		&i.CreatedByUserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ArchivedAt,
+		&i.TaskID,
+		&i.SourceRunID,
+		&i.PendingCreation,
+		&i.CreationChangeID,
+		&i.Type,
+		&i.OwnerUserID,
+		&i.Visibility,
+		&i.AccessVersion,
+		&i.ConversationID,
+	)
+	return i, err
+}
+
+const getArtifactSnapshot = `-- name: GetArtifactSnapshot :one
+SELECT id, company_id, project_id, artifact_id, number, source_type, wiki_page_id, wiki_revision_id, asset_version_id, output_id, base_version_id, created_by_user_id, created_at, branch_title, title, theme, source_sequence, schema_version FROM artifact_snapshots WHERE company_id=$1 AND id=$2
+`
+
+type GetArtifactSnapshotParams struct {
+	CompanyID uuid.UUID `json:"company_id"`
+	ID        uuid.UUID `json:"id"`
+}
+
+func (q *Queries) GetArtifactSnapshot(ctx context.Context, arg GetArtifactSnapshotParams) (ArtifactSnapshot, error) {
+	row := q.db.QueryRow(ctx, getArtifactSnapshot, arg.CompanyID, arg.ID)
+	var i ArtifactSnapshot
+	err := row.Scan(
+		&i.ID,
+		&i.CompanyID,
+		&i.ProjectID,
+		&i.ArtifactID,
+		&i.Number,
+		&i.SourceType,
+		&i.WikiPageID,
+		&i.WikiRevisionID,
+		&i.AssetVersionID,
+		&i.OutputID,
+		&i.BaseVersionID,
+		&i.CreatedByUserID,
+		&i.CreatedAt,
+		&i.BranchTitle,
+		&i.Title,
+		&i.Theme,
+		&i.SourceSequence,
+		&i.SchemaVersion,
+	)
+	return i, err
+}
+
 const getCanvasDraft = `-- name: GetCanvasDraft :one
-SELECT company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, legacy_state, legacy_markdown, structure_seq, title, summary, collection_id, restored_revision_id FROM wiki_canvas_drafts WHERE company_id=$1 AND page_id=$2
+SELECT company_id, page_id, state, markdown, head_seq, created_at, updated_at, schema_version, content, structure_seq, title, summary, collection_id, restored_revision_id FROM wiki_canvas_drafts WHERE company_id=$1 AND page_id=$2
 `
 
 type GetCanvasDraftParams struct {
@@ -724,8 +810,6 @@ func (q *Queries) GetCanvasDraft(ctx context.Context, arg GetCanvasDraftParams) 
 		&i.UpdatedAt,
 		&i.SchemaVersion,
 		&i.Content,
-		&i.LegacyState,
-		&i.LegacyMarkdown,
 		&i.StructureSeq,
 		&i.Title,
 		&i.Summary,
@@ -751,8 +835,28 @@ func (q *Queries) GetCanvasDraftSequence(ctx context.Context, arg GetCanvasDraft
 	return head_seq, err
 }
 
+const getCanvasOutputArtifactType = `-- name: GetCanvasOutputArtifactType :one
+SELECT (CASE WHEN output.type='text' THEN 'file' ELSE output.type END)::text AS type
+FROM outputs output JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+WHERE output.company_id=$1::uuid AND output.id=$2::uuid
+ AND access.user_id=$3::uuid AND output.type<>'whiteboard'
+`
+
+type GetCanvasOutputArtifactTypeParams struct {
+	CompanyID   uuid.UUID `json:"company_id"`
+	ID          uuid.UUID `json:"id"`
+	ActorUserID uuid.UUID `json:"actor_user_id"`
+}
+
+func (q *Queries) GetCanvasOutputArtifactType(ctx context.Context, arg GetCanvasOutputArtifactTypeParams) (string, error) {
+	row := q.db.QueryRow(ctx, getCanvasOutputArtifactType, arg.CompanyID, arg.ID, arg.ActorUserID)
+	var type_ string
+	err := row.Scan(&type_)
+	return type_, err
+}
+
 const getCanvasOutputSource = `-- name: GetCanvasOutputSource :one
-SELECT o.title, p.id AS project_id
+SELECT o.title, p.id AS project_id, (CASE WHEN o.type='text' THEN 'file' ELSE o.type END)::text AS type
 FROM outputs o JOIN projects p ON p.company_id=o.company_id AND p.id=o.project_id
 WHERE o.company_id=$1 AND o.id=$2 AND o.task_id IS NOT NULL
 `
@@ -765,12 +869,13 @@ type GetCanvasOutputSourceParams struct {
 type GetCanvasOutputSourceRow struct {
 	Title     string    `json:"title"`
 	ProjectID uuid.UUID `json:"project_id"`
+	Type      string    `json:"type"`
 }
 
 func (q *Queries) GetCanvasOutputSource(ctx context.Context, arg GetCanvasOutputSourceParams) (GetCanvasOutputSourceRow, error) {
 	row := q.db.QueryRow(ctx, getCanvasOutputSource, arg.CompanyID, arg.ID)
 	var i GetCanvasOutputSourceRow
-	err := row.Scan(&i.Title, &i.ProjectID)
+	err := row.Scan(&i.Title, &i.ProjectID, &i.Type)
 	return i, err
 }
 
@@ -804,8 +909,8 @@ func (q *Queries) GetCanvasReceipt(ctx context.Context, arg GetCanvasReceiptPara
 
 const getCanvasRegisteredOutput = `-- name: GetCanvasRegisteredOutput :one
 SELECT v.id, v.artifact_id FROM canvas_version_sources v
-JOIN project_artifacts a ON a.company_id=v.company_id AND a.project_id=v.project_id AND a.id=v.artifact_id
-WHERE v.company_id=$1 AND v.project_id=$2 AND v.output_id=$3
+JOIN artifacts a ON a.company_id=v.company_id AND a.project_id=v.project_id AND a.id=v.artifact_id
+WHERE v.company_id=$1 AND v.project_id=$2::uuid AND (v.output_id=$3 OR EXISTS(SELECT 1 FROM delivery_snapshots link WHERE link.company_id=v.company_id AND link.snapshot_id=v.id AND link.output_id=$3))
 ORDER BY v.created_at, v.id LIMIT 1
 `
 
@@ -845,7 +950,7 @@ func (q *Queries) GetCanvasTask(ctx context.Context, arg GetCanvasTaskParams) (u
 }
 
 const getCanvasVersion = `-- name: GetCanvasVersion :one
-SELECT id, company_id, project_id, artifact_id, number, source_type, wiki_page_id, wiki_revision_id, asset_version_id, output_id, base_version_id, created_by_user_id, created_at, branch_title, access_output_id FROM canvas_version_sources WHERE company_id=$1 AND project_id=$2 AND id=$3
+SELECT id, company_id, project_id, artifact_id, number, source_type, wiki_page_id, wiki_revision_id, asset_version_id, output_id, base_version_id, created_by_user_id, created_at, branch_title, access_output_id FROM canvas_version_sources WHERE company_id=$1 AND (project_id=$2::uuid OR project_id IS NULL OR source_type='retained') AND id=$3
 `
 
 type GetCanvasVersionParams struct {
@@ -878,7 +983,7 @@ func (q *Queries) GetCanvasVersion(ctx context.Context, arg GetCanvasVersionPara
 }
 
 const getCanvasVersionBody = `-- name: GetCanvasVersionBody :one
-SELECT COALESCE(wr.body,'')::text AS body FROM canvas_version_sources v LEFT JOIN wiki_revisions wr ON wr.id=v.wiki_revision_id WHERE v.company_id=$1 AND v.project_id=$2 AND v.id=$3
+SELECT COALESCE(wr.body,'')::text AS body FROM canvas_version_sources v LEFT JOIN document_snapshots wr ON wr.id=v.wiki_revision_id WHERE v.company_id=$1 AND (v.project_id=$2::uuid OR v.project_id IS NULL) AND v.id=$3
 `
 
 type GetCanvasVersionBodyParams struct {
@@ -895,7 +1000,7 @@ func (q *Queries) GetCanvasVersionBody(ctx context.Context, arg GetCanvasVersion
 }
 
 const getCanvasWikiPage = `-- name: GetCanvasWikiPage :one
-SELECT id, company_id, collection_id, slug, title, summary, current_revision_id, status, version, created_by_user_id, created_at, updated_at, archived_at, search_vector, next_revision_number, source_output_id, project_id, theme FROM wiki_pages WHERE company_id=$1 AND id=$2 AND status='active'
+SELECT id, company_id, collection_id, slug, title, summary, current_revision_id, status, version, created_by_user_id, created_at, updated_at, archived_at, search_vector, source_output_id, project_id, theme, artifact_type FROM wiki_pages WHERE company_id=$1 AND id=$2 AND status='active'
 `
 
 type GetCanvasWikiPageParams struct {
@@ -921,16 +1026,16 @@ func (q *Queries) GetCanvasWikiPage(ctx context.Context, arg GetCanvasWikiPagePa
 		&i.UpdatedAt,
 		&i.ArchivedAt,
 		&i.SearchVector,
-		&i.NextRevisionNumber,
 		&i.SourceOutputID,
 		&i.ProjectID,
 		&i.Theme,
+		&i.ArtifactType,
 	)
 	return i, err
 }
 
 const getCanvasWikiRevision = `-- name: GetCanvasWikiRevision :one
-SELECT id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at, author_agent_id FROM wiki_revisions WHERE company_id=$1 AND page_id=$2 AND id=$3
+SELECT id, company_id, page_id, number, title, body, summary, collection_id, author_user_id, created_at, block_content, published_at, author_agent_id FROM document_snapshots WHERE company_id=$1 AND page_id=$2 AND id=$3
 `
 
 type GetCanvasWikiRevisionParams struct {
@@ -939,9 +1044,9 @@ type GetCanvasWikiRevisionParams struct {
 	ID        uuid.UUID `json:"id"`
 }
 
-func (q *Queries) GetCanvasWikiRevision(ctx context.Context, arg GetCanvasWikiRevisionParams) (WikiRevision, error) {
+func (q *Queries) GetCanvasWikiRevision(ctx context.Context, arg GetCanvasWikiRevisionParams) (DocumentSnapshot, error) {
 	row := q.db.QueryRow(ctx, getCanvasWikiRevision, arg.CompanyID, arg.PageID, arg.ID)
-	var i WikiRevision
+	var i DocumentSnapshot
 	err := row.Scan(
 		&i.ID,
 		&i.CompanyID,
@@ -1057,13 +1162,14 @@ func (q *Queries) InsertCanvasReceipt(ctx context.Context, arg InsertCanvasRecei
 
 const listCanvasAccessibleVersions = `-- name: ListCanvasAccessibleVersions :many
 SELECT v.id,v.artifact_id,a.accepted_version_id FROM canvas_version_sources v
-JOIN project_artifacts a ON a.id=v.artifact_id AND a.archived_at IS NULL
-LEFT JOIN wiki_revisions w ON w.id=v.wiki_revision_id
+JOIN artifacts a ON a.id=v.artifact_id AND a.archived_at IS NULL
+LEFT JOIN document_snapshots w ON w.id=v.wiki_revision_id
 LEFT JOIN wiki_pages page ON page.id=v.wiki_page_id
 LEFT JOIN asset_versions av ON av.id=v.asset_version_id
-WHERE v.company_id=$1 AND v.project_id=$2
-AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$3))
-AND ((w.id IS NOT NULL) OR (av.id IS NOT NULL) OR
+WHERE v.company_id=$1 AND (v.project_id=$2::uuid OR (v.source_type='retained' AND EXISTS(SELECT 1 FROM canvas_items placement WHERE placement.company_id=v.company_id AND placement.project_id=$2::uuid AND placement.artifact_id=v.artifact_id AND placement.deleted_at IS NULL)) OR (page.artifact_type='wiki' AND w.published_at IS NOT NULL))
+AND (v.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=v.company_id AND authority.artifact_id=v.artifact_id AND authority.user_id=$3::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=v.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$3))
+AND (v.source_type<>'retained' OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$3))
+AND ((v.source_type='retained') OR (w.id IS NOT NULL) OR (av.id IS NOT NULL) OR
  EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$3))
 `
 
@@ -1129,15 +1235,15 @@ func (q *Queries) ListCanvasArtifactItems(ctx context.Context, arg ListCanvasArt
 }
 
 const listCanvasArtifacts = `-- name: ListCanvasArtifacts :many
-SELECT jsonb_build_object('id',a.id,'pageId',(SELECT page.id FROM wiki_pages page WHERE page.id=v.wiki_page_id AND page.project_id=a.project_id AND page.source_output_id IS NULL),'title',a.title,'revision',a.version,'acceptedVersionId',CASE WHEN EXISTS(SELECT 1 FROM canvas_version_sources p LEFT JOIN output_access oa ON oa.output_id=p.access_output_id AND oa.user_id=$1::uuid WHERE p.id=a.accepted_version_id AND (p.access_output_id IS NULL OR oa.output_id IS NOT NULL)) THEN a.accepted_version_id ELSE NULL END,'latestVersionId',v.id,'latestVersion',jsonb_build_object('id',v.id,'artifactId',v.artifact_id,'number',v.number,'sourceType',v.source_type,'branchTitle',v.branch_title,'wikiPageId',v.wiki_page_id,'wikiRevisionId',v.wiki_revision_id,'assetVersionId',v.asset_version_id,'outputId',v.output_id,'sourceOutputId',v.access_output_id,'outputItemId',(SELECT d.output_item_id FROM output_documents d WHERE d.page_id=v.wiki_page_id),'runId',COALESCE(o.run_id,(SELECT origin.source_run_id FROM project_artifacts origin WHERE origin.id=v.artifact_id)),'attachmentId',av.attachment_id,'filename',COALESCE(av.filename,primary_file.filename),'contentType',CASE WHEN v.source_type='wiki' THEN 'text/markdown' ELSE COALESCE(av.content_type,primary_file.content_type) END,'sizeBytes',COALESCE(av.size_bytes,primary_file.size_bytes),'excerpt',left(COALESCE(wr.body,o.summary,''),1600),'createdAt',v.created_at,'baseVersionId',v.base_version_id,'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open')),'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open'),'updatedAt',a.updated_at,'taskId',COALESCE(a.task_id,origin.task_id),'creatorName',COALESCE(creator.display_name,'Former teammate'),
+SELECT jsonb_build_object('id',a.id,'pageId',(SELECT page.id FROM wiki_pages page WHERE page.id=v.wiki_page_id AND page.project_id=a.project_id AND page.source_output_id IS NULL),'title',a.title,'revision',a.version,'acceptedVersionId',CASE WHEN EXISTS(SELECT 1 FROM canvas_version_sources p LEFT JOIN output_access oa ON oa.output_id=p.access_output_id AND oa.user_id=$1::uuid WHERE p.id=a.accepted_version_id AND (p.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=p.company_id AND authority.artifact_id=p.artifact_id AND authority.user_id=$1::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=p.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (p.access_output_id IS NULL OR oa.output_id IS NOT NULL)) THEN a.accepted_version_id ELSE NULL END,'latestVersionId',v.id,'latestVersion',jsonb_build_object('id',v.id,'artifactId',v.artifact_id,'number',v.number,'sourceType',v.source_type,'branchTitle',v.branch_title,'wikiPageId',v.wiki_page_id,'wikiRevisionId',v.wiki_revision_id,'assetVersionId',v.asset_version_id,'outputId',v.output_id,'sourceOutputId',v.access_output_id,'outputItemId',(SELECT d.output_item_id FROM output_documents d WHERE d.page_id=v.wiki_page_id),'runId',COALESCE(o.run_id,(SELECT origin.source_run_id FROM artifacts origin WHERE origin.id=v.artifact_id)),'attachmentId',av.attachment_id,'filename',COALESCE(av.filename,primary_file.filename),'contentType',CASE WHEN v.source_type='wiki' THEN 'text/markdown' ELSE COALESCE(av.content_type,primary_file.content_type) END,'sizeBytes',COALESCE(av.size_bytes,primary_file.size_bytes),'excerpt',left(COALESCE(wr.body,(SELECT summary FROM retained_snapshots saved WHERE saved.id=v.id),o.summary,''),1600),'createdAt',v.created_at,'baseVersionId',v.base_version_id,'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open')),'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open'),'updatedAt',a.updated_at,'taskId',COALESCE(a.task_id,origin.task_id),'creatorName',COALESCE(creator.display_name,'Former teammate'),
 'resultStatus',(SELECT d.status FROM deliverables d WHERE d.output_id=v.access_output_id),
 'reviewState',CASE WHEN a.accepted_version_id=v.id THEN 'accepted' WHEN decision.action IN ('request_changes','reject') THEN 'changes_requested' ELSE 'needs_review' END) AS payload
-FROM project_artifacts a JOIN LATERAL(SELECT pv.id, pv.company_id, pv.project_id, pv.artifact_id, pv.number, pv.source_type, pv.wiki_page_id, pv.wiki_revision_id, pv.asset_version_id, pv.output_id, pv.base_version_id, pv.created_by_user_id, pv.created_at, pv.branch_title, pv.access_output_id FROM canvas_version_sources pv
+FROM artifacts a JOIN LATERAL(SELECT pv.id, pv.company_id, pv.project_id, pv.artifact_id, pv.number, pv.source_type, pv.wiki_page_id, pv.wiki_revision_id, pv.asset_version_id, pv.output_id, pv.base_version_id, pv.created_by_user_id, pv.created_at, pv.branch_title, pv.access_output_id FROM canvas_version_sources pv
 LEFT JOIN output_access access ON access.output_id=pv.access_output_id AND access.user_id=$1::uuid
-WHERE pv.artifact_id=a.id AND (pv.access_output_id IS NULL OR access.output_id IS NOT NULL)
-AND ((pv.source_type='wiki' AND pv.wiki_revision_id IS NOT NULL) OR (pv.source_type='file' AND pv.asset_version_id IS NOT NULL) OR (pv.source_type='output' AND pv.output_id IS NOT NULL))
+WHERE pv.artifact_id=a.id AND (a.type<>'wiki' OR EXISTS(SELECT 1 FROM document_snapshots published WHERE published.id=pv.wiki_revision_id AND published.published_at IS NOT NULL)) AND (pv.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=pv.company_id AND authority.artifact_id=pv.artifact_id AND authority.user_id=$1::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=pv.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (pv.access_output_id IS NULL OR access.output_id IS NOT NULL)
+AND ((pv.source_type='wiki' AND pv.wiki_revision_id IS NOT NULL) OR (pv.source_type='file' AND pv.asset_version_id IS NOT NULL) OR (pv.source_type='output' AND pv.output_id IS NOT NULL) OR pv.source_type='retained')
 ORDER BY pv.number DESC LIMIT 1) v ON true
-LEFT JOIN wiki_revisions wr ON wr.id=v.wiki_revision_id
+LEFT JOIN document_snapshots wr ON wr.id=v.wiki_revision_id
 LEFT JOIN asset_versions av ON av.id=v.asset_version_id
 LEFT JOIN outputs o ON o.id=v.output_id
 LEFT JOIN LATERAL (
@@ -1157,9 +1263,10 @@ LEFT JOIN LATERAL (
  SELECT d.action FROM artifact_review_decisions d WHERE d.version_id=v.id
  ORDER BY d.created_at DESC,d.id DESC LIMIT 1
 ) decision ON true
-WHERE a.company_id=$2::uuid AND a.project_id=$3::uuid AND a.archived_at IS NULL AND NOT a.pending_creation
-AND ($4::boolean OR a.id=ANY($5::uuid[])) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$1::uuid))
-AND ((v.wiki_revision_id IS NOT NULL AND wr.id IS NOT NULL) OR
+WHERE a.company_id=$2::uuid AND (a.project_id=$3::uuid OR EXISTS(SELECT 1 FROM canvas_items placed WHERE placed.artifact_id=a.id AND placed.project_id=$3::uuid AND placed.deleted_at IS NULL)) AND a.archived_at IS NULL AND NOT a.pending_creation
+AND ($4::boolean OR a.id=ANY($5::uuid[])) AND (v.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=v.company_id AND authority.artifact_id=v.artifact_id AND authority.user_id=$1::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=v.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$1::uuid))
+AND (v.source_type<>'retained' OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$1::uuid))
+AND ((v.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$1::uuid)) OR (v.wiki_revision_id IS NOT NULL AND wr.id IS NOT NULL) OR
 (v.asset_version_id IS NOT NULL AND av.id IS NOT NULL) OR
 (v.output_id IS NOT NULL AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$1::uuid))) ORDER BY a.updated_at DESC,a.id
 `
@@ -1336,7 +1443,8 @@ func (q *Queries) ListCanvasItems(ctx context.Context, arg ListCanvasItemsParams
 }
 
 const listCanvasSceneVersions = `-- name: ListCanvasSceneVersions :many
-SELECT jsonb_build_object('id',v.id,'artifactId',v.artifact_id,'number',v.number,'sourceType',v.source_type,'branchTitle',v.branch_title,'wikiPageId',v.wiki_page_id,'wikiRevisionId',v.wiki_revision_id,'assetVersionId',v.asset_version_id,'outputId',v.output_id,'sourceOutputId',v.access_output_id,'outputItemId',(SELECT d.output_item_id FROM output_documents d WHERE d.page_id=v.wiki_page_id),'runId',COALESCE(o.run_id,(SELECT origin.source_run_id FROM project_artifacts origin WHERE origin.id=v.artifact_id)),'attachmentId',av.attachment_id,'filename',COALESCE(av.filename,primary_file.filename),'contentType',CASE WHEN v.source_type='wiki' THEN 'text/markdown' ELSE COALESCE(av.content_type,primary_file.content_type) END,'sizeBytes',COALESCE(av.size_bytes,primary_file.size_bytes),'excerpt',left(COALESCE(wr.body,o.summary,''),1600),'createdAt',v.created_at,'baseVersionId',v.base_version_id,'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open')) AS payload FROM canvas_version_sources v LEFT JOIN wiki_revisions wr ON wr.id=v.wiki_revision_id
+SELECT jsonb_build_object('id',v.id,'artifactId',v.artifact_id,'number',v.number,'sourceType',v.source_type,'branchTitle',v.branch_title,'wikiPageId',v.wiki_page_id,'wikiRevisionId',v.wiki_revision_id,'assetVersionId',v.asset_version_id,'outputId',v.output_id,'sourceOutputId',v.access_output_id,'outputItemId',(SELECT d.output_item_id FROM output_documents d WHERE d.page_id=v.wiki_page_id),'runId',COALESCE(o.run_id,(SELECT origin.source_run_id FROM artifacts origin WHERE origin.id=v.artifact_id)),'attachmentId',av.attachment_id,'filename',COALESCE(av.filename,primary_file.filename),'contentType',CASE WHEN v.source_type='wiki' THEN 'text/markdown' ELSE COALESCE(av.content_type,primary_file.content_type) END,'sizeBytes',COALESCE(av.size_bytes,primary_file.size_bytes),'excerpt',left(COALESCE(wr.body,(SELECT summary FROM retained_snapshots saved WHERE saved.id=v.id),o.summary,''),1600),'createdAt',v.created_at,'baseVersionId',v.base_version_id,'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open')) AS payload FROM canvas_version_sources v LEFT JOIN document_snapshots wr ON wr.id=v.wiki_revision_id
+LEFT JOIN wiki_pages page ON page.id=v.wiki_page_id
 LEFT JOIN asset_versions av ON av.id=v.asset_version_id
 LEFT JOIN outputs o ON o.id=v.output_id
 LEFT JOIN LATERAL (
@@ -1344,8 +1452,9 @@ LEFT JOIN LATERAL (
  JOIN asset_versions f ON f.id=oi.asset_version_id WHERE oi.output_id=o.id
  ORDER BY (oi.role='primary') DESC,oi.ordinal LIMIT 1
 ) primary_file ON true
-WHERE v.company_id=$1::uuid AND v.project_id=$2::uuid AND v.id=ANY($3::uuid[]) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$4::uuid))
-AND ((v.wiki_revision_id IS NOT NULL AND wr.id IS NOT NULL) OR
+WHERE v.company_id=$1::uuid AND (v.project_id=$2::uuid OR ((v.project_id IS NULL OR v.source_type='retained') AND EXISTS(SELECT 1 FROM canvas_items placement WHERE placement.company_id=v.company_id AND placement.project_id=$2::uuid AND placement.artifact_id=v.artifact_id AND placement.deleted_at IS NULL))) AND v.id=ANY($3::uuid[]) AND (v.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=v.company_id AND authority.artifact_id=v.artifact_id AND authority.user_id=$4::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=v.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$4::uuid))
+AND (v.source_type<>'retained' OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$4::uuid))
+AND ((v.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$4::uuid)) OR (v.wiki_revision_id IS NOT NULL AND wr.id IS NOT NULL AND (page.artifact_type<>'wiki' OR wr.published_at IS NOT NULL)) OR
 (v.asset_version_id IS NOT NULL AND av.id IS NOT NULL) OR
 (v.output_id IS NOT NULL AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$4::uuid))) ORDER BY v.number DESC
 `
@@ -1387,21 +1496,21 @@ WITH version_events AS (
  SELECT v.id,v.artifact_id,v.id AS version_id,v.number,a.title,
  CASE WHEN v.number=1 THEN 'created' ELSE 'version' END AS action,
  ''::text AS feedback,v.created_by_user_id AS actor_id,v.created_at
- FROM canvas_version_sources v JOIN project_artifacts a ON a.id=v.artifact_id AND a.archived_at IS NULL
+ FROM canvas_version_sources v JOIN artifacts a ON a.id=v.artifact_id AND a.archived_at IS NULL
  WHERE v.company_id=$1::uuid AND v.project_id=$2::uuid
- AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$3::uuid))
+ AND (v.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=v.company_id AND authority.artifact_id=v.artifact_id AND authority.user_id=$3::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=v.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$3::uuid))
 AND ((v.source_type='wiki' AND v.wiki_revision_id IS NOT NULL) OR (v.source_type='file' AND v.asset_version_id IS NOT NULL)
- OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$3::uuid)))
+ OR (v.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$3::uuid)) OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$3::uuid)))
  AND ($4::boolean OR (v.created_at,v.id)<($5::timestamptz,$6::uuid))
  ORDER BY v.created_at DESC,v.id DESC LIMIT 51
 ), decision_events AS (
  SELECT d.id,v.artifact_id,v.id AS version_id,v.number,a.title,d.action,d.feedback,d.actor_user_id AS actor_id,d.created_at
  FROM artifact_review_decisions d JOIN canvas_version_sources v ON v.id=d.version_id
- JOIN project_artifacts a ON a.id=v.artifact_id AND a.archived_at IS NULL
+ JOIN artifacts a ON a.id=v.artifact_id AND a.archived_at IS NULL
  WHERE d.company_id=$1::uuid AND d.project_id=$2::uuid
- AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$3::uuid))
+ AND (v.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=v.company_id AND authority.artifact_id=v.artifact_id AND authority.user_id=$3::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=v.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$3::uuid))
 AND ((v.source_type='wiki' AND v.wiki_revision_id IS NOT NULL) OR (v.source_type='file' AND v.asset_version_id IS NOT NULL)
- OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$3::uuid)))
+ OR (v.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$3::uuid)) OR (v.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$3::uuid)))
  AND ($4::boolean OR (d.created_at,d.id)<($5::timestamptz,$6::uuid))
  ORDER BY d.created_at DESC,d.id DESC LIMIT 51
 ), entries AS (SELECT id, artifact_id, version_id, number, title, action, feedback, actor_id, created_at FROM version_events UNION ALL SELECT id, artifact_id, version_id, number, title, action, feedback, actor_id, created_at FROM decision_events)
@@ -1448,7 +1557,8 @@ func (q *Queries) ListCanvasTimeline(ctx context.Context, arg ListCanvasTimeline
 }
 
 const listCanvasVersions = `-- name: ListCanvasVersions :many
-SELECT jsonb_build_object('id',v.id,'artifactId',v.artifact_id,'number',v.number,'sourceType',v.source_type,'branchTitle',v.branch_title,'wikiPageId',v.wiki_page_id,'wikiRevisionId',v.wiki_revision_id,'assetVersionId',v.asset_version_id,'outputId',v.output_id,'sourceOutputId',v.access_output_id,'outputItemId',(SELECT d.output_item_id FROM output_documents d WHERE d.page_id=v.wiki_page_id),'runId',COALESCE(o.run_id,(SELECT origin.source_run_id FROM project_artifacts origin WHERE origin.id=v.artifact_id)),'attachmentId',av.attachment_id,'filename',COALESCE(av.filename,primary_file.filename),'contentType',CASE WHEN v.source_type='wiki' THEN 'text/markdown' ELSE COALESCE(av.content_type,primary_file.content_type) END,'sizeBytes',COALESCE(av.size_bytes,primary_file.size_bytes),'excerpt',left(COALESCE(wr.body,o.summary,''),1600),'createdAt',v.created_at,'baseVersionId',v.base_version_id,'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open')) AS payload FROM canvas_version_sources v LEFT JOIN wiki_revisions wr ON wr.id=v.wiki_revision_id
+SELECT jsonb_build_object('id',v.id,'artifactId',v.artifact_id,'number',v.number,'sourceType',v.source_type,'branchTitle',v.branch_title,'wikiPageId',v.wiki_page_id,'wikiRevisionId',v.wiki_revision_id,'assetVersionId',v.asset_version_id,'outputId',v.output_id,'sourceOutputId',v.access_output_id,'outputItemId',(SELECT d.output_item_id FROM output_documents d WHERE d.page_id=v.wiki_page_id),'runId',COALESCE(o.run_id,(SELECT origin.source_run_id FROM artifacts origin WHERE origin.id=v.artifact_id)),'attachmentId',av.attachment_id,'filename',COALESCE(av.filename,primary_file.filename),'contentType',CASE WHEN v.source_type='wiki' THEN 'text/markdown' ELSE COALESCE(av.content_type,primary_file.content_type) END,'sizeBytes',COALESCE(av.size_bytes,primary_file.size_bytes),'excerpt',left(COALESCE(wr.body,(SELECT summary FROM retained_snapshots saved WHERE saved.id=v.id),o.summary,''),1600),'createdAt',v.created_at,'baseVersionId',v.base_version_id,'openComments',(SELECT count(*) FROM review_threads t WHERE t.artifact_version_id=v.id AND t.page_id IS NULL AND t.status='open')) AS payload FROM canvas_version_sources v LEFT JOIN document_snapshots wr ON wr.id=v.wiki_revision_id
+LEFT JOIN wiki_pages page ON page.id=v.wiki_page_id
 LEFT JOIN asset_versions av ON av.id=v.asset_version_id
 LEFT JOIN outputs o ON o.id=v.output_id
 LEFT JOIN LATERAL (
@@ -1456,8 +1566,9 @@ LEFT JOIN LATERAL (
  JOIN asset_versions f ON f.id=oi.asset_version_id WHERE oi.output_id=o.id
  ORDER BY (oi.role='primary') DESC,oi.ordinal LIMIT 1
 ) primary_file ON true
-WHERE v.company_id=$1::uuid AND v.project_id=$2::uuid AND v.artifact_id=$3::uuid AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$4::uuid))
-AND ((v.wiki_revision_id IS NOT NULL AND wr.id IS NOT NULL) OR
+WHERE v.company_id=$1::uuid AND (v.project_id=$2::uuid OR ((v.project_id IS NULL OR v.source_type='retained') AND EXISTS(SELECT 1 FROM canvas_items placement WHERE placement.company_id=v.company_id AND placement.project_id=$2::uuid AND placement.artifact_id=v.artifact_id AND placement.deleted_at IS NULL))) AND v.artifact_id=$3::uuid AND (v.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=v.company_id AND authority.artifact_id=v.artifact_id AND authority.user_id=$4::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=v.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (v.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=v.access_output_id AND acl.user_id=$4::uuid))
+AND (v.source_type<>'retained' OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$4::uuid))
+AND ((v.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=v.company_id AND access.artifact_id=v.artifact_id AND access.user_id=$4::uuid)) OR (v.wiki_revision_id IS NOT NULL AND wr.id IS NOT NULL AND (page.artifact_type<>'wiki' OR wr.published_at IS NOT NULL)) OR
 (v.asset_version_id IS NOT NULL AND av.id IS NOT NULL) OR
 (v.output_id IS NOT NULL AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=v.output_id AND oa.user_id=$4::uuid))) ORDER BY v.number DESC LIMIT 200
 `
@@ -1495,15 +1606,16 @@ func (q *Queries) ListCanvasVersions(ctx context.Context, arg ListCanvasVersions
 }
 
 const listOutputCanvasDestinations = `-- name: ListOutputCanvasDestinations :many
-SELECT DISTINCT ON (v.output_id) v.output_id, v.project_id, v.artifact_id, v.id
+SELECT DISTINCT ON (COALESCE(v.output_id,link.output_id)) COALESCE(v.output_id,link.output_id), v.project_id, v.artifact_id, v.id
 FROM canvas_version_sources v
-JOIN project_artifacts a ON a.company_id=v.company_id AND a.project_id=v.project_id AND a.id=v.artifact_id AND a.archived_at IS NULL
-JOIN outputs o ON o.company_id=v.company_id AND o.id=v.output_id
+LEFT JOIN delivery_snapshots link ON link.company_id=v.company_id AND link.snapshot_id=v.id
+JOIN artifacts a ON a.company_id=v.company_id AND a.project_id=v.project_id AND a.id=v.artifact_id AND a.archived_at IS NULL
+JOIN outputs o ON o.company_id=v.company_id AND o.id=COALESCE(v.output_id,link.output_id)
 LEFT JOIN tasks t ON t.company_id=o.company_id AND t.id=o.task_id
 WHERE v.company_id=$1::uuid
-AND v.output_id=ANY($2::uuid[])
+AND COALESCE(v.output_id,link.output_id)=ANY($2::uuid[])
 AND EXISTS(SELECT 1 FROM project_access access WHERE access.company_id=v.company_id AND access.project_id=v.project_id AND access.user_id=$3::uuid)
-ORDER BY v.output_id, (v.project_id=t.project_id) DESC NULLS LAST, v.created_at, v.id
+ORDER BY COALESCE(v.output_id,link.output_id), (v.project_id=t.project_id) DESC NULLS LAST, v.created_at, v.id
 `
 
 type ListOutputCanvasDestinationsParams struct {
@@ -1513,8 +1625,8 @@ type ListOutputCanvasDestinationsParams struct {
 }
 
 type ListOutputCanvasDestinationsRow struct {
-	OutputID   uuid.NullUUID `json:"output_id"`
-	ProjectID  uuid.UUID     `json:"project_id"`
+	OutputID   uuid.UUID     `json:"output_id"`
+	ProjectID  uuid.NullUUID `json:"project_id"`
 	ArtifactID uuid.UUID     `json:"artifact_id"`
 	ID         uuid.UUID     `json:"id"`
 }
@@ -1618,7 +1730,7 @@ func (q *Queries) ListReviewThreads(ctx context.Context, arg ListReviewThreadsPa
 }
 
 const lockCanvasArtifact = `-- name: LockCanvasArtifact :one
-SELECT id, company_id, project_id, title, accepted_version_id, next_number, version, created_by_user_id, created_at, updated_at, archived_at, task_id, source_run_id, pending_creation, creation_change_id FROM project_artifacts WHERE company_id=$1 AND project_id=$2 AND id=$3 AND archived_at IS NULL FOR UPDATE
+SELECT id, company_id, project_id, title, accepted_version_id, next_number, version, created_by_user_id, created_at, updated_at, archived_at, task_id, source_run_id, pending_creation, creation_change_id, type, owner_user_id, visibility, access_version, conversation_id FROM artifacts WHERE company_id=$1 AND project_id IS NOT DISTINCT FROM NULLIF($2::uuid,'00000000-0000-0000-0000-000000000000'::uuid) AND id=$3 AND archived_at IS NULL FOR UPDATE
 `
 
 type LockCanvasArtifactParams struct {
@@ -1627,9 +1739,9 @@ type LockCanvasArtifactParams struct {
 	ID        uuid.UUID `json:"id"`
 }
 
-func (q *Queries) LockCanvasArtifact(ctx context.Context, arg LockCanvasArtifactParams) (ProjectArtifact, error) {
+func (q *Queries) LockCanvasArtifact(ctx context.Context, arg LockCanvasArtifactParams) (Artifact, error) {
 	row := q.db.QueryRow(ctx, lockCanvasArtifact, arg.CompanyID, arg.ProjectID, arg.ID)
-	var i ProjectArtifact
+	var i Artifact
 	err := row.Scan(
 		&i.ID,
 		&i.CompanyID,
@@ -1646,6 +1758,11 @@ func (q *Queries) LockCanvasArtifact(ctx context.Context, arg LockCanvasArtifact
 		&i.SourceRunID,
 		&i.PendingCreation,
 		&i.CreationChangeID,
+		&i.Type,
+		&i.OwnerUserID,
+		&i.Visibility,
+		&i.AccessVersion,
+		&i.ConversationID,
 	)
 	return i, err
 }
@@ -1762,8 +1879,8 @@ func (q *Queries) LockCanvasOutput(ctx context.Context, arg LockCanvasOutputPara
 
 const lockCanvasPlacementOutputs = `-- name: LockCanvasPlacementOutputs :many
 SELECT o.id FROM outputs o WHERE o.company_id=$1 AND EXISTS(
- SELECT 1 FROM canvas_version_sources v JOIN project_artifacts a ON a.id=v.artifact_id
- WHERE v.access_output_id=o.id AND a.project_id=$2 AND a.archived_at IS NULL
+ SELECT 1 FROM canvas_version_sources v JOIN artifacts a ON a.id=v.artifact_id
+ WHERE v.access_output_id=o.id AND a.project_id=$2::uuid AND a.archived_at IS NULL
 ) ORDER BY o.id FOR SHARE
 `
 
@@ -1908,7 +2025,10 @@ SELECT $1::uuid,$2::uuid,$3::uuid,
  'artifact',$4::uuid,$5::uuid,
  CASE WHEN p.fits THEN p.x ELSE 40 END,CASE WHEN p.fits THEN p.y ELSE b.bottom END,
  320,280,$6::uuid
-FROM position p CROSS JOIN bounds b WHERE b.total<2000 RETURNING id
+FROM position p CROSS JOIN bounds b WHERE b.total<2000
+AND NOT EXISTS(SELECT 1 FROM canvas_items existing WHERE existing.company_id=$1::uuid
+ AND existing.project_id=$2::uuid AND existing.artifact_id=$4::uuid)
+RETURNING id
 `
 
 type PlaceCanvasOutputArtifactParams struct {
@@ -1952,21 +2072,21 @@ func (q *Queries) PlaceCanvasOutputArtifact(ctx context.Context, arg PlaceCanvas
 const placeUnplacedCanvasArtifacts = `-- name: PlaceUnplacedCanvasArtifacts :many
 WITH candidates AS (
  SELECT a.id,v.id AS version_id,row_number() OVER(ORDER BY a.created_at,a.id)-1 AS ordinal
- FROM project_artifacts a
+ FROM artifacts a
  JOIN LATERAL (
   SELECT pv.id FROM canvas_version_sources pv WHERE pv.artifact_id=a.id
-  AND (pv.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=pv.access_output_id AND acl.user_id=$4::uuid))
+  AND (pv.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=pv.company_id AND authority.artifact_id=pv.artifact_id AND authority.user_id=$4::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=pv.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (pv.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=pv.access_output_id AND acl.user_id=$4::uuid))
 AND ((pv.source_type='wiki' AND pv.wiki_revision_id IS NOT NULL) OR (pv.source_type='file' AND pv.asset_version_id IS NOT NULL)
-  OR (pv.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=pv.output_id AND oa.user_id=$4::uuid)))
+  OR (pv.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=pv.company_id AND access.artifact_id=pv.artifact_id AND access.user_id=$4::uuid)) OR (pv.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=pv.output_id AND oa.user_id=$4::uuid)))
   ORDER BY pv.number DESC LIMIT 1
  ) v ON true
  WHERE a.company_id=$1::uuid AND a.project_id=$2::uuid AND a.archived_at IS NULL
  AND NOT EXISTS(
-  SELECT 1 FROM canvas_items i JOIN canvas_version_sources placed ON placed.id=CASE WHEN i.version_policy='accepted' THEN a.accepted_version_id ELSE i.pinned_version_id END
+  SELECT 1 FROM canvas_items i JOIN canvas_version_sources placed ON placed.id=i.pinned_version_id
   WHERE i.artifact_id=a.id AND i.deleted_at IS NULL
-  AND (placed.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=placed.access_output_id AND acl.user_id=$4::uuid))
+  AND (placed.source_type<>'wiki' OR (EXISTS(SELECT 1 FROM artifact_access authority WHERE authority.company_id=placed.company_id AND authority.artifact_id=placed.artifact_id AND authority.user_id=$4::uuid) AND EXISTS(SELECT 1 FROM document_snapshots snapshot JOIN wiki_pages document ON document.id=snapshot.page_id WHERE snapshot.id=placed.wiki_revision_id AND (document.artifact_type<>'wiki' OR snapshot.published_at IS NOT NULL)))) AND (placed.access_output_id IS NULL OR EXISTS(SELECT 1 FROM output_access acl WHERE acl.output_id=placed.access_output_id AND acl.user_id=$4::uuid))
 AND ((placed.source_type='wiki' AND placed.wiki_revision_id IS NOT NULL) OR (placed.source_type='file' AND placed.asset_version_id IS NOT NULL)
-  OR (placed.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=placed.output_id AND oa.user_id=$4::uuid)))
+  OR (placed.source_type='retained' AND EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=placed.company_id AND access.artifact_id=placed.artifact_id AND access.user_id=$4::uuid)) OR (placed.source_type='output' AND EXISTS(SELECT 1 FROM output_access oa WHERE oa.output_id=placed.output_id AND oa.user_id=$4::uuid)))
  )
 ), bounds AS (
  SELECT COALESCE(max(y+height)+80,40)::double precision AS bottom FROM canvas_items WHERE project_id=$2::uuid AND deleted_at IS NULL
@@ -2010,7 +2130,13 @@ func (q *Queries) PlaceUnplacedCanvasArtifacts(ctx context.Context, arg PlaceUnp
 }
 
 const recordCanvasCheckpoint = `-- name: RecordCanvasCheckpoint :exec
-INSERT INTO wiki_canvas_checkpoints(company_id,page_id,revision_id,through_seq) VALUES ($1,$2,$3,$4)
+WITH snapshot AS (
+ UPDATE artifact_snapshots SET source_sequence=$4::bigint,
+ schema_version=(SELECT schema_version FROM wiki_canvas_drafts WHERE page_id=$2::uuid)
+ WHERE company_id=$1::uuid AND id=$3::uuid
+)
+INSERT INTO wiki_canvas_checkpoints(company_id,page_id,revision_id,through_seq)
+VALUES($1::uuid,$2::uuid,$3::uuid,$4::bigint)
 `
 
 type RecordCanvasCheckpointParams struct {
@@ -2104,7 +2230,7 @@ func (q *Queries) RegisterCanvasFileAsset(ctx context.Context, arg RegisterCanva
 }
 
 const renameCanvasArtifact = `-- name: RenameCanvasArtifact :exec
-UPDATE project_artifacts SET title=$2,version=version+1,updated_at=clock_timestamp() WHERE id=$1
+UPDATE artifacts SET title=$2,version=version+1,updated_at=clock_timestamp() WHERE id=$1
 `
 
 type RenameCanvasArtifactParams struct {
@@ -2118,7 +2244,7 @@ func (q *Queries) RenameCanvasArtifact(ctx context.Context, arg RenameCanvasArti
 }
 
 const setCanvasAccepted = `-- name: SetCanvasAccepted :exec
-UPDATE project_artifacts SET accepted_version_id=$2,version=version+1,updated_at=clock_timestamp() WHERE id=$1
+UPDATE artifacts SET accepted_version_id=$2,version=version+1,updated_at=clock_timestamp() WHERE id=$1
 `
 
 type SetCanvasAcceptedParams struct {

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -128,11 +130,11 @@ func (s *DefaultDeliverableService) ClaimUnownedArtifact(
 	if err != nil {
 		return ArtifactDetail{}, err
 	}
-	s.bus.Publish(ctx, TopicArtifact, events.Event{
-		EntityType: TopicArtifact, Name: EventArtifactAccessChanged,
+	s.bus.Publish(ctx, artifactdomain.Topic, events.Event{
+		EntityType: artifactdomain.Topic, Name: artifactdomain.EventAccessChanged,
 		CompanyID: principal.CompanyID, CreatedAt: time.Now().UTC(),
 		Actor: events.SystemActor(),
-		Payload: ArtifactAccessChanged{
+		Payload: artifactdomain.AccessChanged{
 			RecipientUserIDs: []uuid.UUID{principal.UserID},
 		},
 	})
@@ -407,11 +409,11 @@ func (s *DefaultDeliverableService) ChangeArtifactGrant(
 		return ArtifactAccess{}, err
 	}
 	if changed {
-		s.bus.Publish(ctx, TopicArtifact, events.Event{
-			EntityType: TopicArtifact, Name: EventArtifactAccessChanged,
+		s.bus.Publish(ctx, artifactdomain.Topic, events.Event{
+			EntityType: artifactdomain.Topic, Name: artifactdomain.EventAccessChanged,
 			CompanyID: principal.CompanyID, CreatedAt: time.Now().UTC(),
 			Actor: events.SystemActor(),
-			Payload: ArtifactAccessChanged{
+			Payload: artifactdomain.AccessChanged{
 				RecipientUserIDs: []uuid.UUID{ownerID, principal.UserID, recipientID},
 			},
 		})

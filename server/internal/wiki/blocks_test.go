@@ -3,12 +3,33 @@ package wiki
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"
 )
+
+func TestBlockBodyLimitCountsCharacters(t *testing.T) {
+	t.Parallel()
+	for _, size := range []int{262144, 262145} {
+		root := BlocksFromMarkdown(strings.Repeat("界", size))
+		AssignBlockIDs(&root, uuid.NewString)
+		state, err := EncodeBlocks(root)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, _, err = MergeBlocks(state, nil)
+		if size == 262144 && err != nil {
+			t.Fatalf("body at character limit: %v", err)
+		}
+		if size > 262144 && !errors.Is(err, ErrPageBodyTooLarge) {
+			t.Fatalf("body past character limit: %v", err)
+		}
+	}
+}
 
 func TestBlockMarkdownDecodesTextEscapes(t *testing.T) {
 	t.Parallel()
@@ -287,5 +308,113 @@ func TestBlockMarkdownTableImages(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestReactiveBlocksMergeYjsUpdates(t *testing.T) {
+	t.Parallel()
+	raw, err := os.ReadFile("testdata/intelligent-yjs.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var fixture struct {
+		YjsVersion             string `json:"yjsVersion"`
+		Original, Expected     BlockNode
+		Base, UpdateA, UpdateB []byte
+	}
+	if err := json.Unmarshal(raw, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	if fixture.YjsVersion == "" {
+		t.Fatal("fixture has no Yjs provenance")
+	}
+	seen := map[string]bool{}
+	var visit func(BlockNode)
+	visit = func(node BlockNode) {
+		seen[node.Type] = true
+		for _, child := range node.Content {
+			visit(child)
+		}
+	}
+	visit(fixture.Original)
+	for _, component := range UICatalog() {
+		if !seen[component.NodeType] {
+			t.Fatalf("fixture omits %s", component.NodeType)
+		}
+	}
+	_, original, _, err := MergeBlocks(fixture.Base, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if BlockHash(original) != BlockHash(fixture.Original) {
+		t.Fatal("Yjs state changed reactive properties, text, marks or identities")
+	}
+	for _, tt := range []struct {
+		name          string
+		first, second []byte
+	}{
+		{"text then metric", fixture.UpdateA, fixture.UpdateB},
+		{"metric then text", fixture.UpdateB, fixture.UpdateA},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			state, _, _, err := MergeBlocks(fixture.Base, tt.first)
+			if err != nil {
+				t.Fatal(err)
+			}
+			state, got, _, err := MergeBlocks(state, tt.second)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if BlockHash(got) != BlockHash(fixture.Expected) {
+				t.Fatalf("merged content = %+v, want fixture expected content", got)
+			}
+			_, replayed, _, err := MergeBlocks(state, tt.first)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if BlockHash(replayed) != BlockHash(fixture.Expected) {
+				t.Fatal("retry changed content")
+			}
+		})
+	}
+}
+
+func TestAssignBlockIDsRemapsInternalLinks(t *testing.T) {
+	t.Parallel()
+	root := BlockNode{Type: "doc", Content: []BlockNode{
+		{Type: "paragraph", Attrs: map[string]any{"blockId": "first"}, Content: []BlockNode{
+			{
+				Type:  "text",
+				Text:  "local",
+				Marks: []BlockMark{{Type: "link", Attrs: map[string]any{"href": "#block-second"}}},
+			},
+			{
+				Type: "text",
+				Text: "external",
+				Marks: []BlockMark{
+					{Type: "link", Attrs: map[string]any{"href": "/pages/other#block-second"}},
+				},
+			},
+			{
+				Type:  "text",
+				Text:  "outside",
+				Marks: []BlockMark{{Type: "link", Attrs: map[string]any{"href": "#block-outside"}}},
+			},
+		}},
+		{Type: "paragraph", Attrs: map[string]any{"blockId": "second"}},
+	}}
+	ids := []string{"new-first", "new-second"}
+	index := 0
+	AssignBlockIDs(&root, func() string { id := ids[index]; index++; return id })
+	for i, want := range []string{"#block-new-second", "/pages/other#block-second", "#block-outside"} {
+		if got := root.Content[0].Content[i].Marks[0].Attrs["href"]; got != want {
+			t.Errorf("link %d = %v, want %v", i, got, want)
+		}
+	}
+	for i, want := range ids {
+		if got := root.Content[i].Attrs["blockId"]; got != want {
+			t.Errorf("id = %v, want %v", got, want)
+		}
 	}
 }

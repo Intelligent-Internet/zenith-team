@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -36,11 +38,11 @@ func TestPublicationWorkerPublishesAndUnpublishesDurably(t *testing.T) {
 	outputID := seedApprovedPublicationOutput(t, ctx, pool, fixture)
 	bus := publicationTestBus(t)
 	var states []string
-	if err := bus.Subscribe(TopicArtifact, func(_ context.Context, event events.Event) error {
-		if event.Name != EventArtifactChanged {
+	if err := bus.Subscribe(artifactdomain.Topic, func(_ context.Context, event events.Event) error {
+		if event.Name != artifactdomain.EventChanged {
 			t.Fatalf("unexpected publication event %s", event.Name)
 		}
-		change, err := events.PayloadOf[ArtifactChanged](event)
+		change, err := events.PayloadOf[artifactdomain.Changed](event)
 		if err != nil || !slices.Equal(change.RecipientUserIDs, []uuid.UUID{fixture.UserA}) {
 			t.Fatalf("publication audience = %+v, %v", change, err)
 		}
@@ -174,8 +176,8 @@ func TestPublicationWorkerRetriesThenPersistsTerminalFailure(t *testing.T) {
 	catalog := recordingPublicationCatalog{provider: provider}
 	bus := publicationTestBus(t)
 	var states []string
-	if err := bus.Subscribe(TopicArtifact, func(ctx context.Context, event events.Event) error {
-		if event.Name != EventArtifactChanged {
+	if err := bus.Subscribe(artifactdomain.Topic, func(ctx context.Context, event events.Event) error {
+		if event.Name != artifactdomain.EventChanged {
 			return nil
 		}
 		row, err := store.Queries().

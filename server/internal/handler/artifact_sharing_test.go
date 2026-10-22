@@ -94,7 +94,7 @@ func TestPublicArtifactDownloadStreamsOnlyAfterTokenAuthorization(t *testing.T) 
 					downloadResolved: func(_ context.Context, input attachment.ResolvedDownloadInput) (attachment.DownloadResult, error) {
 						downloaded = true
 						if input.CompanyID != companyID || input.ID != attachmentID ||
-							!input.OutputAccessResolved {
+							!input.ResourceAccessResolved {
 							t.Fatalf("download authority = %+v", input)
 						}
 						return attachment.DownloadResult{
