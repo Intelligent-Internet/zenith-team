@@ -8,7 +8,8 @@
 //
 // Two channels, one per app: prod (Zenith Team), version X.Y.Z or
 // X.Y.Z-(alpha|beta|rc).N from a v* tag, and dev (Zenith Team Dev), version
-// X.Y.Z-dev.N. Every dev build moves the dev manifests.
+// X.Y.Z-dev.N, or X.Y.Z-dev.N.A for a re-run attempt A. Every dev build moves
+// the dev manifests.
 //
 // Usage: node write-release-publish.cjs --artifacts <dir> --out <dir> --version <version>
 // Reads ZENITH_TEAM_DESKTOP_ENV ("prod", the default, or "dev"), GITHUB_SHA,
@@ -133,10 +134,10 @@ function parseVersion(version, channel = "prod") {
   const core = `${num}\\.${num}\\.${num}`;
   const pattern =
     channel === "dev"
-      ? new RegExp(`^${core}-dev\\.${num}$`)
+      ? new RegExp(`^${core}-dev\\.${num}(?:\\.${num})?$`)
       : new RegExp(`^${core}(?:-(?:alpha|beta|rc)\\.${num})?$`);
   if (!pattern.test(version ?? "")) {
-    const shape = channel === "dev" ? "X.Y.Z-dev.N" : "X.Y.Z or X.Y.Z-(alpha|beta|rc).N";
+    const shape = channel === "dev" ? "X.Y.Z-dev.N or X.Y.Z-dev.N.A" : "X.Y.Z or X.Y.Z-(alpha|beta|rc).N";
     throw new Error(`A ${channel} desktop version must be ${shape}, got "${version}".`);
   }
   return version;

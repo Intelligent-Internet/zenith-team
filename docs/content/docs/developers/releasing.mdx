@@ -7,12 +7,12 @@ import { Callout } from "fumadocs-ui/components/callout";
 
 A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. Only its desktop jobs use secrets and cloud access, from the `prod` and `desktop-signing` environments; everything else runs on the workflow's own GitHub token.
 
-Only a tag publishes a release. The project's own dev server and dev desktop app are deployed from any branch by a separate workflow, which publishes nothing public (see [Dev deployments](#dev-deployments)).
+Only a tag publishes a release. The project's own dev server, deployed from any branch, and its dev desktop app, built from `main`, go through a separate workflow that publishes only to the dev environment and the dev downloads (see [Dev deployments](#dev-deployments)).
 
 ## Before you tag
 
 - The commit you tag is on `main`, and CI is green on it.
-- The integration suites pass. The nightly CI run includes them; check the latest one, or start the CI workflow by hand. See [Testing](/developers/testing#ci).
+- The integration suites pass. The Nightly workflow runs them; check its latest run, or start it by hand. See [Testing](/developers/testing#nightly).
 - `make go-vuln` finds no known vulnerabilities in the Go dependencies. The release stops on any (see below).
 - Merged pull requests carry the right labels, so the release notes sort them (see below).
 - Docs and `deploy/production.env.example` cover any new setting.
@@ -49,7 +49,7 @@ Verify runs first; images, binaries and the desktop app then build side by side,
 - Checks the tag shape and decides whether it is a pre-release.
 - Checks that the tagged commit is on `main`. A tag anywhere else fails here.
 - When desktop releases are on, checks that `frontend/package.json` has the tag's version.
-- Requires `ci-gate` to have passed on the tagged commit. `main-protection` already requires it before a merge, and CI runs again on the push to `main`, so the release does not repeat the checks. A tag pushed right after a merge waits up to 30 minutes for that run.
+- Requires `ci-gate` to have passed on the tagged commit. `main-protection` requires it before a merge, and every push to `main` runs every CI lane on the whole tree in its own run, so the release does not repeat the checks. A tag pushed right after a merge waits up to 30 minutes for that run. If the commit has no run, start **CI** by hand at the tag, then re-run the release.
 - Scans the Go dependencies for known vulnerabilities with `make go-vuln`. This is fail-closed: any finding stops the release. Advisories can appear after a merge, so this check is not skipped.
 
 **Releasing despite a vulnerability.** Sometimes a finding has no fix yet and does not affect Zenith Team. A maintainer can then release one tag anyway: set the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` to exactly that tag, such as `v1.3.1`, and re-run the workflow. The bypass works only for that one tag, and the run shows a warning. Remove the variable afterwards, and say in the release notes why the bypass was needed.
@@ -62,13 +62,13 @@ Builds the server, web and voice images (`server/Dockerfile`, `frontend/Dockerfi
 - `ghcr.io/intelligent-internet/zenith-team-web`
 - `ghcr.io/intelligent-internet/zenith-team-voice`, the AI voice worker for Huddles
 
-For `v1.3.0`, each image gets four tags:
+For `v1.3.0`, each image gets up to four tags:
 
 | Tag | Meaning |
 | --- | --- |
 | `1.3.0` | This exact release. Self-hosters should pin this. |
-| `1.3` | The newest patch of the 1.3 line. |
-| `latest` | The newest release. |
+| `1.3` | The newest patch of the 1.3 line. Only a release that is the newest of its line moves it. |
+| `latest` | The newest release. Only the newest release moves it, so re-running an older one never moves it back; the same goes for GitHub's Latest release. |
 | `sha-<full commit>` | The tagged commit. |
 
 A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`, plus `sha-<full commit>`.
@@ -157,7 +157,7 @@ Packaging is checked before a tag by CI's `desktop` lane, which builds unsigned 
 The project's own dev server and **Zenith Team Dev**, the desktop app built for it, are not releases. `.github/workflows/build-deploy.yml` builds the branch or tag it runs on and deploys it to the `dev` environment. The Slack deploy bot starts it, and so does **Actions → Build and deploy → Run workflow**:
 
 - **Server** (on by default): builds the server image as a release does and pushes it to the dev Artifact Registry repository, `GCP_IMAGE`. Then it commits `sha-<commit>@<digest>` to the deployment repository (`charts/zenith-team/envs/dev.yaml` in `Intelligent-Internet/ii-infras-mono`), and Argo CD rolls it out.
-- **Desktop** (off by default, `main` only): builds Zenith Team Dev `<X.Y.Z of frontend/package.json>-dev.<run number>` with `build-desktop.yml` and publishes it with `publish-desktop.yml`, as above, to the dev channel. Installed dev apps update to it. It is `main` only because it is signed in `desktop-signing`: a branch can deploy the dev server, but cannot reach the Developer ID.
+- **Desktop** (off by default, `main` only): builds Zenith Team Dev `<X.Y.Z of frontend/package.json>-dev.<run number>` with `build-desktop.yml` and publishes it with `publish-desktop.yml`, as above, to the dev channel. Installed dev apps update to it. A re-run attempt gets its own version, `-dev.<run number>.<attempt>`. It is `main` only because it is signed in `desktop-signing`: a branch can deploy the dev server, but cannot reach the Developer ID. The dev downloads themselves are writable from the `dev` environment, so anyone with write access could replace them, the same trust as the dev server.
 
 Deploys to an environment run one at a time, in the order they started; a newer request replaces one that is still waiting. Anyone with write access can deploy to `dev`. Every job that touches the cloud runs in the environment, and its accounts accept no other job. The `dev` environment holds the same desktop variables as `prod`, with its own values, plus:
 
@@ -171,6 +171,7 @@ Deploys to an environment run one at a time, in the order they started; a newer 
 
 - **Verify failed.** Fix the problem on `main`, then tag a new patch version. Do not move an existing tag. For a vulnerability finding, see the bypass above.
 - **A later job failed.** Re-run the failed jobs from the workflow run page. If the code itself must change, tag a new patch version.
+- **The desktop upload failed.** Use **Re-run failed jobs**, within the 30 days the desktop build artifacts are kept: it uploads those same files. **Re-run all jobs** rebuilds them, and a rebuilt, re-signed file never matches one already uploaded, so the upload stops rather than replace it. If that happens, or the artifacts have expired, tag a new patch version, or have someone with delete rights on the bucket remove the partly uploaded `<version>/` folder, which has no `release-publish.json` yet, and re-run.
 
 ## Next steps
 
