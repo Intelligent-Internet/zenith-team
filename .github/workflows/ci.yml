@@ -34,6 +34,7 @@ jobs:
       voice: ${{ steps.filter.outputs.voice == 'true' || github.event_name == 'workflow_dispatch' }}
       selfhost: ${{ steps.filter.outputs.selfhost == 'true' || github.event_name == 'workflow_dispatch' }}
       workflows: ${{ steps.filter.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch' }}
+      desktop: ${{ steps.filter.outputs.desktop == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       # Pull requests are diffed through the API; pushes need the checkout.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -70,6 +71,12 @@ jobs:
               - "Makefile"
             workflows:
               - ".github/**"
+            desktop:
+              - "frontend/electron/**"
+              - "frontend/forge.config.cjs"
+              - "frontend/package.json"
+              - "frontend/pnpm-lock.yaml"
+              - ".github/actions/desktop-setup/**"
 
   server:
     needs: changes
@@ -218,9 +225,48 @@ jobs:
 
   # The one required status check: fails when any lane failed or was
   # cancelled; lanes that did not need to run are skipped.
+  # Unsigned installers for the local variant, built the way the release's
+  # desktop job builds them (shared setup), to catch packaging breaks before a
+  # tag. No secrets: the release job alone signs. The installers stay a week
+  # as workflow artifacts for manual testing. Windows joins once zen builds
+  # there.
+  desktop:
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: darwin
+            arch: arm64
+          - os: ubuntu-latest
+            platform: linux
+            arch: x64
+    name: desktop (${{ matrix.platform }} ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/desktop-setup
+      - name: Make unsigned installers
+        working-directory: frontend
+        env:
+          # The renderer build needs more than Node's default heap.
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm electron:make
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zenith-team-desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: frontend/out/make/**
+          if-no-files-found: error
+          retention-days: 7
+
   ci-gate:
     if: always()
-    needs: [changes, server, frontend, voice, selfhost, workflows]
+    needs: [changes, server, frontend, voice, selfhost, workflows, desktop]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

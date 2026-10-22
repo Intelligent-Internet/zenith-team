@@ -551,7 +551,8 @@ isolated database + fixture per caller.
   which includes the pinned sqlc drift check. The frontend lane runs lint,
   typecheck, the API contract checks, a production build and the Electron
   security scan; `voice` runs ruff and the Python tests; `selfhost` builds
-  both images and boots the Compose stack; `workflows` runs actionlint and
+  both images and boots the Compose stack; `desktop` builds unsigned desktop
+  installers when the packaging changes; `workflows` runs actionlint and
   zizmor when `.github/**` changes. `ci-gate` is the one required check: it
   fails when any lane failed or was cancelled. `.github/workflows/nightly.yml`
   runs the PostgreSQL integration suites, the Windows platform-content check

@@ -199,45 +199,23 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          package_json_file: frontend/package.json
-          run_install: false
-      # No caches, for the same reason as the verify job.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-          package-manager-cache: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: "1.26.x"
-          cache: false
-      - run: pnpm --dir frontend install --frozen-lockfile
-      - name: Require frontend/package.json to match the tag
-        working-directory: frontend
-        run: pnpm electron:release:assert-version
-      - name: Configure the build
+      # Without both, the shared setup would build the local variant.
+      - name: Require the desktop release settings
         env:
           PROD_ORIGIN: ${{ vars.ZENITH_TEAM_DESKTOP_PROD_ORIGIN }}
           RELEASE_BASE_URL: ${{ vars.ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL }}
         run: |
-          set -euo pipefail
-          for value in "$PROD_ORIGIN" "$RELEASE_BASE_URL"; do
-            if [[ ! "$value" =~ ^https://[A-Za-z0-9.-]+(/[A-Za-z0-9._/-]*[A-Za-z0-9._-])?$ ]]; then
-              echo "::error::ZENITH_TEAM_DESKTOP_PROD_ORIGIN and ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL must be https URLs without a trailing slash; got '$value'"
-              exit 1
-            fi
-          done
-          {
-            echo "ZENITH_TEAM_DESKTOP_ENV=prod"
-            echo "ZENITH_TEAM_DESKTOP_PROD_ORIGIN=$PROD_ORIGIN"
-            echo "ZENITH_TEAM_DESKTOP_API_BASE_URL=$PROD_ORIGIN/api/v1"
-            echo "VITE_API_URL=$PROD_ORIGIN"
-            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE=true"
-            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_STATIC_FEED=true"
-            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_MANIFEST_URL=$RELEASE_BASE_URL/latest.json"
-            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_FEED_BASE_URL=$RELEASE_BASE_URL/updates"
-          } >> "$GITHUB_ENV"
+          if [ -z "$PROD_ORIGIN" ] || [ -z "$RELEASE_BASE_URL" ]; then
+            echo "::error::Set the repository variables ZENITH_TEAM_DESKTOP_PROD_ORIGIN and ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL."
+            exit 1
+          fi
+      - uses: ./.github/actions/desktop-setup
+        with:
+          api-origin: ${{ vars.ZENITH_TEAM_DESKTOP_PROD_ORIGIN }}
+          release-base-url: ${{ vars.ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL }}
+      - name: Require frontend/package.json to match the tag
+        working-directory: frontend
+        run: pnpm electron:release:assert-version
       - name: Load the signing identity into a temporary keychain
         if: matrix.platform == 'darwin'
         env:

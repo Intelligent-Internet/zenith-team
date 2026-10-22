@@ -244,6 +244,7 @@ and a change to the `Makefile` runs all but the macOS sandbox tests.
 | `frontend/**`, `docs/api/spec/**` | Lint, typecheck, API contract checks, a production build and the Electron security scan | `make lint typecheck api-lint api-types-check build` |
 | `voice-agent/**` | `ruff` lint and format check, the Python tests and a Docker build | `make voice-gate` (needs `uv`) |
 | `deploy/**`, a Dockerfile | Builds both images and boots the self-hosting stack | `make selfhost-env selfhost-up` on a throwaway checkout |
+| `frontend/electron/**`, `frontend/forge.config.cjs`, `frontend/package.json`, `frontend/pnpm-lock.yaml` | Unsigned desktop installers for macOS and Linux | `cd frontend && pnpm electron:make` |
 | `.github/**` | `actionlint` and `zizmor` on the workflows | `actionlint` |
 
 `ci-gate` is the one required check. It fails when any lane failed or was
