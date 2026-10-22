@@ -16,6 +16,7 @@ Only a tag publishes a release. Merges to `main` that change the server, and man
 - `make go-vuln` finds no known vulnerabilities in the Go dependencies. The release stops on any (see below).
 - Merged pull requests carry the right labels, so the release notes sort them (see below).
 - Docs and `deploy/production.env.example` cover any new setting.
+- When desktop releases are on, `frontend/package.json` has the tag's version. The desktop job stops otherwise.
 
 ## Cut the release
 
@@ -41,7 +42,7 @@ A pushed tag publishes images and a GitHub Release right away. Check the commit 
 
 ## What the workflow does
 
-The four jobs run in this order. One release runs at a time per tag, and a running release is never cancelled.
+Verify runs first; images, binaries and the desktop app then build side by side, and publish runs last. One release runs at a time per tag, and a running release is never cancelled.
 
 ### 1. Verify
 
@@ -98,7 +99,7 @@ Archives are named like `zenith-team_v1.3.0_linux_amd64.tar.gz`. Each one also h
 
 ### 4. Publish
 
-Creates a GitHub Release named `Zenith Team v1.3.0` with the archives and `checksums.txt` attached, marked as a pre-release when the tag is one. The release notes are generated from the pull requests merged since the last release.
+Creates a GitHub Release named `Zenith Team v1.3.0` with the archives and `checksums.txt` attached, plus the desktop files when the desktop job ran (see [Desktop app](#desktop-app)), marked as a pre-release when the tag is one. Every attached file gets a build attestation; check one with `gh attestation verify <file> --repo Intelligent-Internet/zenith-team --signer-workflow Intelligent-Internet/zenith-team/.github/workflows/release.yml --source-ref refs/tags/v1.3.0`. The release notes are generated from the pull requests merged since the last release.
 
 ## Release notes
 
@@ -117,9 +118,33 @@ Pull requests labelled `skip-changelog`, and those opened by Dependabot, are lef
 
 ## Desktop app
 
-The release workflow does not build the desktop app. Each desktop build has its server's address built in, so self-hosters build their own; see [Desktop app](/desktop-app).
+The release builds the desktop app while the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`; otherwise the job is skipped and the rest of the release runs as before. It builds, in the `desktop-release` environment, which requires a reviewer to approve each release:
 
-To check packaging, a maintainer runs **Desktop Smoke Build** (`.github/workflows/desktop-smoke.yml`) from the Actions tab. It builds unsigned macOS (arm64) and Linux (x64) installers and keeps them as workflow artifacts for a week. Leave its `api_origin` input empty for the local variant, or give a server address for a prod build. Windows joins once `zen` builds there.
+- signed and notarized macOS installers, a `.dmg` to download and a `.zip` for updates, for `arm64` and `x64`;
+- an unsigned Linux `.zip` for `x64`. Windows joins once `zen` builds there.
+
+These builds are for the server at `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` and check for updates at `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`; self-hosters still build their own (see [Desktop app](/desktop-app)). The publish job adds them to the GitHub Release with build attestations, plus:
+
+| File | What it is |
+| --- | --- |
+| `latest.json` | The download manifest the website reads, and the app's update manifest |
+| `update-darwin-<arch>.json` | The macOS update feed |
+| `release-publish.json` | Where a static host puts each file: installers under `<version>/`, the manifests at fixed paths |
+
+A pre-release carries its installers but no manifests, so it moves nothing. An internal publisher verifies each file's attestation against this workflow and tag, then copies them to `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`, so this repository holds no cloud credentials.
+
+Settings the job reads:
+
+| Where | Name | Holds |
+| --- | --- | --- |
+| Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE` | `true` to build the desktop app |
+| Repository variable | `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` | The server the builds sign in to, such as `https://api.example.com` |
+| Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL` | Where installers and manifests are served, such as `https://downloads.example.com/zenith-team` |
+| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `..._MAC_CERTIFICATE_PASSWORD` | The Developer ID Application certificate (.p12) and its password |
+| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
+| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
+
+To check packaging without releasing, a maintainer runs **Desktop Smoke Build** (`.github/workflows/desktop-smoke.yml`) from the Actions tab. It builds unsigned macOS (arm64) and Linux (x64) installers and keeps them as workflow artifacts for a week. Leave its `api_origin` input empty for the local variant, or give a server address for a prod build.
 
 ## If a release fails
 

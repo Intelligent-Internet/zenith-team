@@ -1,10 +1,13 @@
 # Publishes a release from a v<major>.<minor>.<patch> tag on main: the server
 # and web images to GitHub Container Registry, built by build-image.yml (which
 # image.yml shares), and the zen CLI plus the zenith-team-mcp binary to a
-# GitHub Release with checksums. A tag with a -alpha.N, -beta.N or -rc.N suffix
-# is a pre-release: it never moves the `latest` image tag or the latest GitHub
-# Release. A tag push is the only event that publishes; it needs no secrets
-# beyond the workflow token.
+# GitHub Release with checksums. When desktop releases are on, the release also
+# carries the signed desktop installers and the files a static host needs to
+# serve them (see the desktop job). A tag with a -alpha.N, -beta.N or -rc.N
+# suffix is a pre-release: it never moves the `latest` image tag, the latest
+# GitHub Release or the desktop download and update manifests. A tag push is
+# the only event that publishes; only the desktop job uses secrets, from its
+# protected environment.
 name: Release
 
 on:
@@ -162,17 +165,175 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # The desktop app, built only while the repository variable
+  # ZENITH_TEAM_DESKTOP_RELEASE is "true": signed and notarized macOS
+  # installers (arm64 and x64) and an unsigned Linux zip, for the server at
+  # ZENITH_TEAM_DESKTOP_PROD_ORIGIN, updating from
+  # ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL. The desktop-release environment holds
+  # the Apple credentials and requires a reviewer. Secrets reach only the steps
+  # that sign; installing dependencies sees none. Windows joins once zen builds
+  # there.
+  desktop:
+    needs: verify
+    if: vars.ZENITH_TEAM_DESKTOP_RELEASE == 'true'
+    environment: desktop-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: darwin
+            arch: arm64
+          - os: macos-15-intel
+            platform: darwin
+            arch: x64
+          - os: ubuntu-24.04
+            platform: linux
+            arch: x64
+    name: desktop (${{ matrix.platform }} ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: frontend/package.json
+          run_install: false
+      # No caches, for the same reason as the verify job.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache: false
+      - run: pnpm --dir frontend install --frozen-lockfile
+      - name: Require frontend/package.json to match the tag
+        working-directory: frontend
+        run: pnpm electron:release:assert-version
+      - name: Configure the build
+        env:
+          PROD_ORIGIN: ${{ vars.ZENITH_TEAM_DESKTOP_PROD_ORIGIN }}
+          RELEASE_BASE_URL: ${{ vars.ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL }}
+        run: |
+          set -euo pipefail
+          for value in "$PROD_ORIGIN" "$RELEASE_BASE_URL"; do
+            if [[ ! "$value" =~ ^https://[A-Za-z0-9.-]+(/[A-Za-z0-9._/-]*[A-Za-z0-9._-])?$ ]]; then
+              echo "::error::ZENITH_TEAM_DESKTOP_PROD_ORIGIN and ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL must be https URLs without a trailing slash; got '$value'"
+              exit 1
+            fi
+          done
+          {
+            echo "ZENITH_TEAM_DESKTOP_ENV=prod"
+            echo "ZENITH_TEAM_DESKTOP_PROD_ORIGIN=$PROD_ORIGIN"
+            echo "ZENITH_TEAM_DESKTOP_API_BASE_URL=$PROD_ORIGIN/api/v1"
+            echo "VITE_API_URL=$PROD_ORIGIN"
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE=true"
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_STATIC_FEED=true"
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_MANIFEST_URL=$RELEASE_BASE_URL/latest.json"
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_FEED_BASE_URL=$RELEASE_BASE_URL/updates"
+          } >> "$GITHUB_ENV"
+      - name: Load the signing identity into a temporary keychain
+        if: matrix.platform == 'darwin'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+          NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          keychain_password="$(uuidgen)"
+          keychain="$RUNNER_TEMP/zenith-team-release.keychain-db"
+          certificate="$RUNNER_TEMP/zenith-team-mac-certificate.p12"
+          notary_key="$RUNNER_TEMP/zenith-team-notary-api-key.p8"
+          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$certificate"
+          printf '%s' "$NOTARY_API_KEY_BASE64" | base64 --decode > "$notary_key"
+          chmod 600 "$certificate" "$notary_key"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$certificate" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | sed s/\"//g)
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
+          rm -f "$certificate"
+          # The key file's path is not a secret; the build step reads the file.
+          echo "ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY=$notary_key" >> "$GITHUB_ENV"
+      - name: Make signed and notarized macOS installers
+        if: matrix.platform == 'darwin'
+        working-directory: frontend
+        env:
+          ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
+          # The renderer build needs more than Node's default heap.
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm electron:make:mac:signed
+      - name: Make the Linux zip
+        if: matrix.platform == 'linux'
+        working-directory: frontend
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm electron:make
+      - name: Remove the signing identity
+        if: always() && matrix.platform == 'darwin'
+        run: |
+          security delete-keychain "$RUNNER_TEMP/zenith-team-release.keychain-db" || true
+          rm -f "$RUNNER_TEMP/zenith-team-notary-api-key.p8"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            frontend/out/make/**/Zenith-Team-prod-*.dmg
+            frontend/out/make/**/Zenith-Team-prod-*.zip
+            frontend/out/make/**/Zenith-Team-prod-*.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  # Attaches everything to the GitHub Release with build attestations. The
+  # desktop files come with release-publish.json and the manifests that tell a
+  # static host where each goes (frontend/electron/scripts/write-release-publish.cjs);
+  # an internal publisher verifies the attestations and copies them, so this
+  # repository needs no cloud credentials.
   publish:
-    needs: [verify, images, binaries]
+    needs: [verify, images, binaries, desktop]
+    if: >-
+      !cancelled() && needs.images.result == 'success' && needs.binaries.result == 'success' &&
+      (needs.desktop.result == 'success' || needs.desktop.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: binaries
           path: dist
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.desktop.result == 'success'
+        with:
+          pattern: desktop-*
+          path: desktop
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: needs.desktop.result == 'success'
+        with:
+          persist-credentials: false
+          path: source
+          sparse-checkout: frontend/electron/scripts
+      - name: Prepare the desktop release files
+        if: needs.desktop.result == 'success'
+        env:
+          PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+          ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL: ${{ vars.ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL }}
+        run: node source/frontend/electron/scripts/write-release-publish.cjs --artifacts desktop --out dist
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
       - name: Create the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}

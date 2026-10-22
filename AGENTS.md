@@ -567,7 +567,10 @@ isolated database + fixture per caller.
   `v<major>.<minor>.<patch>` tag (or an `-alpha.N`, `-beta.N` or `-rc.N`
   pre-release) at a commit on `main` verifies again, scans Go dependencies
   fail-closed, and publishes the server and web images to GHCR and the `zen`
-  CLI to a GitHub Release (`.github/workflows/release.yml`). Both build images
+  CLI to a GitHub Release (`.github/workflows/release.yml`); while the
+  `ZENITH_TEAM_DESKTOP_RELEASE` variable is `true` it also signs and notarizes
+  the desktop app in the reviewer-gated `desktop-release` environment and
+  attaches it, with the manifests a static host serves, to the release. Both build images
   through `.github/workflows/build-image.yml`: a native runner per platform
   with no registry credentials, then one publish job that pushes, tags and
   attests the merged image. Nothing here deploys.
