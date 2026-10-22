@@ -1,0 +1,227 @@
+# Reusable: builds one image (server or web) of the calling commit for
+# linux/amd64 and linux/arm64, each on a native runner, and publishes it to
+# GitHub Container Registry as one multi-arch image tagged sha-<commit> plus
+# the caller's tags. Called by image.yml and release.yml.
+#
+# The build jobs hold no registry credentials: they run the Dockerfile and
+# upload an OCI archive that carries the image's SBOM and provenance. Only the
+# publish job can write packages, and it never checks out or runs project code.
+# It pushes each archive by digest, merges them into one image, and attests the
+# merged digest's build provenance. No cache is restored, so nothing another
+# run wrote reaches a published image.
+name: Build image
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: "server or web"
+        required: true
+        type: string
+      version:
+        description: "VERSION build argument; empty means dev-<short commit>"
+        required: false
+        type: string
+        default: ""
+      tags:
+        description: "Tags to add besides sha-<commit>, one per line"
+        required: false
+        type: string
+        default: ""
+      skip-existing:
+        description: "Publish nothing when sha-<commit> already exists"
+        required: false
+        type: boolean
+        default: false
+    outputs:
+      image:
+        description: "The image name, without a tag"
+        value: ${{ jobs.plan.outputs.image }}
+      digest:
+        description: "The published digest; empty when skipped"
+        value: ${{ jobs.publish.outputs.digest }}
+
+permissions: {}
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      packages: read
+      attestations: read
+    outputs:
+      image: ${{ steps.plan.outputs.image }}
+      dockerfile: ${{ steps.plan.outputs.dockerfile }}
+      exists: ${{ steps.plan.outputs.exists }}
+    steps:
+      - name: Resolve the image and check for an existing one
+        id: plan
+        env:
+          IMAGE: ${{ inputs.image }}
+          OWNER: ${{ github.repository_owner }}
+          SKIP_EXISTING: ${{ inputs.skip-existing }}
+          TAGS: ${{ inputs.tags }}
+          GH_ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # Release tags such as 1.3.0 or latest come only from a version-tag
+          # run, so no branch run can repoint them through this workflow.
+          if [ -n "$(printf '%s' "$TAGS" | tr -d '[:space:]')" ] && [[ ! "$GITHUB_REF" =~ ^refs/tags/v[0-9] ]]; then
+            echo "::error::Extra image tags are allowed only from a version tag, not $GITHUB_REF"
+            exit 1
+          fi
+          case "$IMAGE" in
+            server) dockerfile=server/Dockerfile ;;
+            web) dockerfile=frontend/Dockerfile ;;
+            *) echo "::error::image must be server or web, got '$IMAGE'"; exit 1 ;;
+          esac
+          name="ghcr.io/${OWNER,,}/zenith-team-${IMAGE}"
+          exists=false
+          if [ "$SKIP_EXISTING" = true ]; then
+            authfile="$RUNNER_TEMP/ghcr-auth.json"
+            printf '%s' "$GH_TOKEN" | skopeo login --authfile "$authfile" ghcr.io --username "$GH_ACTOR" --password-stdin >/dev/null
+            # Skip only an image this workflow built and attested from this
+            # commit and ref. The tag is pushed before the attestation, so a
+            # failed attest step leaves an unattested tag that must be rebuilt.
+            # Anything missing reads as "not there": building again is always
+            # safe, skipping an image the verifier would reject never is.
+            if skopeo inspect --raw --authfile "$authfile" "docker://${name}:sha-${GITHUB_SHA}" >/dev/null 2>&1 &&
+              gh attestation verify "oci://${name}:sha-${GITHUB_SHA}" \
+                --repo "$GITHUB_REPOSITORY" \
+                --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/build-image.yml" \
+                --source-ref "$GITHUB_REF" \
+                --source-digest "$GITHUB_SHA" \
+                --deny-self-hosted-runners >/dev/null 2>&1; then
+              exists=true
+              echo "::notice::${name}:sha-${GITHUB_SHA} already exists and is attested; nothing to build."
+            fi
+          fi
+          {
+            echo "image=$name"
+            echo "dockerfile=$dockerfile"
+            echo "exists=$exists"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.exists != 'true'
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Resolve the version
+        id: build
+        env:
+          VERSION: ${{ inputs.version }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          echo "version=${VERSION:-dev-${GITHUB_SHA::7}}" >> "$GITHUB_OUTPUT"
+          echo "pair=${PLATFORM//\//-}" >> "$GITHUB_OUTPUT"
+      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        id: meta
+        with:
+          images: ${{ needs.plan.outputs.image }}
+          tags: |
+            type=raw,value=${{ steps.build.outputs.version }}
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: ${{ needs.plan.outputs.dockerfile }}
+          platforms: ${{ matrix.platform }}
+          push: false
+          provenance: mode=max
+          sbom: true
+          build-args: |
+            VERSION=${{ steps.build.outputs.version }}
+          labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=oci,dest=${{ runner.temp }}/image.tar
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-${{ inputs.image }}-${{ steps.build.outputs.pair }}
+          path: ${{ runner.temp }}/image.tar
+          # A re-run of a failed attempt uploads the same name again.
+          overwrite: true
+          compression-level: 0
+          if-no-files-found: error
+          # Long enough for "Re-run failed jobs" to reach a failed publish.
+          retention-days: 7
+
+  publish:
+    needs: [plan, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: image-${{ inputs.image }}-*
+          path: archives
+      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push the platform images and merge them
+        id: push
+        env:
+          IMAGE: ${{ needs.plan.outputs.image }}
+          TAGS: ${{ inputs.tags }}
+        run: |
+          set -euo pipefail
+          refs=()
+          for archive in archives/*/image.tar; do
+            # The archive's one top-level entry is the platform's index: the
+            # image plus its SBOM and provenance. Push it by that digest.
+            digest="$(tar -xOf "$archive" index.json | jq -er '.manifests | if length == 1 then .[0].digest else error("expected one manifest") end')"
+            skopeo copy --all --preserve-digests --authfile "$HOME/.docker/config.json" \
+              "oci-archive:$archive" "docker://$IMAGE@$digest"
+            refs+=("$IMAGE@$digest")
+          done
+          if [ "${#refs[@]}" -ne 2 ]; then
+            echo "::error::Expected 2 platform archives, got ${#refs[@]}"
+            exit 1
+          fi
+
+          tag_args=(-t "$IMAGE:sha-$GITHUB_SHA")
+          while IFS= read -r tag; do
+            if [ -n "$tag" ]; then
+              tag_args+=(-t "$IMAGE:$tag")
+            fi
+          done <<< "$TAGS"
+
+          # The digest of the exact index about to be pushed. Attesting it,
+          # not whatever a tag points at afterwards, keeps a concurrent run
+          # for the same commit from swapping the subject.
+          index="$(docker buildx imagetools create --dry-run "${refs[@]}")"
+          digest="sha256:$(printf '%s' "$index" | sha256sum | cut -d' ' -f1)"
+          docker buildx imagetools create "${tag_args[@]}" "${refs[@]}"
+          docker buildx imagetools inspect --raw "$IMAGE@$digest" >/dev/null
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "::notice::Published $IMAGE:sha-$GITHUB_SHA ($digest)"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ${{ needs.plan.outputs.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+          # The org-level storage record needs artifact-metadata: write, which
+          # nothing here needs otherwise.
+          create-storage-record: false

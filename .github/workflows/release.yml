@@ -1,9 +1,10 @@
 # Publishes a release from a v<major>.<minor>.<patch> tag on main: the server
-# and web images to GitHub Container Registry, and the zen CLI plus the
-# zenith-team-mcp binary to a GitHub Release with checksums. A tag with a
-# -alpha.N, -beta.N or -rc.N suffix is a pre-release: it never moves the
-# `latest` image tag or the latest GitHub Release. A tag push is the only
-# event that publishes; it needs no secrets beyond the workflow token.
+# and web images to GitHub Container Registry, built by build-image.yml (which
+# image.yml shares), and the zen CLI plus the zenith-team-mcp binary to a
+# GitHub Release with checksums. A tag with a -alpha.N, -beta.N or -rc.N suffix
+# is a pre-release: it never moves the `latest` image tag or the latest GitHub
+# Release. A tag push is the only event that publishes; it needs no secrets
+# beyond the workflow token.
 name: Release
 
 on:
@@ -25,22 +26,36 @@ jobs:
     timeout-minutes: 45
     outputs:
       prerelease: ${{ steps.tag.outputs.prerelease }}
+      version: ${{ steps.tag.outputs.version }}
+      image-tags: ${{ steps.tag.outputs.image-tags }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
+      # The image tags: the exact version, plus <major>.<minor> and latest for
+      # a release that is not a pre-release.
       - name: Check the tag
         id: tag
         run: |
+          version="${GITHUB_REF_NAME#v}"
           if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            prerelease=false
+            tags="$version"$'\n'"${version%.*}"$'\n'"latest"
           elif [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta|rc)\.[0-9]+$ ]]; then
-            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            prerelease=true
+            tags="$version"
           else
             echo "::error::$GITHUB_REF_NAME is not vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N"
             exit 1
           fi
+          {
+            echo "prerelease=$prerelease"
+            echo "version=$version"
+            echo "image-tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
       - name: Require the tag to be on main
         run: |
           git fetch origin main
@@ -82,57 +97,26 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       - run: make lint typecheck api-lint api-types-check
 
+  # Each image is built natively per platform and published, with its SBOM,
+  # provenance and a build attestation, by build-image.yml. Besides the
+  # version tags it gets sha-<commit>, repointed to this build; deployments
+  # pin sha-<commit>@<digest>.
   images:
     needs: verify
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
     permissions:
       contents: read
       packages: write
+      id-token: write
+      attestations: write
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: server
-            dockerfile: server/Dockerfile
-          - image: web
-            dockerfile: frontend/Dockerfile
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - name: Image name
-        id: name
-        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/zenith-team-${{ matrix.image }}" >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      # A pre-release gets only its exact version tag; the major.minor
-      # pattern skips pre-releases on its own.
-      - uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
-        id: meta
-        with:
-          images: ${{ steps.name.outputs.image }}
-          tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=raw,value=latest,enable=${{ needs.verify.outputs.prerelease == 'false' }}
-      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64,linux/arm64
-          push: true
-          provenance: mode=max
-          sbom: true
-          build-args: |
-            VERSION=${{ steps.meta.outputs.version }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+        image: [server, web]
+    uses: ./.github/workflows/build-image.yml
+    with:
+      image: ${{ matrix.image }}
+      version: ${{ needs.verify.outputs.version }}
+      tags: ${{ needs.verify.outputs.image-tags }}
 
   binaries:
     needs: verify
