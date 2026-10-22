@@ -570,8 +570,11 @@ isolated database + fixture per caller.
   fail-closed, and publishes the server and web images to GHCR and the `zen`
   CLI to a GitHub Release (`.github/workflows/release.yml`); while the
   `ZENITH_TEAM_DESKTOP_RELEASE` variable is `true` it also signs and notarizes
-  the desktop app in the reviewer-gated `desktop-release` environment and
-  attaches it, with the manifests a static host serves, to the release. Both build images
+  the production desktop app in the reviewer-gated `desktop-prod` environment
+  and attaches it, with the manifests a static host serves, to the release. A
+  `v*` tag always builds prod; `.github/workflows/desktop-dev.yml`, run by hand
+  from `main`, builds Zenith Team Dev for the dev server in `desktop-dev` and
+  publishes it as a `desktop-dev-v…` pre-release. Both build images
   through `.github/workflows/build-image.yml`: a native runner per platform
   with no registry credentials, then one publish job that pushes, tags and
   attests the merged image. Nothing here deploys.

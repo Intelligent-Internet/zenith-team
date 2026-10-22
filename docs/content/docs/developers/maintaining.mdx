@@ -61,15 +61,16 @@ Pull requests with no matching label land under **Other changes**.
 
 Only maintainers should be able to push version tags, because a pushed `v*` tag publishes images and a GitHub Release at once. Add a tag ruleset for `v*` that only maintainers can bypass.
 
-Only the release's desktop job uses secrets. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
+Only the desktop builds use secrets. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
 
-To publish the desktop app with releases:
+To build the desktop apps (see [Releasing](/developers/releasing#desktop-app)):
 
-1. Create the environment `desktop-release` under **Settings → Environments**. Add required reviewers, and a deployment rule that allows `v*` tags (or no restriction); a branch-only rule blocks tag runs.
-2. Add its six secrets: `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD`, `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID` and `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER`.
-3. Set the repository variables `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` and `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`, then `ZENITH_TEAM_DESKTOP_RELEASE` to `true`.
+1. Under **Settings → Environments**, create `desktop-prod`, with required reviewers and a deployment rule that allows only `v*` tags; a branch-only rule blocks tag runs.
+2. Create `desktop-dev`, with a deployment rule that allows only `main`. Every dev build signs with the company's Developer ID, so no other branch may reach it.
+3. In each, add the six secrets `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD`, `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID` and `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER`, and the variables `DESKTOP_API_ORIGIN` (that environment's server) and `DESKTOP_RELEASE_BASE_URL` (where its app looks for updates).
+4. Set the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` to `true` so releases build Zenith Team. The release then also requires `frontend/package.json` to carry each tag's version.
 
-The desktop job then also requires `frontend/package.json` to carry each tag's version. See [Releasing](/developers/releasing#desktop-app).
+Dev builds publish pre-releases tagged `desktop-dev-v<version>`. A tag ruleset that covers more than `v*` must let the workflow token create those.
 
 ### Actions
 

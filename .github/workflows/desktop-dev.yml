@@ -1,0 +1,175 @@
+# Signed builds of Zenith Team Dev, the desktop app for the dev server, started
+# by hand from main (Actions tab, "Run workflow"). Zenith Team Dev installs next
+# to Zenith Team and updates from its own channel. Release tags (v*) always
+# build the production app, in release.yml; this workflow never does.
+#
+# Each run builds version <frontend/package.json>-dev.<run number>, so dev
+# updates always move forward, and publishes a GitHub pre-release
+# desktop-dev-v<version> that is never marked latest. Its files carry build
+# attestations and the dev channel's manifests, for a static host to copy.
+#
+# The desktop-dev environment, limited to main, holds the Apple credentials and
+# the variables DESKTOP_API_ORIGIN (the dev server) and
+# DESKTOP_RELEASE_BASE_URL (where the dev app looks for updates).
+name: Desktop Dev
+
+on:
+  workflow_dispatch:
+
+# One dev build at a time; a newer request waits rather than cancelling one
+# that is signing or publishing.
+concurrency:
+  group: desktop-dev
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: frontend/package.json
+          sparse-checkout-cone-mode: false
+      - name: Choose the dev version
+        id: version
+        run: |
+          set -euo pipefail
+          base="$(jq -r .version frontend/package.json)"
+          num='(0|[1-9][0-9]*)'
+          if [[ ! "$base" =~ ^$num\.$num\.$num$ ]]; then
+            echo "::error::frontend/package.json must hold a plain X.Y.Z version, got '$base'"
+            exit 1
+          fi
+          version="$base-dev.$GITHUB_RUN_NUMBER"
+          {
+            echo "version=$version"
+            echo "tag=desktop-dev-v$version"
+          } >> "$GITHUB_OUTPUT"
+
+  desktop:
+    needs: plan
+    environment: desktop-dev
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: darwin
+            arch: arm64
+          - os: macos-15-intel
+            platform: darwin
+            arch: x64
+          - os: ubuntu-24.04
+            platform: linux
+            arch: x64
+    name: desktop (${{ matrix.platform }} ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    outputs:
+      # The publish job has no environment, so it takes the URL from here.
+      release-base-url: ${{ steps.settings.outputs.release-base-url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Without both, the shared setup would build the local variant.
+      - name: Require the desktop-dev settings
+        id: settings
+        env:
+          API_ORIGIN: ${{ vars.DESKTOP_API_ORIGIN }}
+          RELEASE_BASE_URL: ${{ vars.DESKTOP_RELEASE_BASE_URL }}
+        run: |
+          if [ -z "$API_ORIGIN" ] || [ -z "$RELEASE_BASE_URL" ]; then
+            echo "::error::Set DESKTOP_API_ORIGIN and DESKTOP_RELEASE_BASE_URL in the desktop-dev environment."
+            exit 1
+          fi
+          echo "release-base-url=$RELEASE_BASE_URL" >> "$GITHUB_OUTPUT"
+      - uses: ./.github/actions/desktop-setup
+        with:
+          variant: dev
+          api-origin: ${{ vars.DESKTOP_API_ORIGIN }}
+          release-base-url: ${{ vars.DESKTOP_RELEASE_BASE_URL }}
+      # The app and its file names carry the version from package.json.
+      - name: Stamp the dev version
+        env:
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const file = "frontend/package.json";
+            const pkg = JSON.parse(fs.readFileSync(file, "utf8"));
+            pkg.version = process.env.VERSION;
+            fs.writeFileSync(file, JSON.stringify(pkg, null, 2) + "\n");
+          '
+      - uses: ./.github/actions/desktop-package
+        with:
+          platform: ${{ matrix.platform }}
+          certificate-base64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+          certificate-password: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+          sign-identity: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+          notary-api-key-base64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+          notary-api-key-id: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+          notary-api-issuer: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-dev-${{ matrix.platform }}-${{ matrix.arch }}
+          path: |
+            frontend/out/make/**/Zenith-Team-dev-*.dmg
+            frontend/out/make/**/Zenith-Team-dev-*.zip
+            frontend/out/make/**/Zenith-Team-dev-*.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [plan, desktop]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: desktop-dev-*
+          path: desktop
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: source
+          sparse-checkout: |
+            frontend/electron/scripts
+            frontend/electron/shared
+      - name: Prepare the dev release files
+        env:
+          TAG: ${{ needs.plan.outputs.tag }}
+          ZENITH_TEAM_DESKTOP_ENV: dev
+          ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL: ${{ needs.desktop.outputs.release-base-url }}
+        run: node source/frontend/electron/scripts/write-release-publish.cjs --artifacts desktop --out dist --tag "$TAG"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/*
+      - name: Create the dev pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.plan.outputs.tag }}
+          VERSION: ${{ needs.plan.outputs.version }}
+        run: |
+          gh release create "$TAG" dist/* \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Zenith Team Dev $VERSION" \
+            --notes "Dev build of $GITHUB_SHA for the dev server; not a release." \
+            --prerelease \
+            --latest=false

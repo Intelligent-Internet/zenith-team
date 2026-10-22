@@ -663,8 +663,10 @@ its layer order in both the editor and public viewer.
   release storage whose CORS policy lets the web origin read the manifest.
 - Unsigned packages need no secrets: run `corepack pnpm electron:make`. CI's
   `desktop` lane builds unsigned macOS and Linux installers as workflow
-  artifacts whenever the desktop packaging changes. Signed releases come from
-  the `desktop` job in `.github/workflows/release.yml`.
+  artifacts whenever the desktop packaging changes. Signed builds come from
+  the `desktop` job in `.github/workflows/release.yml` (Zenith Team, on `v*`
+  tags) and from `.github/workflows/desktop-dev.yml` (Zenith Team Dev, by
+  hand from `main`); both use `.github/actions/desktop-package`.
 - macOS signing is opt-in so unsigned local builds still work. Set
   `ZENITH_TEAM_DESKTOP_MAC_SIGN=true` and optionally
   `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` to enable signing. Set

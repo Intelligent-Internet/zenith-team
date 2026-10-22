@@ -5,7 +5,7 @@ description: How maintainers cut a Zenith Team release, and what the release wor
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. Only its desktop job uses secrets, the Apple signing credentials in the `desktop-release` environment; everything else runs on the workflow's own GitHub token.
+A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. Only its desktop job uses secrets, the Apple signing credentials in the `desktop-prod` environment; everything else runs on the workflow's own GitHub token.
 
 Only a tag publishes a release. Merges to `main` that change the server, and manual runs of `.github/workflows/image.yml` at a branch or tag, publish one server image tagged `sha-<full commit>` and nothing else: a build of that commit, not a release. A release cut at the same commit rebuilds the image and repoints `sha-<full commit>`, so deployments pin the digest too: `sha-<full commit>@sha256:<digest>`.
 
@@ -118,31 +118,42 @@ Pull requests labelled `skip-changelog`, and those opened by Dependabot, are lef
 
 ## Desktop app
 
-The release builds the desktop app while the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`; otherwise the job is skipped and the rest of the release runs as before. It builds, in the `desktop-release` environment, which requires a reviewer to approve each release:
+Desktop builds come in two apps, each built for one server, chosen by what starts the build:
+
+| | Zenith Team | Zenith Team Dev |
+| --- | --- | --- |
+| Started by | A `v*` release tag, always | A manual run of **Desktop Dev** (`.github/workflows/desktop-dev.yml`) from `main` |
+| Environment | `desktop-prod` | `desktop-dev` |
+| Version | The tag's | `frontend/package.json`'s version plus `-dev.<run number>` |
+| Published as | Files on the tag's GitHub Release | A pre-release `desktop-dev-v<version>`, never marked latest |
+
+The two apps install side by side with separate data, and each updates only from its own channel.
+
+The release builds Zenith Team while the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`; otherwise its desktop job is skipped and the rest of the release runs as before. A reviewer approves each build in the `desktop-prod` environment. Both apps build:
 
 - signed and notarized macOS installers, a `.dmg` to download and a `.zip` for updates, for `arm64` and `x64`;
 - an unsigned Linux `.zip` for `x64`. Windows joins once `zen` builds there.
 
-These builds are for the server at `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` and check for updates at `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`; self-hosters still build their own (see [Desktop app](/desktop-app)). The publish job adds them to the GitHub Release with build attestations, plus:
+Each build signs in to its environment's `DESKTOP_API_ORIGIN` and checks for updates at its `DESKTOP_RELEASE_BASE_URL`; self-hosters still build their own (see [Desktop app](/desktop-app)). Every file is attached with a build attestation, plus:
 
 | File | What it is |
 | --- | --- |
 | `latest.json` | The download manifest the website reads, and the app's update manifest |
 | `update-darwin-<arch>.json` | The macOS update feed |
-| `release-publish.json` | Where a static host puts each file: installers under `<version>/`, the manifests at fixed paths |
+| `release-publish.json` | Where a static host puts each file: installers under `<version>/`, the manifests at fixed paths, and the channel (`prod` or `dev`) |
 
-A pre-release carries its installers but no manifests, so it moves nothing. Copying the files to `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`, where the website and the app look for them, happens outside this repository, so it holds no cloud credentials. Check each file's attestation against this workflow and tag before copying it. The installers can always be downloaded from the GitHub Release.
+A Zenith Team pre-release carries its installers but no manifests, so it moves nothing; every Zenith Team Dev build moves the dev manifests. Copying the files to `DESKTOP_RELEASE_BASE_URL`, where the website and the app look for them, happens outside this repository, so it holds no cloud credentials. Check each file's attestation first: against `release.yml` and the tag for Zenith Team, against `desktop-dev.yml` and `refs/heads/main` for Zenith Team Dev. The installers can always be downloaded from their GitHub Release.
 
-Settings the job reads:
+Settings:
 
 | Where | Name | Holds |
 | --- | --- | --- |
-| Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE` | `true` to build the desktop app |
-| Repository variable | `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` | The server the builds sign in to, such as `https://api.example.com` |
-| Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL` | Where installers and manifests are served, such as `https://downloads.example.com/zenith-team` |
-| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `..._MAC_CERTIFICATE_PASSWORD` | The Developer ID Application certificate (.p12) and its password |
-| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
-| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
+| Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE` | `true` to build Zenith Team with each release |
+| `desktop-prod` and `desktop-dev` variable | `DESKTOP_API_ORIGIN` | The server the app signs in to, such as `https://api.example.com` |
+| `desktop-prod` and `desktop-dev` variable | `DESKTOP_RELEASE_BASE_URL` | Where its installers and manifests are served, such as `https://downloads.example.com/zenith-team` |
+| `desktop-prod` and `desktop-dev` secret | `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `..._MAC_CERTIFICATE_PASSWORD` | The Developer ID Application certificate (.p12) and its password |
+| `desktop-prod` and `desktop-dev` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
+| `desktop-prod` and `desktop-dev` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
 
 Packaging is checked before a tag by CI's `desktop` lane, which builds unsigned macOS (arm64) and Linux (x64) installers with the same setup (`.github/actions/desktop-setup`) whenever a pull request changes the desktop packaging, and keeps them as workflow artifacts for a week. Start the CI workflow by hand to run it on demand.
 

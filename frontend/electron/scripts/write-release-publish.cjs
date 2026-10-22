@@ -6,33 +6,47 @@
 // host copies bytes and never rewrites them. A pre-release publishes its files
 // but moves no manifest.
 //
-// Usage: node write-release-publish.cjs --artifacts <dir> --out <dir>
-// Reads GITHUB_REF_NAME (the vX.Y.Z tag), GITHUB_SHA, PRERELEASE ("true" or
-// "false") and ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL (https, no trailing slash).
+// Two channels, one per app: prod (Zenith Team) from a vX.Y.Z tag, and dev
+// (Zenith Team Dev) from a desktop-dev-vX.Y.Z-dev.N tag that desktop-dev.yml
+// creates. Every dev build moves the dev manifests.
+//
+// Usage: node write-release-publish.cjs --artifacts <dir> --out <dir> [--tag <tag>]
+// Reads ZENITH_TEAM_DESKTOP_ENV ("prod", the default, or "dev"),
+// GITHUB_REF_NAME (the tag, unless --tag names it), GITHUB_SHA, PRERELEASE ("true" or "false", prod
+// only) and ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL (https, no trailing slash).
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { DESKTOP_VARIANTS } = require("../shared/desktop-variant.cjs");
 
-const APP_NAME = "Zenith Team";
-const ARTIFACT_PATTERN =
-  /^Zenith-Team-prod-(darwin|linux)-(arm64|x64)-(.+)\.(dmg|zip)$/;
+const CHANNELS = new Set(["dev", "prod"]);
 const DOWNLOAD_PLATFORMS = { darwin: "macos", linux: "linux" };
 
 function writeReleasePublish({
   artifactsDir,
   outDir,
+  channel = process.env.ZENITH_TEAM_DESKTOP_ENV || "prod",
   tag = process.env.GITHUB_REF_NAME,
   commit = process.env.GITHUB_SHA,
   prerelease = process.env.PRERELEASE === "true",
   baseUrl = process.env.ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL,
   releasedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
 } = {}) {
-  const version = parseVersion(tag);
+  if (!CHANNELS.has(channel)) {
+    throw new Error(`ZENITH_TEAM_DESKTOP_ENV must be prod or dev, got "${channel}".`);
+  }
+  const appName = DESKTOP_VARIANTS[channel].appName;
+  const version = parseVersion(tag, channel);
+  // A dev build is the newest of its channel, so it always moves the dev
+  // manifests.
+  if (channel === "dev") {
+    prerelease = false;
+  }
   if (!/^[0-9a-f]{40}$/.test(commit ?? "")) {
     throw new Error("GITHUB_SHA must be a full commit SHA.");
   }
   const releaseBaseUrl = parseBaseUrl(baseUrl);
-  const artifacts = findArtifacts(artifactsDir, version);
+  const artifacts = findArtifacts(artifactsDir, version, channel);
   checkArtifactSet(artifacts);
 
   fs.mkdirSync(outDir, { recursive: true });
@@ -55,8 +69,8 @@ function writeReleasePublish({
   const pointers = [];
   if (!prerelease) {
     const latest = {
-      appName: APP_NAME,
-      environment: "prod",
+      appName,
+      environment: channel,
       sourceSha: commit,
       version,
       releasedAt,
@@ -68,7 +82,7 @@ function writeReleasePublish({
       // macOS users download the dmg; the zip is the Squirrel.Mac update.
       if (artifact.platform === "darwin" && artifact.kind === "zip") {
         const update = {
-          name: `${APP_NAME} ${version}`,
+          name: `${appName} ${version}`,
           pub_date: releasedAt,
           type: "squirrel-mac",
           url: urlOf(artifact),
@@ -101,6 +115,7 @@ function writeReleasePublish({
   const publish = {
     schema: 1,
     app: "zenith-team",
+    channel,
     tag,
     version,
     commit,
@@ -116,13 +131,17 @@ function writeReleasePublish({
   return publish;
 }
 
-function parseVersion(tag) {
+function parseVersion(tag, channel = "prod") {
   const num = "(?:0|[1-9]\\d*)";
-  const match = new RegExp(
-    `^v(${num}\\.${num}\\.${num}(?:-(?:alpha|beta|rc)\\.${num})?)$`,
-  ).exec(tag ?? "");
+  const core = `${num}\\.${num}\\.${num}`;
+  const pattern =
+    channel === "dev"
+      ? new RegExp(`^desktop-dev-v(${core}-dev\\.${num})$`)
+      : new RegExp(`^v(${core}(?:-(?:alpha|beta|rc)\\.${num})?)$`);
+  const match = pattern.exec(tag ?? "");
   if (!match) {
-    throw new Error(`Release tag must be vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N, got "${tag}".`);
+    const shape = channel === "dev" ? "desktop-dev-vX.Y.Z-dev.N" : "vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N";
+    throw new Error(`A ${channel} release tag must be ${shape}, got "${tag}".`);
   }
   return match[1];
 }
@@ -143,11 +162,15 @@ function parseBaseUrl(value) {
   return trimmed;
 }
 
-function findArtifacts(rootDir, version) {
+function findArtifacts(rootDir, version, channel = "prod") {
+  // finalize-artifacts.cjs names them Zenith-Team-<channel>-<platform>-<arch>-<version>.
+  const pattern = new RegExp(
+    `^Zenith-Team-${channel}-(darwin|linux)-(arm64|x64)-(.+)\\.(dmg|zip)$`,
+  );
   const artifacts = [];
   for (const filePath of listFiles(rootDir)) {
     const name = path.basename(filePath);
-    const match = ARTIFACT_PATTERN.exec(name);
+    const match = pattern.exec(name);
     if (!match) {
       continue;
     }
@@ -218,24 +241,29 @@ function sha256Of(filePath) {
 }
 
 function readArgs(argv) {
+  const usage = "Usage: write-release-publish.cjs --artifacts <dir> --out <dir> [--tag <tag>]";
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const key = argv[index];
     const value = argv[index + 1];
-    if ((key !== "--artifacts" && key !== "--out") || !value) {
-      throw new Error("Usage: write-release-publish.cjs --artifacts <dir> --out <dir>");
+    if (!["--artifacts", "--out", "--tag"].includes(key) || !value) {
+      throw new Error(usage);
     }
     args[key.slice(2)] = value;
   }
   if (!args.artifacts || !args.out) {
-    throw new Error("Usage: write-release-publish.cjs --artifacts <dir> --out <dir>");
+    throw new Error(usage);
   }
   return args;
 }
 
 if (require.main === module) {
   const args = readArgs(process.argv.slice(2));
-  const publish = writeReleasePublish({ artifactsDir: args.artifacts, outDir: args.out });
+  const publish = writeReleasePublish({
+    artifactsDir: args.artifacts,
+    outDir: args.out,
+    ...(args.tag ? { tag: args.tag } : {}),
+  });
   console.log(
     `[electron] ${publish.objects.length} desktop files and ${publish.pointers.length} manifests for ${publish.tag}.`,
   );
