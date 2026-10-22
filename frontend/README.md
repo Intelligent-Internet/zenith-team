@@ -666,7 +666,8 @@ its layer order in both the editor and public viewer.
   artifacts whenever the desktop packaging changes. Signed builds come from
   the `desktop` job in `.github/workflows/release.yml` (Zenith Team, on `v*`
   tags) and from `.github/workflows/desktop-dev.yml` (Zenith Team Dev, by
-  hand from `main`); both use `.github/actions/desktop-package`.
+  hand from `main`). Each passes the Apple secrets only to its macOS signing
+  steps; the Linux job references none.
 - macOS signing is opt-in so unsigned local builds still work. Set
   `ZENITH_TEAM_DESKTOP_MAC_SIGN=true` and optionally
   `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` to enable signing. Set

@@ -124,7 +124,7 @@ Desktop builds come in two apps, each built for one server, chosen by what start
 | --- | --- | --- |
 | Started by | A `v*` release tag, always | A manual run of **Desktop Dev** (`.github/workflows/desktop-dev.yml`) from `main` |
 | Environment | `desktop-prod` | `desktop-dev` |
-| Version | The tag's | `frontend/package.json`'s version plus `-dev.<run number>` |
+| Version | The tag's | The `X.Y.Z` of `frontend/package.json` plus `-dev.<run number>` |
 | Published as | Files on the tag's GitHub Release | A pre-release `desktop-dev-v<version>`, never marked latest |
 
 The two apps install side by side with separate data, and each updates only from its own channel.
