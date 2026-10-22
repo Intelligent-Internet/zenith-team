@@ -546,9 +546,10 @@ isolated database + fixture per caller.
   Its lanes are path-gated: each lists the files its checks read, shared
   inputs included (`docs/api/**` and the deploy env template for the server
   lane, `docs/api/spec/**` for the frontend lane), and the `Makefile` runs
-  every lane except `workflows`. The server lane runs `go-fmt-check`,
-  `go-lint` (on pull requests, only findings the branch adds) and `go-unit`,
-  which includes the pinned sqlc drift check. The frontend lane runs lint,
+  every lane except `workflows`. The server runs as two parallel lanes:
+  `server-test` runs `go-unit`, which includes the pinned sqlc drift check,
+  and `server-lint` runs `go-fmt-check` and `go-lint` (on pull requests,
+  only findings the branch adds). The frontend lane runs lint,
   typecheck, the API contract checks, a production build and the Electron
   security scan; `voice` runs ruff and the Python tests; `selfhost` builds
   both images and boots the Compose stack; `desktop` builds unsigned desktop
@@ -557,14 +558,14 @@ isolated database + fixture per caller.
   fails when any lane failed or was cancelled. `.github/workflows/nightly.yml`
   runs the PostgreSQL integration suites, the Windows platform-content check
   (the pinned content in `internal/platformbundle`, `tools/builtin/` and
-  `platform_skills.go` survives a CRLF checkout) and the macOS daemon sandbox
-  tests. Secrets and vulnerable dependencies are GitHub's job: secret
+  `platform_skills.go` survives a CRLF checkout), the macOS daemon sandbox
+  tests and `go-vuln`. Secrets and vulnerable dependencies are GitHub's job: secret
   scanning with push protection and Dependabot alerts are on. Commit-message,
   branch-name and staged-secret checks are local git hooks in `.githooks/`
   (`make hooks`). Pushing a `v<major>.<minor>.<patch>` tag (or an `-alpha.N`,
-  `-beta.N` or `-rc.N` pre-release) at a commit on `main` verifies again,
-  scans Go dependencies fail-closed, and publishes the server and web images
-  to GHCR and the `zen` CLI to a GitHub Release
+  `-beta.N` or `-rc.N` pre-release) at a commit on `main` requires `ci-gate`
+  to have passed on it, scans Go dependencies fail-closed, and publishes the
+  server, web and voice images to GHCR and the `zen` CLI to a GitHub Release
   (`.github/workflows/release.yml`); while the `ZENITH_TEAM_DESKTOP_RELEASE`
   variable is `true` it also signs and notarizes the desktop app and uploads it
   to the prod downloads, from the `prod` environment. The dev server deploys

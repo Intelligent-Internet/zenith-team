@@ -78,12 +78,34 @@ jobs:
               - "frontend/pnpm-lock.yaml"
               - ".github/actions/desktop-setup/**"
 
-  server:
+  # The unit suite, alone on its runner: with -race it is the slowest lane.
+  server-test:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    # The race-enabled unit suite takes about 15 minutes on a hosted runner.
     timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      # The pinned sqlc and golangci-lint the Makefile installs into .tools.
+      - &tools-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('Makefile') }}
+      # Includes the shape checks and the pinned sqlc drift check.
+      - run: make go-unit
+
+  server-lint:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -94,6 +116,13 @@ jobs:
         with:
           go-version: "1.26.x"
           cache-dependency-path: server/go.sum
+      - *tools-cache
+      # golangci-lint's own analysis cache; it checks each entry against the
+      # source, so a stale one only costs a re-analysis.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golangci-lint-${{ runner.os }}-${{ hashFiles('Makefile', 'server/go.sum', 'server/.golangci.yml') }}
       - run: make go-fmt-check
       # Pull requests are held to zero new findings even if main has some.
       - name: Lint
@@ -105,8 +134,6 @@ jobs:
           else
             make go-lint
           fi
-      # Includes the pinned sqlc drift check (go-sqlc-check).
-      - run: make go-unit
       # zen and the MCP server ship inside the desktop app on every platform.
       - name: Cross-compile the shipped binaries
         working-directory: server
@@ -212,22 +239,19 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: "1.26.x"
-          cache: false
-      - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-      - run: actionlint
+      # The released image, with shellcheck for run: scripts, pinned by digest.
+      - run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.10.9"
-      - run: uvx zizmor@1.30.1 --min-severity medium .github/workflows
+      # Workflows and the composite action.
+      - run: uvx zizmor@1.30.1 --min-severity medium .github
 
   # Unsigned installers for the local variant, built with the same shared
   # setup as build-desktop.yml, to catch packaging breaks before a tag or a
-  # dev deploy. No secrets: only build-desktop.yml signs. The installers stay a week
-  # as workflow artifacts for manual testing. Windows joins once zen builds
-  # there.
+  # dev deploy. No secrets: only build-desktop.yml signs, and only it builds
+  # without caches. The installers stay a week as workflow artifacts for
+  # manual testing. Windows joins once zen builds there.
   desktop:
     needs: changes
     if: needs.changes.outputs.desktop == 'true'
@@ -249,6 +273,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: ./.github/actions/desktop-setup
+        with:
+          cache: "true"
       - name: Make unsigned installers
         working-directory: frontend
         env:
@@ -266,7 +292,7 @@ jobs:
   # cancelled; lanes that did not need to run are skipped.
   ci-gate:
     if: always()
-    needs: [changes, server, frontend, voice, selfhost, workflows, desktop]
+    needs: [changes, server-test, server-lint, frontend, voice, selfhost, workflows, desktop]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

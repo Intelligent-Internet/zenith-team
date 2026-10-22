@@ -1,4 +1,4 @@
-# Reusable: builds one image (server or web) of the calling commit for
+# Reusable: builds one image (server, web or voice) of the calling commit for
 # linux/amd64 and linux/arm64, each on a native runner, and publishes it as one
 # multi-arch image tagged sha-<commit> plus the caller's tags. release.yml
 # publishes to GitHub Container Registry (registry: ghcr); build-deploy.yml
@@ -18,7 +18,7 @@ on:
   workflow_call:
     inputs:
       image:
-        description: "server or web"
+        description: "server, web or voice"
         required: true
         type: string
       version:
@@ -71,6 +71,7 @@ jobs:
     outputs:
       image: ${{ steps.plan.outputs.image }}
       dockerfile: ${{ steps.plan.outputs.dockerfile }}
+      context: ${{ steps.plan.outputs.context }}
       exists: ${{ steps.plan.outputs.exists }}
       registry-host: ${{ steps.plan.outputs.registry-host }}
     steps:
@@ -95,9 +96,10 @@ jobs:
             exit 1
           fi
           case "$IMAGE" in
-            server) dockerfile=server/Dockerfile ;;
-            web) dockerfile=frontend/Dockerfile ;;
-            *) echo "::error::image must be server or web, got '$IMAGE'"; exit 1 ;;
+            server) dockerfile=server/Dockerfile context=. ;;
+            web) dockerfile=frontend/Dockerfile context=. ;;
+            voice) dockerfile=voice-agent/Dockerfile context=voice-agent ;;
+            *) echo "::error::image must be server, web or voice, got '$IMAGE'"; exit 1 ;;
           esac
           case "$REGISTRY" in
             ghcr) name="ghcr.io/${OWNER,,}/zenith-team-${IMAGE}" ;;
@@ -141,6 +143,7 @@ jobs:
           {
             echo "image=$name"
             echo "dockerfile=$dockerfile"
+            echo "context=$context"
             echo "exists=$exists"
             echo "registry-host=${name%%/*}"
           } >> "$GITHUB_OUTPUT"
@@ -180,7 +183,7 @@ jobs:
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
-          context: .
+          context: ${{ needs.plan.outputs.context }}
           file: ${{ needs.plan.outputs.dockerfile }}
           platforms: ${{ matrix.platform }}
           push: false
