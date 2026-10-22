@@ -2,8 +2,9 @@
 # the CI desktop lane. It installs the toolchain and the frontend dependencies,
 # then chooses the build variant. It sees no secrets, so nothing a dependency
 # runs at install time can read them; callers sign afterwards, in a step that
-# runs the build tools from node_modules. It restores no
-# cache, so a release build never uses what another run wrote.
+# runs the build tools from node_modules. Signed builds restore no cache, so
+# they never use what another run wrote; the unsigned CI lane opts in to the
+# pnpm and Go caches.
 name: Desktop setup
 description: Install the desktop build toolchain and dependencies, and choose the build variant.
 
@@ -24,6 +25,10 @@ inputs:
     description: "Version to build: a dev build is stamped with it, any other must already carry it in frontend/package.json"
     required: false
     default: ""
+  cache:
+    description: "\"true\" restores and saves the pnpm and Go caches; never for a build that is signed or published"
+    required: false
+    default: "false"
 
 runs:
   using: composite
@@ -36,10 +41,13 @@ runs:
       with:
         node-version: 24
         package-manager-cache: false
+        cache: ${{ inputs.cache == 'true' && 'pnpm' || '' }}
+        cache-dependency-path: frontend/pnpm-lock.yaml
     - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
       with:
         go-version: "1.26.x"
-        cache: false
+        cache: ${{ inputs.cache == 'true' }}
+        cache-dependency-path: server/go.sum
     - name: Install the frontend dependencies
       shell: bash
       run: pnpm --dir frontend install --frozen-lockfile

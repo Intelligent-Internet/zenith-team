@@ -1,6 +1,7 @@
 # Slow and platform-specific checks, run every night and on demand: the
-# PostgreSQL integration suites, the pinned platform content on Windows, and
-# the daemon's macOS sandbox. Pull requests run ci.yml instead.
+# PostgreSQL integration suites, known Go vulnerabilities, the pinned platform
+# content on Windows, and the daemon's macOS sandbox. Pull requests run ci.yml
+# instead.
 name: Nightly
 
 on:
@@ -31,6 +32,21 @@ jobs:
           go-version: "1.26.x"
           cache-dependency-path: server/go.sum
       - run: make go-integration
+
+  # The same fail-closed scan a release runs, so a new advisory shows up here
+  # first rather than at tag time.
+  vulnerabilities:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          cache-dependency-path: server/go.sum
+      - run: make go-vuln
 
   # Proves that the pinned platform content (ADR 0016) reaches a Windows
   # build byte for byte. Git for Windows' core.autocrlf would turn the harness

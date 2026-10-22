@@ -99,14 +99,17 @@ A first job, `changes`, looks at the changed files and picks the lanes. Each lan
 
 | Lane | Runs when these change | What it runs |
 | --- | --- | --- |
-| `server` | `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | `make go-fmt-check`; `make go-lint` (on a pull request, only findings new since its merge base fail); `make go-unit`, which includes the unit tests with `-race` and the pinned sqlc drift check; and cross-builds of `zen` and `zenith-team-mcp` for macOS, and `zenith-team-mcp` for Windows |
+| `server-test` | `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | `make go-unit`, which includes the unit tests with `-race` and the pinned sqlc drift check |
+| `server-lint` | The same as `server-test` | `make go-fmt-check`; `make go-lint` (on a pull request, only findings new since its merge base fail); and cross-builds of `zen` and `zenith-team-mcp` for macOS, and `zenith-team-mcp` for Windows |
 | `frontend` | `frontend/**`, `docs/api/spec/**`, `LICENSE`, `THIRD_PARTY_NOTICES.md` | `make lint typecheck`, `make api-lint api-types-check`, the production build (`make build`) and the Electron security scan |
 | `voice` | `voice-agent/**` | `ruff check`, `ruff format --check`, the Python tests, and a Docker build |
 | `selfhost` | `deploy/**`, a Dockerfile, `LICENSE`, `THIRD_PARTY_NOTICES.md` | Builds both images, runs `make selfhost-env`, boots the Compose stack, and checks that `/readyz` and the web app answer |
 | `desktop` | `frontend/electron/**`, `frontend/forge.config.cjs`, `frontend/package.json`, `frontend/pnpm-lock.yaml`, `.github/actions/desktop-setup/**` | Unsigned desktop installers for macOS (arm64) and Linux (x64) with `pnpm electron:make`, kept a week as workflow artifacts |
-| `workflows` | `.github/**` | `actionlint` and `zizmor` (medium severity and above) on the GitHub workflows |
+| `workflows` | `.github/**` | `actionlint` (with `shellcheck`) on the workflows, and `zizmor` (medium severity and above) on the workflows and the composite action |
 
 A change to the `Makefile` runs every lane except `desktop` and `workflows`. A manual run from the Actions tab runs every lane.
+
+The server lanes cache the pinned `sqlc` and `golangci-lint` (`.tools`) and golangci-lint's analysis, and the `desktop` lane caches the pnpm store and Go builds. Nothing that is signed or published restores a cache.
 
 ### The required check
 
@@ -121,12 +124,13 @@ Pull requests from forks run with a read-only token and no secrets.
 | Job | What it runs |
 | --- | --- |
 | `integration` | `make go-integration`: every PostgreSQL suite with `-race` |
+| `vulnerabilities` | `make go-vuln`, the scan a release runs, so a new advisory shows up before a tag |
 | `windows` | On Windows: the platform-content tests, a few `zenith-team-mcp` tests, and a build of `zenith-team-mcp`, proving the pinned content survives a CRLF checkout |
 | `macos` | On macOS: the daemon's sandbox tests, which keep agents away from sign-in files and other runs' folders |
 
 ### Secrets and dependencies
 
-GitHub does this work, so no workflow repeats it: secret scanning with push protection refuses a push that contains a known secret format, and Dependabot alerts and security updates track vulnerable dependencies. Dependabot also checks Go modules, npm packages, Python packages, GitHub Actions and Docker base images every week, skipping versions younger than a week. Tag releases run `govulncheck` and fail on a known vulnerability (see [Releasing](/developers/releasing)).
+GitHub does this work, so no workflow repeats it: secret scanning with push protection refuses a push that contains a known secret format, and Dependabot alerts and security updates track vulnerable dependencies. Dependabot also checks Go modules, npm packages, Python packages, GitHub Actions and Docker base images every week, skipping versions younger than a week. The nightly run and every tag release run `govulncheck`, and a release fails on a known vulnerability (see [Releasing](/developers/releasing)).
 
 ## Local git hooks
 

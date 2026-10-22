@@ -1,5 +1,5 @@
-# Publishes a release from a v<major>.<minor>.<patch> tag on main: the server
-# and web images to GitHub Container Registry (build-image.yml, which
+# Publishes a release from a v<major>.<minor>.<patch> tag on main: the server,
+# web and voice images to GitHub Container Registry (build-image.yml, which
 # build-deploy.yml shares), and the zen CLI plus the zenith-team-mcp binary to
 # a GitHub Release with checksums. While desktop releases are on, it also
 # builds the production desktop app (build-desktop.yml), publishes it to the
@@ -24,9 +24,16 @@ permissions:
   contents: read
 
 jobs:
+  # A tag publishes only a commit that already passed CI: main-protection
+  # requires ci-gate before a merge, and CI runs again on the push to main.
+  # This job checks that rather than repeating it, and adds what can change
+  # after the merge: newly published Go vulnerabilities.
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: read
+      checks: read
     outputs:
       prerelease: ${{ steps.tag.outputs.prerelease }}
       version: ${{ steps.tag.outputs.version }}
@@ -65,6 +72,35 @@ jobs:
         run: |
           git fetch origin main
           git merge-base --is-ancestor "$GITHUB_SHA" origin/main
+      # Before anything publishes: a mismatch found later, in the desktop build,
+      # would leave images out with no GitHub Release.
+      - name: Require frontend/package.json to match the tag
+        if: vars.ZENITH_TEAM_DESKTOP_RELEASE == 'true'
+        working-directory: frontend
+        run: node electron/scripts/assert-release-version.cjs
+      # A tag pushed right after a merge waits for that push's CI run.
+      - name: Require CI to have passed on the tagged commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 60); do
+            # shellcheck disable=SC2016 # $runs is jq's, not the shell's.
+            state="$(gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?check_name=ci-gate&filter=latest" --jq '
+              [.check_runs[] | select(.app.slug == "github-actions")] as $runs
+              | if any($runs[]; .conclusion == "success") then "success"
+                elif any($runs[]; .status != "completed") then "running"
+                elif ($runs | length) > 0 then "failed"
+                else "missing" end')"
+            case "$state" in
+              success) echo "ci-gate passed on $GITHUB_SHA."; exit 0 ;;
+              failed) echo "::error::ci-gate failed on $GITHUB_SHA; fix main and tag a new version."; exit 1 ;;
+            esac
+            echo "ci-gate is $state on $GITHUB_SHA; waiting ($attempt/60)."
+            sleep 30
+          done
+          echo "::error::ci-gate did not pass on $GITHUB_SHA within 30 minutes."
+          exit 1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26.x"
@@ -86,26 +122,6 @@ jobs:
           fi
           echo "::error::govulncheck found vulnerabilities. Fix them, or set ALLOW_VULN_BYPASS_FOR_TAG=$GITHUB_REF_NAME to release anyway."
           exit 1
-      - run: make go-fmt-check
-      - run: make go-unit
-      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          package_json_file: frontend/package.json
-          run_install: false
-      # No pnpm cache, for the same reason as Go above.
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: 24
-          package-manager-cache: false
-      - run: pnpm --dir frontend install --frozen-lockfile
-        env:
-          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
-      - run: make lint typecheck api-lint api-types-check
-      # Before anything publishes: a mismatch found later, in the desktop build,
-      # would leave images out with no GitHub Release.
-      - name: Require frontend/package.json to match the tag
-        if: vars.ZENITH_TEAM_DESKTOP_RELEASE == 'true'
-        run: pnpm --dir frontend electron:release:assert-version
 
   # Each image is built natively per platform and published, with its SBOM,
   # provenance and a build attestation, by build-image.yml. Besides the
@@ -121,7 +137,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [server, web]
+        image: [server, web, voice]
     uses: ./.github/workflows/build-image.yml
     with:
       image: ${{ matrix.image }}
