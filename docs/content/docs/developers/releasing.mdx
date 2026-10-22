@@ -144,7 +144,7 @@ Settings the job reads:
 | `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
 | `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
 
-To check packaging without releasing, a maintainer runs **Desktop Smoke Build** (`.github/workflows/desktop-smoke.yml`) from the Actions tab. It builds unsigned macOS (arm64) and Linux (x64) installers and keeps them as workflow artifacts for a week. Leave its `api_origin` input empty for the local variant, or give a server address for a prod build.
+Packaging is checked before a tag by CI's `desktop` lane, which builds unsigned macOS (arm64) and Linux (x64) installers with the same setup (`.github/actions/desktop-setup`) whenever a pull request changes the desktop packaging, and keeps them as workflow artifacts for a week. Start the CI workflow by hand to run it on demand.
 
 ## If a release fails
 

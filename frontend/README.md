@@ -661,9 +661,10 @@ its layer order in both the editor and public viewer.
   `VITE_ZENITH_TEAM_DESKTOP_WINDOWS_URL` and `VITE_ZENITH_TEAM_DESKTOP_LINUX_URL`
   override single platforms. Keep signed artifacts out of git; host them in
   release storage whose CORS policy lets the web origin read the manifest.
-- Unsigned packages need no secrets: run `corepack pnpm electron:make`, or
-  the manual **Desktop Smoke Build** workflow (`.github/workflows/desktop-smoke.yml`),
-  which builds unsigned macOS and Linux installers as workflow artifacts.
+- Unsigned packages need no secrets: run `corepack pnpm electron:make`. CI's
+  `desktop` lane builds unsigned macOS and Linux installers as workflow
+  artifacts whenever the desktop packaging changes. Signed releases come from
+  the `desktop` job in `.github/workflows/release.yml`.
 - macOS signing is opt-in so unsigned local builds still work. Set
   `ZENITH_TEAM_DESKTOP_MAC_SIGN=true` and optionally
   `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` to enable signing. Set

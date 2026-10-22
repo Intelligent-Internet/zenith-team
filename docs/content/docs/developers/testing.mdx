@@ -103,9 +103,10 @@ A first job, `changes`, looks at the changed files and picks the lanes. Each lan
 | `frontend` | `frontend/**`, `docs/api/spec/**`, `LICENSE`, `THIRD_PARTY_NOTICES.md` | `make lint typecheck`, `make api-lint api-types-check`, the production build (`make build`) and the Electron security scan |
 | `voice` | `voice-agent/**` | `ruff check`, `ruff format --check`, the Python tests, and a Docker build |
 | `selfhost` | `deploy/**`, a Dockerfile, `LICENSE`, `THIRD_PARTY_NOTICES.md` | Builds both images, runs `make selfhost-env`, boots the Compose stack, and checks that `/readyz` and the web app answer |
+| `desktop` | `frontend/electron/**`, `frontend/forge.config.cjs`, `frontend/package.json`, `frontend/pnpm-lock.yaml`, `.github/actions/desktop-setup/**` | Unsigned desktop installers for macOS (arm64) and Linux (x64) with `pnpm electron:make`, kept a week as workflow artifacts |
 | `workflows` | `.github/**` | `actionlint` and `zizmor` (medium severity and above) on the GitHub workflows |
 
-A change to the `Makefile` runs every lane except `workflows`. A manual run from the Actions tab runs every lane.
+A change to the `Makefile` runs every lane except `desktop` and `workflows`. A manual run from the Actions tab runs every lane.
 
 ### The required check
 

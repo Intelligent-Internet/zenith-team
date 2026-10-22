@@ -42,7 +42,7 @@ Windows is not supported yet, because the bundled `zen` CLI does not build there
 
 ### Test builds from CI
 
-Maintainers can run the **Desktop Smoke Build** workflow (`.github/workflows/desktop-smoke.yml`) by hand from the Actions tab. It makes unsigned test builds for macOS (arm64) and Linux (x64) and keeps them as workflow artifacts for a week. Leave its `api_origin` input empty for a `local` build, or give a server address for a `prod` build. These builds are for testing packaging, not for handing out.
+CI's `desktop` lane makes unsigned `local` builds for macOS (arm64) and Linux (x64) whenever a pull request changes the desktop packaging, and on a manual CI run, and keeps them as workflow artifacts for a week. These builds are for testing packaging, not for handing out.
 
 ## Connect it to your server
 
