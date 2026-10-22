@@ -235,7 +235,13 @@ jobs:
           security set-keychain-settings -lut 21600 "$keychain"
           security unlock-keychain -p "$keychain_password" "$keychain"
           security import "$certificate" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
-          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | sed s/\"//g)
+          # Keep the existing search list and put the release keychain first.
+          keychains=("$keychain")
+          while IFS= read -r line; do
+            line="${line//\"/}"
+            keychains+=("${line//[[:space:]]/}")
+          done < <(security list-keychains -d user)
+          security list-keychains -d user -s "${keychains[@]}"
           security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
           rm -f "$certificate"
           # The key file's path is not a secret; the build step reads the file.
