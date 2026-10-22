@@ -39,12 +39,9 @@ docker build -f server/Dockerfile -t zenith-team-server:$(git rev-parse --short 
 CI publishes the same image, with the web image, to
 `ghcr.io/intelligent-internet/zenith-team-server` and
 `ghcr.io/intelligent-internet/zenith-team-web` when a `v<semver>` tag is
-pushed at a commit on `main` (`.github/workflows/release.yml`). Pushes to
-`main` that change the server, and manual runs of
-`.github/workflows/image.yml`, publish only
-`zenith-team-server:sha-<full commit>`: a build of one commit, not a release.
-A release at that commit repoints the tag, so pin `sha-<full commit>@sha256:<digest>`.
-Tag local images with the
+pushed at a commit on `main` (`.github/workflows/release.yml`), tagged with
+the version and `sha-<full commit>`. Pin a version, or
+`sha-<full commit>@sha256:<digest>`. Tag local images with the
 commit; `latest` is a convenience, never a deploy target. The image
 contains two binaries: `/usr/local/bin/zenith-team-server`
 and `/usr/local/bin/zenith-team-readyz`, a static probe used by the container

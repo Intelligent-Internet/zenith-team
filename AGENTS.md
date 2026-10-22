@@ -561,20 +561,21 @@ isolated database + fixture per caller.
   tests. Secrets and vulnerable dependencies are GitHub's job: secret
   scanning with push protection and Dependabot alerts are on. Commit-message,
   branch-name and staged-secret checks are local git hooks in `.githooks/`
-  (`make hooks`). A push to `main` that changes the server image, or a
-  dispatch at any branch or tag, publishes only the server image of that
-  commit, `zenith-team-server:sha-<full commit>`
-  (`.github/workflows/image.yml`); it is a build, not a release. Pushing a
-  `v<major>.<minor>.<patch>` tag (or an `-alpha.N`, `-beta.N` or `-rc.N`
-  pre-release) at a commit on `main` verifies again, scans Go dependencies
-  fail-closed, and publishes the server and web images to GHCR and the `zen`
-  CLI to a GitHub Release (`.github/workflows/release.yml`); while the
-  `ZENITH_TEAM_DESKTOP_RELEASE` variable is `true` it also signs and notarizes
-  the desktop app in the reviewer-gated `desktop-release` environment and
-  attaches it, with the manifests a static host serves, to the release. Both build images
-  through `.github/workflows/build-image.yml`: a native runner per platform
-  with no registry credentials, then one publish job that pushes, tags and
-  attests the merged image. Nothing here deploys.
+  (`make hooks`). Pushing a `v<major>.<minor>.<patch>` tag (or an `-alpha.N`,
+  `-beta.N` or `-rc.N` pre-release) at a commit on `main` verifies again,
+  scans Go dependencies fail-closed, and publishes the server and web images
+  to GHCR and the `zen` CLI to a GitHub Release
+  (`.github/workflows/release.yml`); while the `ZENITH_TEAM_DESKTOP_RELEASE`
+  variable is `true` it also signs and notarizes the desktop app and uploads it
+  to the prod downloads, from the `prod` environment. The dev server deploys
+  from any branch through `.github/workflows/build-deploy.yml` (the Slack
+  deploy bot or a manual run), in the `dev` environment: the image goes to
+  Artifact Registry and its digest to ii-infras-mono, which Argo CD rolls out;
+  the dev desktop app ships from `main` only. The Apple credentials live only
+  in the `desktop-signing` environment (`main` and `v*` tags). Shared pieces:
+  `build-image.yml` (a native runner per platform with no registry
+  credentials, then one publish job that pushes, tags and attests the merged
+  image), `build-desktop.yml` and `publish-desktop.yml`.
 - Preserve unrelated user changes and never commit credentials or generated
   build output.
 

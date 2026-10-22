@@ -1,0 +1,216 @@
+# Reusable: publishes the desktop build that build-desktop.yml made earlier in
+# this run to its channel's downloads, DESKTOP_UPLOAD_URL (gs://<bucket>/<prefix>),
+# served at DESKTOP_RELEASE_BASE_URL. The website's download buttons and the
+# app's auto-updater read latest.json there. Called by build-deploy.yml (dev)
+# and release.yml (prod), once the build succeeded.
+#
+# It runs in the channel's GitHub environment, whose GCP_DESKTOP_SA may write
+# only objects under that prefix and only from that environment (ii-infras-mono
+# terraform/gcp/envs/dev/19-zenith-team-github.tf). It uses no secret.
+#
+# The files go under <version>/ once and are never replaced. The manifests move
+# next, and only to a version not older than the one they name; a pre-release
+# moves none. <version>/release-publish.json goes last and marks the version
+# published: a re-run of the same build finds it and stops, a different build
+# of a published version fails.
+name: Publish desktop
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: "prod (Zenith Team) or dev (Zenith Team Dev)"
+        required: true
+        type: string
+      version:
+        description: "The version build-desktop.yml built"
+        required: true
+        type: string
+    outputs:
+      artifact:
+        description: "Workflow artifact holding the published files, for a GitHub Release"
+        value: ${{ jobs.publish.outputs.artifact }}
+
+permissions: {}
+
+jobs:
+  publish:
+    environment: ${{ inputs.channel }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    # Two runs never move one channel's manifests at once.
+    concurrency:
+      group: publish-desktop-${{ inputs.channel }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    outputs:
+      artifact: desktop-${{ inputs.channel }}-release
+    steps:
+      - name: Require the channel's settings
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          SERVICE_ACCOUNT: ${{ vars.GCP_DESKTOP_SA }}
+          RELEASE_BASE_URL: ${{ vars.DESKTOP_RELEASE_BASE_URL }}
+          UPLOAD_URL: ${{ vars.DESKTOP_UPLOAD_URL }}
+        run: |
+          if [ "$CHANNEL" != dev ] && [ "$CHANNEL" != prod ]; then
+            echo "::error::channel must be dev or prod, got '$CHANNEL'"
+            exit 1
+          fi
+          if [ -z "$PROVIDER" ] || [ -z "$SERVICE_ACCOUNT" ] || [ -z "$RELEASE_BASE_URL" ]; then
+            echo "::error::Set GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DESKTOP_SA and DESKTOP_RELEASE_BASE_URL for the $CHANNEL environment."
+            exit 1
+          fi
+          if [[ ! "$UPLOAD_URL" =~ ^gs://[a-z0-9][a-z0-9._-]*(/[A-Za-z0-9._-]+)+$ ]]; then
+            echo "::error::DESKTOP_UPLOAD_URL must be gs://<bucket>/<prefix> without a trailing slash, got '$UPLOAD_URL'"
+            exit 1
+          fi
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: desktop-${{ inputs.channel }}-*-*
+          path: desktop
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          path: source
+          sparse-checkout: |
+            frontend/electron/scripts
+            frontend/electron/shared
+      # Before signing in, so this project code never runs with cloud
+      # credentials around.
+      - name: Prepare the files and manifests
+        env:
+          VERSION: ${{ inputs.version }}
+          ZENITH_TEAM_DESKTOP_ENV: ${{ inputs.channel }}
+          ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL: ${{ vars.DESKTOP_RELEASE_BASE_URL }}
+        run: node source/frontend/electron/scripts/write-release-publish.cjs --artifacts desktop --out release --version "$VERSION"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: release/*
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        id: gcp
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DESKTOP_SA }}
+          token_format: access_token
+          create_credentials_file: false
+      # Straight to the Cloud Storage APIs, by object name: the account may
+      # not list the bucket, which gcloud storage cp does for a new object.
+      - name: Upload
+        env:
+          TARGET: ${{ vars.DESKTOP_UPLOAD_URL }}
+          VERSION: ${{ inputs.version }}
+          TOKEN: ${{ steps.gcp.outputs.access_token }}
+        run: |
+          set -euo pipefail
+          plan=release/release-publish.json
+          bucket="${TARGET#gs://}"
+          bucket="${bucket%%/*}"
+          prefix="${TARGET#gs://"$bucket"/}"
+          auth=(-H "Authorization: Bearer $TOKEN")
+
+          # Downloads one object of the channel; prints the HTTP status.
+          fetch() {
+            local name
+            name="$(jq -rn --arg name "$prefix/$1" '$name | @uri')"
+            curl -sS --retry 3 -o "$2" -w '%{http_code}' "${auth[@]}" \
+              "https://storage.googleapis.com/storage/v1/b/$bucket/o/$name?alt=media"
+          }
+          remote_md5() {
+            local name
+            name="$(jq -rn --arg name "$prefix/$1" '$name | @uri')"
+            curl -fsS --retry 3 "${auth[@]}" "https://storage.googleapis.com/storage/v1/b/$bucket/o/$name" | jq -r .md5Hash
+          }
+          content_type() {
+            case "$1" in
+              *.dmg) echo application/x-apple-diskimage ;;
+              *.zip) echo application/zip ;;
+              *.json) echo application/json ;;
+              *.sha256) echo text/plain ;;
+              *) echo application/octet-stream ;;
+            esac
+          }
+          # Uploads release/<asset> to <path>, which Cloud Storage refuses
+          # unless the bytes match Content-MD5. "create" refuses to replace an
+          # existing object (HTTP 412). Prints the HTTP status.
+          put() {
+            local asset="$1" path="$2" cache="$3" mode="${4:-}" args
+            args=(-sS --retry 3 -o "$RUNNER_TEMP/put.out" -w '%{http_code}' -T "release/$asset" "${auth[@]}"
+              -H "Content-Type: $(content_type "$asset")" -H "Cache-Control: $cache"
+              -H "Content-MD5: $(openssl dgst -md5 -binary "release/$asset" | base64)")
+            if [ "$mode" = create ]; then
+              args+=(-H "x-goog-if-generation-match: 0")
+            fi
+            curl "${args[@]}" "https://storage.googleapis.com/$bucket/$prefix/$path"
+          }
+          # Creates an object once: an existing one must hold the same bytes.
+          create() {
+            local status
+            status="$(put "$1" "$2" "public, max-age=31536000, immutable" create)"
+            case "$status" in
+              200) ;;
+              412)
+                [ "$(remote_md5 "$2")" = "$(openssl dgst -md5 -binary "release/$1" | base64)" ] || {
+                  echo "::error::$TARGET/$2 already exists with other content; published files are never replaced."
+                  exit 1
+                }
+                ;;
+              *) cat "$RUNNER_TEMP/put.out" >&2; echo "::error::Upload of $TARGET/$2 failed (HTTP $status)."; exit 1 ;;
+            esac
+          }
+
+          status="$(fetch "$VERSION/release-publish.json" "$RUNNER_TEMP/published.json")"
+          case "$status" in
+            200)
+              if [ "$(jq -c .objects "$RUNNER_TEMP/published.json")" = "$(jq -c .objects "$plan")" ]; then
+                echo "::notice::$VERSION is already published with these files."
+                exit 0
+              fi
+              echo "::error::$VERSION is already published with other files; published files are never replaced."
+              exit 1
+              ;;
+            404) ;;
+            *) echo "::error::Could not check $TARGET/$VERSION (HTTP $status)."; exit 1 ;;
+          esac
+
+          echo "== Files under $TARGET/$VERSION/"
+          while IFS=$'\t' read -r asset path; do
+            create "$asset" "$path"
+            echo "$path"
+          done < <(jq -r '.objects[] | [.asset, .path] | @tsv' "$plan")
+
+          if [ "$(jq '.pointers | length' "$plan")" -gt 0 ]; then
+            status="$(fetch latest.json "$RUNNER_TEMP/current.json")"
+            case "$status" in
+              200) current="$(jq -er .version "$RUNNER_TEMP/current.json")" ;;
+              404) current="" ;;
+              *) echo "::error::Could not read $TARGET/latest.json (HTTP $status)."; exit 1 ;;
+            esac
+            # Each channel compares like with like (X.Y.Z, or X.Y.Z-dev.N), so
+            # version sort orders them as SemVer does.
+            if [ -z "$current" ] || [ "$(printf '%s\n%s\n' "$current" "$VERSION" | sort -V | tail -n 1)" = "$VERSION" ]; then
+              echo "== Manifests, ${current:-none} -> $VERSION"
+              # latest.json last: the website and the app read it first.
+              while IFS=$'\t' read -r asset path; do
+                status="$(put "$asset" "$path" "no-cache, max-age=0")"
+                [ "$status" = 200 ] || { cat "$RUNNER_TEMP/put.out" >&2; echo "::error::Upload of $TARGET/$path failed (HTTP $status)."; exit 1; }
+                echo "$path"
+              done < <(jq -r '.pointers | sort_by(.path == "latest.json")[] | [.asset, .path] | @tsv' "$plan")
+            else
+              echo "::notice::latest.json names $current, newer than $VERSION: its files are published, the manifests stay."
+            fi
+          fi
+
+          create release-publish.json "$VERSION/release-publish.json"
+          echo "::notice::Published $VERSION to ${TARGET}."
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-${{ inputs.channel }}-release
+          path: release/
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7

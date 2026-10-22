@@ -5,9 +5,9 @@ description: How maintainers cut a Zenith Team release, and what the release wor
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. Only its desktop job uses secrets, the Apple signing credentials in the `desktop-release` environment; everything else runs on the workflow's own GitHub token.
+A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. Only its desktop jobs use secrets and cloud access, from the `prod` and `desktop-signing` environments; everything else runs on the workflow's own GitHub token.
 
-Only a tag publishes a release. Merges to `main` that change the server, and manual runs of `.github/workflows/image.yml` at a branch or tag, publish one server image tagged `sha-<full commit>` and nothing else: a build of that commit, not a release. A release cut at the same commit rebuilds the image and repoints `sha-<full commit>`, so deployments pin the digest too: `sha-<full commit>@sha256:<digest>`.
+Only a tag publishes a release. The project's own dev server and dev desktop app are deployed from any branch by a separate workflow, which publishes nothing public (see [Dev deployments](#dev-deployments)).
 
 ## Before you tag
 
@@ -16,7 +16,7 @@ Only a tag publishes a release. Merges to `main` that change the server, and man
 - `make go-vuln` finds no known vulnerabilities in the Go dependencies. The release stops on any (see below).
 - Merged pull requests carry the right labels, so the release notes sort them (see below).
 - Docs and `deploy/production.env.example` cover any new setting.
-- When desktop releases are on, `frontend/package.json` has the tag's version. The desktop job stops otherwise.
+- When desktop releases are on, `frontend/package.json` has the tag's version. The release stops in its first step otherwise.
 
 ## Cut the release
 
@@ -55,7 +55,7 @@ Verify runs first; images, binaries and the desktop app then build side by side,
 
 ### 2. Images
 
-Builds the server and web images (`server/Dockerfile` and `frontend/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to GitHub Container Registry. `.github/workflows/build-image.yml` does the work, the same steps `image.yml` uses: the build jobs hold no registry credentials, and one publish job pushes the platform images, merges them and tags the result.
+Builds the server and web images (`server/Dockerfile` and `frontend/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to GitHub Container Registry. `.github/workflows/build-image.yml` does the work, the same steps dev deployments use: the build jobs hold no registry credentials, and one publish job pushes the platform images, merges them and tags the result.
 
 - `ghcr.io/intelligent-internet/zenith-team-server`
 - `ghcr.io/intelligent-internet/zenith-team-web`
@@ -67,7 +67,7 @@ For `v1.3.0`, each image gets four tags:
 | `1.3.0` | This exact release. Self-hosters should pin this. |
 | `1.3` | The newest patch of the 1.3 line. |
 | `latest` | The newest release. |
-| `sha-<full commit>` | The tagged commit. Unreleased commits get this tag too, from `image.yml`. |
+| `sha-<full commit>` | The tagged commit. |
 
 A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`, plus `sha-<full commit>`.
 
@@ -81,7 +81,7 @@ gh attestation verify oci://ghcr.io/intelligent-internet/zenith-team-server:1.3.
   --deny-self-hosted-runners
 ```
 
-Always pin `--source-ref`: without it, a build of any branch passes. For a `sha-<commit>` image from `main`, use `--source-ref refs/heads/main --source-digest <commit>`.
+Always pin `--source-ref`: without it, a build of any branch passes.
 
 The first publish creates each GHCR package as private. A maintainer makes `zenith-team-server` and `zenith-team-web` public once, in the package settings; until then nobody can pull them anonymously.
 
@@ -99,7 +99,7 @@ Archives are named like `zenith-team_v1.3.0_linux_amd64.tar.gz`. Each one also h
 
 ### 4. Publish
 
-Creates a GitHub Release named `Zenith Team v1.3.0` with the archives and `checksums.txt` attached, plus the desktop files when the desktop job ran (see [Desktop app](#desktop-app)), marked as a pre-release when the tag is one. Every attached file gets a build attestation; check one with `gh attestation verify <file> --repo Intelligent-Internet/zenith-team --signer-workflow Intelligent-Internet/zenith-team/.github/workflows/release.yml --source-ref refs/tags/v1.3.0`. The release notes are generated from the pull requests merged since the last release.
+Creates a GitHub Release named `Zenith Team v1.3.0` with the archives and `checksums.txt` attached, plus the desktop files once they are published (see [Desktop app](#desktop-app)), marked as a pre-release when the tag is one. Every attached file has a build attestation; check an archive with `gh attestation verify <file> --repo Intelligent-Internet/zenith-team --signer-workflow Intelligent-Internet/zenith-team/.github/workflows/release.yml --source-ref refs/tags/v1.3.0`, and a desktop file the same way with `--signer-workflow Intelligent-Internet/zenith-team/.github/workflows/publish-desktop.yml`. The release notes are generated from the pull requests merged since the last release.
 
 ## Release notes
 
@@ -118,33 +118,52 @@ Pull requests labelled `skip-changelog`, and those opened by Dependabot, are lef
 
 ## Desktop app
 
-The release builds the desktop app while the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`; otherwise the job is skipped and the rest of the release runs as before. It builds, in the `desktop-release` environment, which requires a reviewer to approve each release:
+While the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`, the release also builds the production desktop app with `.github/workflows/build-desktop.yml`. The macOS builds are signed in the `desktop-signing` environment, the only place the Apple credentials live; it admits `main` and `v*` tags only:
 
 - signed and notarized macOS installers, a `.dmg` to download and a `.zip` for updates, for `arm64` and `x64`;
 - an unsigned Linux `.zip` for `x64`. Windows joins once `zen` builds there.
 
-These builds are for the server at `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` and check for updates at `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`; self-hosters still build their own (see [Desktop app](/desktop-app)). The publish job adds them to the GitHub Release with build attestations, plus:
+These builds sign in to the server at `DESKTOP_API_ORIGIN` and check for updates at `DESKTOP_RELEASE_BASE_URL`; self-hosters still build their own (see [Desktop app](/desktop-app)). Once the images and binaries are out too, `.github/workflows/publish-desktop.yml` uploads the files to `DESKTOP_UPLOAD_URL`, the Cloud Storage location served at `DESKTOP_RELEASE_BASE_URL`, and the GitHub Release gets the same files:
 
-| File | What it is |
-| --- | --- |
-| `latest.json` | The download manifest the website reads, and the app's update manifest |
-| `update-darwin-<arch>.json` | The macOS update feed |
-| `release-publish.json` | Where a static host puts each file: installers under `<version>/`, the manifests at fixed paths |
+| File | What it is | Uploaded to |
+| --- | --- | --- |
+| Installers and their `.sha256` | The `.dmg` and `.zip` files above | `<version>/<platform>/<arch>/`, once, never replaced |
+| `latest.json` | The download manifest the website reads, and the app's update manifest | `latest.json` |
+| `update-darwin-<arch>.json` | The macOS update feed | `updates/darwin/<arch>/latest.json` |
+| `release-publish.json` | Every file above with its SHA-256 | `<version>/release-publish.json`, last: it marks the version published |
 
-A pre-release carries its installers but no manifests, so it moves nothing. Copying the files to `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`, where the website and the app look for them, happens outside this repository, so it holds no cloud credentials. Check each file's attestation against this workflow and tag before copying it. The installers can always be downloaded from the GitHub Release.
+A pre-release uploads its installers but moves no manifest, and the manifests never move back to an older version. Re-running the publish of the same build finds `release-publish.json` and stops; a different build of a published version fails instead of replacing files.
 
-Settings the job reads:
+Settings the desktop jobs read:
 
 | Where | Name | Holds |
 | --- | --- | --- |
 | Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE` | `true` to build the desktop app |
-| Repository variable | `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` | The server the builds sign in to, such as `https://api.example.com` |
-| Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL` | Where installers and manifests are served, such as `https://downloads.example.com/zenith-team` |
-| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `..._MAC_CERTIFICATE_PASSWORD` | The Developer ID Application certificate (.p12) and its password |
-| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
-| `desktop-release` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
+| Repository variable | `GCP_WORKLOAD_IDENTITY_PROVIDER` | The Workload Identity provider the upload signs in through |
+| `prod` variable | `DESKTOP_API_ORIGIN` | The server the builds sign in to, such as `https://api.example.com` |
+| `prod` variable | `DESKTOP_RELEASE_BASE_URL` | Where installers and manifests are served, such as `https://downloads.example.com/zenith-team` |
+| `prod` variable | `DESKTOP_UPLOAD_URL` | The bucket and prefix behind it, such as `gs://downloads/zenith-team` |
+| `prod` variable | `GCP_DESKTOP_SA` | The service account that may write there, only from the `prod` environment |
+| `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `..._MAC_CERTIFICATE_PASSWORD` | The Developer ID Application certificate (.p12) and its password |
+| `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
+| `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
 
 Packaging is checked before a tag by CI's `desktop` lane, which builds unsigned macOS (arm64) and Linux (x64) installers with the same setup (`.github/actions/desktop-setup`) whenever a pull request changes the desktop packaging, and keeps them as workflow artifacts for a week. Start the CI workflow by hand to run it on demand.
+
+## Dev deployments
+
+The project's own dev server and **Zenith Team Dev**, the desktop app built for it, are not releases. `.github/workflows/build-deploy.yml` builds the branch or tag it runs on and deploys it to the `dev` environment. The Slack deploy bot starts it, and so does **Actions → Build and deploy → Run workflow**:
+
+- **Server** (on by default): builds the server image as a release does and pushes it to the dev Artifact Registry repository, `GCP_IMAGE`. Then it commits `sha-<commit>@<digest>` to the deployment repository (`charts/zenith-team/envs/dev.yaml` in `Intelligent-Internet/ii-infras-mono`), and Argo CD rolls it out.
+- **Desktop** (off by default, `main` only): builds Zenith Team Dev `<X.Y.Z of frontend/package.json>-dev.<run number>` with `build-desktop.yml` and publishes it with `publish-desktop.yml`, as above, to the dev channel. Installed dev apps update to it. It is `main` only because it is signed in `desktop-signing`: a branch can deploy the dev server, but cannot reach the Developer ID.
+
+Deploys to an environment run one at a time, in the order they started; a newer request replaces one that is still waiting. Anyone with write access can deploy to `dev`. Every job that touches the cloud runs in the environment, and its accounts accept no other job. The `dev` environment holds the same desktop variables as `prod`, with its own values, plus:
+
+| Variable | Holds |
+| --- | --- |
+| `GCP_DEPLOYER_SA` | The service account that pushes the image and reads the deploy key, only from `dev` |
+| `GCP_IMAGE` | The image, `<region>-docker.pkg.dev/<project>/<repository>/<name>` |
+| `GITOPS_DEPLOY_KEY_SECRET` | The Secret Manager secret holding the deployment repository's deploy key, `projects/<project>/secrets/<name>` |
 
 ## If a release fails
 
