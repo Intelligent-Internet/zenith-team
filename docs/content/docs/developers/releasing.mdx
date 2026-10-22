@@ -5,7 +5,7 @@ description: How maintainers cut a Zenith Team release, and what the release wor
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. It needs no secrets beyond the workflow's own GitHub token.
+A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. Only its desktop job uses secrets, the Apple signing credentials in the `desktop-release` environment; everything else runs on the workflow's own GitHub token.
 
 Only a tag publishes a release. Merges to `main` that change the server, and manual runs of `.github/workflows/image.yml` at a branch or tag, publish one server image tagged `sha-<full commit>` and nothing else: a build of that commit, not a release. A release cut at the same commit rebuilds the image and repoints `sha-<full commit>`, so deployments pin the digest too: `sha-<full commit>@sha256:<digest>`.
 

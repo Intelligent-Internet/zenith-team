@@ -1,7 +1,8 @@
 # Shared setup for every desktop build: the release's signed desktop job and
 # the CI desktop lane. It installs the toolchain and the frontend dependencies,
 # then chooses the build variant. It sees no secrets, so nothing a dependency
-# runs at install time can read them; callers sign afterwards. It restores no
+# runs at install time can read them; callers sign afterwards, in a step that
+# runs the build tools from node_modules. It restores no
 # cache, so a release build never uses what another run wrote.
 name: Desktop setup
 description: Install the desktop build toolchain and dependencies, and choose the build variant.
