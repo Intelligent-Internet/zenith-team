@@ -42,8 +42,7 @@ jobs:
         id: tag
         run: |
           version="${GITHUB_REF_NAME#v}"
-          # Numeric parts without leading zeros, as SemVer and the desktop
-          # release publisher require.
+          # Numeric parts without leading zeros, as SemVer requires.
           num='(0|[1-9][0-9]*)'
           if [[ "$GITHUB_REF_NAME" =~ ^v$num\.$num\.$num$ ]]; then
             prerelease=false
@@ -287,9 +286,9 @@ jobs:
 
   # Attaches everything to the GitHub Release with build attestations. The
   # desktop files come with release-publish.json and the manifests that tell a
-  # static host where each goes (frontend/electron/scripts/write-release-publish.cjs);
-  # an internal publisher verifies the attestations and copies them, so this
-  # repository needs no cloud credentials.
+  # static host where each goes (frontend/electron/scripts/write-release-publish.cjs).
+  # Copying them to that host happens outside this repository, so it needs no
+  # cloud credentials.
   publish:
     needs: [verify, images, binaries, desktop]
     if: >-

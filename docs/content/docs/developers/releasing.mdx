@@ -131,7 +131,7 @@ These builds are for the server at `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` and check f
 | `update-darwin-<arch>.json` | The macOS update feed |
 | `release-publish.json` | Where a static host puts each file: installers under `<version>/`, the manifests at fixed paths |
 
-A pre-release carries its installers but no manifests, so it moves nothing. An internal publisher verifies each file's attestation against this workflow and tag, then copies them to `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`, so this repository holds no cloud credentials.
+A pre-release carries its installers but no manifests, so it moves nothing. Copying the files to `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`, where the website and the app look for them, happens outside this repository, so it holds no cloud credentials. Check each file's attestation against this workflow and tag before copying it. The installers can always be downloaded from the GitHub Release.
 
 Settings the job reads:
 
