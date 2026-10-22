@@ -545,11 +545,14 @@ isolated database + fixture per caller.
 - CI (`.github/workflows/ci.yml`) runs on pull requests and pushes to `main`.
   Its lanes are path-gated: each lists the files its checks read, shared
   inputs included (`docs/api/**` and the deploy env template for the server
-  lane, `docs/api/spec/**` for the frontend lane), and the `Makefile` runs
-  every lane except `workflows`. The server runs as two parallel lanes:
-  `server-test` runs `go-unit`, which includes the pinned sqlc drift check,
-  and `server-lint` runs `go-fmt-check` and `go-lint` (on pull requests,
-  only findings the branch adds). The frontend lane runs lint,
+  lane, `docs/api/spec/**` for the frontend lane); `ci.yml` itself runs every
+  lane, the `Makefile` every lane except `desktop` and `workflows`, and a push
+  to `main` every lane except a path-gated `desktop`, each push in its own
+  run, so `ci-gate` on a main commit covers the whole tree. The server runs as
+  two parallel lanes: `server-test` runs `go-unit-tests` (the `-race` unit
+  tests) and `server-lint` runs `go-fmt-check`, `go-unit-checks` (shape
+  checks, the pinned sqlc drift check, build and vet) and `go-lint` (on pull
+  requests, only findings the branch adds). The frontend lane runs lint,
   typecheck, the API contract checks, a production build and the Electron
   security scan; `voice` runs ruff and the Python tests; `selfhost` builds
   both images and boots the Compose stack; `desktop` builds unsigned desktop

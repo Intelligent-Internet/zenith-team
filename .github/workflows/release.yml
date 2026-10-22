@@ -38,32 +38,46 @@ jobs:
       prerelease: ${{ steps.tag.outputs.prerelease }}
       version: ${{ steps.tag.outputs.version }}
       image-tags: ${{ steps.tag.outputs.image-tags }}
+      latest: ${{ steps.tag.outputs.latest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
-      # The image tags: the exact version, plus <major>.<minor> and latest for
-      # a release that is not a pre-release.
+      # The image tags: the exact version, plus <major>.<minor> when it is the
+      # newest release of that line and latest when it is the newest release
+      # of all, so re-running an older release never moves either back.
       - name: Check the tag
         id: tag
         run: |
+          set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
           # Numeric parts without leading zeros, as SemVer requires.
           num='(0|[1-9][0-9]*)'
-          if [[ "$GITHUB_REF_NAME" =~ ^v$num\.$num\.$num$ ]]; then
+          stable="^v$num\.$num\.$num$"
+          tags="$version"
+          latest=false
+          if [[ "$GITHUB_REF_NAME" =~ $stable ]]; then
             prerelease=false
-            tags="$version"$'\n'"${version%.*}"$'\n'"latest"
+            releases="$(git tag -l 'v*' | grep -E "$stable" | sort -V)"
+            if [ "$(printf '%s\n' "$releases" | grep -E "^v${version%.*}\.[0-9]+$" | tail -n 1)" = "$GITHUB_REF_NAME" ]; then
+              tags="$tags"$'\n'"${version%.*}"
+            fi
+            if [ "$(printf '%s\n' "$releases" | tail -n 1)" = "$GITHUB_REF_NAME" ]; then
+              tags="$tags"$'\n'"latest"
+              latest=true
+            fi
           elif [[ "$GITHUB_REF_NAME" =~ ^v$num\.$num\.$num-(alpha|beta|rc)\.$num$ ]]; then
             prerelease=true
-            tags="$version"
           else
             echo "::error::$GITHUB_REF_NAME is not vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N"
             exit 1
           fi
+          echo "Image tags: ${tags//$'\n'/ }"
           {
             echo "prerelease=$prerelease"
             echo "version=$version"
+            echo "latest=$latest"
             echo "image-tags<<EOF"
             echo "$tags"
             echo "EOF"
@@ -94,12 +108,12 @@ jobs:
                 else "missing" end')"
             case "$state" in
               success) echo "ci-gate passed on $GITHUB_SHA."; exit 0 ;;
-              failed) echo "::error::ci-gate failed on $GITHUB_SHA; fix main and tag a new version."; exit 1 ;;
+              failed) echo "::error::ci-gate failed on $GITHUB_SHA. If the failure was flaky, re-run that CI run, then re-run this release; otherwise fix main and tag a new version."; exit 1 ;;
             esac
             echo "ci-gate is $state on $GITHUB_SHA; waiting ($attempt/60)."
             sleep 30
           done
-          echo "::error::ci-gate did not pass on $GITHUB_SHA within 30 minutes."
+          echo "::error::ci-gate did not pass on $GITHUB_SHA within 30 minutes. Run CI on this tag (Actions, CI, Run workflow), then re-run this release."
           exit 1
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
@@ -246,8 +260,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           PRERELEASE: ${{ needs.verify.outputs.prerelease }}
+          LATEST: ${{ needs.verify.outputs.latest }}
         run: |
-          flags=()
+          # Only the newest stable release becomes GitHub's latest one.
+          flags=(--latest="$LATEST")
           if [ "$PRERELEASE" = true ]; then
             flags+=(--prerelease)
           fi

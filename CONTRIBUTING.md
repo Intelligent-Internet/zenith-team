@@ -236,7 +236,8 @@ The full recipe is
 CI picks its lanes from the files you change. Each lane also runs when a
 shared file it reads changes, such as `docs/api/**` or
 `deploy/production.env.example`. A change to the CI workflow runs every lane,
-and a change to the `Makefile` runs all but the macOS sandbox tests.
+and a change to the `Makefile` runs every lane except the desktop and
+workflow checks.
 
 | You changed | CI runs | Run it yourself with |
 | --- | --- | --- |

@@ -9,7 +9,7 @@
 #   charts/zenith-team/envs/<environment>.yaml, which Argo CD rolls out.
 # - desktop (off by default, main only): build-desktop.yml and
 #   publish-desktop.yml ship Zenith Team Dev
-#   <X.Y.Z of frontend/package.json>-dev.<run number> to the dev update
+#   <X.Y.Z of frontend/package.json>-dev.<run number>[.<attempt>] to the dev update
 #   channel, so every dev build moves it forward. It is signed in the
 #   desktop-signing environment, which admits only main and v* tags.
 #
@@ -109,7 +109,13 @@ jobs:
             echo "::error::frontend/package.json has no X.Y.Z version: '$package_version'"
             exit 1
           fi
-          echo "version=${BASH_REMATCH[1]}-dev.$GITHUB_RUN_NUMBER" >> "$GITHUB_OUTPUT"
+          # A re-run of this job rebuilds, and a rebuild never replaces published
+          # files, so each attempt after the first gets its own version.
+          version="${BASH_REMATCH[1]}-dev.$GITHUB_RUN_NUMBER"
+          if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+            version="$version.$GITHUB_RUN_ATTEMPT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
   server:
     needs: target
