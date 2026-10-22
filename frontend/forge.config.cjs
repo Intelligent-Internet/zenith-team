@@ -82,10 +82,13 @@ module.exports = {
     ...(shouldSignMac
       ? {
           osxSign: {
-            entitlements: macEntitlementsPath,
-            "entitlements-inherit": macEntitlementsPath,
-            "hardened-runtime": true,
             identity: process.env.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY,
+            // @electron/osx-sign 1.x reads entitlements and the hardened
+            // runtime only per file; top-level keys are ignored.
+            optionsForFile: () => ({
+              entitlements: macEntitlementsPath,
+              hardenedRuntime: true,
+            }),
           },
         }
       : {}),

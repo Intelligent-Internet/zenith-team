@@ -42,10 +42,13 @@ jobs:
         id: tag
         run: |
           version="${GITHUB_REF_NAME#v}"
-          if [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          # Numeric parts without leading zeros, as SemVer and the desktop
+          # release publisher require.
+          num='(0|[1-9][0-9]*)'
+          if [[ "$GITHUB_REF_NAME" =~ ^v$num\.$num\.$num$ ]]; then
             prerelease=false
             tags="$version"$'\n'"${version%.*}"$'\n'"latest"
-          elif [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-(alpha|beta|rc)\.[0-9]+$ ]]; then
+          elif [[ "$GITHUB_REF_NAME" =~ ^v$num\.$num\.$num-(alpha|beta|rc)\.$num$ ]]; then
             prerelease=true
             tags="$version"
           else
@@ -99,6 +102,11 @@ jobs:
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
       - run: make lint typecheck api-lint api-types-check
+      # Before anything publishes: a mismatch found later, in the desktop job,
+      # would leave images out with no GitHub Release.
+      - name: Require frontend/package.json to match the tag
+        if: vars.ZENITH_TEAM_DESKTOP_RELEASE == 'true'
+        run: pnpm --dir frontend electron:release:assert-version
 
   # Each image is built natively per platform and published, with its SBOM,
   # provenance and a build attestation, by build-image.yml. Besides the
@@ -170,9 +178,11 @@ jobs:
   # installers (arm64 and x64) and an unsigned Linux zip, for the server at
   # ZENITH_TEAM_DESKTOP_PROD_ORIGIN, updating from
   # ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL. The desktop-release environment holds
-  # the Apple credentials and requires a reviewer. Secrets reach only the steps
-  # that sign; installing dependencies sees none. Windows joins once zen builds
-  # there.
+  # the Apple credentials and requires a reviewer. Installing dependencies sees
+  # no secrets; the signing step does run the build tools from node_modules,
+  # which can reach the unlocked keychain and the notary key while it runs, so
+  # dependency changes need the same review as workflow changes. Windows joins
+  # once zen builds there.
   desktop:
     needs: verify
     if: vars.ZENITH_TEAM_DESKTOP_RELEASE == 'true'
@@ -213,9 +223,6 @@ jobs:
         with:
           api-origin: ${{ vars.ZENITH_TEAM_DESKTOP_PROD_ORIGIN }}
           release-base-url: ${{ vars.ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL }}
-      - name: Require frontend/package.json to match the tag
-        working-directory: frontend
-        run: pnpm electron:release:assert-version
       - name: Load the signing identity into a temporary keychain
         if: matrix.platform == 'darwin'
         env:
@@ -234,7 +241,8 @@ jobs:
           security create-keychain -p "$keychain_password" "$keychain"
           security set-keychain-settings -lut 21600 "$keychain"
           security unlock-keychain -p "$keychain_password" "$keychain"
-          security import "$certificate" -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          # Only codesign may use the key; exporting it is refused.
+          security import "$certificate" -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign -t cert -f pkcs12 -k "$keychain"
           # Keep the existing search list and put the release keychain first.
           keychains=("$keychain")
           while IFS= read -r line; do

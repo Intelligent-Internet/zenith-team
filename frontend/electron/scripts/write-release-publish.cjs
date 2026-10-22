@@ -117,7 +117,10 @@ function writeReleasePublish({
 }
 
 function parseVersion(tag) {
-  const match = /^v(\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?)$/.exec(tag ?? "");
+  const num = "(?:0|[1-9]\\d*)";
+  const match = new RegExp(
+    `^v(${num}\\.${num}\\.${num}(?:-(?:alpha|beta|rc)\\.${num})?)$`,
+  ).exec(tag ?? "");
   if (!match) {
     throw new Error(`Release tag must be vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N, got "${tag}".`);
   }
