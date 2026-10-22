@@ -1,4 +1,4 @@
-# Shared setup for every desktop build: the release's signed desktop job and
+# Shared setup for every desktop build: build-desktop.yml's signed builds and
 # the CI desktop lane. It installs the toolchain and the frontend dependencies,
 # then chooses the build variant. It sees no secrets, so nothing a dependency
 # runs at install time can read them; callers sign afterwards, in a step that
@@ -8,12 +8,20 @@ name: Desktop setup
 description: Install the desktop build toolchain and dependencies, and choose the build variant.
 
 inputs:
+  variant:
+    description: "prod (Zenith Team) or dev (Zenith Team Dev); ignored without api-origin"
+    required: false
+    default: prod
   api-origin:
-    description: "Server origin for a prod build, https without a trailing slash; empty builds the local variant"
+    description: "Server origin the build signs in to, https without a trailing slash; empty builds the local variant"
     required: false
     default: ""
   release-base-url:
     description: "Where releases are served, https without a trailing slash; set, it turns on static auto-updates (needs api-origin)"
+    required: false
+    default: ""
+  version:
+    description: "Version to build: a dev build is stamped with it, any other must already carry it in frontend/package.json"
     required: false
     default: ""
 
@@ -38,10 +46,16 @@ runs:
     - name: Choose the desktop variant
       shell: bash
       env:
+        VARIANT: ${{ inputs.variant }}
         API_ORIGIN: ${{ inputs.api-origin }}
         RELEASE_BASE_URL: ${{ inputs.release-base-url }}
       run: |
         set -euo pipefail
+        case "$VARIANT" in
+          prod) origin_key=ZENITH_TEAM_DESKTOP_PROD_ORIGIN ;;
+          dev) origin_key=ZENITH_TEAM_DESKTOP_DEV_ORIGIN ;;
+          *) echo "::error::variant must be prod or dev, got '$VARIANT'"; exit 1 ;;
+        esac
         for value in "$API_ORIGIN" "$RELEASE_BASE_URL"; do
           if [ -n "$value" ] && [[ ! "$value" =~ ^https://[A-Za-z0-9.-]+(/[A-Za-z0-9._/-]*[A-Za-z0-9._-])?$ ]]; then
             echo "::error::Desktop origins must be https URLs without a trailing slash; got '$value'"
@@ -49,13 +63,13 @@ runs:
           fi
         done
         if [ -n "$RELEASE_BASE_URL" ] && [ -z "$API_ORIGIN" ]; then
-          echo "::error::Auto-updates need a prod build: set api-origin with release-base-url."
+          echo "::error::Auto-updates need a cloud build: set api-origin with release-base-url."
           exit 1
         fi
         if [ -n "$API_ORIGIN" ]; then
           {
-            echo "ZENITH_TEAM_DESKTOP_ENV=prod"
-            echo "ZENITH_TEAM_DESKTOP_PROD_ORIGIN=$API_ORIGIN"
+            echo "ZENITH_TEAM_DESKTOP_ENV=$VARIANT"
+            echo "$origin_key=$API_ORIGIN"
             echo "ZENITH_TEAM_DESKTOP_API_BASE_URL=$API_ORIGIN/api/v1"
             echo "VITE_API_URL=$API_ORIGIN"
           } >> "$GITHUB_ENV"
@@ -74,3 +88,22 @@ runs:
             echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_FEED_BASE_URL=$RELEASE_BASE_URL/updates"
           } >> "$GITHUB_ENV"
         fi
+    # The app and its file names carry the version from package.json.
+    - name: Set the version
+      if: inputs.version != ''
+      shell: bash
+      env:
+        VARIANT: ${{ inputs.variant }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        current="$(jq -r .version frontend/package.json)"
+        if [ "$current" = "$VERSION" ]; then
+          exit 0
+        fi
+        if [ "$VARIANT" != dev ]; then
+          echo "::error::frontend/package.json is $current, not the $VARIANT version $VERSION"
+          exit 1
+        fi
+        jq --arg version "$VERSION" '.version = $version' frontend/package.json > "$RUNNER_TEMP/package.json"
+        mv "$RUNNER_TEMP/package.json" frontend/package.json

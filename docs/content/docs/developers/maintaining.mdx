@@ -61,15 +61,25 @@ Pull requests with no matching label land under **Other changes**.
 
 Only maintainers should be able to push version tags, because a pushed `v*` tag publishes images and a GitHub Release at once. Add a tag ruleset for `v*` that only maintainers can bypass.
 
-Only the release's desktop job uses secrets. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
+Only the desktop jobs use secrets. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
+
+Deployments and desktop builds run in three environments, under **Settings → Environments**. Create them, with their rules, before the cloud side trusts them: GitHub creates a missing environment, with no rules, the first time a job names it.
+
+| Environment | Deployment rule | Holds | Used by |
+| --- | --- | --- | --- |
+| `dev` | None, so any branch can deploy | The dev variables | `build-deploy.yml` |
+| `prod` | The `main` branch and `v*` tags only | The prod desktop variables | `release.yml`'s desktop jobs |
+| `desktop-signing` | The `main` branch and `v*` tags only | The six Apple secrets, nothing else | The macOS builds of both |
+
+Only `desktop-signing` holds secrets, so no branch, only reviewed code on `main` or a release tag, can reach the Developer ID. Required reviewers on `prod` are optional: the `main` and tag rulesets already decide what can release, and with reviewers every release waits for approval twice, when its desktop build starts and again before the upload.
 
 To publish the desktop app with releases:
 
-1. Create the environment `desktop-release` under **Settings → Environments**. Add required reviewers, and a deployment rule that allows `v*` tags (or no restriction); a branch-only rule blocks tag runs.
-2. Add its six secrets: `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD`, `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID` and `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER`.
-3. Set the repository variables `ZENITH_TEAM_DESKTOP_PROD_ORIGIN` and `ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL`, then `ZENITH_TEAM_DESKTOP_RELEASE` to `true`.
+1. Create the three environments as above.
+2. Add the six Apple secrets to `desktop-signing`: `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD`, `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID` and `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER`.
+3. Set the `dev` and `prod` variables, and the repository variable `GCP_WORKLOAD_IDENTITY_PROVIDER`, as [Releasing](/developers/releasing#desktop-app) lists. Then set `ZENITH_TEAM_DESKTOP_RELEASE` to `true`.
 
-The desktop job then also requires `frontend/package.json` to carry each tag's version. See [Releasing](/developers/releasing#desktop-app).
+The desktop jobs then also require `frontend/package.json` to carry each tag's version.
 
 ### Actions
 

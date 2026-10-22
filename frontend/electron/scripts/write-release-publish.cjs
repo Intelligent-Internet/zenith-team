@@ -1,38 +1,49 @@
-// Prepares a release's desktop files for the GitHub Release: the installers
-// and their checksums copied flat into the output folder, the download and
-// update manifests, and release-publish.json, which tells a static host where
-// each file goes. A host publishes the files under <base URL>/<version>/ and
-// the manifests at fixed paths; the manifest URLs already point there, so the
-// host copies bytes and never rewrites them. A pre-release publishes its files
-// but moves no manifest.
+// Prepares one desktop build for publishing: the installers and their
+// checksums copied flat into the output folder, the download and update
+// manifests, and release-publish.json, which says where each file goes.
+// publish-desktop.yml uploads the files under <base URL>/<version>/ and the
+// manifests at fixed paths; the manifest URLs already point there, so the
+// upload copies bytes and never rewrites them. A pre-release publishes its
+// files but moves no manifest.
 //
-// Usage: node write-release-publish.cjs --artifacts <dir> --out <dir>
-// Reads GITHUB_REF_NAME (the vX.Y.Z tag), GITHUB_SHA, PRERELEASE ("true" or
-// "false") and ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL (https, no trailing slash).
+// Two channels, one per app: prod (Zenith Team), version X.Y.Z or
+// X.Y.Z-(alpha|beta|rc).N from a v* tag, and dev (Zenith Team Dev), version
+// X.Y.Z-dev.N. Every dev build moves the dev manifests.
+//
+// Usage: node write-release-publish.cjs --artifacts <dir> --out <dir> --version <version>
+// Reads ZENITH_TEAM_DESKTOP_ENV ("prod", the default, or "dev"), GITHUB_SHA,
+// GITHUB_REF and ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL (https, no trailing slash).
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
+const { DESKTOP_VARIANTS } = require("../shared/desktop-variant.cjs");
 
-const APP_NAME = "Zenith Team";
-const ARTIFACT_PATTERN =
-  /^Zenith-Team-prod-(darwin|linux)-(arm64|x64)-(.+)\.(dmg|zip)$/;
+const CHANNELS = new Set(["dev", "prod"]);
 const DOWNLOAD_PLATFORMS = { darwin: "macos", linux: "linux" };
 
 function writeReleasePublish({
   artifactsDir,
   outDir,
-  tag = process.env.GITHUB_REF_NAME,
+  channel = process.env.ZENITH_TEAM_DESKTOP_ENV || "prod",
+  version: requestedVersion,
   commit = process.env.GITHUB_SHA,
-  prerelease = process.env.PRERELEASE === "true",
+  ref = process.env.GITHUB_REF,
   baseUrl = process.env.ZENITH_TEAM_DESKTOP_RELEASE_BASE_URL,
   releasedAt = new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
 } = {}) {
-  const version = parseVersion(tag);
+  if (!CHANNELS.has(channel)) {
+    throw new Error(`ZENITH_TEAM_DESKTOP_ENV must be prod or dev, got "${channel}".`);
+  }
+  const appName = DESKTOP_VARIANTS[channel].appName;
+  const version = parseVersion(requestedVersion, channel);
+  // A dev build is the newest of its channel, so it always moves the dev
+  // manifests; a prod pre-release never moves the prod ones.
+  const prerelease = channel === "prod" && version.includes("-");
   if (!/^[0-9a-f]{40}$/.test(commit ?? "")) {
     throw new Error("GITHUB_SHA must be a full commit SHA.");
   }
   const releaseBaseUrl = parseBaseUrl(baseUrl);
-  const artifacts = findArtifacts(artifactsDir, version);
+  const artifacts = findArtifacts(artifactsDir, version, channel);
   checkArtifactSet(artifacts);
 
   fs.mkdirSync(outDir, { recursive: true });
@@ -55,8 +66,8 @@ function writeReleasePublish({
   const pointers = [];
   if (!prerelease) {
     const latest = {
-      appName: APP_NAME,
-      environment: "prod",
+      appName,
+      environment: channel,
       sourceSha: commit,
       version,
       releasedAt,
@@ -68,7 +79,7 @@ function writeReleasePublish({
       // macOS users download the dmg; the zip is the Squirrel.Mac update.
       if (artifact.platform === "darwin" && artifact.kind === "zip") {
         const update = {
-          name: `${APP_NAME} ${version}`,
+          name: `${appName} ${version}`,
           pub_date: releasedAt,
           type: "squirrel-mac",
           url: urlOf(artifact),
@@ -101,9 +112,10 @@ function writeReleasePublish({
   const publish = {
     schema: 1,
     app: "zenith-team",
-    tag,
+    channel,
     version,
     commit,
+    ref: ref ?? null,
     prerelease,
     objects,
     pointers,
@@ -116,15 +128,18 @@ function writeReleasePublish({
   return publish;
 }
 
-function parseVersion(tag) {
+function parseVersion(version, channel = "prod") {
   const num = "(?:0|[1-9]\\d*)";
-  const match = new RegExp(
-    `^v(${num}\\.${num}\\.${num}(?:-(?:alpha|beta|rc)\\.${num})?)$`,
-  ).exec(tag ?? "");
-  if (!match) {
-    throw new Error(`Release tag must be vX.Y.Z or vX.Y.Z-(alpha|beta|rc).N, got "${tag}".`);
+  const core = `${num}\\.${num}\\.${num}`;
+  const pattern =
+    channel === "dev"
+      ? new RegExp(`^${core}-dev\\.${num}$`)
+      : new RegExp(`^${core}(?:-(?:alpha|beta|rc)\\.${num})?$`);
+  if (!pattern.test(version ?? "")) {
+    const shape = channel === "dev" ? "X.Y.Z-dev.N" : "X.Y.Z or X.Y.Z-(alpha|beta|rc).N";
+    throw new Error(`A ${channel} desktop version must be ${shape}, got "${version}".`);
   }
-  return match[1];
+  return version;
 }
 
 function parseBaseUrl(value) {
@@ -143,11 +158,15 @@ function parseBaseUrl(value) {
   return trimmed;
 }
 
-function findArtifacts(rootDir, version) {
+function findArtifacts(rootDir, version, channel = "prod") {
+  // finalize-artifacts.cjs names them Zenith-Team-<channel>-<platform>-<arch>-<version>.
+  const pattern = new RegExp(
+    `^Zenith-Team-${channel}-(darwin|linux)-(arm64|x64)-(.+)\\.(dmg|zip)$`,
+  );
   const artifacts = [];
   for (const filePath of listFiles(rootDir)) {
     const name = path.basename(filePath);
-    const match = ARTIFACT_PATTERN.exec(name);
+    const match = pattern.exec(name);
     if (!match) {
       continue;
     }
@@ -218,26 +237,32 @@ function sha256Of(filePath) {
 }
 
 function readArgs(argv) {
+  const usage =
+    "Usage: write-release-publish.cjs --artifacts <dir> --out <dir> --version <version>";
   const args = {};
   for (let index = 0; index < argv.length; index += 2) {
     const key = argv[index];
     const value = argv[index + 1];
-    if ((key !== "--artifacts" && key !== "--out") || !value) {
-      throw new Error("Usage: write-release-publish.cjs --artifacts <dir> --out <dir>");
+    if (!["--artifacts", "--out", "--version"].includes(key) || !value) {
+      throw new Error(usage);
     }
     args[key.slice(2)] = value;
   }
-  if (!args.artifacts || !args.out) {
-    throw new Error("Usage: write-release-publish.cjs --artifacts <dir> --out <dir>");
+  if (!args.artifacts || !args.out || !args.version) {
+    throw new Error(usage);
   }
   return args;
 }
 
 if (require.main === module) {
   const args = readArgs(process.argv.slice(2));
-  const publish = writeReleasePublish({ artifactsDir: args.artifacts, outDir: args.out });
+  const publish = writeReleasePublish({
+    artifactsDir: args.artifacts,
+    outDir: args.out,
+    version: args.version,
+  });
   console.log(
-    `[electron] ${publish.objects.length} desktop files and ${publish.pointers.length} manifests for ${publish.tag}.`,
+    `[electron] ${publish.objects.length} desktop files and ${publish.pointers.length} manifests for ${publish.channel} ${publish.version}.`,
   );
 }
 
