@@ -559,7 +559,9 @@ isolated database + fixture per caller.
   runs the PostgreSQL integration suites, the Windows platform-content check
   (the pinned content in `internal/platformbundle`, `tools/builtin/` and
   `platform_skills.go` survives a CRLF checkout), the macOS daemon sandbox
-  tests and `go-vuln`. Secrets and vulnerable dependencies are GitHub's job: secret
+  tests and `go-vuln`; `.github/workflows/codeql.yml` runs CodeQL code
+  scanning (Go, TypeScript, Python, Actions) on pull requests, `main` and
+  weekly. Secrets and vulnerable dependencies are GitHub's job: secret
   scanning with push protection and Dependabot alerts are on. Commit-message,
   branch-name and staged-secret checks are local git hooks in `.githooks/`
   (`make hooks`). Pushing a `v<major>.<minor>.<patch>` tag (or an `-alpha.N`,
