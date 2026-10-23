@@ -235,7 +235,7 @@ importers:
     devDependencies:
       '@electron-forge/cli':
         specifier: ^7.11.2
-        version: 7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)
+        version: 7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)
       '@electron-forge/maker-dmg':
         specifier: ^8.0.1
         version: 8.0.1
@@ -246,17 +246,17 @@ importers:
         specifier: ^8.0.1
         version: 8.0.1
       '@electron-forge/plugin-fuses':
-        specifier: ^7.11.2
-        version: 7.11.2(@electron/fuses@1.8.0)
+        specifier: ^8.0.1
+        version: 8.0.1(@electron/fuses@2.1.3)
       '@electron/fuses':
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^2.1.3
+        version: 2.1.3
       '@redocly/cli':
         specifier: 2.63.0
         version: 2.63.0
       '@sentry/vite-plugin':
         specifier: 5.4.1
-        version: 5.4.1(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
+        version: 5.4.1(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@6.4.4(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0))
@@ -500,11 +500,15 @@ packages:
     resolution: {integrity: sha512-tIFzEE2+D9NnCAn/rLwSkh8H59IqN+G973JNl7xmCzquO6qa7/veitZOQFGO79Zmmgkc8R/fmiCbh7LIdLS9Tg==}
     engines: {node: '>= 16.4.0'}
 
-  '@electron-forge/plugin-fuses@7.11.2':
-    resolution: {integrity: sha512-Y65MwTmYY0ytwtUy+u9M77rEe8MeMdRR+V2IsjAozIzAVp/38NJXfF7+AqlqE9M/fDENjPuwKnrg2IOj9P1TRg==}
-    engines: {node: '>= 16.4.0'}
+  '@electron-forge/plugin-base@8.0.1':
+    resolution: {integrity: sha512-lN0ZQyRmMNC/m/XV+Pc7mb/YnLlmSGzWb46McZrk5/vwDyS6t4ZqyA9LDpKs21chjEoQS7q7PLNDRuyh4Lb6KQ==}
+    engines: {node: '>= 22.13.0'}
+
+  '@electron-forge/plugin-fuses@8.0.1':
+    resolution: {integrity: sha512-H1mbQgRfyWkudz4nsDWVOXK15DodVYIKNXGmR+OZJhSBQTirLWlPYqG+JR3OnnDtdSklb/nsllogh2SGt151VA==}
+    engines: {node: '>= 22.13.0'}
     peerDependencies:
-      '@electron/fuses': ^1.0.0
+      '@electron/fuses': ^2.1.3
 
   '@electron-forge/publisher-base@7.11.2':
     resolution: {integrity: sha512-YwK4ZF3+uW7PBEV/ho59NVTriP3fCahskORrztUaFIdG0QP3hqMsfmo01euv98FDsBEW9UXo7/EW8t5jpmYZ0Q==}
@@ -550,6 +554,10 @@ packages:
     resolution: {integrity: sha512-+bqFCP98pLI0Tt0XQo1TmlXtwjWchISndDOxCkEcIuUgXWpBnLyRI+2DU+mesvnMMX6L1XDqYNA0lXNDHd/yiA==}
     engines: {node: '>=22.12.0'}
 
+  '@electron-internal/extract-zip@1.0.6':
+    resolution: {integrity: sha512-/aQLgFDdCSnwChfUwqekSmE1q2dCTzhUy5saIHBb5vyYn5LzWaKPaIz1wM0lDMCZYBoIG4svJNvAJb6vkI8BuA==}
+    engines: {node: '>=22.12.0'}
+
   '@electron/asar@3.4.1':
     resolution: {integrity: sha512-i4/rNPRS84t0vSRa2HorerGRXWyF4vThfHesw0dmcWHp+cspK743UanA0suA5Q5y8kzY2y6YKrvbIUn69BCAiA==}
     engines: {node: '>=10.12.0'}
@@ -560,8 +568,9 @@ packages:
     engines: {node: '>=22.12.0'}
     hasBin: true
 
-  '@electron/fuses@1.8.0':
-    resolution: {integrity: sha512-zx0EIq78WlY/lBb1uXlziZmDZI4ubcCXIMJ4uGjXzZW0nS19TjSPeXPAjzzTmKQlJUZm0SbmZhPKP7tuQ1SsEw==}
+  '@electron/fuses@2.1.3':
+    resolution: {integrity: sha512-LoKJUXNiJ4JM8IIrUltSHI+8pkogaGj5wmJx81jE/Wk3g2w1/kfMbTEKNoY5kitGE8hiC12h32R/1SlywFtxXg==}
+    engines: {node: '>=22.12.0'}
     hasBin: true
 
   '@electron/get@3.1.0':
@@ -3486,8 +3495,9 @@ packages:
   encode-utf8@1.0.3:
     resolution: {integrity: sha512-ucAnuBEhUK4boH2HjVYG5Q2mQyPorvv0u/ocS+zhdw0S8AlHYY+GOFhP1Gio5z4icpP2ivFSvhtFjQi8+T9ppw==}
 
-  encoding@0.1.13:
-    resolution: {integrity: sha512-ETBauow1T35Y/WZMkio9jiM0Z5xjHHmJ4XmjZOq1l/dXz3lr2sRn87nJy20RupqSh1F2m3HHPSp8ShIPQJrJ3A==}
+  encoding@0.1.14:
+    resolution: {integrity: sha512-pqH+jIxIhwX5U4w+Tnu3jjowTo5QTACbqef2C5Cw2RhApr7COQqgnai53u8VbtqjWRcSoAcTf7uZ62dO5kC8Iw==}
+    engines: {node: '>=20.0.0'}
 
   end-of-stream@1.4.5:
     resolution: {integrity: sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg==}
@@ -3991,6 +4001,10 @@ packages:
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
+    engines: {node: '>=0.10.0'}
+
+  iconv-lite@0.7.3:
+    resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
 
   ieee754@1.2.1:
@@ -4870,8 +4884,8 @@ packages:
     resolution: {integrity: sha512-W5ZNO5KRPB5TkYmGVD9F6YqhsglXJzE6etpbmT+f6EQElhiX/UTG551cnsRGvLG3fyZEg9HwaDmNmj5nwJ4z9g==}
     engines: {node: '>=10'}
 
-  node-abi@4.38.0:
-    resolution: {integrity: sha512-suSdznUPfabdaeLiNERA0LHod14RhcEn8wMPUZEQ6bKvajUCZ+aizY4pIvlLU+gImeLKp2bFDHhOc9yonISsXw==}
+  node-abi@4.39.0:
+    resolution: {integrity: sha512-pULjI3qsVrn6K5DZz5tCpX2dL8IKM9/xBMRz29hBko8UFXZ/C3QxRMl/Z7wKaQwaxPmYU+7UPKbDf7EO+ASvfA==}
     engines: {node: '>=22.12.0'}
 
   node-api-version@0.2.1:
@@ -6453,9 +6467,9 @@ snapshots:
       react: 19.3.1
       tslib: 2.8.1
 
-  '@electron-forge/cli@7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)':
+  '@electron-forge/cli@7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)':
     dependencies:
-      '@electron-forge/core': 7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)
+      '@electron-forge/core': 7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)
       '@electron-forge/core-utils': 7.11.2
       '@electron-forge/shared-types': 7.11.2
       '@electron/get': 3.1.0
@@ -6513,7 +6527,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron-forge/core@7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)':
+  '@electron-forge/core@7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)':
     dependencies:
       '@electron-forge/core-utils': 7.11.2
       '@electron-forge/maker-base': 7.11.2
@@ -6544,7 +6558,7 @@ snapshots:
       jiti: 2.7.0
       listr2: 7.0.2
       log-symbols: 4.1.0
-      node-fetch: 2.7.0(encoding@0.1.13)
+      node-fetch: 2.7.0(encoding@0.1.14)
       rechoir: 0.8.0
       semver: 7.8.5
       source-map-support: 0.5.21
@@ -6619,13 +6633,18 @@ snapshots:
       - bluebird
       - supports-color
 
-  '@electron-forge/plugin-fuses@7.11.2(@electron/fuses@1.8.0)':
+  '@electron-forge/plugin-base@8.0.1':
     dependencies:
-      '@electron-forge/plugin-base': 7.11.2
-      '@electron-forge/shared-types': 7.11.2
-      '@electron/fuses': 1.8.0
+      '@electron-forge/shared-types': 8.0.1
     transitivePeerDependencies:
-      - bluebird
+      - supports-color
+
+  '@electron-forge/plugin-fuses@8.0.1(@electron/fuses@2.1.3)':
+    dependencies:
+      '@electron-forge/plugin-base': 8.0.1
+      '@electron-forge/shared-types': 8.0.1
+      '@electron/fuses': 2.1.3
+    transitivePeerDependencies:
       - supports-color
 
   '@electron-forge/publisher-base@7.11.2':
@@ -6728,6 +6747,8 @@ snapshots:
 
   '@electron-internal/extract-zip@1.0.5': {}
 
+  '@electron-internal/extract-zip@1.0.6': {}
+
   '@electron/asar@3.4.1':
     dependencies:
       commander: 5.1.0
@@ -6739,11 +6760,7 @@ snapshots:
       glob: 13.0.6
       minimatch: 10.2.6
 
-  '@electron/fuses@1.8.0':
-    dependencies:
-      chalk: 4.1.2
-      fs-extra: 9.1.0
-      minimist: 1.2.8
+  '@electron/fuses@2.1.3': {}
 
   '@electron/get@3.1.0':
     dependencies:
@@ -6851,7 +6868,7 @@ snapshots:
 
   '@electron/packager@20.3.0':
     dependencies:
-      '@electron-internal/extract-zip': 1.0.5
+      '@electron-internal/extract-zip': 1.0.6
       '@electron/asar': 4.3.1
       '@electron/get': 5.1.0
       '@electron/notarize': 3.1.2
@@ -6895,7 +6912,7 @@ snapshots:
     dependencies:
       '@malept/cross-spawn-promise': 2.0.0
       debug: 4.4.3(supports-color@10.2.2)
-      node-abi: 4.38.0
+      node-abi: 4.39.0
       node-api-version: 0.2.1
       node-gyp: 12.4.0
       read-binary-file-arch: 1.0.6
@@ -7985,10 +8002,10 @@ snapshots:
       '@sentry/replay': 11.7.0
       '@sentry/replay-canvas': 11.7.0
 
-  '@sentry/bundler-plugins@10.76.2(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
+  '@sentry/bundler-plugins@10.76.2(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
     dependencies:
       '@babel/core': 7.29.7
-      '@sentry/cli': 2.58.6(encoding@0.1.13)
+      '@sentry/cli': 2.58.6(encoding@0.1.14)
       '@sentry/core': 10.76.2
       dotenv: 17.4.2
       find-up: 5.0.0
@@ -8039,10 +8056,10 @@ snapshots:
   '@sentry/cli-win32-x64@2.58.6':
     optional: true
 
-  '@sentry/cli@2.58.6(encoding@0.1.13)':
+  '@sentry/cli@2.58.6(encoding@0.1.14)':
     dependencies:
       https-proxy-agent: 5.0.1
-      node-fetch: 2.7.0(encoding@0.1.13)
+      node-fetch: 2.7.0(encoding@0.1.14)
       progress: 2.0.3
       proxy-from-env: 1.1.0
       which: 2.0.2
@@ -8137,9 +8154,9 @@ snapshots:
       '@sentry/conventions': 0.27.0
       '@sentry/core': 11.7.0
 
-  '@sentry/vite-plugin@5.4.1(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
+  '@sentry/vite-plugin@5.4.1(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
     dependencies:
-      '@sentry/bundler-plugins': 10.76.2(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
+      '@sentry/bundler-plugins': 10.76.2(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
     transitivePeerDependencies:
       - encoding
       - rollup
@@ -9724,9 +9741,9 @@ snapshots:
   encode-utf8@1.0.3:
     optional: true
 
-  encoding@0.1.13:
+  encoding@0.1.14:
     dependencies:
-      iconv-lite: 0.6.3
+      iconv-lite: 0.7.3
     optional: true
 
   end-of-stream@1.4.5:
@@ -10408,6 +10425,11 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
+
+  iconv-lite@0.7.3:
+    dependencies:
+      safer-buffer: 2.1.2
+    optional: true
 
   ieee754@1.2.1: {}
 
@@ -11338,7 +11360,7 @@ snapshots:
       minipass-sized: 1.0.3
       minizlib: 2.1.2
     optionalDependencies:
-      encoding: 0.1.13
+      encoding: 0.1.14
 
   minipass-flush@1.0.7:
     dependencies:
@@ -11417,7 +11439,7 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  node-abi@4.38.0:
+  node-abi@4.39.0:
     dependencies:
       semver: 7.8.5
 
@@ -11425,11 +11447,11 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  node-fetch@2.7.0(encoding@0.1.13):
+  node-fetch@2.7.0(encoding@0.1.14):
     dependencies:
       whatwg-url: 5.0.0
     optionalDependencies:
-      encoding: 0.1.13
+      encoding: 0.1.14
 
   node-gyp@12.4.0:
     dependencies:
