@@ -222,6 +222,14 @@ jobs:
     with:
       channel: ${{ inputs.environment }}
       version: ${{ needs.target.outputs.desktop-version }}
+    # Resolved in desktop-signing, where only the macOS jobs run.
+    secrets:
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+      ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
 
   desktop-publish:
     needs: [target, desktop]
