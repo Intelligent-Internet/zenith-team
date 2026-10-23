@@ -115,9 +115,13 @@ jobs:
           done
           echo "::error::ci-gate did not pass on $GITHUB_SHA within 30 minutes. Run CI on this tag (Actions, CI, Run workflow), then re-run this release."
           exit 1
+      # check-latest: the newest 1.26 patch, not the one the runner image has
+      # cached. govulncheck judges the standard library of the Go it runs on,
+      # and the binaries below are built with the same one.
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26.x"
+          check-latest: true
           # Release artifacts never restore a cache another run could write.
           cache: false
       # Fail-closed. A maintainer can release one tag anyway by setting the
@@ -169,6 +173,7 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26.x"
+          check-latest: true
           # Release artifacts never restore a cache another run could write.
           cache: false
       - name: Build zen and zenith-team-mcp
