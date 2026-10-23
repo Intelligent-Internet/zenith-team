@@ -38,15 +38,15 @@ require (
 	golang.org/x/sync v0.24.0
 	golang.org/x/sys v0.49.0
 	golang.org/x/term v0.47.0
-	golang.org/x/tools v0.51.0
-	google.golang.org/api v0.303.0
+	golang.org/x/tools v0.52.0
+	google.golang.org/api v0.304.0
 	google.golang.org/grpc v1.84.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/hibiken/asynq v0.26.0
-	github.com/reearth/ygo v1.51.9
+	github.com/reearth/ygo v1.51.11
 )
 
 require (
