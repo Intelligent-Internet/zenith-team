@@ -1,0 +1,25 @@
+{
+  "removedModuleCount": 18,
+  "removedThirdPartyPackageCount": 183,
+  "removedModules": [
+    "cloud.google.com/go/auth",
+    "cloud.google.com/go/auth/oauth2adapt",
+    "cloud.google.com/go/compute/metadata",
+    "github.com/felixge/httpsnoop",
+    "github.com/go-logr/logr",
+    "github.com/go-logr/stdr",
+    "github.com/google/s2a-go",
+    "github.com/googleapis/enterprise-certificate-proxy",
+    "github.com/googleapis/gax-go/v2",
+    "github.com/ugorji/go/codec",
+    "go.opentelemetry.io/auto/sdk",
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+    "go.opentelemetry.io/otel",
+    "go.opentelemetry.io/otel/metric",
+    "go.opentelemetry.io/otel/trace",
+    "google.golang.org/api",
+    "google.golang.org/genproto/googleapis/rpc",
+    "google.golang.org/grpc"
+  ],
+  "addedModules": []
+}

@@ -1,0 +1,1285 @@
+{
+  "asOf": "2026-10-23",
+  "commit": "cdce9db946b739c0068bdd2faff7192bca48931a",
+  "go": {
+    "direct": 43,
+    "indirect": 108,
+    "declaredTotal": 151,
+    "modules": [
+      {
+        "path": "github.com/alicebob/miniredis/v2",
+        "version": "v2.40.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2",
+        "version": "v1.47.3",
+        "indirect": false
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/config",
+        "version": "v1.33.9",
+        "indirect": false
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/credentials",
+        "version": "v1.20.9",
+        "indirect": false
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/feature/s3/manager",
+        "version": "v1.23.14",
+        "indirect": false
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/s3",
+        "version": "v1.114.3",
+        "indirect": false
+      },
+      {
+        "path": "github.com/aws/smithy-go",
+        "version": "v1.28.5",
+        "indirect": false
+      },
+      {
+        "path": "github.com/gin-gonic/gin",
+        "version": "v1.12.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/go-playground/validator/v10",
+        "version": "v10.30.5",
+        "indirect": false
+      },
+      {
+        "path": "github.com/go-redis/redismock/v9",
+        "version": "v9.2.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/golang-jwt/jwt/v5",
+        "version": "v5.3.1",
+        "indirect": false
+      },
+      {
+        "path": "github.com/golang-migrate/migrate/v4",
+        "version": "v4.20.1",
+        "indirect": false
+      },
+      {
+        "path": "github.com/google/uuid",
+        "version": "v1.6.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/gorilla/websocket",
+        "version": "v1.5.3",
+        "indirect": false
+      },
+      {
+        "path": "github.com/jackc/pgx/v5",
+        "version": "v5.11.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/mattn/go-shellwords",
+        "version": "v1.0.16",
+        "indirect": false
+      },
+      {
+        "path": "github.com/modelcontextprotocol/go-sdk",
+        "version": "v1.8.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/oklog/ulid/v2",
+        "version": "v2.1.2",
+        "indirect": false
+      },
+      {
+        "path": "github.com/pelletier/go-toml/v2",
+        "version": "v2.4.3",
+        "indirect": false
+      },
+      {
+        "path": "github.com/prometheus/client_golang",
+        "version": "v1.25.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/redis/go-redis/v9",
+        "version": "v9.23.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/robfig/cron/v3",
+        "version": "v3.0.1",
+        "indirect": false
+      },
+      {
+        "path": "github.com/shopspring/decimal",
+        "version": "v1.5.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/spf13/cobra",
+        "version": "v1.10.2",
+        "indirect": false
+      },
+      {
+        "path": "github.com/spf13/pflag",
+        "version": "v1.0.10",
+        "indirect": false
+      },
+      {
+        "path": "github.com/testcontainers/testcontainers-go",
+        "version": "v0.44.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/testcontainers/testcontainers-go/modules/postgres",
+        "version": "v0.44.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/yuin/goldmark",
+        "version": "v1.8.6",
+        "indirect": false
+      },
+      {
+        "path": "go.uber.org/goleak",
+        "version": "v1.3.0",
+        "indirect": false
+      },
+      {
+        "path": "golang.org/x/crypto",
+        "version": "v0.58.0",
+        "indirect": false
+      },
+      {
+        "path": "golang.org/x/net",
+        "version": "v0.61.0",
+        "indirect": false
+      },
+      {
+        "path": "golang.org/x/oauth2",
+        "version": "v0.37.0",
+        "indirect": false
+      },
+      {
+        "path": "golang.org/x/sync",
+        "version": "v0.24.0",
+        "indirect": false
+      },
+      {
+        "path": "golang.org/x/sys",
+        "version": "v0.49.0",
+        "indirect": false
+      },
+      {
+        "path": "golang.org/x/term",
+        "version": "v0.47.0",
+        "indirect": false
+      },
+      {
+        "path": "golang.org/x/tools",
+        "version": "v0.51.0",
+        "indirect": false
+      },
+      {
+        "path": "google.golang.org/api",
+        "version": "v0.303.0",
+        "indirect": false
+      },
+      {
+        "path": "google.golang.org/grpc",
+        "version": "v1.84.0",
+        "indirect": false
+      },
+      {
+        "path": "gopkg.in/yaml.v3",
+        "version": "v3.0.1",
+        "indirect": false
+      },
+      {
+        "path": "github.com/hibiken/asynq",
+        "version": "v0.26.0",
+        "indirect": false
+      },
+      {
+        "path": "github.com/reearth/ygo",
+        "version": "v1.51.9",
+        "indirect": false
+      },
+      {
+        "path": "github.com/kylelemons/godebug",
+        "version": "v1.1.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/spf13/cast",
+        "version": "v1.10.0",
+        "indirect": true
+      },
+      {
+        "path": "go.yaml.in/yaml/v3",
+        "version": "v3.0.5",
+        "indirect": true
+      },
+      {
+        "path": "golang.org/x/time",
+        "version": "v0.16.0",
+        "indirect": true
+      },
+      {
+        "path": "golang.org/x/image",
+        "version": "v0.47.0",
+        "indirect": false
+      },
+      {
+        "path": "cloud.google.com/go/auth",
+        "version": "v0.24.1-0.20261001053825-dbc26066f70a",
+        "indirect": true
+      },
+      {
+        "path": "cloud.google.com/go/auth/oauth2adapt",
+        "version": "v0.3.0",
+        "indirect": true
+      },
+      {
+        "path": "cloud.google.com/go/compute/metadata",
+        "version": "v0.10.0",
+        "indirect": true
+      },
+      {
+        "path": "dario.cat/mergo",
+        "version": "v1.0.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/Azure/go-ansiterm",
+        "version": "v0.0.0-20250102033503-faa5f7b0171c",
+        "indirect": true
+      },
+      {
+        "path": "github.com/Microsoft/go-winio",
+        "version": "v0.6.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream",
+        "version": "v1.7.22",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/feature/ec2/imds",
+        "version": "v1.20.3",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/internal/configsources",
+        "version": "v1.5.6",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2",
+        "version": "v2.8.6",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/internal/v4a",
+        "version": "v1.5.6",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding",
+        "version": "v1.13.21",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/internal/checksum",
+        "version": "v1.11.7",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/internal/presigned-url",
+        "version": "v1.14.6",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/internal/s3shared",
+        "version": "v1.20.6",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/signin",
+        "version": "v1.10.4",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/sso",
+        "version": "v1.38.4",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/ssooidc",
+        "version": "v1.43.4",
+        "indirect": true
+      },
+      {
+        "path": "github.com/aws/aws-sdk-go-v2/service/sts",
+        "version": "v1.51.4",
+        "indirect": true
+      },
+      {
+        "path": "github.com/beorn7/perks",
+        "version": "v1.0.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/bytedance/gopkg",
+        "version": "v0.1.3",
+        "indirect": true
+      },
+      {
+        "path": "github.com/bytedance/sonic",
+        "version": "v1.15.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/bytedance/sonic/loader",
+        "version": "v0.5.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/cenkalti/backoff/v4",
+        "version": "v4.3.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/cespare/xxhash/v2",
+        "version": "v2.3.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/cloudwego/base64x",
+        "version": "v0.1.6",
+        "indirect": true
+      },
+      {
+        "path": "github.com/containerd/errdefs",
+        "version": "v1.0.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/containerd/errdefs/pkg",
+        "version": "v0.3.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/containerd/log",
+        "version": "v0.1.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/containerd/platforms",
+        "version": "v0.2.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/cpuguy83/dockercfg",
+        "version": "v0.3.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/distribution/reference",
+        "version": "v0.6.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/docker/go-connections",
+        "version": "v0.7.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/docker/go-units",
+        "version": "v0.5.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/ebitengine/purego",
+        "version": "v0.10.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/felixge/httpsnoop",
+        "version": "v1.1.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/gabriel-vasile/mimetype",
+        "version": "v1.4.15",
+        "indirect": true
+      },
+      {
+        "path": "github.com/gin-contrib/sse",
+        "version": "v1.1.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/go-logr/logr",
+        "version": "v1.4.4",
+        "indirect": true
+      },
+      {
+        "path": "github.com/go-logr/stdr",
+        "version": "v1.2.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/go-ole/go-ole",
+        "version": "v1.3.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/go-playground/locales",
+        "version": "v0.14.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/go-playground/universal-translator",
+        "version": "v0.18.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/goccy/go-json",
+        "version": "v0.10.5",
+        "indirect": true
+      },
+      {
+        "path": "github.com/goccy/go-yaml",
+        "version": "v1.19.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/google/jsonschema-go",
+        "version": "v0.4.3",
+        "indirect": true
+      },
+      {
+        "path": "github.com/google/s2a-go",
+        "version": "v0.1.11",
+        "indirect": true
+      },
+      {
+        "path": "github.com/googleapis/enterprise-certificate-proxy",
+        "version": "v0.3.23",
+        "indirect": true
+      },
+      {
+        "path": "github.com/googleapis/gax-go/v2",
+        "version": "v2.26.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/inconshreveable/mousetrap",
+        "version": "v1.1.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/jackc/pgpassfile",
+        "version": "v1.0.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/jackc/pgservicefile",
+        "version": "v0.0.0-20240606120523-5a60cdf6a761",
+        "indirect": true
+      },
+      {
+        "path": "github.com/jackc/puddle/v2",
+        "version": "v2.2.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/json-iterator/go",
+        "version": "v1.1.12",
+        "indirect": true
+      },
+      {
+        "path": "github.com/klauspost/compress",
+        "version": "v1.20.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/klauspost/cpuid/v2",
+        "version": "v2.4.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/leodido/go-urn",
+        "version": "v1.5.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/lib/pq",
+        "version": "v1.10.9",
+        "indirect": true
+      },
+      {
+        "path": "github.com/lufia/plan9stats",
+        "version": "v0.0.0-20260330125221-c963978e514e",
+        "indirect": true
+      },
+      {
+        "path": "github.com/magiconair/properties",
+        "version": "v1.8.10",
+        "indirect": true
+      },
+      {
+        "path": "github.com/mattn/go-isatty",
+        "version": "v0.0.20",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/docker-image-spec",
+        "version": "v1.3.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/go-archive",
+        "version": "v0.3.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/moby/api",
+        "version": "v1.55.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/moby/client",
+        "version": "v0.5.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/patternmatcher",
+        "version": "v0.6.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/sys/sequential",
+        "version": "v0.7.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/sys/user",
+        "version": "v0.4.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/sys/userns",
+        "version": "v0.1.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/moby/term",
+        "version": "v0.5.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/modern-go/concurrent",
+        "version": "v0.0.0-20180306012644-bacd9c7ef1dd",
+        "indirect": true
+      },
+      {
+        "path": "github.com/modern-go/reflect2",
+        "version": "v1.0.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/munnerz/goautoneg",
+        "version": "v0.0.0-20191010083416-a7dc8b61c822",
+        "indirect": true
+      },
+      {
+        "path": "github.com/opencontainers/go-digest",
+        "version": "v1.0.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/opencontainers/image-spec",
+        "version": "v1.1.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/power-devops/perfstat",
+        "version": "v0.0.0-20240221224432-82ca36839d55",
+        "indirect": true
+      },
+      {
+        "path": "github.com/prometheus/client_model",
+        "version": "v0.6.3",
+        "indirect": true
+      },
+      {
+        "path": "github.com/prometheus/common",
+        "version": "v0.72.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/prometheus/procfs",
+        "version": "v0.22.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/quic-go/qpack",
+        "version": "v0.6.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/quic-go/quic-go",
+        "version": "v0.59.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/segmentio/asm",
+        "version": "v1.1.3",
+        "indirect": true
+      },
+      {
+        "path": "github.com/segmentio/encoding",
+        "version": "v0.5.4",
+        "indirect": true
+      },
+      {
+        "path": "github.com/shirou/gopsutil/v4",
+        "version": "v4.26.6",
+        "indirect": true
+      },
+      {
+        "path": "github.com/sirupsen/logrus",
+        "version": "v1.9.4",
+        "indirect": true
+      },
+      {
+        "path": "github.com/stretchr/testify",
+        "version": "v1.12.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/tklauser/go-sysconf",
+        "version": "v0.4.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/tklauser/numcpus",
+        "version": "v0.12.0",
+        "indirect": true
+      },
+      {
+        "path": "github.com/twitchyliquid64/golang-asm",
+        "version": "v0.15.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/ugorji/go/codec",
+        "version": "v1.3.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/yosida95/uritemplate/v3",
+        "version": "v3.0.2",
+        "indirect": true
+      },
+      {
+        "path": "github.com/yuin/gopher-lua",
+        "version": "v1.1.1",
+        "indirect": true
+      },
+      {
+        "path": "github.com/yusufpapurcu/wmi",
+        "version": "v1.2.4",
+        "indirect": true
+      },
+      {
+        "path": "go.mongodb.org/mongo-driver/v2",
+        "version": "v2.5.0",
+        "indirect": true
+      },
+      {
+        "path": "go.opentelemetry.io/auto/sdk",
+        "version": "v1.2.1",
+        "indirect": true
+      },
+      {
+        "path": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+        "version": "v0.69.0",
+        "indirect": true
+      },
+      {
+        "path": "go.opentelemetry.io/otel",
+        "version": "v1.45.0",
+        "indirect": true
+      },
+      {
+        "path": "go.opentelemetry.io/otel/metric",
+        "version": "v1.45.0",
+        "indirect": true
+      },
+      {
+        "path": "go.opentelemetry.io/otel/trace",
+        "version": "v1.45.0",
+        "indirect": true
+      },
+      {
+        "path": "go.uber.org/atomic",
+        "version": "v1.12.0",
+        "indirect": true
+      },
+      {
+        "path": "golang.org/x/arch",
+        "version": "v0.22.0",
+        "indirect": true
+      },
+      {
+        "path": "golang.org/x/mod",
+        "version": "v0.42.0",
+        "indirect": true
+      },
+      {
+        "path": "golang.org/x/text",
+        "version": "v0.43.0",
+        "indirect": false
+      },
+      {
+        "path": "google.golang.org/genproto/googleapis/rpc",
+        "version": "v0.0.0-20261005182115-fad411399dd8",
+        "indirect": true
+      },
+      {
+        "path": "google.golang.org/protobuf",
+        "version": "v1.36.12",
+        "indirect": true
+      }
+    ],
+    "serverLinuxAMD64Graph": {
+      "command": "CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go list -mod=readonly -deps -json ./cmd/server",
+      "status": "success",
+      "packages": 803,
+      "standardLibraryPackages": 235,
+      "localPackages": 52,
+      "thirdPartyPackages": 516,
+      "thirdPartyModules": 85
+    },
+    "mcpLinuxAMD64Graph": {
+      "command": "CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go list -mod=readonly -deps -json ./cmd/mcp",
+      "status": "success",
+      "packages": 365,
+      "standardLibraryPackages": 217,
+      "localPackages": 13,
+      "thirdPartyPackages": 135,
+      "thirdPartyModules": 30
+    },
+    "zenLinuxAMD64Graph": {
+      "command": "CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go list -mod=readonly -deps -json ./cmd/zen",
+      "status": "incomplete",
+      "packages": 360,
+      "standardLibraryPackages": 229,
+      "localPackages": 18,
+      "thirdPartyPackages": 113,
+      "thirdPartyModules": 28
+    },
+    "resolvedBuildListThirdPartyModules": 341,
+    "minimalLinuxAMD64Graph": {
+      "command": "go list -mod=readonly -deps -json -tags=zenith_minimal,nomsgpack ./cmd/server",
+      "goVersion": "go1.26.10",
+      "GOOS": "linux",
+      "GOARCH": "amd64",
+      "CGO_ENABLED": "0",
+      "edition": "minimal",
+      "totalPackages": 615,
+      "thirdPartyModules": 67,
+      "thirdPartyPackages": 333
+    }
+  },
+  "frontend": {
+    "productionDirect": 72,
+    "developmentDirect": 23,
+    "optionalDirect": 1,
+    "lockedPackageVersions": 1117,
+    "lockedSnapshots": 1117,
+    "productionAndOptionalClosureSnapshots": 824,
+    "developmentClosureSnapshots": 523,
+    "developmentOnlySnapshots": 293,
+    "sharedProductionDevelopmentSnapshots": 230
+  },
+  "voice": {
+    "lockedPackagesIncludingProject": 77,
+    "packages": [
+      {
+        "name": "aiofiles",
+        "version": "25.1.0",
+        "project": false
+      },
+      {
+        "name": "aiohappyeyeballs",
+        "version": "2.7.1",
+        "project": false
+      },
+      {
+        "name": "aiohttp",
+        "version": "3.14.5",
+        "project": false
+      },
+      {
+        "name": "aiosignal",
+        "version": "1.4.0",
+        "project": false
+      },
+      {
+        "name": "annotated-doc",
+        "version": "0.0.5",
+        "project": false
+      },
+      {
+        "name": "annotated-types",
+        "version": "0.8.0",
+        "project": false
+      },
+      {
+        "name": "anyio",
+        "version": "4.15.1",
+        "project": false
+      },
+      {
+        "name": "attrs",
+        "version": "26.1.0",
+        "project": false
+      },
+      {
+        "name": "av",
+        "version": "18.1.0",
+        "project": false
+      },
+      {
+        "name": "certifi",
+        "version": "2026.10.19",
+        "project": false
+      },
+      {
+        "name": "cffi",
+        "version": "2.1.1",
+        "project": false
+      },
+      {
+        "name": "charset-normalizer",
+        "version": "3.5.1",
+        "project": false
+      },
+      {
+        "name": "click",
+        "version": "8.5.0",
+        "project": false
+      },
+      {
+        "name": "colorama",
+        "version": "0.4.6",
+        "project": false
+      },
+      {
+        "name": "docstring-parser",
+        "version": "0.18.0",
+        "project": false
+      },
+      {
+        "name": "eval-type-backport",
+        "version": "0.4.0",
+        "project": false
+      },
+      {
+        "name": "frozenlist",
+        "version": "1.8.0",
+        "project": false
+      },
+      {
+        "name": "googleapis-common-protos",
+        "version": "1.75.4",
+        "project": false
+      },
+      {
+        "name": "grpcio",
+        "version": "1.84.0",
+        "project": false
+      },
+      {
+        "name": "h11",
+        "version": "0.16.0",
+        "project": false
+      },
+      {
+        "name": "httpcore",
+        "version": "1.0.9",
+        "project": false
+      },
+      {
+        "name": "httpcore2",
+        "version": "2.16.0",
+        "project": false
+      },
+      {
+        "name": "httpx",
+        "version": "0.28.1",
+        "project": false
+      },
+      {
+        "name": "httpx2",
+        "version": "2.16.0",
+        "project": false
+      },
+      {
+        "name": "httpx2-jsfetch",
+        "version": "1.0",
+        "project": false
+      },
+      {
+        "name": "idna",
+        "version": "3.20",
+        "project": false
+      },
+      {
+        "name": "jiter",
+        "version": "0.17.0",
+        "project": false
+      },
+      {
+        "name": "json-repair",
+        "version": "0.63.5",
+        "project": false
+      },
+      {
+        "name": "livekit",
+        "version": "1.1.20",
+        "project": false
+      },
+      {
+        "name": "livekit-agents",
+        "version": "1.8.8",
+        "project": false
+      },
+      {
+        "name": "livekit-api",
+        "version": "1.2.1",
+        "project": false
+      },
+      {
+        "name": "livekit-blingfire",
+        "version": "1.1.0",
+        "project": false
+      },
+      {
+        "name": "livekit-local-inference",
+        "version": "0.2.7",
+        "project": false
+      },
+      {
+        "name": "livekit-plugins-openai",
+        "version": "1.8.8",
+        "project": false
+      },
+      {
+        "name": "livekit-protocol",
+        "version": "1.1.27",
+        "project": false
+      },
+      {
+        "name": "markdown-it-py",
+        "version": "4.2.0",
+        "project": false
+      },
+      {
+        "name": "mdurl",
+        "version": "0.1.2",
+        "project": false
+      },
+      {
+        "name": "multidict",
+        "version": "6.9.1",
+        "project": false
+      },
+      {
+        "name": "nest-asyncio",
+        "version": "1.6.0",
+        "project": false
+      },
+      {
+        "name": "numpy",
+        "version": "2.5.3",
+        "project": false
+      },
+      {
+        "name": "openai",
+        "version": "3.35.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-api",
+        "version": "1.45.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-exporter-http-transport",
+        "version": "0.66b1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-exporter-otlp",
+        "version": "1.45.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-exporter-otlp-common",
+        "version": "0.66b1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-exporter-otlp-proto-common",
+        "version": "1.45.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-exporter-otlp-proto-grpc",
+        "version": "1.45.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-exporter-otlp-proto-http",
+        "version": "1.45.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-proto",
+        "version": "1.45.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-sdk",
+        "version": "1.45.1",
+        "project": false
+      },
+      {
+        "name": "opentelemetry-semantic-conventions",
+        "version": "0.66b1",
+        "project": false
+      },
+      {
+        "name": "pillow",
+        "version": "13.0.0",
+        "project": false
+      },
+      {
+        "name": "prometheus-client",
+        "version": "0.26.0",
+        "project": false
+      },
+      {
+        "name": "propcache",
+        "version": "0.5.4",
+        "project": false
+      },
+      {
+        "name": "protobuf",
+        "version": "7.36.2",
+        "project": false
+      },
+      {
+        "name": "psutil",
+        "version": "7.2.2",
+        "project": false
+      },
+      {
+        "name": "pycparser",
+        "version": "3.0",
+        "project": false
+      },
+      {
+        "name": "pydantic",
+        "version": "2.13.5",
+        "project": false
+      },
+      {
+        "name": "pydantic-core",
+        "version": "2.46.5",
+        "project": false
+      },
+      {
+        "name": "pygments",
+        "version": "2.21.0",
+        "project": false
+      },
+      {
+        "name": "pyjwt",
+        "version": "2.15.0",
+        "project": false
+      },
+      {
+        "name": "pyyaml",
+        "version": "6.0.3",
+        "project": false
+      },
+      {
+        "name": "requests",
+        "version": "2.34.2",
+        "project": false
+      },
+      {
+        "name": "rich",
+        "version": "15.0.0",
+        "project": false
+      },
+      {
+        "name": "ruff",
+        "version": "0.17.1",
+        "project": false
+      },
+      {
+        "name": "shellingham",
+        "version": "1.5.4",
+        "project": false
+      },
+      {
+        "name": "sniffio",
+        "version": "1.3.1",
+        "project": false
+      },
+      {
+        "name": "sounddevice",
+        "version": "0.5.6",
+        "project": false
+      },
+      {
+        "name": "truststore",
+        "version": "0.10.5",
+        "project": false
+      },
+      {
+        "name": "typer",
+        "version": "0.27.2",
+        "project": false
+      },
+      {
+        "name": "types-protobuf",
+        "version": "7.35.1.20260906",
+        "project": false
+      },
+      {
+        "name": "typing-extensions",
+        "version": "4.16.0",
+        "project": false
+      },
+      {
+        "name": "typing-inspection",
+        "version": "0.4.4",
+        "project": false
+      },
+      {
+        "name": "urllib3",
+        "version": "2.8.0",
+        "project": false
+      },
+      {
+        "name": "watchfiles",
+        "version": "1.3.0",
+        "project": false
+      },
+      {
+        "name": "yarl",
+        "version": "1.25.1",
+        "project": false
+      },
+      {
+        "name": "zenith-helia",
+        "version": "0.1.0",
+        "project": true
+      }
+    ],
+    "runtimeClosureCount": 75,
+    "runtimeClosure": [
+      "aiofiles",
+      "aiohappyeyeballs",
+      "aiohttp",
+      "aiosignal",
+      "annotated-doc",
+      "annotated-types",
+      "anyio",
+      "attrs",
+      "av",
+      "certifi",
+      "cffi",
+      "charset-normalizer",
+      "click",
+      "colorama",
+      "docstring-parser",
+      "eval-type-backport",
+      "frozenlist",
+      "googleapis-common-protos",
+      "grpcio",
+      "h11",
+      "httpcore",
+      "httpcore2",
+      "httpx",
+      "httpx2",
+      "httpx2-jsfetch",
+      "idna",
+      "jiter",
+      "json-repair",
+      "livekit",
+      "livekit-agents",
+      "livekit-api",
+      "livekit-blingfire",
+      "livekit-local-inference",
+      "livekit-plugins-openai",
+      "livekit-protocol",
+      "markdown-it-py",
+      "mdurl",
+      "multidict",
+      "nest-asyncio",
+      "numpy",
+      "openai",
+      "opentelemetry-api",
+      "opentelemetry-exporter-http-transport",
+      "opentelemetry-exporter-otlp",
+      "opentelemetry-exporter-otlp-common",
+      "opentelemetry-exporter-otlp-proto-common",
+      "opentelemetry-exporter-otlp-proto-grpc",
+      "opentelemetry-exporter-otlp-proto-http",
+      "opentelemetry-proto",
+      "opentelemetry-sdk",
+      "opentelemetry-semantic-conventions",
+      "pillow",
+      "prometheus-client",
+      "propcache",
+      "protobuf",
+      "psutil",
+      "pycparser",
+      "pydantic",
+      "pydantic-core",
+      "pygments",
+      "pyjwt",
+      "pyyaml",
+      "requests",
+      "rich",
+      "shellingham",
+      "sniffio",
+      "sounddevice",
+      "truststore",
+      "typer",
+      "types-protobuf",
+      "typing-extensions",
+      "typing-inspection",
+      "urllib3",
+      "watchfiles",
+      "yarl"
+    ],
+    "devOnlyCount": 1
+  }
+}

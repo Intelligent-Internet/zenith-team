@@ -1,0 +1,37 @@
+# Minimal-edition container scan
+
+Scanned 23 October 2026, **11:00–11:03 UTC**, with the final API image rescanned at **11:06:25 UTC** after the OAuth fix. These results describe the exact local **Linux/arm64** images identified in [container-images.json](evidence/container-images.json); a subsequent rebuild has a different identity and must be rescanned before release. The final API image is `sha256:edde3ae37d6c868071a383cdc08f025a74b759513eac1b8fc69b019ab184b297`; its findings are unchanged. The prior API identity and scan summary are retained in [server-image-scan-history.json](evidence/server-image-scan-history.json). The API source/binary improvements do not make the entire Compose stack free of known vulnerability matches.
+
+Trivy **0.76.1** was fetched from its [official container repository](https://trivy.dev/docs/latest/getting-started/installation/) and fixed to registry-resolved digest `sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c`. The vulnerability database was updated `2026-10-23T07:12:39Z`. The image digest was verified by the registry pull; a publisher-signature verification was not performed. [Manifest evidence](evidence/trivy-image-manifest.txt), [database and aggregate results](evidence/container-scan-summary.json).
+
+| Image | Critical | High | Medium | Low | Unknown | Unique advisories |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Zenith Team minimal API | 0 | 0 | 0 | 0 | 3 | 3 |
+| Zenith Team web / Caddy | 0 | 5 | 13 | 1 | 1 | 15 |
+| Zenith Team storage / Silo | 0 | 17 | 64 | 15 | 2 | 42 |
+| PostgreSQL 17 Alpine | 1 | 25 | 31 | 3 | 1 | 61 |
+| Redis 7.4 Alpine | 0 | 0 | 0 | 0 | 0 | 0 |
+
+Severity columns count **package/advisory instances**, not independently exploitable defects. One advisory can match multiple packages or binaries. These are scanner-reported severities; package presence and version matching do not establish runtime reachability. Zero matches is a point-in-time scanner result, not a security guarantee.
+
+## Findings and applicability
+
+**API:** no high/critical matches. Debian's `ca-certificates` and `tzdata` have updates available (`20250419~deb12u2` and `2026c-0+deb12u1`). The third match is the known module-only `golang.org/x/crypto/openpgp` advisory; the minimal server import graph does not contain that package. Refresh the distroless digest for the two package updates. [API evidence](evidence/trivy-server.json).
+
+**Web:** the Caddy executable carries Go **1.26.8** and `golang.org/x/net` **0.59.0**, while the scan reports fixes in Go **1.26.10** and x/net **0.60.0**. The image's Alpine packages had no matches. This identifies the bundled reverse-proxy binary as the update target; rebuilding only the TypeScript bundle cannot fix it. Binary analysis retained 14 advisory IDs with symbol records; it cannot provide source call graphs or prove that each is exposed by the current Caddyfile. Prioritize a patched Caddy image or a reproducible rebuilt Caddy binary, then rescan. [Web evidence](evidence/trivy-web.json), [binary triage](evidence/govulncheck-image-caddy.json).
+
+**Storage:** the Silo and bundled mcli executables carry Go **1.27.1** and x/net **0.59.0**; the relevant current fixes are Go **1.27.3** and x/net **0.60.0**. The base also has PCRE2 high-severity matches, fixed in `10.40-7.el9_8`, and additional OS-package updates. Its MinIO lineage raises `CVE-2026-39414`, concerning authenticated S3 Select CSV memory exhaustion. That match remained module-only in binary analysis; this review did not establish whether this Silo fork includes a fix or exposes that endpoint. Resolve the fork's exact patch provenance before dismissing it. Upgrade or rebuild both the service and its initialization client, and consider a smaller storage image without unnecessary tools. [Storage evidence](evidence/trivy-storage.json), [Silo binary triage](evidence/govulncheck-image-silo.json), [upstream MinIO advisory](https://github.com/minio/minio/security/advisories/GHSA-h749-fxx7-pwpg).
+
+**PostgreSQL:** every match is in the auxiliary **gosu** binary, which carries Go **1.24.6**; there are no Trivy matches in the image's Alpine package set. In particular, the critical `CVE-2025-68121` concerns TLS session resumption, not a finding in PostgreSQL's query engine. A subsequent binary scan found no affected TLS symbol for that advisory. It found one distinct advisory with concrete symbol records: `GO-2026-6686` / `CVE-2026-61801`, in `github.com/moby/sys/user` **0.1.0**, fixed in **0.4.1**, involving user/group database parsing. The minimal profile already starts PostgreSQL as the `postgres` user, so the usual root-to-postgres gosu path is unnecessary; confirm that against the exact entrypoint before documenting non-exposure. Prefer an upstream image with rebuilt gosu, or deliberately remove this unused helper in a reviewed derived image. Do not represent the raw critical count as a remotely exploitable PostgreSQL critical vulnerability. [PostgreSQL evidence](evidence/trivy-postgres.json), [gosu binary triage](evidence/govulncheck-image-gosu.json), [official TLS advisory](https://pkg.go.dev/vuln/GO-2026-4337).
+
+**Redis:** no known vulnerability match was returned for the pinned image and this database. This does not assess configuration, exposed networks or authorization policy. [Redis evidence](evidence/trivy-redis.json).
+
+## Method and limits
+
+`docker save` exported the five image snapshots into ignored `.dev/security-image-archives/`. Each Trivy scan ran with **no network, no Docker socket, all capabilities dropped, a read-only root filesystem, a read-only archive mount and a read-only database mount**. Only the scanner's temporary filesystem and in-memory cache were writable. No image entrypoint or target executable was run. The scanner used `image --input ... --scanners vuln --skip-db-update --offline-scan` with JSON output. Scan commands and successful completion statuses are recorded in [container-scan-execution.json](evidence/container-scan-execution.json).
+
+Binary triage copied selected executables from created-but-never-started containers and ran `govulncheck v1.9.0 -mode binary`. JSON-mode success does not mean zero findings. Binary findings can be broader than source reachability; wildcard records and module-only findings require further review. Trivy itself was run in reporting mode, so its exit code confirms completion, not that the image passed a severity gate.
+
+Compact tracked evidence preserves all vulnerability-instance identities, versions, severity and target paths; the complete original Trivy/govulncheck reports remain in ignored `.dev/security-trivy-reports/`, with hashes recorded in the summaries. Image archives, copied binaries and the downloaded scanner database remain under ignored `.dev/security-*` for reproduction. The scan does not cover other architectures, browser JavaScript already bundled without package metadata, container runtime/host vulnerabilities, exploit testing or the independently deployed storage-init image as a separate artifact. The Silo-derived storage image contains the same mcli helper and its results inform—but do not replace—a separate initialization-image scan.
+
+**Release follow-up:** refresh/rebuild Caddy and Silo first, resolve the MinIO-fork advisory and gosu applicability, update the distroless base, then repeat the image scan on final image digests. Add an image-scanning release gate; the newly added application dependency gate does not replace this artifact check.

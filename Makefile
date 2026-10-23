@@ -46,6 +46,9 @@ help:
 	@echo "  make selfhost-status | selfhost-logs  Show the containers or follow their logs"
 	@echo "  make selfhost-down  Stop the stack, keep its data volumes"
 	@echo ""
+	@echo "Private minimal edition: make minimal-up | minimal-down | minimal-status (deploy/minimal/README.md)"
+	@echo "  make minimal-check  Verify reduced Go import graph and backend tests"
+	@echo ""
 	@echo "Local development:"
 	@echo "  make doctor      Check the tools local development needs"
 	@echo "  make hooks       Use the repo's git hooks: commit message, branch name, staged secrets"
@@ -502,3 +505,24 @@ voice-gate:
 	cd voice-agent && uv run --frozen python -m unittest -v
 
 gate: api-lint api-types-check voice-gate go-gate lint typecheck build
+
+# Private browser-only profile. Keep its configuration separate from production:
+# Compose merging can unintentionally restore ports or optional credentials.
+MINIMAL_COMPOSE := docker compose --env-file deploy/.env -f deploy/minimal/compose.yml
+MINIMAL_GOTOOLCHAIN ?= go1.26.10
+
+.PHONY: minimal-check minimal-build minimal-up minimal-down minimal-status
+minimal-check: tools-prepare
+	GOTOOLCHAIN=$(MINIMAL_GOTOOLCHAIN) scripts/check-minimal.sh
+
+minimal-build:
+	$(MINIMAL_COMPOSE) build
+
+minimal-up:
+	$(MINIMAL_COMPOSE) up -d --build --wait
+
+minimal-down:
+	$(MINIMAL_COMPOSE) down
+
+minimal-status:
+	$(MINIMAL_COMPOSE) ps

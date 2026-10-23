@@ -1,0 +1,189 @@
+{
+  "database": {
+    "Version": 2,
+    "NextUpdate": "2026-10-24T07:12:39.668274239Z",
+    "UpdatedAt": "2026-10-23T07:12:39.66827463Z",
+    "DownloadedAt": "2026-10-23T11:00:45.412276803Z"
+  },
+  "images": [
+    {
+      "name": "server",
+      "scanner": "Trivy 0.76.1",
+      "platform": "linux/arm64",
+      "scannedAt": "2026-10-23T11:06:25.487098+00:00",
+      "rawOutputSHA256": "2dcb5365a34a2b00a69835abac5bcf0fc8749da0de449d072ebff99e11b7efad",
+      "rawOutputBytes": 127605,
+      "rawOutputLocal": ".dev/security-trivy-reports/trivy-server.json",
+      "findingInstances": 3,
+      "uniqueAdvisories": 3,
+      "severityCounts": {
+        "UNKNOWN": 3
+      },
+      "targets": [
+        {
+          "target": "/images/server.tar (debian 12.15)",
+          "type": "debian",
+          "packageCount": 5,
+          "severityCounts": {
+            "UNKNOWN": 2
+          }
+        },
+        {
+          "target": "usr/local/bin/zenith-team-readyz",
+          "type": "gobinary",
+          "packageCount": 1,
+          "severityCounts": {}
+        },
+        {
+          "target": "usr/local/bin/zenith-team-server",
+          "type": "gobinary",
+          "packageCount": 69,
+          "severityCounts": {
+            "UNKNOWN": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "web",
+      "scanner": "Trivy 0.76.1",
+      "platform": "linux/arm64",
+      "rawOutputSHA256": "133898b8e395ad6173a719225292879b4f5be34694d87bb0c01cdfad8c4830c5",
+      "rawOutputBytes": 220298,
+      "rawOutputLocal": ".dev/security-trivy-reports/trivy-web.json",
+      "findingInstances": 20,
+      "uniqueAdvisories": 15,
+      "severityCounts": {
+        "UNKNOWN": 1,
+        "HIGH": 5,
+        "MEDIUM": 13,
+        "LOW": 1
+      },
+      "targets": [
+        {
+          "target": "/images/web.tar (alpine 3.23.7)",
+          "type": "alpine",
+          "packageCount": 32,
+          "severityCounts": {}
+        },
+        {
+          "target": "usr/bin/caddy",
+          "type": "gobinary",
+          "packageCount": 149,
+          "severityCounts": {
+            "UNKNOWN": 1,
+            "HIGH": 5,
+            "MEDIUM": 13,
+            "LOW": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "storage",
+      "scanner": "Trivy 0.76.1",
+      "platform": "linux/arm64",
+      "rawOutputSHA256": "3b58febbbb225280f8b96706d1832c23d58906e75c13fc8b9c56c7575e5b2f9f",
+      "rawOutputBytes": 1440049,
+      "rawOutputLocal": ".dev/security-trivy-reports/trivy-storage.json",
+      "findingInstances": 98,
+      "uniqueAdvisories": 42,
+      "severityCounts": {
+        "MEDIUM": 64,
+        "LOW": 15,
+        "HIGH": 17,
+        "UNKNOWN": 2
+      },
+      "targets": [
+        {
+          "target": "/images/storage.tar (redhat 9.8)",
+          "type": "redhat",
+          "packageCount": 22,
+          "severityCounts": {
+            "MEDIUM": 38,
+            "LOW": 13,
+            "HIGH": 6
+          }
+        },
+        {
+          "target": "usr/bin/mcli",
+          "type": "gobinary",
+          "packageCount": 108,
+          "severityCounts": {
+            "UNKNOWN": 1,
+            "HIGH": 5,
+            "MEDIUM": 13,
+            "LOW": 1
+          }
+        },
+        {
+          "target": "usr/bin/silo",
+          "type": "gobinary",
+          "packageCount": 261,
+          "severityCounts": {
+            "HIGH": 6,
+            "UNKNOWN": 1,
+            "MEDIUM": 13,
+            "LOW": 1
+          }
+        }
+      ]
+    },
+    {
+      "name": "postgres",
+      "scanner": "Trivy 0.76.1",
+      "platform": "linux/arm64",
+      "rawOutputSHA256": "544d4439507a1971a0ce59f0333f7963fe4a36e4e53644b39fa98806bc19dda6",
+      "rawOutputBytes": 411584,
+      "rawOutputLocal": ".dev/security-trivy-reports/trivy-postgres.json",
+      "findingInstances": 61,
+      "uniqueAdvisories": 61,
+      "severityCounts": {
+        "MEDIUM": 31,
+        "UNKNOWN": 1,
+        "CRITICAL": 1,
+        "HIGH": 25,
+        "LOW": 3
+      },
+      "targets": [
+        {
+          "target": "/images/postgres.tar (alpine 3.24.3)",
+          "type": "alpine",
+          "packageCount": 45,
+          "severityCounts": {}
+        },
+        {
+          "target": "usr/local/bin/gosu",
+          "type": "gobinary",
+          "packageCount": 4,
+          "severityCounts": {
+            "MEDIUM": 31,
+            "UNKNOWN": 1,
+            "CRITICAL": 1,
+            "HIGH": 25,
+            "LOW": 3
+          }
+        }
+      ]
+    },
+    {
+      "name": "redis",
+      "scanner": "Trivy 0.76.1",
+      "platform": "linux/arm64",
+      "rawOutputSHA256": "de75df8d39450ed9e4e07c2d5e37d65decc509f05ff3902fbbf30f6c68b090f6",
+      "rawOutputBytes": 64194,
+      "rawOutputLocal": ".dev/security-trivy-reports/trivy-redis.json",
+      "findingInstances": 0,
+      "uniqueAdvisories": 0,
+      "severityCounts": {},
+      "targets": [
+        {
+          "target": "/images/redis.tar (alpine 3.21.9)",
+          "type": "alpine",
+          "packageCount": 19,
+          "severityCounts": {}
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1126 @@
+{
+  "name": "storage",
+  "scanner": "Trivy 0.76.1",
+  "platform": "linux/arm64",
+  "imageMetadata": {
+    "OS": {
+      "Family": "redhat",
+      "Name": "9.8"
+    },
+    "ImageID": "sha256:60cac90599477ecc8cc6652593104985f3d4491b3bcbc6f35c84994571eb3fb0",
+    "DiffIDs": [
+      "sha256:f7a2ad0e05a8b5620595f410cecea78107f6666f4ea412d1678c36d3b183dddf",
+      "sha256:a532880cc011af7d6c21341b0b451e3a0e185016218779eb4e1dca9052851ca1",
+      "sha256:2cad1d105bdc04cd9e23276ae4e748f5ec2c66b71f4ebc026d4b3874578f4cbb",
+      "sha256:91939d1739aad91d78049449411ddfdfedc410a44414e616f95b74206bc6b5c5",
+      "sha256:018a49c0b4da2c789bd579163da1608191a47fd7dd50c0eb9bb522fb6e60f709",
+      "sha256:a6495571fd3d036d822aeedf0522e9d13d6cbda1376bce212afa62903936b46c",
+      "sha256:186bbf2c4eacd7afc11b1ce999e8a188c96ac746793ec82f2a827dddc2139ef4",
+      "sha256:ed71e83c70ca8b6c71c7f9d9782a0e14deb082424e54ac2349fe769d4243d7a0",
+      "sha256:6a9618dd748944572547ee9c260f8c69e0d7bb79206e2b37af8b4f90a533250e",
+      "sha256:99d8cf04f813a6de2c66cb446e30ae9f28d228e363a0ee1978329b24551bc0a9",
+      "sha256:a5b3f7e06e28734c4baf48b80bde4f3575a7ec03b286dd6f4e124e7fd2f8ad41",
+      "sha256:11a08790805e862ddf533c1859e4471c6f159efd07faba790899f58102cb0b7a"
+    ],
+    "RepoTags": [
+      "zenith-team-storage:minimal-local"
+    ],
+    "RepoDigests": null
+  },
+  "rawOutputSHA256": "3b58febbbb225280f8b96706d1832c23d58906e75c13fc8b9c56c7575e5b2f9f",
+  "rawOutputBytes": 1440049,
+  "rawOutputLocal": ".dev/security-trivy-reports/trivy-storage.json",
+  "findingInstances": 98,
+  "uniqueAdvisories": 42,
+  "severityCounts": {
+    "MEDIUM": 64,
+    "LOW": 15,
+    "HIGH": 17,
+    "UNKNOWN": 2
+  },
+  "targets": [
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "type": "redhat",
+      "packageCount": 22,
+      "severityCounts": {
+        "MEDIUM": 38,
+        "LOW": 13,
+        "HIGH": 6
+      }
+    },
+    {
+      "target": "usr/bin/mcli",
+      "type": "gobinary",
+      "packageCount": 108,
+      "severityCounts": {
+        "UNKNOWN": 1,
+        "HIGH": 5,
+        "MEDIUM": 13,
+        "LOW": 1
+      }
+    },
+    {
+      "target": "usr/bin/silo",
+      "type": "gobinary",
+      "packageCount": 261,
+      "severityCounts": {
+        "HIGH": 6,
+        "UNKNOWN": 1,
+        "MEDIUM": 13,
+        "LOW": 1
+      }
+    }
+  ],
+  "findings": [
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-56391",
+      "PkgName": "coreutils-single",
+      "InstalledVersion": "8.32-41.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "coreutils: GNU coreutils uniq: Denial of Service and information disclosure via out-of-bounds read with multibyte input",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56391"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-56392",
+      "PkgName": "coreutils-single",
+      "InstalledVersion": "8.32-41.el9_8",
+      "FixedVersion": "8.32-41.el9_8.1",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "coreutils: GNU coreutils unexpand: Denial of Service via crafted tab stop values",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56392"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-18374",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Heap buffer overflow via attacker-controlled fopen mode string",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-18374"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-19542",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Fix out-of-bounds array write in tdelete",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-19542"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-6368",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Process abort due to invalid memory in wordexp",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-6368"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-6791",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Glibc: Denial of Service via stack exhaustion during tilde expansion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-6791"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-77117",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Non-progress DoS in SHIFT_JISX0213 -&gt",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-77117"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-80489",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Non-progress DoS in EUC_JISX0213 -> UCS-4 conversion state",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-80489"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-8674",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc DNS stub resolver: Denial of Service via long search domain in configuration",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-8674"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-86805",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Privilege escalation and arbitrary code execution via TOCTOU race condition in dynamic loader",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-86805"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89092",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: nscd stack overflow leads to degraded DNS resolution",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89092"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-95818",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Local attacker can cause denial of service and information disclosure via stack-based buffer overflow.",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-95818"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-97399",
+      "PkgName": "glibc",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "glibc: glibc: Denial of Service via out-of-bounds read in strncasecmp",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97399"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-18374",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Heap buffer overflow via attacker-controlled fopen mode string",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-18374"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-19542",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Fix out-of-bounds array write in tdelete",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-19542"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-6368",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Process abort due to invalid memory in wordexp",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-6368"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-6791",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Glibc: Denial of Service via stack exhaustion during tilde expansion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-6791"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-77117",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Non-progress DoS in SHIFT_JISX0213 -&gt",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-77117"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-80489",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Non-progress DoS in EUC_JISX0213 -> UCS-4 conversion state",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-80489"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-8674",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc DNS stub resolver: Denial of Service via long search domain in configuration",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-8674"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-86805",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Privilege escalation and arbitrary code execution via TOCTOU race condition in dynamic loader",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-86805"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89092",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: nscd stack overflow leads to degraded DNS resolution",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89092"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-95818",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Local attacker can cause denial of service and information disclosure via stack-based buffer overflow.",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-95818"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-97399",
+      "PkgName": "glibc-common",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "glibc: glibc: Denial of Service via out-of-bounds read in strncasecmp",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97399"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-18374",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Heap buffer overflow via attacker-controlled fopen mode string",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-18374"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-19542",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Fix out-of-bounds array write in tdelete",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-19542"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-6368",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Process abort due to invalid memory in wordexp",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-6368"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-6791",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Glibc: Denial of Service via stack exhaustion during tilde expansion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-6791"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-77117",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Non-progress DoS in SHIFT_JISX0213 -&gt",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-77117"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-80489",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "FixedVersion": "2.34-283.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "glibc: Non-progress DoS in EUC_JISX0213 -> UCS-4 conversion state",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-80489"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-8674",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc DNS stub resolver: Denial of Service via long search domain in configuration",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-8674"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-86805",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Privilege escalation and arbitrary code execution via TOCTOU race condition in dynamic loader",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-86805"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89092",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: nscd stack overflow leads to degraded DNS resolution",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89092"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-95818",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "glibc: glibc: Local attacker can cause denial of service and information disclosure via stack-based buffer overflow.",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-95818"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-97399",
+      "PkgName": "glibc-minimal-langpack",
+      "InstalledVersion": "2.34-275.el9_8",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "glibc: glibc: Denial of Service via out-of-bounds read in strncasecmp",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97399"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-102010",
+      "PkgName": "libgcc",
+      "InstalledVersion": "11.5.0-14.el9",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "gcc-toolset-15-gcc: gcc: gcc-toolset-16: gcc: Denial of Service via use-after-free in binary heap erase_if",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-102010"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-95619",
+      "PkgName": "libgcc",
+      "InstalledVersion": "11.5.0-14.el9",
+      "Status": "affected",
+      "Severity": "MEDIUM",
+      "Title": "gcc: libstdc++ integer overflow in `new` operator",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-95619"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2021-46195",
+      "PkgName": "libgcc",
+      "InstalledVersion": "11.5.0-14.el9",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "gcc: uncontrolled recursion in libiberty/rust-demangle.c",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2021-46195"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2022-27943",
+      "PkgName": "libgcc",
+      "InstalledVersion": "11.5.0-14.el9",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "binutils: libiberty/rust-demangle.c in GNU GCC 11.2 allows stack exhaustion in demangle_const",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-27943"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2023-50495",
+      "PkgName": "ncurses-base",
+      "InstalledVersion": "6.2-12.20210508.el9",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "ncurses: segmentation fault via _nc_wrap_entry()",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2023-50495"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2023-50495",
+      "PkgName": "ncurses-libs",
+      "InstalledVersion": "6.2-12.20210508.el9",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "ncurses: segmentation fault via _nc_wrap_entry()",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2023-50495"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-103111",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "pcre2: pcre2: Out-of-bounds write via crafted regular expression",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-103111"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-86145",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "pcre2: PCRE2: Out-of-bounds write allows arbitrary code execution via crafted regular expressions",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-86145"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89161",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "pcre2: PCRE2: Memory corruption vulnerability in pcre2_jit_match",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89161"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89157",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "pcre2: PCRE2: Out-of-bounds write via large pattern input",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89157"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89158",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "PCRE2: PCRE2: Out-of-bounds write via integer overflow on 32-bit platforms",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89158"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2022-41409",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "pcre2: negative repeat value in a pcre2test subject line leads to inifinite loop",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-41409"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89156",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "LOW",
+      "Title": "PCRE2: PCRE2: Out-of-bounds read via invalid UTF data during JIT fallback",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89156"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89160",
+      "PkgName": "pcre2",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "LOW",
+      "Title": "pcre2: PCRE2: Denial of Service via out-of-bounds read during invalid UTF matching",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89160"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-103111",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "pcre2: pcre2: Out-of-bounds write via crafted regular expression",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-103111"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-86145",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "pcre2: PCRE2: Out-of-bounds write allows arbitrary code execution via crafted regular expressions",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-86145"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89161",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "pcre2: PCRE2: Memory corruption vulnerability in pcre2_jit_match",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89161"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89157",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "pcre2: PCRE2: Out-of-bounds write via large pattern input",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89157"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89158",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "PCRE2: PCRE2: Out-of-bounds write via integer overflow on 32-bit platforms",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89158"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2022-41409",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "Status": "affected",
+      "Severity": "LOW",
+      "Title": "pcre2: negative repeat value in a pcre2test subject line leads to inifinite loop",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2022-41409"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89156",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "LOW",
+      "Title": "PCRE2: PCRE2: Out-of-bounds read via invalid UTF data during JIT fallback",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89156"
+    },
+    {
+      "target": "/images/storage.tar (redhat 9.8)",
+      "VulnerabilityID": "CVE-2026-89160",
+      "PkgName": "pcre2-syntax",
+      "InstalledVersion": "10.40-6.el9",
+      "FixedVersion": "10.40-7.el9_8",
+      "Status": "fixed",
+      "Severity": "LOW",
+      "Title": "pcre2: PCRE2: Denial of Service via out-of-bounds read during invalid UTF matching",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-89160"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "GO-2026-5932",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.57.0",
+      "Status": "affected",
+      "Severity": "UNKNOWN",
+      "Title": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78669",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: net/http/internal/http2: golang.org/x/net/http2: net/http: Denial of Service via excessive HTTP/2 SETTINGS frames",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78669"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78659",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang.org/x/net/http2: golang: net/http: Denial of Service via HTTP/2 trailer header memory exhaustion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78659"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78660",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang.org/x/net/http2: net/http: HTTP response smuggling via malformed HTTP/2 framing headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78660"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78663",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: golang: flow control limit bypass via double refund in HTTP/2 server",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78663"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-97032",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: net/http: Denial of Service via concurrent HPACK encoder modification",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97032"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-111943",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.10, 1.27.3",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "crypto/x509: golang: crypto/x509: Man-in-the-middle attacks via untrusted intermediate certificates",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-111943"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78667",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: golang: golang: Denial of Service via crafted HTTP Range headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78667"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78669",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: net/http/internal/http2: golang.org/x/net/http2: net/http: Denial of Service via excessive HTTP/2 SETTINGS frames",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78669"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-97031",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "crypto/tls: golang: crypto/tls: Denial of Service via multiple ECH outer extension references",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97031"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-56866",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang: Cross-user response poisoning via desynchronized HTTP CONNECT connections",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56866"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78659",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang.org/x/net/http2: golang: net/http: Denial of Service via HTTP/2 trailer header memory exhaustion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78659"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78660",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang.org/x/net/http2: net/http: HTTP response smuggling via malformed HTTP/2 framing headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78660"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-78663",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: golang: flow control limit bypass via double refund in HTTP/2 server",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78663"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-94439",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: net/http: HTTP request smuggling via improper handling of HTTP/1 CONNECT responses",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94439"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-94440",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/textproto: mime/multipart: golang: golang: Denial of Service via memory limit bypass in multipart form parsing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94440"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-94448",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "html/template: golang: golang: cross-site scripting via consecutive expressions in JavaScript template literals",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94448"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-97030",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "html/template: golang: html/template: Cross-site scripting via improper escaping of yield keyword",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97030"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-97032",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: net/http: Denial of Service via concurrent HPACK encoder modification",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97032"
+    },
+    {
+      "target": "usr/bin/mcli",
+      "VulnerabilityID": "CVE-2026-56857",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "LOW",
+      "Title": "os: golang: golang: Directory traversal via Windows junction handling",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56857"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-39414",
+      "PkgName": "github.com/minio/minio",
+      "InstalledVersion": "v0.0.0-20260916155009-2a4d51406b7e",
+      "Status": "affected",
+      "Severity": "HIGH",
+      "Title": "MinIO affected a DoS via Unbounded Memory Allocation in S3 Select CSV Parsing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-39414"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "GO-2026-5932",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.57.0",
+      "Status": "affected",
+      "Severity": "UNKNOWN",
+      "Title": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78669",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: net/http/internal/http2: golang.org/x/net/http2: net/http: Denial of Service via excessive HTTP/2 SETTINGS frames",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78669"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78659",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang.org/x/net/http2: golang: net/http: Denial of Service via HTTP/2 trailer header memory exhaustion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78659"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78660",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang.org/x/net/http2: net/http: HTTP response smuggling via malformed HTTP/2 framing headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78660"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78663",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: golang: flow control limit bypass via double refund in HTTP/2 server",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78663"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-97032",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: net/http: Denial of Service via concurrent HPACK encoder modification",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97032"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-111943",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.10, 1.27.3",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "crypto/x509: golang: crypto/x509: Man-in-the-middle attacks via untrusted intermediate certificates",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-111943"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78667",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: golang: golang: Denial of Service via crafted HTTP Range headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78667"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78669",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: net/http/internal/http2: golang.org/x/net/http2: net/http: Denial of Service via excessive HTTP/2 SETTINGS frames",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78669"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-97031",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "crypto/tls: golang: crypto/tls: Denial of Service via multiple ECH outer extension references",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97031"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-56866",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang: Cross-user response poisoning via desynchronized HTTP CONNECT connections",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56866"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78659",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang.org/x/net/http2: golang: net/http: Denial of Service via HTTP/2 trailer header memory exhaustion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78659"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78660",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang.org/x/net/http2: net/http: HTTP response smuggling via malformed HTTP/2 framing headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78660"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-78663",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: golang: flow control limit bypass via double refund in HTTP/2 server",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78663"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-94439",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: net/http: HTTP request smuggling via improper handling of HTTP/1 CONNECT responses",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94439"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-94440",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/textproto: mime/multipart: golang: golang: Denial of Service via memory limit bypass in multipart form parsing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94440"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-94448",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "html/template: golang: golang: cross-site scripting via consecutive expressions in JavaScript template literals",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94448"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-97030",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "html/template: golang: html/template: Cross-site scripting via improper escaping of yield keyword",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97030"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-97032",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: net/http: Denial of Service via concurrent HPACK encoder modification",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97032"
+    },
+    {
+      "target": "usr/bin/silo",
+      "VulnerabilityID": "CVE-2026-56857",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.27.1",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "LOW",
+      "Title": "os: golang: golang: Directory traversal via Windows junction handling",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56857"
+    }
+  ]
+}

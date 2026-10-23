@@ -1,0 +1,1056 @@
+{
+  "startedAt": "2026-10-23T11:45:08.784777+00:00",
+  "target": "http://localhost:8080",
+  "scope": "local disposable fixtures; no provider execution",
+  "before": {
+    "zenith-team-minimal-server-1": {
+      "image": "sha256:edde3ae37d6c868071a383cdc08f025a74b759513eac1b8fc69b019ab184b297",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    },
+    "zenith-team-minimal-web-1": {
+      "image": "sha256:0740f16ea8b705a5e32a44ef0c9327a35290938ea20fd774da0721fd227fa6bd",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    }
+  },
+  "batches": [
+    {
+      "name": "proxy-denials",
+      "requests": 1200,
+      "concurrency": 32,
+      "elapsedSeconds": 0.234,
+      "requestsPerSecond": 5131.3,
+      "statuses": {
+        "403": 400,
+        "404": 800
+      },
+      "p50Ms": 5.12,
+      "p95Ms": 9.22,
+      "p99Ms": 25.99,
+      "maxMs": 28.3,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "authenticated-company-reads",
+      "requests": 1600,
+      "concurrency": 32,
+      "elapsedSeconds": 0.379,
+      "requestsPerSecond": 4218.96,
+      "statuses": {
+        "200": 1600
+      },
+      "p50Ms": 7.06,
+      "p95Ms": 11.27,
+      "p99Ms": 13.61,
+      "maxMs": 15.16,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "cross-company-access-denials",
+      "requests": 800,
+      "concurrency": 32,
+      "elapsedSeconds": 0.18,
+      "requestsPerSecond": 4446.64,
+      "statuses": {
+        "404": 800
+      },
+      "p50Ms": 6.58,
+      "p95Ms": 10.57,
+      "p99Ms": 12.76,
+      "maxMs": 14.78,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "password-overload",
+      "requests": 2400,
+      "concurrency": 32,
+      "elapsedSeconds": 4.771,
+      "requestsPerSecond": 503.05,
+      "statuses": {
+        "503": 2030,
+        "401": 370
+      },
+      "p50Ms": 57.73,
+      "p95Ms": 118.08,
+      "p99Ms": 151.17,
+      "maxMs": 231.18,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "paced-mixed-traffic",
+      "requests": 3200,
+      "concurrency": 32,
+      "elapsedSeconds": 26.23,
+      "requestsPerSecond": 122.0,
+      "statuses": {
+        "401": 798,
+        "200": 800,
+        "404": 800,
+        "403": 800,
+        "503": 2
+      },
+      "p50Ms": 2.44,
+      "p95Ms": 24.87,
+      "p99Ms": 33.14,
+      "maxMs": 83.76,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "post-load-company-reads",
+      "requests": 800,
+      "concurrency": 32,
+      "elapsedSeconds": 0.174,
+      "requestsPerSecond": 4600.23,
+      "statuses": {
+        "200": 800
+      },
+      "p50Ms": 6.04,
+      "p95Ms": 10.43,
+      "p99Ms": 13.14,
+      "maxMs": 14.9,
+      "failureSamples": [],
+      "passed": true
+    }
+  ],
+  "samples": [
+    {
+      "elapsedSeconds": 13.66,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "152.41%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "8.54%",
+          "MemUsage": "174.8MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "12.4MB / 15.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "38.53%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "10.08%",
+          "MemUsage": "25.8MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "7.51MB / 8.01MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 17.7,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "200.00%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "10.11%",
+          "MemUsage": "207MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "13.6MB / 16.9MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "19.98%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "10.32%",
+          "MemUsage": "26.41MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "10.8MB / 11.6MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 21.73,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "68.44%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.45%",
+          "MemUsage": "91.09MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "14.5MB / 18MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.05%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.93%",
+          "MemUsage": "25.43MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "11.5MB / 12.3MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 25.76,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "71.65%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "6.36%",
+          "MemUsage": "130.2MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "15MB / 18.5MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.22%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "10.12%",
+          "MemUsage": "25.91MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "12.3MB / 13.3MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 29.78,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "70.33%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "6.34%",
+          "MemUsage": "129.8MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "15.5MB / 19.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "3.71%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.94%",
+          "MemUsage": "25.45MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "13.2MB / 14.2MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 33.67,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "70.42%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.45%",
+          "MemUsage": "91.17MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "16MB / 19.6MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.50%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.96%",
+          "MemUsage": "25.49MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "14.3MB / 15.3MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 37.69,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "68.10%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.54%",
+          "MemUsage": "93MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "16.5MB / 20.2MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.02%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.97%",
+          "MemUsage": "25.52MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "14.9MB / 16MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 41.72,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "80.24%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.51%",
+          "MemUsage": "92.46MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17MB / 20.7MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "4.32%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "10.07%",
+          "MemUsage": "25.77MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "15.8MB / 17MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 45.74,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "25.95%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.49%",
+          "MemUsage": "91.94MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.3MB / 21MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.68%",
+          "MemUsage": "24.77MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 49.76,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.22%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.50%",
+          "MemUsage": "92.24MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.3MB / 21.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.67%",
+          "MemUsage": "24.75MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 53.68,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.20%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.50%",
+          "MemUsage": "92.23MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.3MB / 21.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.67%",
+          "MemUsage": "24.75MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 57.7,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.23%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.53%",
+          "MemUsage": "92.7MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.3MB / 21.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.67%",
+          "MemUsage": "24.75MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 61.73,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.24%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.52%",
+          "MemUsage": "92.67MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.3MB / 21.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.67%",
+          "MemUsage": "24.75MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 65.75,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.38%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.54%",
+          "MemUsage": "92.89MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.67%",
+          "MemUsage": "24.75MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 69.78,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.23%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.55%",
+          "MemUsage": "93.09MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.77%",
+          "MemUsage": "25.02MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 73.69,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.23%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.57%",
+          "MemUsage": "93.53MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.1MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 77.71,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.27%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.56%",
+          "MemUsage": "93.45MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.2MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.54%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 81.74,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.24%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.58%",
+          "MemUsage": "93.72MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.2MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 84.76,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.21%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.60%",
+          "MemUsage": "94.14MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.2MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.74MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 88.79,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.28%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.61%",
+          "MemUsage": "94.32MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.2MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "1.03%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.74MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 92.82,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.92%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.61%",
+          "MemUsage": "94.32MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.2MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.74MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 96.85,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.28%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.63%",
+          "MemUsage": "94.77MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.3MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 100.87,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.26%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.64%",
+          "MemUsage": "94.98MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.3MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.74MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.7MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 104.89,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.21%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.65%",
+          "MemUsage": "95.2MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.3MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.74MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 108.91,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.23%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.65%",
+          "MemUsage": "95.18MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.3MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.57%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.67%",
+          "MemUsage": "24.76MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 112.94,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.88%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.66%",
+          "MemUsage": "95.39MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.4MB / 21.3MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 116.96,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.21%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.68%",
+          "MemUsage": "95.88MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.5MB / 21.3MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 121.0,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.19%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.68%",
+          "MemUsage": "95.79MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.5MB / 21.4MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 125.02,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.36%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.69%",
+          "MemUsage": "96.06MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.5MB / 21.4MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.73MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 129.06,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.25%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "4.71%",
+          "MemUsage": "96.52MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "17.5MB / 21.4MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.81%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.67%",
+          "MemUsage": "24.76MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    },
+    {
+      "elapsedSeconds": 133.09,
+      "containers": [
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "16.19%",
+          "Container": "0255725ff32fcaef1fa035b25f55b30f71e81ed55ccb0c6b23e3ea3df8438a21",
+          "ID": "0255725ff32f",
+          "MemPerc": "5.40%",
+          "MemUsage": "110.7MiB / 2GiB",
+          "Name": "zenith-team-minimal-server-1",
+          "NetIO": "18.9MB / 23MB",
+          "PIDs": "8"
+        },
+        {
+          "BlockIO": "0B / 0B",
+          "CPUPerc": "0.00%",
+          "Container": "fd356aa40fde73b0eea6b835549a798942ff62ce3d8d46125ffe2fed91c99152",
+          "ID": "fd356aa40fde",
+          "MemPerc": "9.66%",
+          "MemUsage": "24.74MiB / 256MiB",
+          "Name": "zenith-team-minimal-web-1",
+          "NetIO": "16.5MB / 17.8MB",
+          "PIDs": "6"
+        }
+      ]
+    }
+  ],
+  "loginRecoveryPassed": true,
+  "slowConnections": [
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.002,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.002,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.002,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.002,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "idleBody",
+      "elapsedSeconds": 60.004,
+      "status": 504,
+      "passed": true
+    },
+    {
+      "kind": "idleBody",
+      "elapsedSeconds": 60.004,
+      "status": 499,
+      "passed": true
+    },
+    {
+      "kind": "idleBody",
+      "elapsedSeconds": 60.004,
+      "status": 504,
+      "passed": true
+    },
+    {
+      "kind": "idleBody",
+      "elapsedSeconds": 60.003,
+      "status": 504,
+      "passed": true
+    },
+    {
+      "kind": "trickleBody",
+      "elapsedSeconds": 120.003,
+      "status": 504,
+      "passed": true
+    },
+    {
+      "kind": "trickleBody",
+      "elapsedSeconds": 120.003,
+      "status": 504,
+      "passed": true
+    },
+    {
+      "kind": "trickleBody",
+      "elapsedSeconds": 120.003,
+      "status": 504,
+      "passed": true
+    },
+    {
+      "kind": "trickleBody",
+      "elapsedSeconds": 120.005,
+      "status": 504,
+      "passed": true
+    }
+  ],
+  "after": {
+    "zenith-team-minimal-server-1": {
+      "image": "sha256:edde3ae37d6c868071a383cdc08f025a74b759513eac1b8fc69b019ab184b297",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    },
+    "zenith-team-minimal-web-1": {
+      "image": "sha256:0740f16ea8b705a5e32a44ef0c9327a35290938ea20fd774da0721fd227fa6bd",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    }
+  },
+  "containersRecovered": true,
+  "fixtureCleanupPassed": true,
+  "signupClosed": true,
+  "elapsedSeconds": 133.73,
+  "passed": true
+}

@@ -1,0 +1,737 @@
+{
+  "checkedAt": "2026-10-23T11:47:51.414278+00:00",
+  "inputSha256": {
+    ".github/workflows/ci.yml": "7013bb60190c66bc75028b7fa7a7b8bd0b32dbf7120c4da9e965771513d8bf46",
+    ".github/workflows/security.yml": "5e200d8d2ea2d74c8313b9efaf1bcced331dea154e21ed42fe9488e5f5bf9a4f",
+    "scripts/security/check_npm_dependencies.mjs": "2caf7d0bae2e9649912be19805953b3a88bb6210eb21484d510d52abb50aa86a",
+    "scripts/security/check_voice_dependencies.py": "08ac810dd7256c8d12225b7d185aab4b5851447f13295745bf1549cbee666ac6",
+    "scripts/security/stress_scanners.py": "80b1ce70e0c23181e2e81c04280d72e04d0223f4a09b12484bbbb10b116a3215"
+  },
+  "mode": "offline fixtures; actual scanner and gate code",
+  "checks": [
+    {
+      "name": "npm/clean",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "npm/info",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "npm/low",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "npm/moderate",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "npm/high",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "npm/critical",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "npm/malformed-json",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/null",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/array",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/missing-fields",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/registry-error",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/negative-count",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/fractional-count",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/unsafe-count",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/string-count",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/count-without-record",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/record-without-count",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/unknown-severity",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/null-advisory",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/repeated-affected-paths",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "npm/failed-without-findings",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/tool-failed",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/tool-signalled",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/oversized-output",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/missing-tool",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "npm/production-scope",
+      "actual": [
+        "--dir",
+        "frontend",
+        "audit",
+        "--json",
+        "--prod"
+      ],
+      "expected": [
+        "--dir",
+        "frontend",
+        "audit",
+        "--json",
+        "--prod"
+      ],
+      "passed": true
+    },
+    {
+      "name": "npm/all-clean",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "npm/all-scope",
+      "actual": [
+        "--dir",
+        "frontend",
+        "audit",
+        "--json"
+      ],
+      "expected": [
+        "--dir",
+        "frontend",
+        "audit",
+        "--json"
+      ],
+      "passed": true
+    },
+    {
+      "name": "voice/clean",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/report/clean",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/advisory",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "voice/report/advisory",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "voice/malformed-json",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/malformed-json",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/null",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/null",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/array",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/array",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/missing-results",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/missing-results",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/wrong-result-count",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/wrong-result-count",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/wrong-result-type",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/wrong-result-type",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/null-package-result",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/null-package-result",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/query-error",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/query-error",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/pagination",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/pagination",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/malformed-pagination",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/malformed-pagination",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/null-vulnerabilities",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/null-vulnerabilities",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/malformed-advisory",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/malformed-advisory",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/oversized-response",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/oversized-response",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/network-failure",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/network-failure",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/timeout",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/timeout",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/http-failure",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/http-failure",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/empty-lock",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/empty-lock",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/no-network/empty-lock",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/malformed-lock",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/malformed-lock",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/no-network/malformed-lock",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/custom-registry",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/custom-registry",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/no-network/custom-registry",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/git-source",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/git-source",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/no-network/git-source",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/local-source",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/local-source",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/no-network/local-source",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/project-root",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/report/project-root",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "voice/other-virtual-source",
+      "actual": 2,
+      "expected": 2,
+      "passed": true
+    },
+    {
+      "name": "voice/report/other-virtual-source",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "voice/no-network/other-virtual-source",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "workflow/reusable-call",
+      "actual": "./.github/workflows/security.yml",
+      "expected": "./.github/workflows/security.yml",
+      "passed": true
+    },
+    {
+      "name": "workflow/unconditional-security",
+      "actual": false,
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "workflow/gate-needs-security",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "workflow/gate-always",
+      "actual": "always()",
+      "expected": "always()",
+      "passed": true
+    },
+    {
+      "name": "workflow/gate-security-env",
+      "actual": "${{ needs.dependency-security.result }}",
+      "expected": "${{ needs.dependency-security.result }}",
+      "passed": true
+    },
+    {
+      "name": "workflow/gate-results-env",
+      "actual": "${{ join(needs.*.result, ' ') }}",
+      "expected": "${{ join(needs.*.result, ' ') }}",
+      "passed": true
+    },
+    {
+      "name": "workflow/reusable-trigger",
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    {
+      "name": "workflow/read-only-token",
+      "actual": {
+        "contents": "read"
+      },
+      "expected": {
+        "contents": "read"
+      },
+      "passed": true
+    },
+    {
+      "name": "workflow/go-complete-matrix",
+      "actual": false,
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "workflow/frontend-complete-matrix",
+      "actual": false,
+      "expected": false,
+      "passed": true
+    },
+    {
+      "name": "workflow/go-pipefail-shell",
+      "actual": "bash",
+      "expected": "bash",
+      "passed": true
+    },
+    {
+      "name": "gate/security-success/other-success",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gate/security-success/other-skipped",
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    {
+      "name": "gate/security-success/other-failure",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-success/other-cancelled",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-failure/other-success",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-failure/other-skipped",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-failure/other-failure",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-failure/other-cancelled",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-cancelled/other-success",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-cancelled/other-skipped",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-cancelled/other-failure",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-cancelled/other-cancelled",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-skipped/other-success",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-skipped/other-skipped",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-skipped/other-failure",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-skipped/other-cancelled",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-empty/other-success",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-empty/other-skipped",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-empty/other-failure",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "gate/security-empty/other-cancelled",
+      "actual": 1,
+      "expected": 1,
+      "passed": true
+    },
+    {
+      "name": "go/pipeline-propagates-failure",
+      "actual": 3,
+      "expected": 3,
+      "passed": true
+    }
+  ],
+  "passed": 116,
+  "total": 116
+}

@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-10-23T11:11:46.296217+00:00",
+  "method": "Copy tracked and nonignored working-tree server files into a temporary directory; do not touch original generated files. Exclude all gitignored files.",
+  "filesCopied": 1854,
+  "checks": [
+    {
+      "edition": "full",
+      "goVersion": "1.26.10",
+      "target": "linux/amd64",
+      "goListExitCode": 0,
+      "importsDaemonPackage": false,
+      "govulncheckExitCode": 0,
+      "goListError": "",
+      "scanOutput": "=== Symbol Results ===\n\nNo vulnerabilities found.\n\nYour code is affected by 0 vulnerabilities.\nThis scan also found 0 vulnerabilities in packages you import and 1\nvulnerability in modules you require, but your code doesn't appear to call these\nvulnerabilities.\nUse '-show verbose' for more details.\n",
+      "scanError": ""
+    },
+    {
+      "edition": "minimal",
+      "goVersion": "1.26.10",
+      "target": "linux/amd64",
+      "goListExitCode": 0,
+      "importsDaemonPackage": false,
+      "govulncheckExitCode": 0,
+      "goListError": "",
+      "scanOutput": "=== Symbol Results ===\n\nNo vulnerabilities found.\n\nYour code is affected by 0 vulnerabilities.\nThis scan also found 0 vulnerabilities in packages you import and 1\nvulnerability in modules you require, but your code doesn't appear to call these\nvulnerabilities.\nUse '-show verbose' for more details.\n",
+      "scanError": ""
+    }
+  ],
+  "generatedToolDirectoryPresent": false
+}

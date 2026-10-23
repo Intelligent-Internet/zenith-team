@@ -1298,3 +1298,16 @@ jobs; PostgreSQL receipts and Company transaction fences make duplicate deliveri
 safe. `handler/task_calendar.go` is the HTTP boundary. Connector Schedules remain
 creator-private and use the non-task lane; Task schedules use Project access and
 Task capacity.
+
+## Minimal build
+
+The `zenith_minimal` build tag excludes the Google OAuth implementation in
+`internal/auth/google_provider.go` and the Google Cloud Run implementation in
+`internal/infra/cloudrun/publisher.go`. Their minimal adapters refuse construction
+and all operations, so configuring a removed provider fails startup instead of
+silently using different credentials. Ordinary password, session, Company,
+Project, Task and Run contracts are shared. The `nomsgpack` tag additionally
+excludes Gin's unused MessagePack codec. `scripts/check-minimal.sh` checks the
+Linux API import graph against these exclusions. This does not remove every
+optional feature from the code or shrink the browser bundle; deployment limits
+and remaining work are documented in `deploy/minimal/README.md`.

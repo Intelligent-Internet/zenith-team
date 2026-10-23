@@ -1,3 +1,5 @@
+//go:build !zenith_minimal
+
 package cloudrun
 
 import (

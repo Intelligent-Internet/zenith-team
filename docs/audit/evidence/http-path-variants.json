@@ -1,0 +1,137 @@
+[
+  {
+    "path": "/api/v1/auth/signup/",
+    "status": 307,
+    "location": "/api/v1/auth/signup",
+    "body": "",
+    "passed": true,
+    "redirectStatus": 403
+  },
+  {
+    "path": "/api/v1/auth//signup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/./signup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/x/../signup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/%73ignup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/%2esignup",
+    "status": 404,
+    "location": null,
+    "passed": true,
+    "errorCode": "route_not_found"
+  },
+  {
+    "path": "/api/v1/auth%2fsignup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/signup%2f",
+    "status": 307,
+    "location": "/api/v1/auth/signup",
+    "body": "",
+    "passed": true,
+    "redirectStatus": 403
+  },
+  {
+    "path": "/api/v1/auth/signup%3f",
+    "status": 404,
+    "location": null,
+    "passed": true,
+    "errorCode": "route_not_found"
+  },
+  {
+    "path": "//api/v1/auth/signup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/API/v1/auth/signup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/Signup",
+    "status": 403,
+    "location": null,
+    "body": "Registration is closed",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/public",
+    "status": 404,
+    "location": null,
+    "passed": true,
+    "errorCode": "route_not_found"
+  },
+  {
+    "path": "/api/v1/public/",
+    "status": 404,
+    "location": null,
+    "body": "Unavailable in this deployment",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/internal",
+    "status": 404,
+    "location": null,
+    "passed": true,
+    "errorCode": "route_not_found"
+  },
+  {
+    "path": "/api/v1/internal/",
+    "status": 404,
+    "location": null,
+    "body": "Unavailable in this deployment",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/google",
+    "status": 404,
+    "location": null,
+    "passed": true,
+    "errorCode": "route_not_found"
+  },
+  {
+    "path": "/api/v1/auth/google/",
+    "status": 404,
+    "location": null,
+    "body": "Unavailable in this deployment",
+    "passed": true
+  },
+  {
+    "path": "/api/v1/auth/google%2fweb%2fstart",
+    "status": 404,
+    "location": null,
+    "body": "Unavailable in this deployment",
+    "passed": true
+  }
+]

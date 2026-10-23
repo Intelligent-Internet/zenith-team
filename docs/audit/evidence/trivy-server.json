@@ -1,0 +1,97 @@
+{
+  "name": "server",
+  "scanner": "Trivy 0.76.1",
+  "platform": "linux/arm64",
+  "scannedAt": "2026-10-23T11:06:25.487098+00:00",
+  "imageMetadata": {
+    "OS": {
+      "Family": "debian",
+      "Name": "12.15"
+    },
+    "ImageID": "sha256:0ea5b9fadc124a1d85fc45281cecadcbbaebcce8e6ca34b82f96ce83a8e056de",
+    "DiffIDs": [
+      "sha256:6fc9269a8b4d61cdd276e80d170e4caa1566efc1b9f42442fdad4f69836b3c4f",
+      "sha256:8fa10c0194df9b7c054c90dbe482585f768a54428fc90a5b78a0066a123b1bba",
+      "sha256:35b5ba6e08cdd034b8d1920f9c7203e5d66f258e1915f164a01de0af14f34710",
+      "sha256:114dde0fefebbca13165d0da9c500a66190e497a82a53dcaabc3172d630be1e9",
+      "sha256:4d049f83d9cf21d1f5cc0e11deaf36df02790d0e60c1a3829538fb4b61685368",
+      "sha256:af5aa97ebe6ce1604747ec1e21af7136ded391bcabe4acef882e718a87c86bcc",
+      "sha256:6f1cdceb6a3146f0ccb986521156bef8a422cdbb0863396f7f751f575ba308f4",
+      "sha256:bd3cdfae1d3fdd83a2231d608969b38b82349777c2fff9a7c12d54f8ac5c9b38",
+      "sha256:4cde6b0bb6f50a5f255eef7b2a42162c661cf776b803225dcac9a659e396bb6b",
+      "sha256:ad51d0769d16ba578106a177987dfe3d2e02c1668c852b795b2f6b024068242a",
+      "sha256:6e7fbcf090d09b73a4aa85f9dce690d0ace73877c150b7c56955487b6e7a822a",
+      "sha256:5904c32f457c96a16c8c68f5ccdf518c8138cd9e5971de9ce6d564fc481af222",
+      "sha256:a9243c2bea7d3034c902a63f7f9348e42cbb150006d7c5cd941f1c4eaa369b72",
+      "sha256:d402e791dcd0a2aad432d00f4a12327c8456a4bd84445e6b69d3120f618593cb",
+      "sha256:99d801f1c2ab94ee7dfe078c91e0456545834f54eca8daa2da3576f58dd8764c"
+    ],
+    "RepoTags": [
+      "zenith-team-server:minimal-local"
+    ],
+    "RepoDigests": null
+  },
+  "rawOutputSHA256": "2dcb5365a34a2b00a69835abac5bcf0fc8749da0de449d072ebff99e11b7efad",
+  "rawOutputBytes": 127605,
+  "rawOutputLocal": ".dev/security-trivy-reports/trivy-server.json",
+  "findingInstances": 3,
+  "uniqueAdvisories": 3,
+  "severityCounts": {
+    "UNKNOWN": 3
+  },
+  "targets": [
+    {
+      "target": "/images/server.tar (debian 12.15)",
+      "type": "debian",
+      "packageCount": 5,
+      "severityCounts": {
+        "UNKNOWN": 2
+      }
+    },
+    {
+      "target": "usr/local/bin/zenith-team-readyz",
+      "type": "gobinary",
+      "packageCount": 1,
+      "severityCounts": {}
+    },
+    {
+      "target": "usr/local/bin/zenith-team-server",
+      "type": "gobinary",
+      "packageCount": 69,
+      "severityCounts": {
+        "UNKNOWN": 1
+      }
+    }
+  ],
+  "findings": [
+    {
+      "target": "/images/server.tar (debian 12.15)",
+      "VulnerabilityID": "DLA-4845-1",
+      "PkgName": "ca-certificates",
+      "InstalledVersion": "20250419~deb12u1",
+      "FixedVersion": "20250419~deb12u2",
+      "Status": "fixed",
+      "Severity": "UNKNOWN",
+      "Title": "ca-certificates - security update"
+    },
+    {
+      "target": "/images/server.tar (debian 12.15)",
+      "VulnerabilityID": "DLA-4792-1",
+      "PkgName": "tzdata",
+      "InstalledVersion": "2026b-0+deb12u1",
+      "FixedVersion": "2026c-0+deb12u1",
+      "Status": "fixed",
+      "Severity": "UNKNOWN",
+      "Title": "tzdata - new timezone database"
+    },
+    {
+      "target": "usr/local/bin/zenith-team-server",
+      "VulnerabilityID": "GO-2026-5932",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.58.0",
+      "Status": "affected",
+      "Severity": "UNKNOWN",
+      "Title": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues"
+    }
+  ]
+}

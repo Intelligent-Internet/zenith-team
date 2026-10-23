@@ -564,7 +564,10 @@ isolated database + fixture per caller.
   `platform_skills.go` survives a CRLF checkout), the macOS daemon sandbox
   tests and `go-vuln`; `.github/workflows/codeql.yml` runs CodeQL code
   scanning (Go, TypeScript, Python, Actions) on pull requests, `main` and
-  weekly. Secrets and vulnerable dependencies are GitHub's job: secret
+  weekly. `dependency-security` also participates in `ci-gate`: full/minimal
+  Go server reachability scans, full/production npm high/critical policy checks,
+  and fail-closed Python lockfile OSV queries. `security.yml` repeats these daily.
+  Secret detection and dependency alerting also use GitHub: secret
   scanning with push protection and Dependabot alerts are on. Commit-message,
   branch-name and staged-secret checks are local git hooks in `.githooks/`
   (`make hooks`). Pushing a `v<major>.<minor>.<patch>` tag (or an `-alpha.N`,

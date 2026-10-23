@@ -1,0 +1,47 @@
+[
+  {
+    "case": "clean",
+    "expectedExit": 0,
+    "actualExit": 0
+  },
+  {
+    "case": "moderate_only",
+    "expectedExit": 0,
+    "actualExit": 0
+  },
+  {
+    "case": "high",
+    "expectedExit": 1,
+    "actualExit": 1
+  },
+  {
+    "case": "critical",
+    "expectedExit": 1,
+    "actualExit": 1
+  },
+  {
+    "case": "invalid_json",
+    "expectedExit": 2,
+    "actualExit": 2
+  },
+  {
+    "case": "registry_error",
+    "expectedExit": 2,
+    "actualExit": 2
+  },
+  {
+    "case": "tool_error",
+    "expectedExit": 2,
+    "actualExit": 2
+  },
+  {
+    "case": "unknown_severity",
+    "expectedExit": 2,
+    "actualExit": 2
+  },
+  {
+    "case": "failed_empty",
+    "expectedExit": 2,
+    "actualExit": 2
+  }
+]
