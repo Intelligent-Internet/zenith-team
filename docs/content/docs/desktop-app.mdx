@@ -11,7 +11,7 @@ The app's daemon is separate from one you start with `zen daemon start`. It keep
 
 ## Install
 
-Releases of the hosted Zenith Team service carry signed macOS installers and a Linux zip, for that service only: **each build has its server address built in**, and a build made for one server cannot sign in to another. They are on the project's download page and the [GitHub Releases](https://github.com/Intelligent-Internet/zenith-team/releases) page. **Zenith Team Dev**, built for the project's dev server, installs next to it as a separate app and updates from its own channel.
+Releases of the hosted Zenith Team service carry signed macOS installers for Apple silicon, for that service only: **each build has its server address built in**, and a build made for one server cannot sign in to another. They are on the project's download page and the [GitHub Releases](https://github.com/Intelligent-Internet/zenith-team/releases) page. **Zenith Team Dev**, built for the project's dev server, installs next to it as a separate app and updates from its own channel.
 
 For your own server, build the app yourself.
 
@@ -42,7 +42,7 @@ Windows is not supported yet, because the bundled `zen` CLI does not build there
 
 ### Test builds from CI
 
-CI's `desktop` lane makes unsigned `local` builds for macOS (arm64) and Linux (x64) whenever a pull request changes the desktop packaging, and on a manual CI run, and keeps them as workflow artifacts for a week. These builds are for testing packaging, not for handing out.
+CI's `desktop` lane makes unsigned `local` builds for macOS (arm64) whenever a pull request changes the desktop packaging, and on a manual CI run, and keeps them as workflow artifacts for a week. These builds are for testing packaging, not for handing out.
 
 ## Connect it to your server
 

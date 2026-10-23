@@ -275,7 +275,7 @@ jobs:
   # setup as build-desktop.yml, to catch packaging breaks before a tag or a
   # dev deploy. No secrets: only build-desktop.yml signs, and only it builds
   # without caches. The installers stay a week as workflow artifacts for
-  # manual testing. Windows joins once zen builds there.
+  # manual testing. Apple silicon only, the one platform shipped for now.
   desktop:
     needs: changes
     if: needs.changes.outputs.desktop == 'true'
@@ -286,9 +286,6 @@ jobs:
           - os: macos-15
             platform: darwin
             arch: arm64
-          - os: ubuntu-latest
-            platform: linux
-            arch: x64
     name: desktop (${{ matrix.platform }} ${{ matrix.arch }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45

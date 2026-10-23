@@ -1,7 +1,8 @@
 # Reusable: builds the desktop app of one channel at the calling commit:
-# signed and notarized macOS installers (arm64 and x64, each on a native
-# runner) and an unsigned Linux zip, uploaded as the workflow artifacts
-# desktop-<channel>-<platform>-<arch>. publish-desktop.yml publishes them.
+# signed and notarized macOS installers for Apple silicon (arm64), uploaded as
+# the workflow artifact desktop-<channel>-darwin-arm64. publish-desktop.yml
+# publishes them. Intel Macs, Linux and Windows are not shipped for now; a
+# platform comes back as one more matrix entry.
 # Called by build-deploy.yml (dev) and release.yml (prod).
 #
 # The channel's GitHub environment, dev or prod, supplies DESKTOP_API_ORIGIN
@@ -12,8 +13,7 @@
 # jobs run there, and each secret reaches only the step that needs it;
 # installing dependencies sees none. The signing step runs the build tools from
 # node_modules, which can reach the unlocked keychain and the notary key while
-# it runs, so dependency changes need the same review as workflow changes. The
-# Linux job runs in no environment. Windows joins once zen builds there.
+# it runs, so dependency changes need the same review as workflow changes.
 name: Build desktop
 
 on:
@@ -95,8 +95,6 @@ jobs:
         include:
           - os: macos-15
             arch: arm64
-          - os: macos-15-intel
-            arch: x64
     name: darwin ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -199,36 +197,4 @@ jobs:
           if-no-files-found: error
           # A failed publish can only resume from these exact files: a rebuild
           # differs byte for byte and published files are never replaced.
-          retention-days: 30
-
-  linux:
-    needs: settings
-    name: linux x64
-    runs-on: ubuntu-24.04
-    timeout-minutes: 60
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/desktop-setup
-        with:
-          variant: ${{ inputs.channel }}
-          api-origin: ${{ needs.settings.outputs.api-origin }}
-          release-base-url: ${{ needs.settings.outputs.release-base-url }}
-          version: ${{ inputs.version }}
-      - name: Make the Linux zip
-        working-directory: frontend
-        env:
-          NODE_OPTIONS: --max-old-space-size=4096
-        run: pnpm electron:make
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: desktop-${{ inputs.channel }}-linux-x64
-          path: |
-            frontend/out/make/**/Zenith-Team-${{ inputs.channel }}-*.zip
-            frontend/out/make/**/Zenith-Team-${{ inputs.channel }}-*.sha256
-          overwrite: true
-          if-no-files-found: error
           retention-days: 30
