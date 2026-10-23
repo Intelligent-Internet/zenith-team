@@ -40,7 +40,7 @@
     "@radix-ui/react-slot": "^1.5.0",
     "@reduxjs/toolkit": "^2.13.0",
     "@sentry/electron": "8.2.0",
-    "@sentry/react": "11.7.0",
+    "@sentry/react": "11.8.0",
     "@tiptap/extension-code-block": "3.32.0",
     "@tiptap/extension-collaboration": "3.32.0",
     "@tiptap/extension-collaboration-caret": "3.32.0",
@@ -57,7 +57,7 @@
     "@tiptap/y-tiptap": "3.0.10",
     "@xmldom/xmldom": "0.9.12",
     "@xyflow/react": "^12.12.0",
-    "ai": "^7.0.140",
+    "ai": "^7.0.142",
     "axios": "^1.20.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -106,7 +106,7 @@
     "@electron-forge/maker-zip": "^8.0.1",
     "@electron-forge/plugin-fuses": "^8.0.1",
     "@electron/fuses": "^2.1.3",
-    "@redocly/cli": "2.63.0",
+    "@redocly/cli": "2.64.1",
     "@sentry/vite-plugin": "11.8.0",
     "@tailwindcss/vite": "^4.3.3",
     "@types/hast": "3.0.5",
@@ -115,17 +115,17 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^4.6.0",
-    "electron": "^44.7.2",
+    "electron": "^44.8.0",
     "esbuild": "0.28.2",
     "openapi-typescript": "7.13.0",
-    "prettier": "3.9.4",
+    "prettier": "3.9.10",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.3",
     "vite": "^6.4.4",
     "vite-plugin-svgr": "^5.2.0"
   },
   "optionalDependencies": {
-    "@tailwindcss/oxide-darwin-arm64": "4.1.12"
+    "@tailwindcss/oxide-darwin-arm64": "4.3.3"
   },
   "pnpm": {
     "overrides": {
