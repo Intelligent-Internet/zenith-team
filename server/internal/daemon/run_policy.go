@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
@@ -330,15 +331,21 @@ func buildRunSystemPromptWithCLI(
 	builder.WriteString(
 		"\n\nZenith Team platform execution policy (takes precedence over editable Agent instructions):",
 	)
+	if !slices.Contains(zenithTeamMCPToolsForRun(doc), "load_skill_reference") {
+		builder.WriteString("\n\nBuilt-in zenith-intelligent-ui skill (authoring guidance only; the Run restrictions below still apply):\n")
+		builder.WriteString(tools.IntelligentUIInstructions())
+		builder.WriteString("\n\nRun restrictions:")
+	}
 	if isDocumentRun(doc) {
 		builder.WriteString(" Work only with the supplied document and thread context. " +
 			"Native file, command, web, app and memory tools are unavailable. Do not create Tasks or publish outputs.")
 		if doc.ExecutionProfile.DocumentWriting {
-			builder.WriteString(" Return only the requested replacement text. No tools are available. " +
+			builder.WriteString(" Return only the requested replacement as Markdown with inline Intelligent UI components when useful. No tools are available. " +
 				"The application stages your response for human acceptance; it does not apply changes automatically.")
 		} else {
 			builder.WriteString(
 				" Use page_read, page_edit, source_read and the page_source_preview tools only. Temporary previews never apply edits. " +
+					"For interactive content use source with languageVersion 1, following the built-in zenith-intelligent-ui guide above. " +
 					"Page edits are restricted to the originating Page and require human acceptance. " +
 					"Answer questions in your final response, which is posted in the document thread.",
 			)

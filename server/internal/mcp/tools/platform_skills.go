@@ -20,7 +20,7 @@ import (
 // and the app quote it, and search_skills matches queries against it.
 const (
 	zenithIntelligentUISkillKey         = "zenith-intelligent-ui"
-	zenithIntelligentUISkillDescription = "Author inline interactive responses and Zenith Team Pages with component markup, bounded state and callbacks."
+	zenithIntelligentUISkillDescription = "Author clear, beautiful, interactive inline responses using the supported component grammar, state, visualizations, grounded references, and host actions."
 	zenithPlatformSkillKey              = "zenith-platform"
 	zenithPlatformSkillName             = "Zenith platform"
 	zenithPlatformSkillDescription      = "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on."
@@ -136,6 +136,17 @@ func PlatformSkills(bundles []PlatformBundle) ([]PlatformSkillSummary, error) {
 //
 //go:embed all:builtin/zenith-platform all:builtin/zenith-intelligent-ui
 var platformSkillFiles embed.FS
+
+// IntelligentUIInstructions supplies the same release-owned guide to Runs that
+// cannot call skill tools, including Page writing and restricted document Runs.
+// Reading this compiled content grants no tool or product authority.
+func IntelligentUIInstructions() string {
+	content, err := platformSkillFiles.ReadFile("builtin/zenith-intelligent-ui/SKILL.md")
+	if err != nil {
+		panic(err) // the file is required by the compile-time embed above
+	}
+	return string(content)
+}
 
 func compiledSkillFiles(root string) fs.FS {
 	files, err := fs.Sub(platformSkillFiles, root)

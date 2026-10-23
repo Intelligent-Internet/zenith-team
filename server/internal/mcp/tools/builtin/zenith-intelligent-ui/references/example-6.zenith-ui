@@ -1,0 +1,4 @@
+<grid columns={2} gap={3}>
+  <grid-item><box padding={3} background="surface-secondary" radius="lg"><title size="lg">Alpha</title><text>First result</text></box></grid-item>
+  <grid-item><box padding={3} background="surface-secondary" radius="lg"><title size="lg">Beta</title><text>Second result</text></box></grid-item>
+</grid>

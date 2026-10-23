@@ -2,7 +2,7 @@ import {
   Bar,
   BarChart,
   Line,
-  LineChart,
+  ComposedChart,
   Area,
   AreaChart,
   Pie,
@@ -24,6 +24,12 @@ type Series = {
   label?: string;
   color?: string;
   valueSuffix?: string;
+  valuePrefix?: string;
+  valueFormat?: string;
+  lowerKey?: string;
+  upperKey?: string;
+  lower?: number;
+  upper?: number;
 };
 type Config = {
   chartType?: string;
@@ -33,6 +39,13 @@ type Config = {
   valueKey?: string;
   series?: Series[];
   data?: Record<string, unknown>[];
+  xAxisLabel?: string;
+  axisLabel?: string;
+  valueSuffix?: string;
+  yAxisMin?: number;
+  yAxisMax?: number;
+  xAxisScale?: string;
+  layout?: "horizontal" | "vertical";
 };
 export function InlineChart({ content }: { content: Config }) {
   const kind = content?.chartType ?? "bar";
@@ -72,21 +85,65 @@ export function InlineChart({ content }: { content: Config }) {
     );
   }
   const colors = ["accent", "info", "success", "warning", "secondary"];
+  const vertical = kind === "bar" && content.layout === "vertical";
+  const format = (value: unknown, seriesIndex = 0) => {
+    const item = series[seriesIndex];
+    return `${item?.valuePrefix ?? ""}${typeof value === "number" ? value.toLocaleString(undefined, item?.valueFormat === "compact" ? { notation: "compact" } : undefined) : String(value ?? "")}${item?.valueSuffix ?? content.valueSuffix ?? ""}`;
+  };
   const axes = (
     <>
       <CartesianGrid stroke="var(--workspace-divider)" vertical={false} />
       <XAxis
-        dataKey={x}
+        dataKey={vertical ? undefined : x}
+        label={
+          content.xAxisLabel
+            ? {
+                value: content.xAxisLabel,
+                position: "insideBottom",
+                offset: -5,
+              }
+            : undefined
+        }
+        domain={
+          vertical
+            ? [content.yAxisMin ?? "auto", content.yAxisMax ?? "auto"]
+            : undefined
+        }
         tickLine={false}
         axisLine={false}
-        type={kind === "scatter" ? "number" : "category"}
+        type={
+          vertical || kind === "scatter" || content.xAxisScale === "linear"
+            ? "number"
+            : "category"
+        }
       />
       <YAxis
-        dataKey={kind === "scatter" ? "y" : undefined}
+        dataKey={vertical ? x : kind === "scatter" ? "y" : undefined}
+        type={vertical ? "category" : "number"}
+        domain={
+          vertical
+            ? undefined
+            : [content.yAxisMin ?? "auto", content.yAxisMax ?? "auto"]
+        }
+        label={
+          content.axisLabel
+            ? { value: content.axisLabel, angle: -90, position: "insideLeft" }
+            : undefined
+        }
         tickLine={false}
         axisLine={false}
       />
       <Tooltip
+        formatter={(value, name) => [
+          format(
+            value,
+            Math.max(
+              0,
+              series.findIndex((s) => (s.label ?? s.dataKey) === name),
+            ),
+          ),
+          name,
+        ]}
         contentStyle={{
           background: "var(--workspace-panel-bg)",
           borderColor: "var(--workspace-divider)",
@@ -136,14 +193,36 @@ export function InlineChart({ content }: { content: Config }) {
                   <Cell key={i} fill={uiColor(colors[i % colors.length])} />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip formatter={(value) => format(value)} />
               <Legend />
             </PieChart>
           ) : kind === "line" ? (
-            <LineChart data={data}>
+            <ComposedChart data={data}>
+              {series.map(
+                (s, i) =>
+                  (s.lowerKey !== undefined || s.lower !== undefined) && (
+                    <Area
+                      key={`band-${s.dataKey}`}
+                      dataKey={(row: Record<string, unknown>) => [
+                        s.lowerKey !== undefined
+                          ? Number(row[s.lowerKey])
+                          : s.lower!,
+                        s.upperKey !== undefined
+                          ? Number(row[s.upperKey])
+                          : s.upper!,
+                      ]}
+                      stroke="none"
+                      fill={uiColor(colors[i % colors.length])}
+                      fillOpacity={0.15}
+                      isAnimationActive={false}
+                      legendType="none"
+                      tooltipType="none"
+                    />
+                  ),
+              )}
               {axes}
               {lines}
-            </LineChart>
+            </ComposedChart>
           ) : kind === "area" ? (
             <AreaChart data={data}>
               {axes}
@@ -152,8 +231,8 @@ export function InlineChart({ content }: { content: Config }) {
                   key={s.dataKey}
                   dataKey={s.dataKey}
                   name={s.label ?? s.dataKey}
-                  stroke={uiColor(colors[i % colors.length])}
-                  fill={uiColor(colors[i % colors.length])}
+                  stroke={uiColor(s.color ?? colors[i % colors.length])}
+                  fill={uiColor(s.color ?? colors[i % colors.length])}
                   fillOpacity={0.15}
                   isAnimationActive={false}
                 />
@@ -167,13 +246,13 @@ export function InlineChart({ content }: { content: Config }) {
                   key={s.dataKey}
                   name={s.label ?? s.dataKey}
                   data={data.map((row) => ({ ...row, y: row[s.dataKey] }))}
-                  fill={uiColor(colors[i % colors.length])}
+                  fill={uiColor(s.color ?? colors[i % colors.length])}
                   isAnimationActive={false}
                 />
               ))}
             </ScatterChart>
           ) : (
-            <BarChart data={data}>
+            <BarChart data={data} layout={vertical ? "vertical" : "horizontal"}>
               {axes}
               {bars}
             </BarChart>
@@ -200,8 +279,26 @@ export function InlineChart({ content }: { content: Config }) {
                   <td className="p-2">{String(row[x] ?? "")}</td>
                   {series.map((s) => (
                     <td key={s.dataKey} className="p-2 tabular-nums">
-                      {String(row[s.dataKey])}
-                      {s.valueSuffix}
+                      {format(row[s.dataKey], series.indexOf(s))}
+                      {(s.lowerKey !== undefined || s.lower !== undefined) && (
+                        <span className="ml-1 text-workspace-muted">
+                          (
+                          {format(
+                            s.lowerKey !== undefined
+                              ? row[s.lowerKey]
+                              : s.lower,
+                            series.indexOf(s),
+                          )}
+                          –
+                          {format(
+                            s.upperKey !== undefined
+                              ? row[s.upperKey]
+                              : s.upper,
+                            series.indexOf(s),
+                          )}
+                          )
+                        </span>
+                      )}
                     </td>
                   ))}
                 </tr>

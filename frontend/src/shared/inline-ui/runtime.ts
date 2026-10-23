@@ -4,12 +4,13 @@ import type { Node } from "acorn";
 // JavaScript Function/eval enter this environment.
 type AST = Node & Record<string, any>;
 export type Environment = Record<string, unknown>;
-export type Callable = { invoke: (args: unknown[]) => unknown };
+export type Callable = { invoke: (args: unknown[]) => unknown; pure?: boolean };
 export type RuntimeExecution = {
   remaining: number;
   depth: number;
   event: boolean;
   hostActions: boolean;
+  pure?: boolean;
 };
 export type RuntimeHost = {
   execution?: RuntimeExecution;
@@ -70,6 +71,7 @@ class ReturnValue {
 }
 export class Interpreter {
   hookScope = "";
+  module = false;
   readonly execution: RuntimeExecution;
   constructor(readonly host: RuntimeHost) {
     this.execution = host.execution ??= {
@@ -115,9 +117,12 @@ export class Interpreter {
       this.depth--;
       throw new Error("UI call depth exceeded.");
     }
+    const previous = this.execution.pure;
+    this.execution.pure = previous || value.pure || this.module;
     try {
       return value.invoke(args);
     } finally {
+      this.execution.pure = previous;
       this.depth--;
     }
   }
@@ -139,6 +144,8 @@ export class Interpreter {
       abs: numeric(Math.abs),
       sqrt: numeric(Math.sqrt),
       pow: numeric(Math.pow),
+      sin: numeric(Math.sin),
+      cos: numeric(Math.cos),
     });
     env.String = callable((args) => String(args[0] ?? ""));
     env.Number = callable((args) => Number(args[0]));
@@ -161,16 +168,10 @@ export class Interpreter {
     };
     env.undefined = undefined;
     env.GenUI = Object.fromEntries(
-      [
-        "copy",
-        "openUrl",
-        "issueNewTurn",
-        "openEntityDetail",
-        "launchEcosystemWidget",
-      ].map((name) => [
+      ["copy", "openUrl", "issueNewTurn", "openEntityDetail"].map((name) => [
         name,
         callable((args) => {
-          if (!this.hostActions)
+          if (!this.hostActions || this.execution.pure)
             throw new Error("Host actions require a user interaction.");
           args.forEach(checkLocalValue);
           return this.host.action(name, args);
@@ -255,6 +256,9 @@ export class Interpreter {
           ? object.toFixed(Math.max(0, Math.min(20, Number(args[0] ?? 0))))
           : object.toLocaleString(
               typeof args[0] === "string" ? args[0] : undefined,
+              args[1] && typeof args[1] === "object"
+                ? (args[1] as Intl.NumberFormatOptions)
+                : undefined,
             ),
       );
     if (
@@ -284,8 +288,10 @@ export class Interpreter {
         return [
           this.host.state.get(key),
           callable(([next]) => {
-            if (!this.event)
-              throw new Error("State changes require a callback.");
+            if (!this.event || this.execution.pure)
+              throw new Error(
+                "State changes require an impure callback outside module helpers.",
+              );
             const value = isCallable(next)
               ? this.call(next, [this.host.state.get(key)])
               : next;
@@ -539,6 +545,8 @@ export class Interpreter {
           node.left.property.name === "current" &&
           node.operator === "="
         ) {
+          if (this.execution.pure || this.module)
+            throw new Error("Module helpers cannot mutate refs.");
           const ref = this.evaluate(node.left.object, env);
           if (![...this.host.refs.values()].includes(ref))
             throw new Error("Only local refs can be assigned.");
@@ -556,7 +564,7 @@ export class Interpreter {
     throw new Error(`Unsupported UI expression: ${node.type}.`);
   }
   function(node: AST, env: Environment): Callable {
-    return callable((args) => {
+    const fn = callable((args) => {
       const local = Object.create(env);
       node.params.forEach((param: AST, index: number) =>
         this.bind(param, args[index], local),
@@ -571,6 +579,8 @@ export class Interpreter {
       }
       return undefined;
     });
+    fn.pure = this.module || this.execution.pure;
+    return fn;
   }
   program(raw: Node, env: Environment): void {
     const node = raw as AST;

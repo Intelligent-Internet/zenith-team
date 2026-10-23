@@ -1,0 +1,4 @@
+<row gap={2} wrap>
+  <button onClick={() => GenUI.copy("Example text")}>Copy text</button>
+  <button variant="outline" onClick={() => GenUI.issueNewTurn("Explain this in more detail")}>Ask for detail</button>
+</row>

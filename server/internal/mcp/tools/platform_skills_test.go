@@ -217,6 +217,9 @@ func TestIntelligentUISkillIsAvailableWithoutCustomSkills(t *testing.T) {
 	if err != nil || loaded.Size == 0 || loaded.SHA256 == "" {
 		t.Fatalf("load = %+v, %v", loaded, err)
 	}
+	if loaded.Content != IntelligentUIInstructions() {
+		t.Fatal("restricted Runs and skill tools received different authoring guides")
+	}
 	if !isPlatformSkillKey(zenithIntelligentUISkillKey) {
 		t.Fatal("custom snapshot could shadow authoring contract")
 	}

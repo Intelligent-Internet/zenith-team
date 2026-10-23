@@ -15,7 +15,7 @@ func TestPreviewPatchReplayAndRecovery(t *testing.T) {
 		RequestKey:      uuid.New(),
 		ProtocolVersion: 1,
 		LanguageVersion: 1,
-		Text:            "# Ready\n\n<text title=",
+		Text:            "# Ready\n\n<text color=",
 	}
 	state, err := ApplySourcePreviewPatch(SourcePreviewState{}, first)
 	if err != nil || state.Revision != 1 || state.Preview.Complete || state.Preview.Content == nil {
@@ -42,7 +42,7 @@ func TestPreviewPatchReplayAndRecovery(t *testing.T) {
 		LanguageVersion:  1,
 		ExpectedRevision: 1,
 		Start:            len(state.Source),
-		Text:             `"Total">{2 + 3}</text>`,
+		Text:             `"secondary">{2 + 3}</text>`,
 	}
 	completed, err := ApplySourcePreviewPatch(restored, appendPatch)
 	if err != nil || !completed.Preview.Complete || completed.Revision != 2 {

@@ -25,6 +25,8 @@ const entry = `
   export const registeredTypes = inlineDocumentBlockTypes;
 `;
 const schemaOnlyImports = {
+  "@/features/common/components/inline-artifact-reference":
+    "export const InlineArtifactReference = () => null;",
   "@/features/common/hooks/use-inline-entity-action":
     "export const useInlineEntityAction = () => undefined;",
   "./render-surface": "export const NodeViewWrapper = () => null;",

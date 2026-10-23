@@ -3,7 +3,8 @@ import {
   type InlineCapture,
   type InlineCaptureReader,
 } from "./capture";
-import { Streamdown } from "streamdown";
+import { InlineMarkdown } from "./markdown";
+import schema from "./schema.json";
 import {
   Component,
   Fragment,
@@ -30,6 +31,25 @@ import {
 } from "./runtime";
 import { Primitive, Unavailable } from "./primitives";
 import { safeURL } from "./style";
+import { validateProperties } from "./contract";
+import { InlineAppBlock } from "./app-block";
+import {
+  InlineReferenceContext,
+  InlineInteractionContext,
+  type InlineReferenceRenderer,
+} from "./reference-context";
+
+function hasProse(nodes: InlineNode[]): boolean {
+  return nodes.some((node) =>
+    node.type === "text"
+      ? !!node.value.trim()
+      : node.type === "if"
+        ? hasProse(node.children) || hasProse(node.otherwise)
+        : node.type === "each" || (node.type === "element" && node.name === "")
+          ? hasProse(node.children)
+          : false,
+  );
+}
 
 function InlineDocumentContent({
   source,
@@ -40,6 +60,7 @@ function InlineDocumentContent({
   maxSourceBytes = 262144,
   capture,
   registerCapture,
+  renderReference,
 }: {
   source: string;
   streaming?: boolean;
@@ -49,7 +70,10 @@ function InlineDocumentContent({
   maxSourceBytes?: number;
   capture?: InlineCapture;
   registerCapture?: (read: InlineCaptureReader) => () => void;
+  renderReference?: InlineReferenceRenderer;
 }) {
+  const referenceHost = useContext(InlineReferenceContext);
+  const hostInteractive = useContext(InlineInteractionContext);
   const host = useContext(PreviewContinuationContext);
   const { resolvedTheme } = useTheme();
   const instanceId = useId();
@@ -101,6 +125,7 @@ function InlineDocumentContent({
     !parsed.overLimit &&
     parsed.complete &&
     !parsed.diagnostic &&
+    hostInteractive &&
     !readOnly &&
     !capture;
   const effects: RuntimeHost["effects"] = [];
@@ -142,13 +167,17 @@ function InlineDocumentContent({
     },
     action: (name, args) => action.current(name, args),
   });
-  const run = (callback: unknown, args: unknown[] = []) => {
+  const run = (
+    callback: unknown,
+    args: unknown[] = [],
+    allowHostActions = true,
+  ) => {
     if (!interactive || !isCallable(callback)) return;
     setActionError("");
     effectRuns.current = 0;
     runtime.remaining = 50000;
     runtime.event = true;
-    runtime.hostActions = true;
+    runtime.hostActions = allowHostActions;
     try {
       const result = runtime.call(callback, args);
       if (result instanceof Promise)
@@ -185,31 +214,31 @@ function InlineDocumentContent({
         runtime.tick();
         const key = `${path}.${index}`;
         if (node.type === "text")
-          return (
+          return inline ? (
+            node.value
+          ) : (
             <Fragment key={key}>
-              {inline ? (
-                node.value
-              ) : renderMarkdown ? (
+              {renderMarkdown ? (
                 renderMarkdown(node.value)
               ) : (
-                <Streamdown
-                  controls={false}
-                  mode={streaming ? "streaming" : "static"}
-                >
-                  {node.value}
-                </Streamdown>
+                <InlineMarkdown>{node.value}</InlineMarkdown>
               )}
             </Fragment>
           );
         if (node.type === "body" || node.type === "module") {
           runtime.hookScope = `${identity}:${path}:${node.start}`;
-          runtime.program(node.program, env);
+          runtime.module = node.type === "module";
+          try {
+            runtime.program(node.program, env);
+          } finally {
+            runtime.module = false;
+          }
           return null;
         }
         if (node.type === "expression") {
           const value = runtime.evaluate(node.expression, env);
           checkLocalValue(value);
-          return <Fragment key={key}>{valueText(value)}</Fragment>;
+          return <span key={key}>{valueText(value)}</span>;
         }
         if (node.type === "if")
           return (
@@ -236,14 +265,24 @@ function InlineDocumentContent({
                 const local = Object.create(env);
                 local[node.item] = item;
                 if (node.index) local[node.index] = itemIndex;
+                const keyed = node.children.find(
+                  (child) =>
+                    child.type === "element" && child.props.key !== undefined,
+                );
+                const authoredKey =
+                  keyed?.type === "element" ? keyed.props.key : undefined;
+                const repeatKey =
+                  authoredKey === undefined
+                    ? item && typeof item === "object" && "id" in item
+                      ? String(item.id)
+                      : itemIndex
+                    : valueText(
+                        typeof authoredKey === "object"
+                          ? runtime.evaluate(authoredKey, local)
+                          : authoredKey,
+                      );
                 return (
-                  <Fragment
-                    key={
-                      item && typeof item === "object" && "id" in item
-                        ? String(item.id)
-                        : itemIndex
-                    }
-                  >
+                  <Fragment key={repeatKey}>
                     {render(
                       node.children,
                       local,
@@ -263,6 +302,7 @@ function InlineDocumentContent({
         for (const [name, value] of Object.entries(node.props))
           p[name] =
             typeof value === "object" ? runtime.evaluate(value, env) : value;
+        if (!svg && node.name !== "svg") validateProperties(node.name, p);
         if (node.name === "")
           return (
             <Fragment key={key}>
@@ -290,14 +330,54 @@ function InlineDocumentContent({
                   : icon.props.name);
           }
         }
+        if (node.name === "WritingBlock")
+          p.onCopy = runtime.property(env.GenUI, "copy");
         if (node.name === "Entity")
           p.onEntity = runtime.property(env.GenUI, "openEntityDetail");
-        if (node.name === "FollowUp")
+        if (node.name === "FollowUp") {
+          if (!host?.submit)
+            return (
+              <span key={key} role="status">
+                FollowUp: Sending a message is unavailable in this view.
+              </span>
+            );
           p.onFollowUp = runtime.property(env.GenUI, "issueNewTurn");
+        }
         const text = node.children
           .filter((child) => child.type === "text")
           .map((child) => (child as { value: string }).value)
           .join("");
+        if (
+          node.name === "WritingBlock" &&
+          Array.isArray(p.options) &&
+          p.options[0].content.trim() !== text.trim()
+        )
+          throw new Error(
+            "WritingBlock's first option must match its primary raw draft.",
+          );
+        if (node.name === "AppBlock")
+          return (
+            <InlineAppBlock
+              key={key}
+              source={p.html ?? text}
+              title={p.title}
+              bindings={p.bind}
+              interactive={interactive}
+              run={(callback, args) => run(callback, args, false)}
+            />
+          );
+        if (
+          ["Cite", "FileCite", "CodeCite", "FileNavList"].includes(node.name) ||
+          (node.name === "Link" && p.ref && !p.url && !p.href)
+        ) {
+          const renderer = renderReference ?? referenceHost;
+          if (renderer)
+            return (
+              <Fragment key={key}>
+                {renderer(node.name, p, interactive)}
+              </Fragment>
+            );
+        }
         return (
           <Primitive
             key={String(p.key ?? key)}
@@ -308,19 +388,49 @@ function InlineDocumentContent({
             interactive={interactive}
             svg={svg || node.name === "svg"}
           >
-            {render(
-              node.children,
-              env,
-              key,
-              depth + 1,
-              true,
-              svg || node.name === "svg",
-            )}
+            {(() => {
+              const children = render(
+                node.children,
+                env,
+                key,
+                depth + 1,
+                node.name !== "list",
+                svg || node.name === "svg",
+              );
+              if (
+                node.name === "list" ||
+                svg ||
+                node.name === "svg" ||
+                node.name === "code" ||
+                ["AppBlock", "CodeBlock", "WritingBlock", "escape"].includes(
+                  node.name,
+                ) ||
+                Object.hasOwn(schema.children, node.name) ||
+                schema.emptyChildren.includes(node.name)
+              )
+                return children;
+              const prose = hasProse(node.children);
+              if (!prose && !schema.inlineParents.includes(node.name))
+                return children;
+              return (
+                <InlineMarkdown
+                  inline={schema.inlineParents.includes(node.name)}
+                >
+                  {children}
+                </InlineMarkdown>
+              );
+            })()}
           </Primitive>
         );
       });
     };
-    content = render(parsed.nodes, env, "root");
+    content = parsed.nodes.some((node) => node.type !== "text") ? (
+      <InlineMarkdown>
+        {render(parsed.nodes, env, "root", 0, true)}
+      </InlineMarkdown>
+    ) : (
+      render(parsed.nodes, env, "root")
+    );
   } catch (error) {
     diagnostic =
       error instanceof Error

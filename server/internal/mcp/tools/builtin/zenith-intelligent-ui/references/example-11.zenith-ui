@@ -1,0 +1,20 @@
+{@body
+const [series,setSeries] = DIL.useState("requests");
+const rows=[{day:"Mon",requests:120,errors:4},{day:"Tue",requests:145,errors:3},{day:"Wed",requests:139,errors:7},{day:"Thu",requests:172,errors:2},{day:"Fri",requests:194,errors:5}];
+const total=rows.reduce((a,r)=>a+r[series],0);
+}
+<box border radius="xl" padding={4} gap={3}>
+  <row justify="between" align="center" wrap gap={2}>
+    <col gap={1}><title size="xl">Service overview</title><caption>Illustrative five-day data</caption></col>
+    <segmented-control value={series} onChange={setSeries} options={[{label:"Requests",value:"requests"},{label:"Errors",value:"errors"}]}/>
+  </row>
+  <grid columns={2} gap={2}>
+    <grid-item><box background="surface-secondary" padding={3} radius="lg"><caption>Total selected</caption><title size="xl" tabularNums>{total}</title></box></grid-item>
+    <grid-item><box background="surface-secondary" padding={3} radius="lg"><caption>Last day</caption><title size="xl" tabularNums>{rows[4][series]}</title></box></grid-item>
+  </grid>
+  <Chart content={{chartType:"line",xKey:"day",series:[{dataKey:series,label:series==="requests"?"Requests":"Errors"}],data:rows}}/>
+  <table>
+    <table-row><table-cell header>Day</table-cell><table-cell header align="end">Value</table-cell></table-row>
+    {#each rows as r}<table-row><table-cell>{r.day}</table-cell><table-cell align="end">{r[series]}</table-cell></table-row>{/each}
+  </table>
+</box>

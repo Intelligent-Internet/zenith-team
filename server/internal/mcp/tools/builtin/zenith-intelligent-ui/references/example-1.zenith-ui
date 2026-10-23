@@ -1,0 +1,11 @@
+{@body
+const [quantity, setQuantity] = DIL.useState(2);
+const total = Math.max(0, Number(quantity) || 0) * 25;
+}
+<box border radius="xl" padding={4} gap={3}>
+  <title size="lg">Estimate</title>
+  <label>Quantity</label>
+  <input inputType="number" value={quantity} onChange={setQuantity}/>
+  <title size="xl" tabularNums>{total} credits</title>
+  <button onClick={() => setQuantity(Math.max(0, Number(quantity) + 1))}>Add one</button>
+</box>

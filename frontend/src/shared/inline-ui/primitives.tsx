@@ -1,10 +1,20 @@
+import { InlineDatePicker, InlineSelect, maskInput } from "./controls";
+import { InlineWritingBlock } from "./writing-block";
 import { InlineCodeBlock } from "./code-block";
 import {
+  InlinePopover,
+  InlinePopoverTrigger,
+  InlinePopoverContent,
+} from "./popover";
+import {
   Children,
+  Fragment,
+  cloneElement,
   isValidElement,
   createContext,
   createElement,
   useContext,
+  useEffect,
   useId,
   useRef,
   useState,
@@ -16,6 +26,7 @@ import { Icon } from "@/shared/ui/icon";
 import { ChevronLeft, ChevronRight } from "@/shared/ui/icons";
 import { InlineChart } from "./chart";
 import { layoutStyle, safeURL, uiColor } from "./style";
+import { InlineThemeContext } from "./reference-context";
 import { valueText } from "./runtime";
 
 type Props = Record<string, any>;
@@ -24,12 +35,43 @@ export const InputGroup = createContext<{
   change: (value: unknown) => void;
   name: string;
   disabled: boolean;
+  required: boolean;
 } | null>(null);
-const Popover = createContext<{ id: string } | null>(null);
+const TableContext = createContext<Props>({});
+const ListContext = createContext<Props>({});
+const FlowContext = createContext(false);
+const AspectContext = createContext<string | undefined>(undefined);
+const SVGScope = createContext("");
 const control =
   "min-w-0 w-full rounded-workspace-control border border-workspace-divider bg-workspace-control px-3 py-2.5 text-sm text-workspace-text placeholder:text-workspace-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-workspace-accent disabled:cursor-not-allowed disabled:opacity-50";
 const focus =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-workspace-accent";
+// Branches and loops are transparent to component child contracts.
+function contentChildren(children: ReactNode, path = ""): ReactNode[] {
+  return Children.toArray(children).flatMap((child, index) => {
+    const key = `${path}.${isValidElement(child) ? (child.key ?? index) : index}`;
+    if (
+      isValidElement<{ children?: ReactNode }>(child) &&
+      child.type === Fragment
+    )
+      return contentChildren(child.props.children, key);
+    if (typeof child === "string" && !child.trim()) return [];
+    return [isValidElement(child) ? cloneElement(child, { key }) : child];
+  });
+}
+function hasTableRows(children: ReactNode): boolean {
+  return contentChildren(children).some((child) => {
+    if (
+      !isValidElement<{ name?: string; children?: ReactNode; p?: Props }>(child)
+    )
+      return false;
+    return (
+      child.props.name === "table-row" ||
+      (child.props.name === "table-section" &&
+        (!!child.props.p?.header || hasTableRows(child.props.children)))
+    );
+  });
+}
 export function Unavailable({
   name,
   reason,
@@ -59,30 +101,88 @@ export function Primitive({
   p: Props;
   children: ReactNode;
   text: string;
-  run: (callback: unknown, args?: unknown[]) => void;
+  run: (
+    callback: unknown,
+    args?: unknown[],
+    allowHostActions?: boolean,
+  ) => void;
   interactive: boolean;
   svg?: boolean;
 }) {
   const id = useId();
   const group = useContext(InputGroup);
-  const popover = useContext(Popover);
+  const parentSVGScope = useContext(SVGScope);
+  const table = useContext(TableContext);
+  const list = useContext(ListContext);
+  const masonry = useContext(FlowContext);
+  const aspect = useContext(AspectContext);
+  const palettes = useContext(InlineThemeContext);
   const viewport = useRef<HTMLDivElement>(null);
   const [local, setLocal] = useState(p.defaultValue ?? p.defaultChecked ?? "");
   const [imageFailed, setImageFailed] = useState(false);
-  const value = p.value ?? p.checked ?? local;
+  useEffect(() => {
+    setImageFailed(false);
+  }, [p.src, p.url]);
+  useEffect(() => {
+    if (name !== "carousel" || !viewport.current || p.activeIndex === undefined)
+      return;
+    const element = viewport.current;
+    const index = Math.max(
+      0,
+      Math.min(element.children.length - 1, Number(p.activeIndex) || 0),
+    );
+    const child = element.children[index] as HTMLElement | undefined;
+    element.scrollTo({
+      left: child
+        ? child.offsetLeft - (element.children[0] as HTMLElement).offsetLeft
+        : 0,
+    });
+  }, [name, p.activeIndex]);
+  const value = name === "checkbox" ? (p.checked ?? local) : (p.value ?? local);
   const disabled = !interactive || !!p.disabled;
   const change = (next: unknown) => {
     setLocal(next);
     if (p.onChange) run(p.onChange, [next]);
   };
-  const style = layoutStyle(p);
-  const label = p.label ?? p.placeholder ?? p.name ?? name;
+  const style = {
+    ...(p.theme === "light" || p.theme === "dark"
+      ? palettes[p.theme as "light" | "dark"]
+      : {}),
+    ...layoutStyle(p),
+  };
+  if (p.disableAutoSpacing) style.gap = p.gap === undefined ? 0 : style.gap;
+  if (p.uniform) {
+    style.aspectRatio = "1";
+    style.flexShrink = 0;
+  }
+  if (p.variant === "ghost") {
+    style.background = "transparent";
+    style.border = "none";
+  }
+  if (p.variant === "outline") {
+    style.background = "transparent";
+    style.border = "1px solid var(--workspace-divider)";
+  }
+  if (["soft", "subtle"].includes(p.variant))
+    style.background = "var(--workspace-control-bg)";
+  if (p.variant === "solid") {
+    style.background = "var(--workspace-accent-fill)";
+    style.color = "var(--workspace-accent-foreground)";
+  }
+  if (p.fontSize !== undefined)
+    style.fontSize = layoutStyle({ size: p.fontSize }).fontSize ?? p.fontSize;
+  const inputType = p.type ?? p.inputType;
+  const label = p["aria-label"] ?? p.label ?? p.placeholder ?? p.name ?? name;
   const plain = p.label ?? children;
-  const props = { style, className: "min-w-0" };
+  const props = { style, className: "min-w-0", role: p.role, id: p.id };
   const click = () => {
     if (p.onClick) run(p.onClick);
   };
   if (svg) {
+    const scope =
+      name === "svg"
+        ? `ui-svg-${id.replace(/[^a-zA-Z0-9_-]/g, "")}`
+        : parentSVGScope;
     const allowed = new Set([
       "svg",
       "g",
@@ -108,6 +208,9 @@ export function Primitive({
     const attributes: Props = {};
     for (const key of [
       "viewBox",
+      "preserveAspectRatio",
+      "color",
+      "xmlns",
       "width",
       "height",
       "d",
@@ -128,6 +231,8 @@ export function Primitive({
       "strokeWidth",
       "strokeLinecap",
       "strokeLinejoin",
+      "strokeDasharray",
+      "strokeDashoffset",
       "opacity",
       "fillOpacity",
       "strokeOpacity",
@@ -139,20 +244,46 @@ export function Primitive({
       "offset",
       "stopColor",
       "stopOpacity",
+      "clipPath",
+      "mask",
+      "gradientUnits",
+      "gradientTransform",
+      "spreadMethod",
+      "fx",
+      "fy",
+      "fr",
+      "clipPathUnits",
+      "maskUnits",
+      "maskContentUnits",
+      "fillRule",
+      "clipRule",
+      "pathLength",
     ]) {
-      const value = p[key];
-      if (
-        (typeof value === "string" || typeof value === "number") &&
-        !String(value).toLowerCase().includes("url(")
-      )
-        attributes[key] = value;
+      const value =
+        p[key] ??
+        p[key.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)];
+      if (typeof value !== "string" && typeof value !== "number") continue;
+      if (String(value).toLowerCase().includes("url(")) {
+        const local = /^url\(#([a-zA-Z_][\w:.-]*)\)$/.exec(String(value));
+        if (local && ["fill", "stroke", "clipPath", "mask"].includes(key))
+          attributes[key] = `url(#${scope}-${local[1]})`;
+      } else attributes[key] = value;
     }
+    if (typeof p.id === "string" && /^[a-zA-Z_][\w:.-]*$/.test(p.id))
+      attributes.id = `${scope}-${p.id}`;
     if (name === "svg") {
+      attributes.width = p.width ?? p.size;
+      attributes.height = p.height ?? p.size;
       attributes.role = "img";
-      attributes["aria-label"] = p.label ?? "Illustration";
+      attributes["aria-label"] = p["aria-label"] ?? p.label ?? "Illustration";
       attributes.className = "max-w-full";
     }
-    return createElement(name, attributes, children);
+    const element = createElement(name, attributes, children);
+    return name === "svg" ? (
+      <SVGScope.Provider value={scope}>{element}</SVGScope.Provider>
+    ) : (
+      element
+    );
   }
   if (
     [
@@ -169,19 +300,60 @@ export function Primitive({
         {...props}
         className={`min-w-0 ${name === "row" ? "flex flex-row flex-wrap" : "flex flex-col"} ${name === "card" ? "rounded-workspace-panel border border-workspace-divider bg-workspace-panel p-4 gap-3" : ""}`}
       >
+        {name === "carousel-media-item" && p.media && (
+          <Primitive
+            name="AsyncImage"
+            p={
+              typeof p.media === "string"
+                ? {
+                    src: p.media,
+                    alt: p.label ?? "",
+                    aspectRatio: p.aspectRatio,
+                  }
+                : p.media
+            }
+            text=""
+            run={run}
+            interactive={interactive}
+          >
+            {null}
+          </Primitive>
+        )}
         {children}
       </div>
     );
   if (["grid", "flow"].includes(name)) {
     const minWidth = Math.max(
       120,
-      Math.floor(640 / Math.max(1, Math.min(12, Number(p.columns) || 2))),
+      Number(p.minChildWidth) ||
+        Math.floor(640 / Math.max(1, Math.min(12, Number(p.columns) || 2))),
     );
+    if (name === "flow" && p.layout === "masonry")
+      return (
+        <FlowContext.Provider value={true}>
+          <div
+            style={{
+              ...style,
+              columns: Math.max(1, Math.min(12, Number(p.columns) || 2)),
+              columnGap: style.gap,
+            }}
+          >
+            {children}
+          </div>
+        </FlowContext.Provider>
+      );
     return (
       <div
         style={{
           ...style,
-          gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${minWidth}px), 1fr))`,
+          gridTemplateColumns:
+            p.columns && !p.minChildWidth
+              ? `repeat(${Math.max(1, Math.min(12, Number(p.columns)))}, minmax(0,1fr))`
+              : `repeat(auto-fit, minmax(min(100%, ${minWidth}px), 1fr))`,
+          gridTemplateRows: p.rows
+            ? `repeat(${Math.max(1, Math.min(100, Number(p.rows)))}, auto)`
+            : undefined,
+          gridAutoFlow: p.layout === "column" ? "column" : "row",
         }}
         className="grid min-w-0 gap-3"
       >
@@ -191,23 +363,33 @@ export function Primitive({
   }
   if (["grid-item", "flow-item"].includes(name))
     return (
-      <div
-        style={{
-          ...style,
-          gridColumn: `span ${Math.max(1, Math.min(12, Number(p.span) || 1))}`,
-          gridRow: `span ${Math.max(1, Math.min(12, Number(p.rowSpan) || 1))}`,
-        }}
-        className="min-w-0"
-      >
-        {children}
-      </div>
+      <AspectContext.Provider value={p.aspectMode ?? aspect}>
+        <div
+          style={{
+            ...style,
+            gridColumn: `span ${Math.max(1, Math.min(12, Number(p.span) || 1))}`,
+            gridRow: `span ${Math.max(1, Math.min(12, Number(p.rowSpan) || 1))}`,
+            breakInside: masonry ? "avoid" : undefined,
+            columnSpan: masonry && Number(p.span) > 1 ? "all" : undefined,
+            marginBottom: masonry ? "12pt" : undefined,
+            overflow: p.aspectMode === "fill" ? "hidden" : undefined,
+          }}
+          data-aspect-mode={p.aspectMode}
+          className="min-w-0 data-[aspect-mode=fit]:[&_img]:object-contain data-[aspect-mode=fill]:[&_img]:h-full data-[aspect-mode=fill]:[&_img]:w-full data-[aspect-mode=fill]:[&_img]:object-cover"
+        >
+          {children}
+        </div>
+      </AspectContext.Provider>
     );
   if (name === "spacer")
     return <span style={style} className="min-h-2 min-w-2 flex-1" />;
   if (name === "divider")
     return (
       <hr
-        style={{ ...style, marginBlock: Number(p.spacing ?? 2) * 4 }}
+        style={{
+          ...style,
+          marginBlock: layoutStyle({ padding: p.spacing ?? 2 }).padding,
+        }}
         className="w-full border-workspace-divider"
       />
     );
@@ -253,8 +435,8 @@ export function Primitive({
     return (
       <span
         style={style}
-        onMouseEnter={() => p.onHover && run(p.onHover, [true])}
-        onMouseLeave={() => p.onHover && run(p.onHover, [false])}
+        onMouseEnter={() => p.onHover && run(p.onHover, [true], false)}
+        onMouseLeave={() => p.onHover && run(p.onHover, [false], false)}
         className="inline-flex w-fit max-w-full rounded-full border border-workspace-divider bg-workspace-control px-2.5 py-0.5 text-xs font-medium"
       >
         {plain}
@@ -268,14 +450,18 @@ export function Primitive({
             p.name
           ] ?? p.name,
         )}
-        aria-label={p.label}
-        aria-hidden={!p.label}
+        aria-label={p["aria-label"] ?? p.label}
+        aria-hidden={!p.label && !p["aria-label"]}
         size={Number(
           ({ xs: 12, sm: 16, md: 20, lg: 24, xl: 32, "2xl": 40 } as Props)[
             p.size
-          ] ?? 20,
+          ] ?? (typeof p.size === "number" ? p.size : 20),
         )}
-        style={{ color: uiColor(p.color) }}
+        style={{
+          color: uiColor(p.color),
+          display: p.inline ? "inline-block" : "block",
+          verticalAlign: p.inline ? "middle" : undefined,
+        }}
       />
     );
   if (name === "math") {
@@ -302,34 +488,31 @@ export function Primitive({
       );
     }
   }
-  if (
-    name === "popover-trigger" &&
-    Children.toArray(children).some(
+  if (name === "popover-trigger") {
+    const compound = contentChildren(children).some(
       (child) =>
         isValidElement<{ name?: string }>(child) &&
         ["button", "pressable"].includes(child.props.name ?? ""),
-    )
-  ) {
+    );
     return (
-      <span
-        className="inline-flex"
-        onClick={() => {
-          if (!disabled && popover)
-            document.getElementById(popover.id)?.togglePopover();
-        }}
+      <InlinePopoverTrigger
+        interactive={interactive}
+        block={p.block}
+        compound={compound}
+        onClick={click}
       >
         {children}
-      </span>
+      </InlinePopoverTrigger>
     );
   }
-  if (name === "button" || name === "pressable" || name === "popover-trigger")
+  if (name === "button" || name === "pressable")
     return (
       <button
         type={p.submit ? "submit" : "button"}
         disabled={disabled || !!p.loading}
         title={p.tooltip}
-        aria-label={p.accessibilityLabel ?? p.tooltip}
-        popoverTarget={name === "popover-trigger" ? popover?.id : undefined}
+        id={p.id}
+        aria-label={p["aria-label"] ?? p.accessibilityLabel ?? p.tooltip}
         onClick={click}
         style={style}
         className={`${focus} ${p.block ? "w-full" : ""} ${name === "button" ? `inline-flex min-h-9 items-center justify-center gap-2 rounded-workspace-control px-3 py-2 text-sm font-medium ${p.variant === "outline" || p.variant === "ghost" ? "border border-workspace-divider bg-workspace-control text-workspace-text hover:bg-workspace-hover" : "bg-workspace-accent-fill text-workspace-accent-foreground hover:opacity-90"}` : "inline-flex min-w-0 flex-col text-left"} disabled:cursor-not-allowed disabled:opacity-40`}
@@ -350,21 +533,40 @@ export function Primitive({
         {children}
       </form>
     );
-  if (name === "input" || name === "textarea" || name === "date-picker") {
+  if (name === "date-picker")
+    return (
+      <InlineDatePicker
+        p={p}
+        value={value}
+        disabled={disabled}
+        change={change}
+        style={style}
+      />
+    );
+  if (name === "input" || name === "textarea") {
     const common = {
       id: p.id ?? id,
       "aria-label": String(label),
       disabled,
       required: !!p.required,
+      name: p.name,
+      onFocus: p.autoSelect
+        ? (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+            event.target.select()
+        : undefined,
       placeholder: p.placeholder,
       value: valueText(value),
       onChange: (
         event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
       ) =>
         change(
-          p.inputType === "number"
-            ? (event.target as HTMLInputElement).valueAsNumber
-            : event.target.value,
+          inputType === "number"
+            ? event.target.value === ""
+              ? ""
+              : (event.target as HTMLInputElement).valueAsNumber
+            : p.mask
+              ? maskInput(event.target.value, p.mask)
+              : event.target.value,
         ),
       style,
       className: control,
@@ -374,29 +576,40 @@ export function Primitive({
       return (
         <textarea
           {...common}
-          rows={Math.max(1, Math.min(30, Number(p.rows) || 3))}
+          rows={Math.max(
+            1,
+            Math.min(Number(p.maxRows) || 30, Number(p.rows) || 3),
+          )}
+          onInput={
+            p.autoResize
+              ? (event) => {
+                  const el = event.currentTarget;
+                  el.style.height = "auto";
+                  el.style.height = `${Math.min(el.scrollHeight, (Number(p.maxRows) || 30) * 24)}px`;
+                }
+              : undefined
+          }
         />
       );
     return (
       <input
         {...common}
         type={
-          name === "date-picker"
-            ? "date"
-            : [
-                  "text",
-                  "number",
-                  "email",
-                  "password",
-                  "search",
-                  "url",
-                  "tel",
-                ].includes(p.inputType)
-              ? p.inputType
-              : "text"
+          [
+            "text",
+            "number",
+            "email",
+            "password",
+            "search",
+            "url",
+            "tel",
+          ].includes(inputType)
+            ? inputType
+            : "text"
         }
         min={p.min}
         max={p.max}
+        step={p.step}
       />
     );
   }
@@ -405,8 +618,12 @@ export function Primitive({
       <label style={style} className="inline-flex items-center gap-2 text-sm">
         <input
           type="checkbox"
-          className={`size-4 accent-workspace-accent ${focus}`}
+          className={`size-4 accent-workspace-accent ${p.shape === "round" ? "[clip-path:circle(50%)]" : ""} ${focus}`}
           checked={!!value}
+          id={p.id}
+          value={p.value}
+          required={!!p.required}
+          name={p.name}
           disabled={disabled}
           onChange={(event) => change(event.target.checked)}
         />
@@ -422,10 +639,20 @@ export function Primitive({
           aria-label={String(label)}
           className={`min-h-8 w-full accent-workspace-accent ${focus}`}
           type="range"
+          id={p.id}
+          name={p.name}
+          required={!!p.required}
           disabled={disabled}
           min={p.min ?? 0}
           max={p.max ?? 100}
           step={p.step ?? 1}
+          style={
+            p.sliderStyle === "filled"
+              ? {
+                  background: `linear-gradient(to right, var(--workspace-native-accent) ${Math.max(0, Math.min(100, (((Number(value) || 0) - (p.min ?? 0)) / ((p.max ?? 100) - (p.min ?? 0) || 1)) * 100))}%, var(--workspace-control-bg) 0)`,
+                }
+              : undefined
+          }
           value={Number(value) || 0}
           onChange={(event) => change(event.target.valueAsNumber)}
         />
@@ -440,13 +667,40 @@ export function Primitive({
     );
   if (name === "radio-group")
     return (
-      <InputGroup.Provider value={{ value, change, name: id, disabled }}>
+      <InputGroup.Provider
+        value={{
+          value,
+          change,
+          name: p.name ?? id,
+          disabled,
+          required: !!p.required,
+        }}
+      >
         <fieldset
           aria-label={String(label)}
           style={style}
           className={`flex gap-3 ${p.direction === "horizontal" ? "flex-wrap" : "flex-col"}`}
         >
-          {children}
+          {Array.isArray(p.options)
+            ? p.options.map((option: Props, index: number) => (
+                <label
+                  key={index}
+                  className="inline-flex items-center gap-2 text-sm"
+                >
+                  <input
+                    type="radio"
+                    className={`size-4 accent-workspace-accent ${focus}`}
+                    name={p.name ?? id}
+                    checked={value === option.value}
+                    value={String(option.value)}
+                    required={!!p.required}
+                    disabled={disabled || !!option.disabled}
+                    onChange={() => change(option.value)}
+                  />
+                  {valueText(option.label)}
+                </label>
+              ))
+            : children}
         </fieldset>
       </InputGroup.Provider>
     );
@@ -458,6 +712,9 @@ export function Primitive({
           className={`size-4 accent-workspace-accent ${focus}`}
           name={group?.name ?? id}
           checked={group?.value === p.value}
+          id={p.id}
+          required={!!p.required || group?.required}
+          value={p.value}
           disabled={disabled || group?.disabled}
           onChange={() => group?.change(p.value)}
         />
@@ -472,22 +729,13 @@ export function Primitive({
       );
     if (name === "select")
       return (
-        <select
-          style={style}
-          className={control}
-          aria-label={String(label)}
+        <InlineSelect
+          p={p}
+          value={value}
           disabled={disabled}
-          value={options.findIndex((o: Props) => o.value === value)}
-          onChange={(event) =>
-            change(options[Number(event.target.value)]?.value)
-          }
-        >
-          {options.map((option: Props, index: number) => (
-            <option key={index} value={index}>
-              {valueText(option.label)}
-            </option>
-          ))}
-        </select>
+          change={change}
+          style={style}
+        />
       );
     return (
       <div
@@ -517,39 +765,79 @@ export function Primitive({
   }
   if (name === "popover")
     return (
-      <Popover.Provider value={{ id }}>
-        <div style={style}>{children}</div>
-      </Popover.Provider>
+      <InlinePopover
+        open={p.open}
+        showOnHover={p.showOnHover}
+        hoverOpenDelay={p.hoverOpenDelay}
+        interactive={interactive}
+        onOpenChange={
+          p.onOpenChange
+            ? (open) => run(p.onOpenChange, [open], false)
+            : undefined
+        }
+      >
+        {children}
+      </InlinePopover>
     );
   if (name === "popover-content")
     return (
-      <div
-        id={popover?.id}
-        popover="auto"
-        style={style}
-        className="m-auto max-h-[80vh] max-w-[min(90vw,32rem)] overflow-auto rounded-workspace-overlay border border-workspace-divider bg-workspace-panel p-4 text-workspace-text"
+      <InlinePopoverContent
+        side={p.side}
+        align={p.align}
+        sideOffset={p.sideOffset}
+        showCloseButton={p.showCloseButton}
+        interactive={interactive}
       >
         {children}
-        {p.showCloseButton && (
-          <button
-            type="button"
-            popoverTarget={popover?.id}
-            popoverTargetAction="hide"
-            className={`mt-3 text-sm underline ${focus}`}
-          >
-            Close
-          </button>
-        )}
-      </div>
+      </InlinePopoverContent>
     );
   if (name === "carousel")
     return (
-      <section style={style} aria-roledescription="carousel">
+      <section
+        style={{ ...style, padding: p.flush ? 0 : style.padding }}
+        aria-roledescription="carousel"
+      >
         <div
           ref={viewport}
+          onScroll={() => {
+            const el = viewport.current;
+            if (!el || !p.onChange || !interactive) return;
+            const slides = Array.from(el.children) as HTMLElement[];
+            const start = slides[0]?.offsetLeft ?? 0;
+            const nearest = slides.reduce(
+              (best, slide, i) =>
+                Math.abs(slide.offsetLeft - start - el.scrollLeft) <
+                Math.abs(slides[best].offsetLeft - start - el.scrollLeft)
+                  ? i
+                  : best,
+              0,
+            );
+            if (nearest !== local) {
+              setLocal(nearest);
+              run(p.onChange, [nearest], false);
+            }
+          }}
+          style={{
+            gap: p.flush ? 0 : style.gap,
+            scrollSnapType: p.snap === false ? "none" : "x mandatory",
+          }}
           className="flex snap-x snap-mandatory gap-3 overflow-x-auto [&>*]:min-w-0 [&>*]:shrink-0 [&>*]:basis-full [&>*]:snap-start"
         >
-          {children}
+          {contentChildren(children).map((child, index) => (
+            <div
+              key={isValidElement(child) ? child.key : index}
+              style={{
+                flexBasis: `calc((100% - ${Math.max(0, Math.min(12, Number(p.visibleItems) || 1) - 1)} * ${p.flush ? "0px" : (style.gap ?? "12px")}) / ${Math.max(1, Math.min(12, Number(p.visibleItems) || 1))})`,
+                scrollSnapAlign: ["start", "center", "end"].includes(
+                  p.snapAlign,
+                )
+                  ? p.snapAlign
+                  : "start",
+              }}
+            >
+              {child}
+            </div>
+          ))}
         </div>
         {p.showArrows !== false && (
           <nav aria-label="Slides" className="mt-2 flex justify-end gap-2">
@@ -557,20 +845,18 @@ export function Primitive({
               <button
                 key={direction}
                 type="button"
+                disabled={!interactive}
                 aria-label={direction < 0 ? "Previous slide" : "Next slide"}
                 className={`rounded-full border border-workspace-divider p-2 hover:bg-workspace-hover ${focus}`}
                 onClick={() => {
                   const el = viewport.current;
                   if (el) {
-                    el.scrollBy({ left: direction * el.clientWidth });
-                    if (p.onChange)
-                      run(p.onChange, [
-                        Math.max(
-                          0,
-                          Math.round(el.scrollLeft / el.clientWidth) +
-                            direction,
-                        ),
-                      ]);
+                    const slides = Array.from(el.children) as HTMLElement[];
+                    const step =
+                      slides.length > 1
+                        ? slides[1].offsetLeft - slides[0].offsetLeft
+                        : el.clientWidth;
+                    el.scrollBy({ left: direction * step });
                   }
                 }}
               >
@@ -586,18 +872,53 @@ export function Primitive({
       </section>
     );
   if (name === "list")
-    return createElement(
-      p.marker === "number" ? "ol" : "ul",
-      {
-        style,
-        className: `space-y-2 pl-5 text-sm ${p.marker === "number" ? "list-decimal" : "list-disc"}`,
-        start: p.start,
-      },
-      children,
+    return (
+      <ListContext.Provider value={p}>
+        {createElement(
+          p.marker === "number" ? "ol" : "ul",
+          {
+            style: {
+              ...style,
+              display: "flex",
+              flexDirection: "column",
+              gap: style.gap ?? "8pt",
+              listStyleType:
+                p.marker === "none" || p.connector
+                  ? "none"
+                  : p.marker === "number"
+                    ? "decimal"
+                    : "disc",
+            },
+            className: "pl-5 text-sm",
+            start: p.start,
+          },
+          contentChildren(children).map((child, index) =>
+            isValidElement<{ name?: string }>(child) &&
+            child.props.name === "list-item" ? (
+              child
+            ) : (
+              <li key={index}>{child}</li>
+            ),
+          ),
+        )}
+      </ListContext.Provider>
     );
   if (name === "list-item")
     return (
-      <li style={style}>
+      <li
+        style={style}
+        inert={!!p.disabled}
+        aria-disabled={p.disabled || undefined}
+        className={`relative ${p.disabled ? "opacity-40" : ""} ${list.connector ? "border-l border-workspace-divider pl-4 pb-3 last:border-transparent" : ""}`}
+      >
+        {p.marker !== undefined && (
+          <span
+            style={{ fontSize: p.markerSize, maxWidth: list.maxMarkerSize }}
+            className="mr-2 inline-block align-middle"
+          >
+            {valueText(p.marker)}
+          </span>
+        )}
         {plain}
         {p.description && (
           <p className="text-xs text-workspace-muted">
@@ -606,55 +927,121 @@ export function Primitive({
         )}
       </li>
     );
-  if (name === "table")
+  if (name === "table") {
+    const sizing =
+      p.columnSizing && typeof p.columnSizing === "object"
+        ? p.columnSizing
+        : undefined;
+    const columns = sizing
+      ? Math.min(
+          100,
+          Array.isArray(sizing)
+            ? sizing.length
+            : Math.max(
+                -1,
+                ...Object.keys(sizing).map(Number).filter(Number.isFinite),
+              ) + 1,
+        )
+      : 0;
     return (
-      <div className="min-w-0 overflow-x-auto rounded-workspace-control border border-workspace-divider">
-        <table style={style} className="w-full text-left text-sm">
-          <tbody>{children}</tbody>
-        </table>
-      </div>
+      <TableContext.Provider value={{ ...p, header: false }}>
+        <div
+          className={`min-w-0 overflow-auto rounded-workspace-control border border-workspace-divider ${p.stickyHeader ? "max-h-96" : ""}`}
+        >
+          <table
+            style={{
+              ...style,
+              tableLayout:
+                p.columnSizing === "fixed" || sizing ? "fixed" : "auto",
+            }}
+            className="w-full text-left text-sm"
+          >
+            {!!columns && (
+              <colgroup>
+                {Array.from({ length: columns }, (_, i) => (
+                  <col key={i} style={layoutStyle({ width: sizing[i] })} />
+                ))}
+              </colgroup>
+            )}
+            <tbody>
+              {hasTableRows(children) ? (
+                children
+              ) : (
+                <tr>
+                  <td className="p-3">{p.emptyLabel ?? "No rows"}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </TableContext.Provider>
     );
+  }
   if (name === "table-section")
     return (
-      <>
-        {p.header && (
+      <TableContext.Provider
+        value={{
+          ...table,
+          header: !!p.header,
+          rowDivider: p.rowDivider ?? table.rowDivider,
+        }}
+      >
+        {typeof p.header === "string" && (
           <tr>
-            <th className="bg-workspace-control p-3" colSpan={100}>
-              {valueText(p.header)}
+            <th colSpan={100} className="bg-workspace-control p-3">
+              {p.header}
             </th>
           </tr>
         )}
         {children}
-      </>
+      </TableContext.Provider>
     );
   if (name === "table-row")
     return (
-      <tr
-        style={style}
-        className="border-b border-workspace-divider last:border-0"
+      <TableContext.Provider
+        value={{ ...table, header: p.header ?? table.header }}
       >
-        {p.label && (
-          <th className="px-3 py-2" colSpan={p.labelColSpan ?? 1}>
-            {valueText(p.label)}
-          </th>
-        )}
-        {children}
-      </tr>
+        <tr
+          style={style}
+          className={
+            table.rowDivider !== false &&
+            !["none", "columns"].includes(table.dividers)
+              ? "border-b border-workspace-divider last:border-0"
+              : ""
+          }
+        >
+          {p.label && (
+            <th scope="row" className="px-3 py-2" colSpan={p.labelColSpan ?? 1}>
+              {valueText(p.label)}
+            </th>
+          )}
+          {children}
+        </tr>
+      </TableContext.Provider>
     );
-  if (name === "table-cell")
+  if (name === "table-cell") {
+    const header = p.header ?? table.header;
     return createElement(
-      p.header ? "th" : "td",
+      header ? "th" : "td",
       {
-        style: { ...style, textAlign: p.align ?? style.textAlign },
-        className: `px-3 py-2 ${p.header ? "bg-workspace-control font-medium" : ""}`,
+        style: {
+          ...style,
+          textAlign: p.align ?? style.textAlign,
+          verticalAlign: p.vAlign,
+        },
+        scope: header ? "col" : undefined,
+        className: `px-3 py-2 ${header ? "bg-workspace-control font-medium" : ""} ${header && table.stickyHeader ? "sticky top-0 z-10" : ""} ${["columns", "all"].includes(table.dividers) ? "border-r border-workspace-divider last:border-r-0" : ""}`,
         colSpan: p.colSpan,
         rowSpan: p.rowSpan,
       },
       children,
     );
+  }
   if (name === "Chart") return <InlineChart content={p.content} />;
   if (name === "favicon" || name === "AsyncImage") {
     const url = safeURL(p.src ?? p.url, true);
+    if ((!url || imageFailed) && p.fallback)
+      return <span role="status">{valueText(p.fallback)}</span>;
     if (!url || imageFailed)
       return (
         <Unavailable
@@ -672,7 +1059,25 @@ export function Primitive({
         alt={p.alt ?? ""}
         loading="lazy"
         referrerPolicy="no-referrer"
-        style={style}
+        style={{
+          ...style,
+          objectFit: p.fit ?? (aspect === "fill" ? "cover" : "contain"),
+          display: p.inline ? "inline-block" : "block",
+          verticalAlign: p.inline ? "middle" : undefined,
+          padding: p.frame ? "4pt" : style.padding,
+          border: p.frame ? "1px solid var(--workspace-divider)" : style.border,
+          height: aspect === "fill" ? "100%" : style.height,
+          width:
+            name === "favicon"
+              ? typeof p.size === "number"
+                ? p.size
+                : (({ xs: 12, sm: 16, md: 20, lg: 24, xl: 32 } as Props)[
+                    p.size
+                  ] ?? 20)
+              : aspect === "fill"
+                ? "100%"
+                : style.width,
+        }}
         className={
           name === "favicon"
             ? "size-5 object-contain"
@@ -683,7 +1088,7 @@ export function Primitive({
     );
   }
   if (name === "Link") {
-    const href = safeURL(p.url);
+    const href = safeURL(p.href ?? p.url);
     return href ? (
       <a
         style={style}
@@ -692,21 +1097,29 @@ export function Primitive({
         rel="noopener noreferrer"
         className={`text-workspace-accent underline underline-offset-2 ${focus}`}
       >
-        {children ?? p.title ?? href}
+        {contentChildren(children).length ? children : (p.title ?? href)}
       </a>
     ) : (
       <Unavailable name="Link" reason="A resolved URL is required." />
     );
   }
   if (name === "CodeBlock")
-    return <InlineCodeBlock source={text} language={p.language} />;
+    return (
+      <InlineCodeBlock
+        source={text}
+        language={p.language}
+        editable={p.editable && interactive && p.interactive !== false}
+        interactive={interactive && !!p.interactive}
+        preview={p.model_previewable ?? p.interactive ?? true}
+      />
+    );
   if (name === "WritingBlock")
     return (
-      <textarea
-        aria-label={p.subject ?? "Draft"}
-        className={`${control} min-h-40`}
-        defaultValue={text}
-        readOnly={!interactive}
+      <InlineWritingBlock
+        source={text}
+        p={p}
+        interactive={interactive}
+        copy={(draft) => run(p.onCopy, [draft])}
       />
     );
   if (name === "escape") return <span>{text}</span>;
@@ -729,9 +1142,9 @@ export function Primitive({
         type="button"
         disabled={disabled}
         className={`rounded-workspace-control border border-workspace-divider px-3 py-2 text-left text-sm hover:bg-workspace-hover ${focus}`}
-        onClick={() => run(p.onFollowUp, [p.query ?? p.value])}
+        onClick={() => run(p.onFollowUp, [p.query ?? p.text ?? p.value])}
       >
-        {p.value ?? p.query}
+        {p.text ?? p.value ?? p.query}
       </button>
     );
   return <Unavailable name={name} />;

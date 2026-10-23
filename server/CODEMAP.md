@@ -555,7 +555,10 @@ in `pkg/agent/connector.go`. Explicit writing actions
 freeze `documentWriting` in the execution profile, receive no tools, and
 capture the text block, UTF-16 selection range and canonical content in
 `document_writing_requests`. Completion converts
-the response to native block suggestions with the original block hash. Human review
+Markdown and version-1 Intelligent UI source to native block suggestions with
+the original block hash. Invalid or incomplete component source is not staged,
+and the authoring policy checks newly generated content as well as the base.
+Human review
 alone applies these to CRDT state; intervening edits require refreshed review.
 Both writing completion and `page_edit` persist proposals through `insertPageProposal`,
 keeping input validation in their respective paths. Removing a quoted passage
@@ -1441,9 +1444,29 @@ It compiles caller source only and owns no new table or Page. Assistant messages
 carry raw component source among Markdown. The shared inline runtime renders
 completed prefixes and keeps local form values private. Markdown fences remain
 literal code. Responses beyond the component budget remain readable as Markdown.
+Every Run has the Intelligent UI authoring guide: ordinary chat and Task Runs
+load the compiled skill through MCP; restricted Runs receive the same compiled
+SKILL.md in their system prompt without expanding their tool authority. Page
+Agent comment replies use the shared inline renderer with local controls and
+authorized entity navigation, without inheriting a surrounding chat's send host.
+The bounded Math allowlist includes sin/cos for local SVG visualizations. SVG
+gradients and masks use isolated fragment IDs; external URL paints stay blocked.
 Page scenario captures retain acknowledged inline source, bounded JSON viewer
 state, refs and memo values, identity, theme, viewport width and renderer version.
 Read-only replay disables effects/actions and rejects unsupported capture formats.
 Declared data observations remain independently authorized and frozen. Components
 without a mounted viewer capture their explicit initial-state defaults. Non-JSON
-state and embedded executable apps remain unavailable for capture.
+state and internal executable-app state remain unavailable for capture; an
+AppBlock replays its authored fallback with scripts disabled.
+
+The inline renderer also shares a versioned component-property/child schema with
+server source validation. It rejects invalid component structures and non-top-level
+hooks. AppBlock executes only in an opaque-origin iframe, with JSON/local-callback
+bindings and no GenUI action authority; noninteractive/capture views are inert.
+Chat and Page citations use the existing authorized artifact resolver. The
+zenith-intelligent-ui skill's references/renderer-support.md records supported
+features and explicit integration deferrals against final_skill.md, the bundled
+authoring baseline. Prose components share Markdown context with inline component
+slots; evaluated values remain text. Typed literal attributes and reverse parent
+constraints use the same parser on server and browser. WritingBlock supports local
+Markdown draft versions; line charts retain shaded bands in their data table.

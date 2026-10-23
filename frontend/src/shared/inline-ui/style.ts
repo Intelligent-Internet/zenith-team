@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-
 const colors: Record<string, string> = {
   default: "var(--workspace-native-text)",
   secondary: "var(--workspace-native-text-muted)",
@@ -44,20 +43,36 @@ function dimension(value: unknown): string | number | undefined {
     return Math.max(0, Math.min(2000, value));
   if (
     typeof value === "string" &&
-    /^(?:auto|fit-content|100%|\d{1,4}(?:\.\d{1,2})?(?:px|rem|em|%|vh|vw))$/.test(
+    /^(?:auto|fit-content|100%|\d{1,4}(?:\.\d{1,2})?(?:px|pt|rem|em|%|vh|vw))$/.test(
       value,
     )
   )
     return value;
 }
-function spacing(value: unknown): number | undefined {
+function spacing(value: unknown): string | number | undefined {
+  if (
+    typeof value === "string" &&
+    /^(?:\d{1,4}(?:\.\d{1,2})?)(?:px|pt|rem|em|%)$/.test(value)
+  )
+    return value;
+  if (value === "0") return 0;
   const n = Number(value);
-  return Number.isFinite(n) ? Math.max(0, Math.min(24, n)) * 4 : undefined;
+  return Number.isFinite(n)
+    ? `${Math.max(0, Math.min(24, n)) * 4}pt`
+    : undefined;
 }
 // Authored dimensions are runtime data; only these bounded layout properties
 // become inline styles. Component defaults and interaction states use Tailwind.
 export function layoutStyle(props: Record<string, unknown>): CSSProperties {
-  const style: CSSProperties = {};
+  const theme =
+    props.theme === "light" || props.theme === "dark" ? props.theme : undefined;
+  const style: CSSProperties = theme
+    ? {
+        colorScheme: theme,
+        color: "var(--workspace-native-text)",
+        background: "var(--workspace-panel-bg)",
+      }
+    : {};
   for (const key of [
     "width",
     "height",
@@ -67,9 +82,17 @@ export function layoutStyle(props: Record<string, unknown>): CSSProperties {
     "maxHeight",
   ] as const)
     style[key] = dimension(props[key]);
-  if (props.size && typeof props.size === "string" && !sizes[props.size])
+  for (const [source, targets] of Object.entries({
+    minSize: ["minWidth", "minHeight"],
+    maxSize: ["maxWidth", "maxHeight"],
+  })) {
+    if (props[source] === undefined) continue;
+    for (const target of targets)
+      (style as Record<string, unknown>)[target] = dimension(props[source]);
+  }
+  if (props.size && !sizes[String(props.size)])
     style.width = style.height = dimension(props.size);
-  style.padding = spacing(props.padding);
+  style.padding = props.flush ? 0 : spacing(props.padding);
   style.gap = spacing(props.gap);
   if (props.rowGap !== undefined) style.rowGap = spacing(props.rowGap);
   if (props.columnGap !== undefined) style.columnGap = spacing(props.columnGap);
@@ -105,9 +128,15 @@ export function layoutStyle(props: Record<string, unknown>): CSSProperties {
     evenly: "space-evenly",
   };
   if (props.align) style.alignItems = align[String(props.align)];
-  if (props.justify) style.justifyContent = justify[String(props.justify)];
+  if (props.justify)
+    style.justifyContent =
+      justify[String(props.justify).replace(/^space-/, "")];
   if (props.direction)
-    style.flexDirection = props.direction === "horizontal" ? "row" : "column";
+    style.flexDirection = ["horizontal", "row"].includes(
+      String(props.direction),
+    )
+      ? "row"
+      : "column";
   if (props.wrap !== undefined) style.flexWrap = props.wrap ? "wrap" : "nowrap";
   if (props.clip) style.overflow = "hidden";
   if (props.scrollable) style.overflow = "auto";
@@ -125,17 +154,31 @@ export function layoutStyle(props: Record<string, unknown>): CSSProperties {
   if (props.size && sizes[String(props.size)])
     style.fontSize = sizes[String(props.size)];
   if (props.weight)
-    style.fontWeight = (
-      { normal: 400, medium: 500, semibold: 600, bold: 700 } as Record<
-        string,
-        number
-      >
-    )[String(props.weight)];
+    style.fontWeight =
+      typeof props.weight === "number"
+        ? props.weight
+        : (
+            { normal: 400, medium: 500, semibold: 600, bold: 700 } as Record<
+              string,
+              number
+            >
+          )[String(props.weight)];
   if (props.strong) style.fontWeight = 600;
   if (props.italic) style.fontStyle = "italic";
   if (props.tabularNums) style.fontVariantNumeric = "tabular-nums";
   if (props.lineThrough) style.textDecoration = "line-through";
   if (props.underline) style.textDecoration = "underline";
+  if (props.maxLines) {
+    style.display = "-webkit-box";
+    style.WebkitBoxOrient = "vertical";
+    style.WebkitLineClamp = Math.max(1, Math.min(50, Number(props.maxLines)));
+    style.overflow = "hidden";
+  }
+  if (props.minLines)
+    style.minHeight = `${Math.max(1, Math.min(50, Number(props.minLines)))}lh`;
+  if (props.highlight) style.backgroundColor = surfaces.yellow;
+  if (props.pill) style.borderRadius = 9999;
+  if (props.shadow) style.boxShadow = "0 4px 16px rgb(0 0 0 / 0.12)";
   if (props.preserveWhitespace) style.whiteSpace = "pre-wrap";
   return style;
 }

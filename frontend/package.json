@@ -98,7 +98,9 @@
     "use-sync-external-store": "1.7.0",
     "y-protocols": "1.0.7",
     "yjs": "13.6.33",
-    "zustand": "4.5.7"
+    "zustand": "4.5.7",
+    "mdast-util-gfm": "3.1.0",
+    "micromark-extension-gfm": "3.0.0"
   },
   "devDependencies": {
     "@electron-forge/cli": "^7.11.2",

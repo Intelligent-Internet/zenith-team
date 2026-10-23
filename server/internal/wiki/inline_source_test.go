@@ -1,6 +1,8 @@
 package wiki
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -53,6 +55,28 @@ func TestInlineSourceDoesNotExecuteDeclarations(t *testing.T) {
 	}
 	if _, err := CompileSource(strings.Repeat("x", 262145), 1); err == nil {
 		t.Fatal("accepted oversized source")
+	}
+}
+
+func TestInlineSourceAppBlockHTML(t *testing.T) {
+	// HTML scripts are parsed as source, never executed by the server.
+	for _, source := range []string{
+		`<AppBlock app_block_id="chess"><div>Chess</div><script>while (true) {}</script></AppBlock>`,
+		"<AppBlock app_block_id=\"chess\" html={`<!doctype html><html><body><div>Chess</div><script>while (true) {}</script></body></html>`} />",
+	} {
+		root, err := CompileSource(source, 1)
+		if err != nil {
+			t.Fatalf("AppBlock source rejected: %v", err)
+		}
+		if len(root.Content) != 1 || root.Content[0].Type != "uiDocument" {
+			t.Fatalf("unexpected document: %#v", root)
+		}
+		if strings.TrimSpace(BlocksSource(root)) != source {
+			t.Fatal("AppBlock source round trip changed")
+		}
+	}
+	if _, err := CompileSource(`<AppBlock html={42} />`, 1); err == nil || !strings.Contains(err.Error(), "AppBlock.html requires string") {
+		t.Fatalf("non-string HTML must be rejected: %v", err)
 	}
 }
 
@@ -118,5 +142,34 @@ func TestInlineSourceDraftAllowsIncompleteText(t *testing.T) {
 	}
 	if err := ValidateInlinePublication(root); err == nil {
 		t.Fatal("incomplete draft can be published")
+	}
+}
+
+func TestFinalSkillExamplesCompile(t *testing.T) {
+	paths, err := filepath.Glob("../mcp/tools/builtin/zenith-intelligent-ui/references/example-*.zenith-ui")
+	if err != nil || len(paths) == 0 {
+		t.Fatalf("missing final skill fixtures: %v", err)
+	}
+	for _, path := range paths {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			source, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := CompileSource(string(source), 1); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+	for _, source := range []string{
+		`<grid-item><text>Orphan</text></grid-item>`,
+		`<table-cell>Orphan</table-cell>`,
+		`<box><flow-item>Wrong parent</flow-item></box>`,
+		`<radio value="a">Orphan</radio>`,
+		`<box padding=oops/>`,
+	} {
+		if _, err := CompileSource(source, 1); err == nil {
+			t.Fatalf("accepted invalid structure/value: %s", source)
+		}
 	}
 }

@@ -1320,3 +1320,22 @@ fences and code spans always remain literal code. The browser parses the same
 source grammar used by Page compilation; chat rendering does not call the preview
 endpoint. Complete children remain visible while a container streams, and callbacks
 stay disabled until the message is complete. Failure states offer Show source.
+
+Chat, Task conversations and Page Agent replies share this renderer. Page
+`/generate` writing actions compile Markdown and version-1 inline component source
+into native Page suggestions; human acceptance applies them. Invalid or incomplete
+component source is not staged. Restricted Page Runs receive the compiled
+`zenith-intelligent-ui` guide directly, without acquiring additional tools.
+Local controls can change viewer state; sending a follow-up requires an authorized
+chat host and is unavailable in Page comment replies. Only allowlisted functions
+and authored pure helpers can be called, including `Math.sin` and `Math.cos`.
+
+
+The shared parser validates native prop names, direct-child structures and hook
+placement against the renderer schema. AppBlock raw HTML/CSS/JS runs only in an
+opaque-origin iframe with local JSON/callback bindings; it has no GenUI authority.
+Read-only, capture and streaming views disable application scripts. Cite,
+FileCite, CodeCite, FileNavList and reference-backed Link resolve existing Zenith
+artifact UUIDs through the existing authorized resolver. Media search, maps,
+external entity/reference providers and advanced presentation differences are
+explicitly deferred in the built-in skill's `references/renderer-support.md`.

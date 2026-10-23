@@ -211,7 +211,7 @@ func TestIntelligentSkillExamplesCompile(t *testing.T) {
 func TestReactiveSourceSurvivesDocumentCodec(t *testing.T) {
 	t.Parallel()
 	source := `{@body const [quantity, setQuantity] = DIL.useState(2);}
-<box><input type="number" value={quantity} onChange={setQuantity}/><text>{quantity * 1.25}</text></box>`
+<box><input inputType="number" value={quantity} onChange={setQuantity}/><text>{quantity * 1.25}</text></box>`
 	root, err := CompileSource(source, 1)
 	if err != nil {
 		t.Fatal(err)
@@ -227,6 +227,34 @@ func TestReactiveSourceSurvivesDocumentCodec(t *testing.T) {
 	}
 	if BlockHash(decoded) != BlockHash(root) {
 		t.Fatal("CRDT round trip changed reactive definitions")
+	}
+}
+
+func TestIntelligentSkillGalleryAndOrbitRoundTrip(t *testing.T) {
+	t.Parallel()
+	for _, name := range []string{"component-demo.zenith-ui", "orbit-demo.zenith-ui"} {
+		t.Run(name, func(t *testing.T) {
+			source, err := os.ReadFile("../mcp/tools/builtin/zenith-intelligent-ui/" + name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			root, err := CompileSource(string(source), 1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			AssignBlockIDs(&root, uuid.NewString)
+			state, err := EncodeBlocks(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, decoded, _, err := MergeBlocks(state, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := strings.TrimSpace(BlocksSource(decoded)); got != strings.TrimSpace(string(source)) {
+				t.Fatal("Page codec changed the authored example source")
+			}
+		})
 	}
 }
 

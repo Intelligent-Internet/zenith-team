@@ -1,0 +1,17 @@
+{@body
+const [name, setName] = DIL.useState("");
+const [plan, setPlan] = DIL.useState("basic");
+const [submitted, setSubmitted] = DIL.useState(false);
+const valid = name.trim().length > 0;
+}
+<form gap={3} onSubmit={() => setSubmitted(true)}>
+  <title size="lg">Configure your plan</title>
+  <label>Name</label>
+  <input value={name} onChange={(next) => { setName(next); setSubmitted(false); }} invalid={!valid} placeholder="Enter your name" />
+  <radio-group value={plan} onChange={(next) => { setPlan(next); setSubmitted(false); }}>
+    <radio value="basic">Basic</radio>
+    <radio value="premium">Premium</radio>
+  </radio-group>
+  <button submit disabled={!valid}>Preview selection</button>
+  {#if submitted && valid}<text>Local preview: {name} chose {plan}.</text>{/if}
+</form>

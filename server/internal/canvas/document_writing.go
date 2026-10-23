@@ -91,7 +91,7 @@ func DocumentAgentPromptInTx(
 		snapshot = &DocumentWritingSnapshot{Target: *target, Content: draft.Content, Sequence: draft.HeadSeq}
 		selected := string(utf16.Decode(units[target.From:target.To]))
 		instruction = fmt.Sprintf(
-			"Return ONLY the requested replacement or insertion as Markdown. No preamble, explanation, outer Markdown fence, or claims about editing. Do not call tools or edit files. The application will stage your response for explicit human acceptance.\nTarget block:\n%s\nSelected text (empty means insert at the cursor):\n%s\nText before cursor/selection:\n%s\nText after cursor/selection:\n%s",
+			"Return ONLY the requested replacement or insertion as Markdown, with inline Intelligent UI components when the request benefits from interaction. Follow the built-in zenith-intelligent-ui grammar; write components directly, never in a Markdown fence. No preamble, explanation, or claims about editing. Do not call tools or edit files. The application will stage your response for explicit human acceptance.\nTarget block:\n%s\nSelected text (empty means insert at the cursor):\n%s\nText before cursor/selection:\n%s\nText after cursor/selection:\n%s",
 			text,
 			selected,
 			string(utf16.Decode(units[:target.From])),
@@ -161,7 +161,7 @@ func writingParent(root wiki.BlockNode, id string) *wiki.BlockNode {
 	return nil
 }
 
-func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, response string) wiki.BlockNode {
+func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, response string) (wiki.BlockNode, error) {
 	block := wiki.FindBlock(base, target.BlockID)
 	size := len(utf16.Encode([]rune(target.Text)))
 	prefix := writingInlineSlice(block.Content, 0, target.From)
@@ -170,9 +170,12 @@ func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, respo
 		replacement := *block
 		replacement.Attrs = maps.Clone(block.Attrs)
 		replacement.Content = slices.Concat(prefix, []wiki.BlockNode{{Type: "text", Text: response}}, suffix)
-		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}
+		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}, nil
 	}
-	result := wiki.BlocksFromMarkdown(response)
+	result, err := wiki.CompileSource(response, 1)
+	if err != nil {
+		return wiki.BlockNode{}, err
+	}
 	if len(result.Content) == 1 && result.Content[0].Type == "paragraph" {
 		// Markdown consumes boundary whitespace; inline replacements need it to
 		// separate generated text from the untouched neighboring text.
@@ -204,7 +207,7 @@ func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, respo
 			}
 		}
 		replacement.Content = slices.Concat(prefix, result.Content[0].Content, suffix)
-		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}
+		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}, nil
 	}
 	if len(prefix) > 0 {
 		before := *block
@@ -216,7 +219,7 @@ func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, respo
 		after.Attrs, after.Content = maps.Clone(block.Attrs), suffix
 		result.Content = append(result.Content, after)
 	}
-	return result
+	return result, nil
 }
 
 func writingResponse(body string) string {
@@ -344,7 +347,13 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, in DocumentAge
 	if strings.TrimSpace(response) == "" || len(response) > 100000 {
 		return "The response could not be staged. Ask for a shorter replacement.", nil
 	}
-	replacement := writingReplacement(base, target, response)
+	replacement, err := writingReplacement(base, target, response)
+	if err != nil {
+		return "The response could not be staged because its component source is invalid or incomplete. Ask the Agent to repair it and try again.", nil
+	}
+	if in.Authoring.Check(int(draft.SchemaVersion), replacement) != nil {
+		return "The writing suggestion was not staged because Intelligent UI authoring is temporarily disabled.", nil
+	}
 	if len(replacement.Content) > 32 || wiki.ValidateBlockImport(replacement) != nil {
 		return "The response could not be staged. Ask for a shorter, simpler replacement.", nil
 	}

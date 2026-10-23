@@ -1,4 +1,6 @@
 import { parse, parseExpressionAt, tokenizer, type Node } from "acorn";
+import schema from "./schema.json";
+import { validateProperties } from "./contract";
 
 export type Expression = Node;
 export type InlineNode =
@@ -294,6 +296,15 @@ class Reader {
         this.at = literalEnd;
         continue;
       }
+      if (
+        this.source.startsWith("\\(", this.at) ||
+        this.source.startsWith("\\[", this.at)
+      ) {
+        const closing = this.source[this.at + 1] === "(" ? "\\)" : "\\]";
+        const end = this.source.indexOf(closing, this.at + 2);
+        this.at = end < 0 ? this.source.length : end + 2;
+        continue;
+      }
       if (this.source[this.at] === "\\") {
         this.at = Math.min(this.source.length, this.at + 2);
         continue;
@@ -489,10 +500,27 @@ class Reader {
         }
         if (this.at >= this.source.length) throw new Incomplete();
         props[key] = this.source.slice(from, this.at++);
-      } else
-        throw new Error(
-          "Use quoted strings or expressions for component properties.",
-        );
+      } else {
+        const from = this.at;
+        while (
+          this.at < this.source.length &&
+          !/[\s/>]/.test(this.source[this.at])
+        )
+          this.at++;
+        if (this.at === this.source.length) throw new Incomplete();
+        const token = this.source.slice(from, this.at);
+        if (
+          /^(?:true|false|null|-?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)$/.test(
+            token,
+          )
+        )
+          props[key] = this.expression(token);
+        else if (/^[a-zA-Z][a-zA-Z0-9_-]*$/.test(token)) props[key] = token;
+        else
+          throw new Error(
+            "Use a typed literal, quoted string or expression for component properties.",
+          );
+      }
     }
     if (["CodeBlock", "WritingBlock", "AppBlock", "escape"].includes(name)) {
       const end = this.source.indexOf(`</${name}>`, this.at);
@@ -556,6 +584,7 @@ export function parseInlineUI(source: string): InlineDocument {
   const reader = new Reader(source);
   try {
     const nodes = reader.nodes();
+    if (reader.complete) validateInlineNodes(nodes);
     return { nodes, complete: reader.complete };
   } catch (error) {
     return {
@@ -584,4 +613,259 @@ export function inspectInlineSource(source: string) {
     diagnostic: result.diagnostic ?? "",
     interactive: result.nodes.some((node) => node.type !== "text"),
   };
+}
+
+// The same validator is bundled into the server parser. Authored programs remain
+// syntax trees; validation never executes them.
+function validateInlineNodes(
+  nodes: InlineNode[],
+  parent = "",
+  nested = false,
+  svg = false,
+): void {
+  for (const node of nodes) {
+    if (node.type === "body" || node.type === "module") {
+      if (nested)
+        throw new Error("State declarations belong at document top level.");
+      validateHooks(node.program, node.type === "body");
+      if (node.type === "module") validateModule(node.program);
+    } else if (node.type === "element") {
+      if (node.name === "") {
+        validateInlineNodes(node.children, parent, true, svg);
+        continue;
+      }
+      if (!svg) {
+        const requiredParents: Record<string, string[]> = {
+          "grid-item": ["grid"],
+          "flow-item": ["flow"],
+          "table-section": ["table"],
+          "table-row": ["table", "table-section"],
+          "table-cell": ["table-row"],
+          radio: ["radio-group"],
+          "carousel-item": ["carousel"],
+          "carousel-media-item": ["carousel"],
+          "popover-trigger": ["popover"],
+          "popover-content": ["popover"],
+        };
+        if (
+          requiredParents[node.name] &&
+          !requiredParents[node.name].includes(parent)
+        )
+          throw new Error(
+            `${node.name} requires a ${requiredParents[node.name].join(" or ")} parent.`,
+          );
+        const expected = (schema.children as Record<string, string[]>)[parent];
+        if (expected && !expected.includes(node.name))
+          throw new Error(
+            `${parent} requires ${expected.join(" or ")} children; received ${node.name}.`,
+          );
+        if (schema.emptyChildren.includes(parent))
+          throw new Error(`${parent} does not accept children.`);
+        if (
+          schema.inlineParents.includes(parent) &&
+          !schema.inlineChildren.includes(node.name)
+        )
+          throw new Error(
+            `${parent} requires inline content; received ${node.name}.`,
+          );
+      }
+      if (svg || node.name === "svg") {
+        if (
+          !["svg", "text", "title"].includes(node.name) &&
+          !svgNames.has(node.name)
+        )
+          throw new Error(`Unsupported SVG element ${node.name}.`);
+        for (const [property, value] of Object.entries(node.props)) {
+          if (/^on/i.test(property))
+            throw new Error(
+              "SVG event handlers are not supported; use native controls outside SVG.",
+            );
+          const canonical = property.replace(/-([a-z])/g, (_, letter: string) =>
+            letter.toUpperCase(),
+          );
+          if (
+            !schema.svgProps.includes(property) &&
+            !schema.svgProps.includes(canonical)
+          )
+            throw new Error(`Unsupported SVG property ${property}.`);
+          if (typeof value === "object") validateHooks(value, false);
+        }
+        validateInlineNodes(node.children, node.name, true, true);
+        continue;
+      }
+      if (!Object.hasOwn(schema.props, node.name)) continue;
+      const allowed = schema.props[
+        node.name as keyof typeof schema.props
+      ] as string[];
+      for (const property of Object.keys(node.props)) {
+        if (!allowed.includes(property))
+          throw new Error(`Unsupported property ${property} on ${node.name}.`);
+        const value = node.props[property];
+        if (typeof value === "object") validateHooks(value, false);
+      }
+      const literalProps: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(node.props)) {
+        if (typeof value !== "object") literalProps[key] = value;
+        else if (value.type === "Literal")
+          literalProps[key] = (value as any).value;
+      }
+      validateProperties(node.name, literalProps, true);
+      if (
+        node.name === "radio-group" &&
+        Object.hasOwn(node.props, "options") &&
+        node.children.some(
+          (child) => child.type !== "text" || child.value.trim(),
+        )
+      )
+        throw new Error(
+          "radio-group accepts options or radio children, not both.",
+        );
+
+      if (
+        !["AppBlock", "CodeBlock", "WritingBlock", "escape"].includes(node.name)
+      )
+        validateInlineNodes(node.children, node.name || parent, true);
+    } else if (node.type === "if" || node.type === "each") {
+      validateHooks(node.expression, false);
+      validateInlineNodes(node.children, parent, true, svg);
+      if (node.type === "if")
+        validateInlineNodes(node.otherwise, parent, true, svg);
+    } else if (node.type === "expression") {
+      if (
+        !svg &&
+        (Object.hasOwn(schema.children, parent) ||
+          schema.emptyChildren.includes(parent))
+      )
+        throw new Error(
+          `${parent} requires structured children, not expressions.`,
+        );
+      validateHooks(node.expression, false);
+    } else if (
+      node.type === "text" &&
+      node.value.trim() &&
+      (Object.hasOwn(schema.children, parent) ||
+        schema.emptyChildren.includes(parent))
+    ) {
+      throw new Error(`${parent} requires structured children, not text.`);
+    }
+  }
+}
+
+function validateHooks(node: any, allow: boolean, root = true): void {
+  if (!node || typeof node !== "object") return;
+  if (node.type === "CallExpression" && node.callee?.object?.name === "DIL") {
+    if (!allow)
+      throw new Error(
+        "DIL hooks must be unconditional top-level declarations in {@body}.",
+      );
+    if (
+      ![
+        "useState",
+        "useEffect",
+        "useMemo",
+        "useCallback",
+        "useRef",
+        "useId",
+        "useTheme",
+        "useBreakpoint",
+      ].includes(node.callee.property?.name)
+    )
+      throw new Error("Unsupported DIL hook.");
+  }
+  // Only a direct variable initializer or expression statement may call a hook.
+  for (const [key, value] of Object.entries(node)) {
+    if (key === "start" || key === "end") continue;
+    const direct =
+      allow &&
+      (root ||
+        node.type === "VariableDeclaration" ||
+        (node.type === "VariableDeclarator" && key === "init") ||
+        (node.type === "ExpressionStatement" && key === "expression"));
+    if (Array.isArray(value))
+      value.forEach((child) => validateHooks(child, direct, false));
+    else if (value && typeof value === "object")
+      validateHooks(value, direct, false);
+  }
+}
+
+// Modules are pure definitions. Restrict mutation and ambient references rather
+// than trying to prove arbitrary JavaScript pure.
+function validateModule(program: any): void {
+  const names = new Set([
+    "Math",
+    "JSON",
+    "Object",
+    "String",
+    "Number",
+    "Boolean",
+    "undefined",
+  ]);
+  const collect = (node: any) => {
+    if (!node || typeof node !== "object") return;
+    if (
+      node.type === "VariableDeclarator" ||
+      node.type === "FunctionDeclaration"
+    ) {
+      const bind = (pattern: any) => {
+        if (!pattern) return;
+        if (pattern.type === "Identifier") names.add(pattern.name);
+        else if (pattern.type === "ArrayPattern")
+          pattern.elements.forEach(bind);
+        else if (pattern.type === "ObjectPattern")
+          pattern.properties.forEach((p: any) => bind(p.value));
+      };
+      bind(node.id);
+    }
+    if (node.params)
+      node.params.forEach((p: any) => {
+        if (p.type === "Identifier") names.add(p.name);
+      });
+    Object.values(node).forEach((v) =>
+      Array.isArray(v)
+        ? v.forEach(collect)
+        : v && typeof v === "object" && collect(v),
+    );
+  };
+  collect(program);
+  for (const statement of program.body) {
+    if (
+      ![
+        "VariableDeclaration",
+        "FunctionDeclaration",
+        "EmptyStatement",
+      ].includes(statement.type)
+    )
+      throw new Error("Module blocks contain only pure declarations.");
+  }
+  const visit = (node: any, parent?: any, key?: string) => {
+    if (!node || typeof node !== "object") return;
+    if (
+      [
+        "AssignmentExpression",
+        "UpdateExpression",
+        "NewExpression",
+        "AwaitExpression",
+      ].includes(node.type)
+    )
+      throw new Error(
+        "Module helpers must be pure; mutation and side effects are unavailable.",
+      );
+    if (
+      node.type === "Identifier" &&
+      !(
+        parent?.type === "MemberExpression" &&
+        key === "property" &&
+        !parent.computed
+      ) &&
+      !(parent?.type === "Property" && key === "key" && !parent.computed) &&
+      !names.has(node.name)
+    )
+      throw new Error(
+        `Module helpers cannot access ambient binding ${node.name}.`,
+      );
+    for (const [k, v] of Object.entries(node))
+      if (Array.isArray(v)) v.forEach((child) => visit(child, node, k));
+      else if (v && typeof v === "object") visit(v, node, k);
+  };
+  visit(program);
 }

@@ -32,7 +32,14 @@ const result = await build({
   },
 });
 const source = result.outputFiles[0].text;
+const schema = readFileSync(root + "frontend/src/shared/inline-ui/schema.json", "utf8");
+const skillSchema = root + "server/internal/mcp/tools/builtin/zenith-intelligent-ui/references/schema.generated.json";
 if (process.argv.includes("--check")) {
   if (readFileSync(output, "utf8") !== source)
     throw new Error("Run node scripts/generate-inline-parser.mjs");
-} else writeFileSync(output, source);
+  if (readFileSync(skillSchema, "utf8") !== schema)
+    throw new Error("Run node scripts/generate-inline-parser.mjs to refresh the skill schema");
+} else {
+  writeFileSync(output, source);
+  writeFileSync(skillSchema, schema);
+}

@@ -1,0 +1,251 @@
+{@module
+const normalizeQuantity = value => Math.min(99, Math.max(0, Math.floor(Number(value) || 0)));
+}
+{@body
+const [section, setSection] = DIL.useState("Controls");
+const [name, setName] = DIL.useState("Khoa");
+const [quantity, setQuantity] = DIL.useState(2);
+const [enabled, setEnabled] = DIL.useState(true);
+const [level, setLevel] = DIL.useState(40);
+const [choice, setChoice] = DIL.useState("Card");
+const [note, setNote] = DIL.useState("A short note for the demo");
+const [date, setDate] = DIL.useState("2026-10-20");
+const [priority, setPriority] = DIL.useState("Normal");
+const [step, setStep] = DIL.useState(0);
+const [detailsOpen, setDetailsOpen] = DIL.useState(false);
+const [attempted, setAttempted] = DIL.useState(false);
+const [snapshot, setSnapshot] = DIL.useState(null);
+const total = quantity * 25;
+const groups = [
+  {label:"Layout", items:"box · card · row · col · grid · grid-item · flow · flow-item · spacer · divider · list · list-item · table · table-section · table-row · table-cell"},
+  {label:"Typography", items:"text · title · caption · label · bold · italic · underline · strikethrough · blockquote · code · badge · math"},
+  {label:"Controls", items:"input · textarea · checkbox · date-picker · slider · select · segmented-control · radio-group · radio · button · pressable · form"},
+  {label:"Containers", items:"carousel · carousel-item · carousel-media-item · popover · popover-trigger · popover-content"},
+  {label:"Content", items:"icon · svg · favicon · AsyncImage · Chart · Link · CodeBlock · WritingBlock · FollowUp · escape"}
+];
+const steps = [
+  {title:"Choose a control", detail:"Use a native control whose documented value and callback match the input."},
+  {title:"Connect local state", detail:"Keep editable fields controlled and derive results from the current inputs."},
+  {title:"Show a truthful result", detail:"Label a local preview as local. Do not describe it as a saved record or a submitted request."}
+];
+const activeStep = steps[step];
+const activity = [
+  {day:"Mon",views:3},
+  {day:"Tue",views:7},
+  {day:"Wed",views:5}
+];
+}
+<box border radius="xl" padding={5} gap={4}>
+  <title size="2xl">Intelligent UI playground</title>
+  <text>Explore working controls, composition patterns, and native content. Everything in this playground stays local to this mounted view.</text>
+  <segmented-control value={section} options={[{label:"Controls",value:"Controls"},{label:"Layouts",value:"Layouts"},{label:"Content",value:"Content"}]} onChange={setSection} />
+
+  {#if section === "Controls"}
+    <card border radius="lg" padding={4} gap={3}>
+      <title size="lg">Scenario inputs</title>
+      <caption>Change the fields to update the live preview. Create a snapshot to inspect the current values.</caption>
+      <form onSubmit={() => {
+        setAttempted(true);
+        setSnapshot(name !== "" ? {name:name,quantity:quantity,total:total,level:level,choice:choice,note:note,date:date,priority:priority,enabled:enabled} : null);
+      }}>
+        <col gap={3}>
+          <col gap={2}>
+            <label>Your name</label>
+            <input value={name} onChange={value => {setName(value); setSnapshot(null);}} />
+          </col>
+          <col gap={2}>
+            <label>Quantity: 0–99 whole items</label>
+            <input type="number" value={quantity} onChange={value => {setQuantity(normalizeQuantity(value)); setSnapshot(null);}} />
+          </col>
+          <checkbox checked={enabled} onChange={value => {setEnabled(value); setSnapshot(null);}}>Show live preview</checkbox>
+          <col gap={2}>
+            <label>Intensity: {level}%</label>
+            <slider value={level} min={0} max={100} onChange={value => {setLevel(Math.min(100, Math.max(0, value))); setSnapshot(null);}} />
+          </col>
+          <col gap={2}>
+            <label>Preview style</label>
+            <select value={choice} options={[{label:"Card",value:"Card"},{label:"Compact",value:"Compact"},{label:"Editorial",value:"Editorial"}]} onChange={value => {setChoice(value); setSnapshot(null);}} />
+          </col>
+          <col gap={2}>
+            <label>Note</label>
+            <textarea value={note} onChange={value => {setNote(value); setSnapshot(null);}} />
+          </col>
+          <col gap={2}>
+            <label>Scenario date</label>
+            <date-picker value={date} onChange={value => {setDate(value); setSnapshot(null);}} />
+          </col>
+          <col gap={2}>
+            <label>Priority</label>
+            <radio-group value={priority} options={[{label:"Low",value:"Low"},{label:"Normal",value:"Normal"},{label:"High",value:"High"}]} onChange={value => {setPriority(value); setSnapshot(null);}} />
+          </col>
+          {#if attempted && name === ""}
+            <box background="danger" radius="lg" padding={3}>
+              <text><bold>Name is empty.</bold> Enter a name before creating a snapshot.</text>
+            </box>
+          {/if}
+          <button submit>Create local snapshot</button>
+        </col>
+      </form>
+      <row gap={2} wrap>
+        {#if quantity < 99}
+          <button onClick={() => {setQuantity(normalizeQuantity(quantity + 1)); setSnapshot(null);}}>Add one</button>
+        {:else}
+          <text>Maximum quantity reached.</text>
+        {/if}
+        {#if quantity > 0}
+          <button onClick={() => {setQuantity(normalizeQuantity(quantity - 1)); setSnapshot(null);}}>Remove one</button>
+        {:else}
+          <text>Minimum quantity reached.</text>
+        {/if}
+        <button onClick={() => {
+          setName("Khoa");
+          setQuantity(2);
+          setEnabled(true);
+          setLevel(40);
+          setChoice("Card");
+          setNote("A short note for the demo");
+          setDate("2026-10-20");
+          setPriority("Normal");
+          setAttempted(false);
+          setSnapshot(null);
+        }}>Reset form</button>
+      </row>
+      <caption>Illustrative rate: 25 credits per item. This is a demonstration, not a quotation or connected service.</caption>
+    </card>
+
+    {#if enabled}
+      <card border radius="lg" padding={4} gap={3}>
+        <title size="lg">Live preview</title>
+        {#if choice === "Compact"}
+          <row gap={2} wrap>
+            <badge>{priority}</badge>
+            <text><bold>{name || "Untitled"}</bold> · {quantity} item(s) · {total} credits</text>
+          </row>
+          <caption>{date || "No date selected"} · intensity {level}%</caption>
+          <text>{note || "No note added."}</text>
+        {:else if choice === "Editorial"}
+          <title size="2xl">{name || "Untitled"}</title>
+          <text>{quantity} item(s) at 25 credits each produce an illustrative total of {total} credits.</text>
+          <blockquote>{note || "Add a note to preview it here."}</blockquote>
+          <caption>Priority: {priority} · date: {date || "Not selected"} · intensity: {level}%</caption>
+        {:else}
+          <box background="accent" radius="lg" padding={4} gap={2}>
+            <caption>Estimated total</caption>
+            <title size="3xl">{total} credits</title>
+            <text>{quantity} item(s) × 25 credits</text>
+          </box>
+          <row gap={2} wrap>
+            <badge>{priority}</badge>
+            <text>Prepared for {name || "Untitled"}</text>
+          </row>
+          <text>{note || "No note added."}</text>
+          <caption>{date || "No date selected"} · intensity {level}%</caption>
+        {/if}
+      </card>
+    {:else}
+      <box background="surface-secondary" radius="lg" padding={3}>
+        <text>Live preview is hidden. Your inputs remain editable.</text>
+      </box>
+    {/if}
+
+    {#if snapshot}
+      <card border radius="lg" padding={4} gap={3}>
+        <title size="lg">Local snapshot</title>
+        <text><bold>{snapshot.name}</bold> · {snapshot.quantity} item(s) · {snapshot.total} credits</text>
+        <text>Style: {snapshot.choice} · priority: {snapshot.priority} · intensity: {snapshot.level}%</text>
+        <text>Date: {snapshot.date || "Not selected"} · live preview: {snapshot.enabled ? "Shown" : "Hidden"}</text>
+        <text>{snapshot.note || "No note added."}</text>
+        <caption>This temporary snapshot is cleared when an input changes. Nothing was sent or saved.</caption>
+      </card>
+    {/if}
+
+  {:else if section === "Layouts"}
+    <card border radius="lg" padding={4} gap={3}>
+      <title size="lg">Composition patterns</title>
+      <text>These small examples show explicit grid items, wrapping rows, columns, and native lists.</text>
+      <grid columns={2} gap={3}>
+        <grid-item>
+          <card border radius="lg" padding={3} gap={2}>
+            <title size="md">Card</title>
+            <text>Group related information.</text>
+          </card>
+        </grid-item>
+        <grid-item>
+          <card border radius="lg" padding={3} gap={2}>
+            <title size="md">Grid item</title>
+            <text>Give each tile an explicit item container.</text>
+          </card>
+        </grid-item>
+      </grid>
+      <box border radius="lg" padding={3} gap={2}>
+        <title size="md">Wrapping row</title>
+        <row gap={2} wrap>
+          <badge>Native</badge>
+          <badge>Bounded state</badge>
+          <badge>Local preview</badge>
+        </row>
+      </box>
+      <col gap={2}>
+        <title size="md">Column and list</title>
+        <text>Keep supporting details in reading order.</text>
+        <list>
+          <list-item>Choose a small set of useful inputs.</list-item>
+          <list-item>Make the result visible and clearly labeled.</list-item>
+          <list-item>Keep external actions separate from local previews.</list-item>
+        </list>
+      </col>
+      <caption>The two-column example is explicit, not an automatic responsiveness promise. Use one column when the host width requires it.</caption>
+    </card>
+
+  {:else}
+    <card border radius="lg" padding={4} gap={3}>
+      <title size="lg">Content components</title>
+      <row gap={2} wrap>
+        <icon name="star" />
+        <badge>Illustrative data</badge>
+        <text><bold>Native content</bold> with <italic>selective emphasis</italic>.</text>
+      </row>
+      <text>Sample views by day. These numbers are demonstration data, not connected analytics.</text>
+      <Chart content={{chartType:"bar",xKey:"day",series:[{dataKey:"views",label:"Views"}],data:activity}} />
+      <divider />
+      <title size="md">Raw code content</title>
+      <CodeBlock>const greeting = 'Hello';</CodeBlock>
+      <divider />
+      <title size="md">Manual step viewer</title>
+      <caption>Step {step + 1} of {steps.length}</caption>
+      <title size="lg">{activeStep.title}</title>
+      <text>{activeStep.detail}</text>
+      <row gap={2} wrap>
+        <button onClick={() => setStep((step + 1) % steps.length)}>{step === steps.length - 1 ? "Back to first step" : "Next step"}</button>
+        {#if step > 0}
+          <button onClick={() => setStep(0)}>Reset steps</button>
+        {/if}
+      </row>
+      <caption>This is a local step viewer, not a native carousel.</caption>
+      <divider />
+      <button onClick={() => setDetailsOpen(!detailsOpen)}>{detailsOpen ? "Hide implementation note" : "Show implementation note"}</button>
+      {#if detailsOpen}
+        <box background="info" radius="lg" padding={3} gap={2}>
+          <title size="md">Inline disclosure</title>
+          <text>This content is revealed by local state. It is not a native popover and does not demonstrate popover focus or placement behavior.</text>
+        </box>
+      {/if}
+    </card>
+  {/if}
+
+  <divider />
+  <title size="lg">Component names by family</title>
+  <caption>The catalog lists declared components. The examples above demonstrate a subset, not every component API.</caption>
+  {#each groups as group}
+    <card border radius="lg" padding={3} gap={2}>
+      <title size="md">{group.label}</title>
+      <text>{group.items}</text>
+    </card>
+  {/each}
+  <card border radius="lg" padding={3} gap={2}>
+    <title size="md">Host-backed references and content</title>
+    <text>Cite · CodeCite · Entity · FileCite · FileNavList · MemoryCite · AsyncImageGroup · AsyncVideo · MapWidgetV2 · AppBlock</text>
+    <caption>These names require the relevant host capabilities and, where applicable, real authorized references. They are not activated by listing them here.</caption>
+  </card>
+  <caption>State is temporary. This playground has no network requests, host actions, continuous animation, or Page saves.</caption>
+</box>

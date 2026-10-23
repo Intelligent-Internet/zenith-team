@@ -1,5 +1,5 @@
+import { InlineChatProviders } from "@/features/common/components/inline-artifact-reference";
 import { useInlineEntityAction } from "@/features/common/hooks/use-inline-entity-action";
-import { PreviewContinuationContext } from "@/shared/chat/preview-continuation-context";
 import { createPortal } from "react-dom";
 import { useOpenArtifactSource } from "@/features/run-deliverables/hooks/use-open-artifact-source";
 import { skipToken } from "@reduxjs/toolkit/query";
@@ -968,7 +968,9 @@ export function ChatPanel({
 
   const openInlineEntity = useInlineEntityAction(studioCompanyId);
   return (
-    <PreviewContinuationContext.Provider
+    <InlineChatProviders
+      readOnly={readOnly}
+      companyId={studioCompanyId}
       value={
         conversationId && !readOnly && !isComposerBlockedByDiscoveryChoice
           ? {
@@ -1544,7 +1546,7 @@ export function ChatPanel({
           onClose={handleCloseAgentPlan}
         />
       </ChatAvatarPresence>
-    </PreviewContinuationContext.Provider>
+    </InlineChatProviders>
   );
 }
 

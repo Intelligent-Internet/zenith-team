@@ -1,0 +1,69 @@
+{@body
+const [paused, setPaused] = DIL.useState(true);
+const [speed, setSpeed] = DIL.useState(1);
+const [reset, setReset] = DIL.useState(0);
+}
+<box padding={4} gap={3}>
+  <title size="lg">A little orbit of your own</title>
+  <text>Illustrative orbital motion. Start or pause the simulation and adjust its speed.</text>
+  <row gap={3} wrap>
+    <button onClick={() => setPaused(!paused)}>{paused ? "Start" : "Pause"}</button>
+    <button variant="outline" onClick={() => {setPaused(true); setSpeed(1); setReset(reset + 1)}}>Reset</button>
+    <text tabularNums>{speed.toFixed(1)}×</text>
+  </row>
+  <label>Orbit speed</label>
+  <slider label="Orbit speed" min={0.2} max={3} step={0.1} value={speed} onChange={setSpeed}/>
+  <AppBlock title="Orbit visualization" app_block_id="zenith-orbit-demo" bind={{paused,speed,reset}}>
+    <div id="zenith-orbit-demo">
+      <svg viewBox="0 0 600 240" role="img" aria-label="Two planets orbiting a star" style="display:block;width:100%;background:#11132f;border-radius:12px">
+        <ellipse cx="300" cy="120" rx="110" ry="44" fill="none" stroke="#a5a0e8"/>
+        <ellipse cx="300" cy="120" rx="180" ry="80" fill="none" stroke="#a5a0e8"/>
+        <circle cx="300" cy="120" r="22" fill="#ffd166"/>
+        <circle data-inner cx="410" cy="120" r="8" fill="#74d7ff"/>
+        <circle data-outer cx="480" cy="120" r="12" fill="#dc8cff"/>
+      </svg>
+      <p data-status style="font:14px system-ui;color:#64748b">Paused. Two planets, one star.</p>
+    </div>
+    <script>
+      (() => {
+        const root = document.getElementById('zenith-orbit-demo');
+        if (!root || root.dataset.started) return;
+        root.dataset.started = 'true';
+        const inner = root.querySelector('[data-inner]');
+        const outer = root.querySelector('[data-outer]');
+        const status = root.querySelector('[data-status]');
+        const motion = matchMedia('(prefers-reduced-motion: reduce)');
+        let angle = 0, previous = 0, frame = 0, paused = true, speed = 1, reset = 0;
+        const draw = () => {
+          inner.setAttribute('cx', 300 + 110 * Math.cos(angle));
+          inner.setAttribute('cy', 120 + 44 * Math.sin(angle));
+          outer.setAttribute('cx', 300 + 180 * Math.cos(angle * .63));
+          outer.setAttribute('cy', 120 + 80 * Math.sin(angle * .63));
+        };
+        const tick = time => {
+          frame = 0;
+          if (!root.isConnected || paused || motion.matches) return;
+          if (previous) angle += Math.min(.05, (time - previous) / 1000) * speed;
+          previous = time;
+          draw();
+          frame = requestAnimationFrame(tick);
+        };
+        const sync = () => {
+          cancelAnimationFrame(frame); frame = 0; previous = 0;
+          status.textContent = motion.matches ? 'Reduced motion enabled. Static orbit.' : paused ? 'Paused. Two planets, one star.' : 'Orbiting at ' + speed.toFixed(1) + '×';
+          if (!paused && !motion.matches) frame = requestAnimationFrame(tick);
+          draw();
+        };
+        globalThis.__effect?.(() => {
+          paused = globalThis.__bindings?.paused ?? true;
+          speed = globalThis.__bindings?.speed ?? 1;
+          const next = globalThis.__bindings?.reset ?? 0;
+          if (next !== reset) { reset = next; angle = 0; }
+          sync();
+        });
+        motion.addEventListener('change', sync);
+        addEventListener('pagehide', () => {cancelAnimationFrame(frame); motion.removeEventListener('change', sync);});
+      })();
+    </script>
+  </AppBlock>
+</box>

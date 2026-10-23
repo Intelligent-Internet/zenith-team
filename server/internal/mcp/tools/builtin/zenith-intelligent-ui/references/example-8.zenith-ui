@@ -1,0 +1,7 @@
+{@body const [open,setOpen] = DIL.useState(false);}
+<popover open={open}>
+  <popover-trigger onClick={() => setOpen(!open)}><text>Show explanation</text></popover-trigger>
+  <popover-content side="bottom" showCloseButton>
+    <text>This is additional context.</text>
+  </popover-content>
+</popover>

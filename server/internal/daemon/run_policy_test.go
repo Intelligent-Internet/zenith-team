@@ -23,6 +23,33 @@ func TestRunPromptAuthorsRawInlineComponents(t *testing.T) {
 	}
 }
 
+func TestIntelligentUIGuideReachesEveryRunProfile(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		doc  RunContext
+	}{
+		{"chat", RunContext{}},
+		{"task", RunContext{ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{}}}},
+		{"page tag", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentThreadID: "thread"}}},
+		{"page generate", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentWriting: true}}},
+		{"schedule", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceSchedule}}},
+		{"company research", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceCompanyResearch}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			prompt := buildRunSystemPrompt(test.doc, "/scratch", runMemoryContext{})
+			if !strings.Contains(prompt, "zenith-intelligent-ui") {
+				t.Fatal("Run cannot discover its built-in Intelligent UI skill")
+			}
+			if !slices.Contains(zenithTeamMCPToolsForRun(test.doc), "load_skill_reference") &&
+				!strings.Contains(prompt, "DIL.useState") {
+				t.Fatal("Run without skill tools did not receive the compiled guide")
+			}
+		})
+	}
+}
+
 func TestDocumentRunToolPolicy(t *testing.T) {
 	t.Parallel()
 	for _, writing := range []bool{false, true} {

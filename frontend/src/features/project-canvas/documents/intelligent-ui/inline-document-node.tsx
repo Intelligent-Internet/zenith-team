@@ -1,3 +1,4 @@
+import { InlineArtifactReference } from "@/features/common/components/inline-artifact-reference";
 import { registerInlineCapture } from "./inline-capture-registry";
 import {
   isInlineCapture,
@@ -115,6 +116,14 @@ export function InlineDocumentBlockView({
       supportsReactiveVersion(type, attrs) &&
       supportedCapture ? (
         <InlineDocument
+          renderReference={(name, props, interactive) => (
+            <InlineArtifactReference
+              companyId={document?.companyId}
+              name={name}
+              props={props}
+              interactive={interactive}
+            />
+          )}
           key={JSON.stringify(attrs.inlineCapture ?? null)}
           source={source}
           capture={capture}
