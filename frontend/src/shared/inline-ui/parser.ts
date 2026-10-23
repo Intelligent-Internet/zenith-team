@@ -1,9 +1,15 @@
 import { parse, parseExpressionAt, tokenizer, type Node } from "acorn";
 import schema from "./schema.json";
-import { validateProperties } from "./contract";
+import { repairProperties, validateProperties } from "./contract";
+import {
+  failureMessage,
+  recordDiagnostic,
+  type InlineDiagnostic,
+} from "./recovery";
 
 export type Expression = Node;
 export type InlineNode =
+  | { type: "pending"; name: string; start: number; failed?: boolean }
   | { type: "text"; value: string; start: number }
   | { type: "expression"; expression: Expression; start: number }
   | { type: "body" | "module"; program: Node; start: number }
@@ -34,6 +40,7 @@ export type InlineDocument = {
   nodes: InlineNode[];
   complete: boolean;
   diagnostic?: string;
+  diagnostics?: InlineDiagnostic[];
 };
 
 export const componentNames = new Set([
@@ -132,7 +139,43 @@ class Reader {
   at = 0;
   count = 0;
   complete = true;
-  constructor(readonly source: string) {}
+  diagnostics: InlineDiagnostic[] = [];
+  constructor(
+    readonly source: string,
+    readonly recover = false,
+  ) {}
+  report(
+    start: number,
+    code: string,
+    message: string,
+    repair: InlineDiagnostic["repair"],
+    component?: string,
+  ) {
+    recordDiagnostic(this.diagnostics, {
+      start,
+      code,
+      message,
+      repair,
+      component,
+      phase: "parse",
+    });
+  }
+  pending(
+    nodes: InlineNode[],
+    start: number,
+    name: string,
+    code = "unterminated_tag",
+  ) {
+    if (!this.recover) return;
+    this.report(
+      start,
+      code,
+      `Waiting for ${name || "component"} to finish.`,
+      "pending",
+      name,
+    );
+    nodes.push({ type: "pending", start, name });
+  }
   space() {
     while (
       this.at < this.source.length &&
@@ -256,7 +299,17 @@ class Reader {
         }
       }
       if (this.source.startsWith("{/if}", this.at)) this.at += 5;
-      else this.complete = false;
+      else {
+        this.complete = false;
+        if (this.recover)
+          this.report(
+            start,
+            "unclosed_block",
+            "Closed the conditional for this preview.",
+            "closed",
+            "if",
+          );
+      }
     } catch (error) {
       if (!(error instanceof Incomplete)) throw error;
       this.complete = false;
@@ -290,6 +343,29 @@ class Reader {
       ) {
         flush();
         return nodes;
+      }
+      if (
+        this.recover &&
+        parent === undefined &&
+        this.source.startsWith("</", this.at)
+      ) {
+        flush();
+        const end = this.source.indexOf(">", this.at);
+        if (end < 0) {
+          this.pending(nodes, this.at, "closing tag");
+          this.complete = false;
+          this.at = this.source.length;
+        } else {
+          this.report(
+            this.at,
+            "unexpected_close",
+            "Omitted an unmatched closing tag.",
+            "omitted",
+          );
+          this.at = end + 1;
+        }
+        textStart = this.at;
+        continue;
       }
       const literalEnd = this.codeEnd();
       if (literalEnd !== undefined) {
@@ -329,9 +405,12 @@ class Reader {
         if (
           start + name.length + 1 === this.source.length &&
           (name === "" ||
-            [...componentNames].some((component) => component.startsWith(name)))
+            [...componentNames, ...(svg ? svgNames : [])].some((component) =>
+              component.startsWith(name),
+            ))
         ) {
           flush();
+          this.pending(nodes, start, name);
           this.complete = false;
           this.at = this.source.length;
           return nodes;
@@ -345,9 +424,24 @@ class Reader {
           try {
             nodes.push(this.element(depth, svg));
           } catch (error) {
-            if (!(error instanceof Incomplete)) throw error;
-            this.complete = false;
-            this.at = this.source.length;
+            if (!(error instanceof Incomplete)) {
+              if (!this.recover) throw error;
+              this.report(
+                start,
+                "invalid_tag",
+                failureMessage(error),
+                "omitted",
+                name,
+              );
+              nodes.push({ type: "pending", start, name, failed: true });
+              // Skip only this malformed construct, preserving later siblings.
+              const end = this.source.indexOf(">", this.at);
+              this.at = end < 0 ? this.source.length : end + 1;
+            } else {
+              this.pending(nodes, start, name);
+              this.complete = false;
+              this.at = this.source.length;
+            }
           }
           textStart = this.at;
           continue;
@@ -418,7 +512,17 @@ class Reader {
               throw new Error("Invalid each binding.");
             const children = this.nodes(depth + 1, "", "each", svg);
             if (this.source.startsWith("{/each}", this.at)) this.at += 7;
-            else this.complete = false;
+            else {
+              this.complete = false;
+              if (this.recover)
+                this.report(
+                  start,
+                  "unclosed_block",
+                  "Closed the iteration for this preview.",
+                  "closed",
+                  "each",
+                );
+            }
             nodes.push({
               type: "each",
               expression,
@@ -438,12 +542,51 @@ class Reader {
             const before = this.source.slice(0, start);
             const line = before.split("\n").length;
             const column = start - before.lastIndexOf("\n");
-            throw new Error(
-              `Invalid UI directive near line ${line}, column ${column}: ${error instanceof Error ? error.message : "Invalid expression."}`,
+            const message = `Invalid UI directive near line ${line}, column ${column}: ${failureMessage(error)}`;
+            if (!this.recover) throw new Error(message);
+            this.report(start, "invalid_expression", message, "omitted");
+            const directive = this.source.startsWith("{@body", start)
+              ? "body"
+              : this.source.startsWith("{@module", start)
+                ? "module"
+                : undefined;
+            if (directive) {
+              const program = partialProgram(
+                this.source.slice(
+                  start + (directive === "body" ? 6 : 8),
+                  this.at - 1,
+                ),
+              );
+              if (program) nodes.push({ type: directive, program, start });
+            }
+            nodes.push({
+              type: "pending",
+              start,
+              name: "expression",
+              failed: true,
+            });
+            if (this.at <= start) this.at = start + 1;
+          } else {
+            this.complete = false;
+            const directive = this.source.startsWith("{@body", start)
+              ? "body"
+              : this.source.startsWith("{@module", start)
+                ? "module"
+                : undefined;
+            if (this.recover && directive) {
+              const program = partialProgram(
+                this.source.slice(start + (directive === "body" ? 6 : 8)),
+              );
+              if (program) nodes.push({ type: directive, program, start });
+            }
+            this.pending(
+              nodes,
+              start,
+              directive ?? "expression",
+              "unterminated_braced_value",
             );
+            this.at = this.source.length;
           }
-          this.complete = false;
-          this.at = this.source.length;
         }
         textStart = this.at;
         continue;
@@ -524,13 +667,20 @@ class Reader {
     }
     if (["CodeBlock", "WritingBlock", "AppBlock", "escape"].includes(name)) {
       const end = this.source.indexOf(`</${name}>`, this.at);
-      const children: InlineNode[] = [
-        {
-          type: "text",
-          value: this.source.slice(this.at, end < 0 ? undefined : end),
-          start: this.at,
-        },
-      ];
+      let value = this.source.slice(this.at, end < 0 ? undefined : end);
+      // While streaming, withhold a partially received closing tag so it never
+      // flashes inside a draft or code body.
+      if (end < 0)
+        for (
+          let length = Math.min(value.length, name.length + 2);
+          length > 0;
+          length--
+        )
+          if (`</${name}>`.startsWith(value.slice(-length))) {
+            value = value.slice(0, -length);
+            break;
+          }
+      const children: InlineNode[] = [{ type: "text", value, start: this.at }];
       this.at = end < 0 ? this.source.length : end + name.length + 3;
       if (end < 0) this.complete = false;
       return {
@@ -565,27 +715,89 @@ class Reader {
           complete: false,
         };
       }
-      if (closing !== name || this.source[this.at] !== ">")
-        throw new Error(`Expected </${name}> at ${closingStart}.`);
+      if (closing !== name || this.source[this.at] !== ">") {
+        if (!this.recover)
+          throw new Error(`Expected </${name}> at ${closingStart}.`);
+        this.at = closingStart;
+        this.report(
+          start,
+          "unclosed_block",
+          `Closed ${name} before </${closing}>.`,
+          "closed",
+          name,
+        );
+        return {
+          type: "element",
+          name,
+          props,
+          children,
+          start,
+          complete: false,
+        };
+      }
       this.at++;
       complete = true;
     } else this.complete = false;
+    if (!complete && this.recover)
+      this.report(
+        start,
+        "unclosed_block",
+        `Closed ${name} for this preview.`,
+        "closed",
+        name,
+      );
     return { type: "element", name, props, children, start, complete };
   }
 }
 
-export function parseInlineUI(source: string): InlineDocument {
+// Keep complete declarations from a streaming body, cutting only at token-aware
+// statement boundaries. Bounded attempts prevent quadratic repair work.
+function partialProgram(source: string): Node | undefined {
+  const candidates: number[] = [];
+  const tokens = tokenizer(source, { ecmaVersion: "latest" });
+  let depth = 0;
+  try {
+    for (let count = 0; count < 20000; count++) {
+      const token = tokens.getToken(),
+        label = token.type.label;
+      if (label === "eof") break;
+      if (["(", "[", "{", "${"].includes(label)) depth++;
+      if ([")", "]", "}"].includes(label)) depth--;
+      if (depth < 0) break;
+      if (depth === 0 && [";", "}"].includes(label)) candidates.push(token.end);
+    }
+  } catch {
+    /* The unfinished tail is intentionally withheld. */
+  }
+  for (const end of candidates.slice(-20).reverse()) {
+    try {
+      return parse(source.slice(0, end), { ecmaVersion: "latest" });
+    } catch {
+      /* Try the preceding complete statement. */
+    }
+  }
+}
+
+export function parseInlineUI(
+  source: string,
+  options: { recover?: boolean } = {},
+): InlineDocument {
   if (utf8Length(source) > 262144)
     return {
       nodes: [],
       complete: false,
       diagnostic: "This response exceeds the interactive size limit.",
     };
-  const reader = new Reader(source);
+  const reader = new Reader(source, options.recover);
   try {
-    const nodes = reader.nodes();
-    if (reader.complete) validateInlineNodes(nodes);
-    return { nodes, complete: reader.complete };
+    let nodes = reader.nodes();
+    if (options.recover) nodes = recoverInlineNodes(nodes, reader.diagnostics);
+    else if (reader.complete) validateInlineNodes(nodes);
+    return {
+      nodes,
+      complete: reader.complete,
+      ...(options.recover ? { diagnostics: reader.diagnostics } : {}),
+    };
   } catch (error) {
     return {
       nodes: [],
@@ -594,6 +806,178 @@ export function parseInlineUI(source: string): InlineDocument {
         error instanceof Error ? error.message : "Invalid component source.",
     };
   }
+}
+
+// Recovery is deliberately deterministic. It never rewrites authored business
+// logic or guesses missing data; unsafe structure is isolated at its own node.
+function recoverInlineNodes(
+  nodes: InlineNode[],
+  diagnostics: InlineDiagnostic[],
+  parent = "",
+  nested = false,
+  svg = false,
+  // Inside {#each} a placeholder would repeat once per item; like structured
+  // parents, an unfinished repeated child simply appears once its tag completes.
+  repeated = false,
+): InlineNode[] {
+  return nodes.flatMap((node): InlineNode[] => {
+    try {
+      if (node.type === "pending")
+        return svg ||
+          (repeated && !node.failed) ||
+          Object.hasOwn(schema.children, parent) ||
+          schema.emptyChildren.includes(parent)
+          ? []
+          : [node];
+      if (node.type === "element") {
+        if (!svg && node.name !== "svg" && node.name !== "") {
+          const literal: Record<string, unknown> = {};
+          const expressions: typeof node.props = Object.create(null);
+          const allowed =
+            (schema.props as Record<string, string[]>)[node.name] ?? [];
+          for (const [key, value] of Object.entries(node.props)) {
+            if (
+              typeof value === "object" &&
+              value.type !== "Literal" &&
+              allowed.includes(key)
+            ) {
+              validateHooks(value, false);
+              expressions[key] = value;
+            } else
+              literal[key] =
+                typeof value === "object" ? (value as any).value : value;
+          }
+          const repaired = repairProperties(
+            node.name,
+            literal,
+            diagnostics,
+            node.start,
+            true,
+          );
+          const props: typeof node.props = Object.assign(
+            Object.create(null),
+            expressions,
+          );
+          for (const [key, value] of Object.entries(repaired))
+            props[key] =
+              typeof value === "number" || value == null
+                ? ({ type: "Literal", start: 0, end: 0, value } as Expression)
+                : value;
+          node = { ...node, props };
+        }
+        validateInlineNodes([{ ...node, children: [] }], parent, nested, svg);
+        const raw = [
+          "AppBlock",
+          "CodeBlock",
+          "WritingBlock",
+          "escape",
+        ].includes(node.name);
+        // An incomplete application is staged; authored scripts never run early.
+        if (node.name === "AppBlock" && !node.complete) {
+          recordDiagnostic(diagnostics, {
+            code: "unclosed_block",
+            phase: "parse",
+            start: node.start,
+            component: node.name,
+            message: "Waiting for the application source to finish.",
+            repair: "pending",
+          });
+          return svg || repeated || Object.hasOwn(schema.children, parent)
+            ? []
+            : [{ type: "pending", name: node.name, start: node.start }];
+        }
+        const children = raw
+          ? node.children
+          : recoverInlineNodes(
+              node.children,
+              diagnostics,
+              node.name || parent,
+              true,
+              svg || node.name === "svg",
+              repeated,
+            );
+        if (
+          !node.complete &&
+          !children.some((child) => child.type !== "text" || child.value.trim())
+        )
+          return svg || repeated || Object.hasOwn(schema.children, parent)
+            ? []
+            : [{ type: "pending", name: node.name, start: node.start }];
+        return [{ ...node, children }];
+      }
+      if (node.type === "if" || node.type === "each") {
+        validateHooks(node.expression, false);
+        return [
+          {
+            ...node,
+            children: recoverInlineNodes(
+              node.children,
+              diagnostics,
+              parent,
+              true,
+              svg,
+              repeated || node.type === "each",
+            ),
+            ...(node.type === "if"
+              ? {
+                  otherwise: recoverInlineNodes(
+                    node.otherwise,
+                    diagnostics,
+                    parent,
+                    true,
+                    svg,
+                    repeated,
+                  ),
+                }
+              : {}),
+          },
+        ];
+      }
+      validateInlineNodes([node], parent, nested, svg);
+      return [node];
+    } catch (error) {
+      recordDiagnostic(diagnostics, {
+        code: "invalid_structure",
+        phase: "catalog",
+        start: node.start,
+        component: node.type === "element" ? node.name : node.type,
+        message: failureMessage(error),
+        repair: "omitted",
+      });
+      if (
+        svg ||
+        Object.hasOwn(schema.children, parent) ||
+        schema.emptyChildren.includes(parent)
+      )
+        return [];
+      return [
+        {
+          type: "pending",
+          name: node.type === "element" ? node.name : node.type,
+          start: node.start,
+          failed: true,
+        },
+      ];
+    }
+  });
+}
+
+// Readable nonexecuting fallback for unavailable renderers. Local calculations
+// are intentionally not evaluated; resolved values remain in the live view.
+export function inlineFallback(nodes: InlineNode[]): string {
+  return nodes
+    .map((node) => {
+      if (node.type === "text") return node.value;
+      if (node.type !== "element") return "";
+      if (["AppBlock", "svg"].includes(node.name))
+        return "[Interactive content]";
+      const text = inlineFallback(node.children);
+      if (node.name === "CodeBlock") return "\n```\n" + text + "\n```\n";
+      return (
+        text || (typeof node.props.label === "string" ? node.props.label : "")
+      );
+    })
+    .join("");
 }
 
 // Portable across browsers and the server's isolated parser runtime.
@@ -606,12 +990,22 @@ function utf8Length(value: string): number {
   return length;
 }
 
-export function inspectInlineSource(source: string) {
-  const result = parseInlineUI(source);
+export function inspectInlineSource(source: string, recover = false) {
+  const result = parseInlineUI(source, { recover });
   return {
     complete: result.complete,
     diagnostic: result.diagnostic ?? "",
     interactive: result.nodes.some((node) => node.type !== "text"),
+    diagnostics: (result.diagnostics ?? []).map((item) => ({
+      code: `source.${item.code}`,
+      severity:
+        item.repair === "pending" || item.repair === "closed"
+          ? "info"
+          : "warning",
+      start: utf8Length(source.slice(0, item.start)),
+      end: utf8Length(source.slice(0, item.start)),
+      repair: item.message,
+    })),
   };
 }
 
@@ -710,16 +1104,6 @@ function validateInlineNodes(
           literalProps[key] = (value as any).value;
       }
       validateProperties(node.name, literalProps, true);
-      if (
-        node.name === "radio-group" &&
-        Object.hasOwn(node.props, "options") &&
-        node.children.some(
-          (child) => child.type !== "text" || child.value.trim(),
-        )
-      )
-        throw new Error(
-          "radio-group accepts options or radio children, not both.",
-        );
 
       if (
         !["AppBlock", "CodeBlock", "WritingBlock", "escape"].includes(node.name)
@@ -798,6 +1182,12 @@ function validateModule(program: any): void {
     "String",
     "Number",
     "Boolean",
+    "Array",
+    "Date",
+    "parseInt",
+    "parseFloat",
+    "isNaN",
+    "isFinite",
     "undefined",
   ]);
   const collect = (node: any) => {
@@ -840,12 +1230,12 @@ function validateModule(program: any): void {
   const visit = (node: any, parent?: any, key?: string) => {
     if (!node || typeof node !== "object") return;
     if (
-      [
-        "AssignmentExpression",
-        "UpdateExpression",
-        "NewExpression",
-        "AwaitExpression",
-      ].includes(node.type)
+      ["AssignmentExpression", "UpdateExpression", "AwaitExpression"].includes(
+        node.type,
+      ) ||
+      // Date and Array construct values deterministically; nothing else may.
+      (node.type === "NewExpression" &&
+        !["Date", "Array"].includes(node.callee?.name))
     )
       throw new Error(
         "Module helpers must be pure; mutation and side effects are unavailable.",

@@ -42,7 +42,16 @@ export function InlineMarkdown({
       .join("");
   // Shield math from Markdown and keep code spans/fences literal. The component
   // parser also skips these delimiters, including LaTeX braces and angle brackets.
-  const source = serialize(children).replace(
+  // In inline-only components, indentation belongs to the component source,
+  // not Markdown code blocks. Keep block-container Markdown whitespace intact.
+  const prose = serialize(children);
+  const source = (
+    inline
+      ? prose
+          .replace(/\s+/g, (space) => (space.includes("\n") ? " " : space))
+          .trim()
+      : prose
+  ).replace(
     /(`+)[\s\S]*?\1|(~{3,})[\s\S]*?\2|\\\(([\s\S]*?)\\\)|\\\[([\s\S]*?)\\\]/g,
     (match, code, fence, formula, display) => {
       if (code || fence) return match;

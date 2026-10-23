@@ -13168,7 +13168,7 @@ export interface components {
         PageSourceDiagnostic: {
             code: string;
             /** @enum {string} */
-            severity: "error";
+            severity: "error" | "warning" | "info";
             /** @description UTF-8 byte offset. */
             start: number;
             /** @description Exclusive UTF-8 byte offset. */

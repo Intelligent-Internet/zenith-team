@@ -1318,8 +1318,10 @@ create a Page. Live sources independently require current viewer authorization.
 Assistant messages render recognized inline component markup directly. Markdown
 fences and code spans always remain literal code. The browser parses the same
 source grammar used by Page compilation; chat rendering does not call the preview
-endpoint. Complete children remain visible while a container streams, and callbacks
-stay disabled until the message is complete. Failure states offer Show source.
+endpoint. Complete children remain visible while a container streams, and local
+controls remain usable. Host actions, effects and application scripts wait until
+the message is complete. Display details expose recovery diagnostics and source;
+authorized chat hosts offer an explicit Agent repair request.
 
 Chat, Task conversations and Page Agent replies share this renderer. Page
 `/generate` writing actions compile Markdown and version-1 inline component source
@@ -1338,4 +1340,4 @@ Read-only, capture and streaming views disable application scripts. Cite,
 FileCite, CodeCite, FileNavList and reference-backed Link resolve existing Zenith
 artifact UUIDs through the existing authorized resolver. Media search, maps,
 external entity/reference providers and advanced presentation differences are
-explicitly deferred in the built-in skill's `references/renderer-support.md`.
+explicitly deferred in `docs/intelligent-ui/renderer-contract.md`.

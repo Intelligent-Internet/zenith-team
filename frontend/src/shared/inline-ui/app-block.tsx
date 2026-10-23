@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { InlineThemeContext } from "./reference-context";
+import { InlineStage } from "./render-state";
 import { checkLocalValue, isCallable } from "./runtime";
 
 // Opaque-origin iframe: authored applications never share the product DOM,
@@ -17,6 +19,7 @@ export function InlineAppBlock({
   interactive: boolean;
   run: (callback: unknown, args?: unknown[]) => void;
 }) {
+  useContext(InlineThemeContext); // Re-send inherited colors when workspace palettes change.
   const frame = useRef<HTMLIFrameElement>(null);
   const current = useRef({ bindings, run, interactive });
   current.current = { bindings, run, interactive };
@@ -24,11 +27,13 @@ export function InlineAppBlock({
   const rate = useRef({ since: 0, calls: 0 });
   const [height, setHeight] = useState(300);
   const [error, setError] = useState("");
+  const [loadedChannel, setLoadedChannel] = useState("");
   const channel = useMemo(() => crypto.randomUUID(), [source, interactive]);
   const document = useMemo(
     () => appDocument(source, channel, interactive),
     [source, channel, interactive],
   );
+  useEffect(() => setError(""), [channel]);
   const send = (force = false) => {
     const values: Record<string, unknown> = Object.create(null);
     const setters: string[] = [];
@@ -40,11 +45,27 @@ export function InlineAppBlock({
         values[key] = value;
       }
     }
-    const snapshot = JSON.stringify({ values, setters });
+    const computed = frame.current
+      ? getComputedStyle(frame.current)
+      : undefined;
+    const theme: Record<string, string> = {};
+    for (const [target, source] of Object.entries({
+      text: "--workspace-native-text",
+      muted: "--workspace-native-secondary",
+      panel: "--workspace-panel-bg",
+      card: "--workspace-control-bg",
+      border: "--workspace-divider",
+      accent: "--workspace-accent-fill",
+      "accent-foreground": "--workspace-accent-foreground",
+    })) {
+      const value = computed?.getPropertyValue(source).trim();
+      if (value) theme[`--viz-${target}`] = value;
+    }
+    const snapshot = JSON.stringify({ values, setters, theme });
     if (!force && snapshot === lastBindings.current) return;
     lastBindings.current = snapshot;
     frame.current?.contentWindow?.postMessage(
-      { channel, type: "bindings", values, setters },
+      { channel, type: "bindings", values, setters, theme },
       "*",
     );
   };
@@ -59,7 +80,10 @@ export function InlineAppBlock({
         return;
       const message = event.data;
       try {
-        if (message.type === "ready") send(true);
+        if (message.type === "ready") {
+          setLoadedChannel(channel);
+          send(true);
+        }
         if (message.type === "height" && Number.isFinite(message.value))
           setHeight(Math.max(120, Math.min(1600, message.value)));
         if (message.type === "error")
@@ -94,7 +118,10 @@ export function InlineAppBlock({
     if (interactive) send();
   });
   return (
-    <div className="min-w-0 space-y-2">
+    <div className="min-w-0 space-y-2" aria-busy={loadedChannel !== channel}>
+      {loadedChannel !== channel && (
+        <InlineStage name={title || "application"} streaming />
+      )}
       <iframe
         key={channel}
         ref={frame}
@@ -104,6 +131,10 @@ export function InlineAppBlock({
         inert={!interactive}
         tabIndex={interactive ? 0 : -1}
         srcDoc={document}
+        onLoad={() => {
+          setLoadedChannel(channel);
+          if (interactive) send(true);
+        }}
         className="w-full rounded-workspace-control border-0"
         style={{ height }}
       />
@@ -141,6 +172,9 @@ export function appDocument(
     addEventListener('message', event => {
       const data = event.data;
       if (event.source !== parent || data?.channel !== channel || data.type !== 'bindings') return;
+      for (const [key,value] of Object.entries(data.theme ?? {})) {
+        if (/^--viz-[a-z-]+$/.test(key) && typeof value === 'string' && value.length < 300) document.documentElement.style.setProperty(key,value);
+      }
       const bindings = Object.assign(Object.create(null), data.values);
       for (const key of data.setters) bindings[key] = value => {
         if (effectRunning || !interaction?.isTrusted || interaction.eventPhase === 0) throw new Error('Native state setters require a direct interaction.');
@@ -152,9 +186,9 @@ export function appDocument(
     addEventListener('error', event => post('error', {value:event.message}));
     addEventListener('unhandledrejection', event => post('error', {value:String(event.reason)}));
     addEventListener('DOMContentLoaded', () => {
-      new ResizeObserver(() => post('height', {value:document.documentElement.scrollHeight})).observe(document.body);
+      new ResizeObserver(() => post('height', {value:Math.max(document.body.scrollHeight,document.body.offsetHeight)})).observe(document.body);
       post('ready');
     });
   })();`;
-  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;max-width:100%;overflow-wrap:anywhere}${!interactive ? "*{animation:none!important;transition:none!important}" : ""}*,*::before,*::after{box-sizing:border-box}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}}</style>${interactive ? "<script>" + bridge + "</script>" : ""}</head><body>${source}</body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${policy}"><meta name="viewport" content="width=device-width, initial-scale=1"><style>:root{color-scheme:light dark;--viz-text:CanvasText;--viz-muted:GrayText;--viz-panel:Canvas;--viz-card:Canvas;--viz-border:GrayText;--viz-accent:Highlight;--viz-accent-foreground:HighlightText}html,body{margin:0;max-width:100%;overflow-wrap:anywhere;font-family:system-ui,sans-serif;line-height:1.5;color:var(--viz-text);background:var(--viz-panel)}button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}button:disabled{cursor:default}button:focus-visible,input:focus-visible{outline:2px solid var(--viz-accent);outline-offset:2px}img,svg,video{max-width:100%}${!interactive ? "*{animation:none!important;transition:none!important}" : ""}*,*::before,*::after{box-sizing:border-box}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:0.01ms!important;animation-iteration-count:1!important;transition-duration:0.01ms!important}}</style>${interactive ? "<script>" + bridge + "</script>" : ""}</head><body>${source}</body></html>`;
 }

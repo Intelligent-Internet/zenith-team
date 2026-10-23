@@ -12,7 +12,8 @@ const [reset, setReset] = DIL.useState(0);
     <text tabularNums>{speed.toFixed(1)}×</text>
   </row>
   <label>Orbit speed</label>
-  <slider label="Orbit speed" min={0.2} max={3} step={0.1} value={speed} onChange={setSpeed}/>
+  <label>Orbit speed</label>
+  <slider min={0.2} max={3} step={0.1} value={speed} onChange={setSpeed}/>
   <AppBlock title="Orbit visualization" app_block_id="zenith-orbit-demo" bind={{paused,speed,reset}}>
     <div id="zenith-orbit-demo">
       <svg viewBox="0 0 600 240" role="img" aria-label="Two planets orbiting a star" style="display:block;width:100%;background:#11132f;border-radius:12px">

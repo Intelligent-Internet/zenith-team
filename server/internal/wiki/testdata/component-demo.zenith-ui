@@ -23,7 +23,7 @@ const groups = [
   <text>Explore the component families, then try the live controls. State is local to this view.</text>
   <segmented-control value={section} options={[{label:"Controls",value:"Controls"},{label:"Layouts",value:"Layouts"},{label:"Content",value:"Content"}]} onChange={setSection} />
   {#if section === "Controls"}
-    <card border radius="lg" padding={4} gap={3}>
+    <card padding={4} gap={3}>
       <title size="lg">Interactive form</title>
       <label>Your name</label>
       <input value={name} onChange={setName} />
@@ -48,15 +48,15 @@ const groups = [
     </card>
   {:else if section === "Layouts"}
     <grid columns={2} gap={3}>
-      <grid-item><card border radius="lg" padding={4}><title size="md">Card</title><text>Cards group related information.</text></card></grid-item>
-      <grid-item><card border radius="lg" padding={4}><title size="md">Grid</title><text>Grid arranges responsive content.</text></card></grid-item>
+      <grid-item><card padding={4}><title size="md">Card</title><text>Cards group related information.</text></card></grid-item>
+      <grid-item><card padding={4}><title size="md">Grid</title><text>Grid arranges responsive content.</text></card></grid-item>
       <grid-item><box border padding={3}><row gap={2}><badge>Row</badge><text>Horizontal flow</text></row></box></grid-item>
       <grid-item><box border padding={3}><col gap={2}><badge>Col</badge><text>Vertical flow</text></col></box></grid-item>
       <grid-item><box border padding={3}><list><list-item>List item one</list-item><list-item>List item two</list-item></list></box></grid-item>
       <grid-item><box border padding={3}><divider /><text>Divider separates content</text><spacer /></box></grid-item>
     </grid>
   {:else}
-    <card border radius="lg" padding={4} gap={3}>
+    <card padding={4} gap={3}>
       <title size="lg">Content components</title>
       <row gap={2} wrap><badge>Badge</badge><icon name="star" /><text><bold>Bold</bold> and <italic>italic</italic> text</text></row>
       <blockquote>Blockquote for a highlighted note.</blockquote>
@@ -68,7 +68,7 @@ const groups = [
         <button onClick={() => setOpen(!open)}>Toggle details</button>
       </row>
       <text>Example {slide + 1} of 3</text>
-      {#if open}<card border padding={3}><text>Additional details appear here.</text></card>{/if}
+      {#if open}<card padding={3}><text>Additional details appear here.</text></card>{/if}
       <FollowUp query="Ask me to build a small interactive example." />
       <Link url="https://example.com">Link component example</Link>
     </card>
@@ -76,7 +76,7 @@ const groups = [
   <divider />
   <title size="lg">Full component catalog</title>
   {#each groups as group}
-    <card border radius="lg" padding={3} gap={2}>
+    <card padding={3} gap={2}>
       <title size="md">{group.label}</title>
       <text>{group.items}</text>
     </card>

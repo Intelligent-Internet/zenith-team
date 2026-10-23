@@ -2,7 +2,7 @@
 # Inline document storage catalog
 
 Language 1, catalog 1. This describes native Page storage, not wrapper tags to
-emit in chat. Author raw inline components using the grammar in SKILL.md.
+emit in chat. Agents author raw inline components using the zenith-intelligent-ui SKILL.md.
 The original Scope/bind/action primitives are retired from the authoring catalog.
 
 | Native type | Properties | Placement |

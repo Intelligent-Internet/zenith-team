@@ -245,7 +245,10 @@ export function SourceEditor({
       if (!alive.current) return;
       if (doc !== editor.state.doc || getSequence() !== base.sequence)
         throw staleSource();
-      if (result.content && !result.diagnostics.length) {
+      if (
+        result.content &&
+        !result.diagnostics.some((item) => item.severity === "error")
+      ) {
         const current = locate(editor, blockId);
         const replacement = editor.schema.nodeFromJSON(result.content);
         replacement.check();
@@ -425,7 +428,11 @@ export function SourceEditor({
             const start = sourcePosition(source, diagnostic.start);
             const end = sourcePosition(source, diagnostic.end);
             return (
-              <div role="alert" key={index} className="mt-3 text-sm">
+              <div
+                role={diagnostic.severity === "error" ? "alert" : "status"}
+                key={index}
+                className="mt-3 text-sm"
+              >
                 <button
                   type="button"
                   className="underline underline-offset-2 focus-visible:outline focus-visible:outline-2"
@@ -450,7 +457,7 @@ export function SourceEditor({
           )}
           {preview?.content &&
             previewDocument &&
-            !preview.diagnostics.length && (
+            !preview.diagnostics.some((item) => item.severity === "error") && (
               <details className="mt-4">
                 <summary className="cursor-pointer text-sm">
                   Preview in Page context

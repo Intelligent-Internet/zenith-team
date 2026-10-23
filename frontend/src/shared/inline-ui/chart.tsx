@@ -4,7 +4,6 @@ import {
   Line,
   ComposedChart,
   Area,
-  AreaChart,
   Pie,
   PieChart,
   Cell,
@@ -17,12 +16,25 @@ import {
   CartesianGrid,
   ResponsiveContainer,
 } from "recharts";
+import { useMemo, useSyncExternalStore } from "react";
 import { uiColor } from "./style";
+
+const reducedMotionQuery = "(prefers-reduced-motion: reduce)";
+function useReducedMotion() {
+  return useSyncExternalStore(
+    (notify) => {
+      const query = window.matchMedia?.(reducedMotionQuery);
+      query?.addEventListener("change", notify);
+      return () => query?.removeEventListener("change", notify);
+    },
+    () => window.matchMedia?.(reducedMotionQuery).matches ?? false,
+    () => true,
+  );
+}
 
 type Series = {
   dataKey: string;
   label?: string;
-  color?: string;
   valueSuffix?: string;
   valuePrefix?: string;
   valueFormat?: string;
@@ -33,7 +45,6 @@ type Series = {
 };
 type Config = {
   chartType?: string;
-  title?: string;
   xKey?: string;
   nameKey?: string;
   valueKey?: string;
@@ -47,7 +58,23 @@ type Config = {
   xAxisScale?: string;
   layout?: "horizontal" | "vertical";
 };
-export function InlineChart({ content }: { content: Config }) {
+// Charts draw in over 1.8s once, when they first appear. Content is memoized by
+// value so streaming re-renders never replay the animation.
+export function InlineChart({
+  content: authored,
+  animate = true,
+}: {
+  content: Config;
+  animate?: boolean;
+}) {
+  const signature = JSON.stringify(authored ?? null);
+  const content = useMemo(() => authored, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
+  const reduced = useReducedMotion();
+  const motion = {
+    isAnimationActive: animate && !reduced,
+    animationDuration: 1800,
+    animationEasing: "ease-out" as const,
+  };
   const kind = content?.chartType ?? "bar";
   const data = content?.data;
   const x = content?.xKey ?? content?.nameKey;
@@ -58,7 +85,7 @@ export function InlineChart({ content }: { content: Config }) {
     !Array.isArray(data) ||
     data.length > 1000 ||
     !x ||
-    !["bar", "line", "area", "pie", "scatter"].includes(kind) ||
+    !["bar", "line", "pie", "scatter"].includes(kind) ||
     !Array.isArray(series) ||
     !series.length ||
     series.length > 12 ||
@@ -158,8 +185,8 @@ export function InlineChart({ content }: { content: Config }) {
       key={s.dataKey}
       dataKey={s.dataKey}
       name={s.label ?? s.dataKey}
-      fill={uiColor(s.color ?? colors[i % colors.length])}
-      isAnimationActive={false}
+      fill={uiColor(colors[i % colors.length])}
+      {...motion}
       radius={[4, 4, 0, 0]}
     />
   ));
@@ -168,17 +195,17 @@ export function InlineChart({ content }: { content: Config }) {
       key={s.dataKey}
       dataKey={s.dataKey}
       name={s.label ?? s.dataKey}
-      stroke={uiColor(s.color ?? colors[i % colors.length])}
-      isAnimationActive={false}
+      stroke={uiColor(colors[i % colors.length])}
+      {...motion}
       strokeWidth={2}
       dot={data.length < 30}
     />
   ));
   return (
-    <figure className="min-w-0 space-y-3 rounded-workspace-panel border border-workspace-divider bg-workspace-panel p-4">
-      <figcaption className="text-sm font-medium">
-        {content.title ?? "Chart"}
-      </figcaption>
+    <figure
+      aria-label={series.map((s) => s.label ?? s.dataKey).join(", ")}
+      className="min-w-0 space-y-3 rounded-workspace-panel border border-workspace-divider bg-workspace-panel p-4"
+    >
       <div className="h-64 min-w-0 text-xs text-workspace-muted">
         <ResponsiveContainer width="100%" height="100%">
           {kind === "pie" ? (
@@ -187,7 +214,7 @@ export function InlineChart({ content }: { content: Config }) {
                 data={data}
                 nameKey={x}
                 dataKey={series[0].dataKey}
-                isAnimationActive={false}
+                {...motion}
               >
                 {data.map((_, i) => (
                   <Cell key={i} fill={uiColor(colors[i % colors.length])} />
@@ -214,7 +241,7 @@ export function InlineChart({ content }: { content: Config }) {
                       stroke="none"
                       fill={uiColor(colors[i % colors.length])}
                       fillOpacity={0.15}
-                      isAnimationActive={false}
+                      {...motion}
                       legendType="none"
                       tooltipType="none"
                     />
@@ -223,21 +250,6 @@ export function InlineChart({ content }: { content: Config }) {
               {axes}
               {lines}
             </ComposedChart>
-          ) : kind === "area" ? (
-            <AreaChart data={data}>
-              {axes}
-              {series.map((s, i) => (
-                <Area
-                  key={s.dataKey}
-                  dataKey={s.dataKey}
-                  name={s.label ?? s.dataKey}
-                  stroke={uiColor(s.color ?? colors[i % colors.length])}
-                  fill={uiColor(s.color ?? colors[i % colors.length])}
-                  fillOpacity={0.15}
-                  isAnimationActive={false}
-                />
-              ))}
-            </AreaChart>
           ) : kind === "scatter" ? (
             <ScatterChart>
               {axes}
@@ -246,8 +258,8 @@ export function InlineChart({ content }: { content: Config }) {
                   key={s.dataKey}
                   name={s.label ?? s.dataKey}
                   data={data.map((row) => ({ ...row, y: row[s.dataKey] }))}
-                  fill={uiColor(s.color ?? colors[i % colors.length])}
-                  isAnimationActive={false}
+                  fill={uiColor(colors[i % colors.length])}
+                  {...motion}
                 />
               ))}
             </ScatterChart>

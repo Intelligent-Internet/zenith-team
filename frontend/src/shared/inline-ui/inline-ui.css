@@ -1,0 +1,40 @@
+/* Insertion motion, matching the reference renderer: prose fades in over 0.7s,
+   new rows and grid items slide in over 0.42s (charts draw over 1.8s in
+   chart.tsx). Stable React keys mount each node once, so streaming text growth
+   never replays an animation. Captures and reduced-motion users get none. */
+@keyframes zenith-inline-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes zenith-inline-slide {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .zenith-inline-ui:not([data-capture])
+    :is(p, h1, h2, h3, h4, blockquote, figure, [data-inline-stage]) {
+    animation: zenith-inline-fade 700ms ease-out;
+  }
+  .zenith-inline-ui:not([data-capture])
+    :is(
+      tr,
+      li,
+      [data-inline-item],
+      [aria-roledescription="carousel"] > div > div
+    ) {
+    animation: zenith-inline-slide 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+.zenith-inline-ui [data-inline-stage] {
+  overflow-wrap: anywhere;
+}

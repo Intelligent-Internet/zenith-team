@@ -8,7 +8,9 @@ Chat and Pages share the same scanner and JavaScript AST parser. Author code run
 only in a bounded interpreter, never eval or browser Function. Fences are literal.
 UI actions require the current host's authority and a user interaction.
 
-Zenith uses Iconsax throughout, including aliases for reference icon names. Media
+Zenith draws Iconsax glyphs. About 220 Lucide names used by the reference map
+to equivalent glyphs (see references/icons.generated.md); unknown names are
+diagnosed and omitted, never replaced with another glyph. Media
 requires resolved sources. Grounded citations, retrieval, maps and ecosystem
 widgets require a connected Zenith capability; missing capabilities are explicit.
 An unsupported state is not a fabricated source, search result or successful action.

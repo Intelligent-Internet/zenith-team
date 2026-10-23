@@ -25,7 +25,8 @@ export function useInlineEntityAction(companyId?: string, projectId?: string) {
         value && typeof value === "object"
           ? (value as Record<string, unknown>)
           : {};
-      const id = entity.value ?? entity.id;
+      // Final-guide ref form: openEntityDetail({category, refId}).
+      const id = entity.refId;
       if (
         !companyId ||
         typeof id !== "string" ||

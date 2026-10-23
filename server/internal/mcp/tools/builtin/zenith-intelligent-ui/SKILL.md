@@ -12,26 +12,34 @@ The goal is an accurate and useful answer first. Use UI only where layout, inter
 
 ## Zenith host contract
 
-This is the main authoring guide, adapted from `final_skill.md`. Use its grammar
-and vocabulary for new responses. Existing aliases remain readable for saved
-content; do not use them in new source. Numeric spacing uses four CSS points.
+This is the main authoring guide, adapted from `final_skill.md`. The renderer
+implements its grammar exactly: every component and prop name below is the only
+accepted spelling, and anything else is dropped with a diagnostic. Zenith adds
+two extensions, noted where they apply: `id` on form controls and
+`popover onOpenChange`. Numeric spacing uses four CSS points.
 
 Zenith implements all native components, Markdown inside prose components,
-WritingBlock drafts/variants, chart bands and sandboxed AppBlock HTML/JS.
-[Renderer details](references/renderer-support.md) specify exact value enums,
-hooks, local draft options and sandbox limits; the generated schema is the
-machine-readable contract. Pages use this grammar with languageVersion 1 and
+WritingBlock drafts/variants, chart bands and sandboxed AppBlock HTML/JS. Exact
+token values are in Section 11. Pages use this grammar with languageVersion 1 and
 existing revision/permission/proposal rules. Local state is temporary; native
 scenario captures are read-only and AppBlock captures use its static fallback.
 
-Only integrations are deferred: external model-data WebRef/ProductRef/BusinessRef
-bindings and search, image/video search and groups, maps/routing, memory citations,
-external entity providers and external citation/line resolvers. Never invent
-these references. Zenith task/page entities and authorized artifact references
-work through the viewer’s existing access. Resolved authorized HTTPS asset URLs
-can be used directly in AsyncImage as a Zenith extension. External AppBlock
-bundles are not loaded; supply the complete inline HTML/JS. No other provider
-capability is implied by this guide’s portable examples.
+The renderer stages unfinished components and isolates display errors. It may
+normalize unambiguous boolean mistakes or omit invalid optional props, but author
+valid source: boolean props must evaluate to booleans. Named state bindings survive
+streaming updates; completed local controls remain usable while host actions wait
+for completion. Display details explain repairs and can request an Agent correction.
+Recovery does not validate business logic or invent missing data.
+
+Not connected in Zenith: model-data WebRef/ProductRef/BusinessRef bindings,
+image/video search and groups, MapWidgetV2, MemoryCite, external entity
+categories and external citation line resolvers. **Do not author them**: the
+renderer can only show them as unavailable. Use grounded links, addresses in
+prose and tables instead.
+Zenith task/Page entities and authorized artifact references work through the
+viewer’s existing access. Resolved authorized HTTPS asset URLs work in
+`AsyncImage src`. External AppBlock bundles are not loaded; supply the complete
+inline HTML/JS.
 
 ## 1. Syntax, text, and evaluation
 
@@ -41,8 +49,9 @@ capability is implied by this guide’s portable examples.
 - Use `<escape>...</escape>` around ambiguous literal markup or symbols that could be parsed as components/expressions; escape only the ambiguous span. Code spans/fences already protect code. Literal XML, HTML and JSON outside a code or raw block should be escaped.
 - `{#if condition}...{:else if other}...{:else}...{/if}` conditionally renders elements. `{#each values as item, index}...{/each}` repeats components. `<>...</>` groups siblings without a layout wrapper.
 - `{@module ...}` declares pure, hook-free helpers; `{@body ...}` declares local state, hooks and callbacks before the UI consuming them.
-- Hooks available: `DIL.useState`, `DIL.useMemo`, `DIL.useCallback`, `DIL.useRef`, `DIL.useId`, `DIL.useTheme`, `DIL.useBreakpoint`, `DIL.useEffect`. Call hooks only at the unconditional top level of `{@body ...}` in a consistent order. Never call hooks inside markup, conditionals, loops, callbacks or nested functions. Dependencies are arrays. Effects may update local state; they must not trigger host actions.
+- Hooks available: `DIL.useState(initial, {key}?)` (state lives in keyed slots that survive streaming re-parses; the declared name is the default key), `DIL.useMemo`, `DIL.useCallback`, `DIL.useRef`, `DIL.useId`, `DIL.useTheme`, `DIL.useBreakpoint`, `DIL.useEffect`. Call hooks only at the unconditional top level of `{@body ...}` in a consistent order. Never call hooks inside markup, conditionals, loops, callbacks or nested functions. Dependencies are arrays. Effects may update local state; they must not trigger host actions.
 - Expressions are bounded, not arbitrary JavaScript execution. No browser DOM APIs, networking, filesystem, browser storage, timers, workers, dynamic imports, `eval`, `Function`, or `globalThis` in ordinary expressions. Raw AppBlock code has its own isolated contract.
+- Available helpers are pure and deterministic: `Math` (`min,max,round,floor,ceil,trunc,sign,abs,sqrt,cbrt,pow,hypot,exp,log,log2,log10`, trigonometry, `PI`, `E`); `Number(...)`, `Number.isFinite/isInteger/isNaN/parseInt/parseFloat`, `parseInt`, `parseFloat`; `String(...)`, `String.fromCharCode`; `Array(n)`, `Array.from`, `Array.isArray`, `Array.of`; `Object.keys/values/entries/fromEntries/assign`; `JSON.parse/stringify`; `Date.UTC`, `Date.parse` and `new Date(explicitValue)`. Arrays: `map,filter,find,findIndex,findLast,findLastIndex,some,every,forEach,reduce,flat,flatMap,concat,slice,join,includes,indexOf,lastIndexOf,at,sort,reverse,fill,push,pop,shift,unshift` (`sort`/`reverse` return copies). Strings: `slice,substring,split,trim,trimStart,trimEnd,toUpperCase,toLowerCase,includes,startsWith,endsWith,indexOf,lastIndexOf,charAt,charCodeAt,codePointAt,at,padStart,padEnd,repeat,replace,replaceAll` (text patterns only), `localeCompare`. Numbers: `toFixed,toPrecision,toString(radix),toLocaleString`. Spread works in arrays, objects and calls. `Math.random`, `Date.now`, `new Date()` without a value, `Set`, `Map`, `Intl` constructors and regular expressions are unavailable; use arrays/objects and `toLocaleString`.
 - Use state only when a user's interaction affects the view. Derive computed values rather than duplicate them in state. Prefer simple callbacks and small bounded data structures. Provide stable keys on repeated items when a compatible component accepts `key`.
 - For dynamic LaTeX, use `<math value={String.raw`...`} />`; use static Markdown math delimiters for static equations.
 - Typography and text props are constrained; no arbitrary CSS or unlisted HTML attributes.
@@ -110,7 +119,7 @@ The **shared layout props** apply **only** to `box`, `col`, `flow-item`, `pressa
 | `grid-item` | `rowSpan,span` | generic |
 | `list` | `connector,gap,marker,maxMarkerSize,start` | `list-item`, generic |
 | `list-item` | `description,disabled,label,marker,markerSize` | generic |
-| `popover` | `hoverOpenDelay,open,showOnHover` | `popover-trigger`, `popover-content` |
+| `popover` | `hoverOpenDelay,open,showOnHover` (Zenith: `onOpenChange`) | `popover-trigger`, `popover-content` |
 | `popover-trigger` | `block,onClick` | generic |
 | `popover-content` | `align,showCloseButton,side,sideOffset` | generic |
 | `spacer` | `minSize` | none |
@@ -140,6 +149,8 @@ Spacing properties such as `gap`, `rowGap`, `columnGap`, `padding`, `spacing` ac
 
 - Controlled inputs receive `value` plus `onChange`; checkboxes receive `checked`. The change callback receives **the new value**, not a DOM event. Checkbox receives a boolean. Slider receives its new value. Buttons and pressables use zero-argument `onClick`; `form.onSubmit()` takes no argument. `carousel.onChange(nextIndex)`, `badge.onHover(hovered)`, `popover-trigger.onClick()` follow their named signatures.
 - Do not pass `type` to `input`; use `inputType`. `radio-group` takes nested `<radio value="...">...</radio>` children, **not** `options`. `segmented-control` and `select` do accept `options`.
+- Write `<label>Text</label>` directly before a control: Zenith links the two for assistive technology. To label a control elsewhere, give the control an `id` (Zenith extension on `input`, `textarea`, `select`, `date-picker`, `slider`, `checkbox`, `segmented-control`, `radio-group`) and point `label htmlFor` at it. `radio-group` and `segmented-control` also take their own `label`.
+- `button` combines `color` (`primary` default, `secondary`, `danger`, `success`, `warning`, `info`) with `variant` (`solid` default, `soft`, `outline`, `ghost`). `badge` defaults to a soft neutral tone.
 - `checkbox` defaults to `lineThrough={false}`; enabling it strikes checked labels.
 - A button with `submit` submits its enclosing `form`. Buttons and pressable surfaces must do what they advertise. Do not bind fixed values to no-op callbacks or add decorative controls.
 - Use reasonable defaults, bounded numeric calculations, validation/invalid states, clear reset behavior and truthful local-vs-remote messaging. Do not claim that a local state change saved remote data.
@@ -170,11 +181,11 @@ const valid = name.trim().length > 0;
 
 | Component | Props | Rules |
 |---|---|---|
-| `icon` | `color,inline,name,size` | Iconsax Outline names through Zenith’s shared icon catalog |
+| `icon` | `color,inline,name,size` | Lucide names listed in [icons](references/icons.generated.md), mapped to Zenith’s Iconsax catalog, or Zenith Iconsax names |
 | `favicon` | `alt,frame,inline,size,url` | Use a supported URL |
 | `svg` | `color,fill,height,preserveAspectRatio,size,stroke,strokeLinecap,strokeLinejoin,strokeWidth,viewBox,width,xmlns` | Native constrained SVG children; state-derived attributes allowed; no event handlers inside SVG |
 
-Use Iconsax Outline; `plus` and `sliders-horizontal` map to Iconsax. Brand logos retain their authored assets. Do not invent icon names or use another icon library. Keep SVG clicks in an external `button` or `pressable`, never on native SVG paths/shapes. Do not embed scripts, foreign HTML or external resources in SVG.
+Use only names in [icons](references/icons.generated.md): Lucide names with a Zenith equivalent, or Zenith’s own Iconsax and brand names. An unknown name is omitted with a diagnostic rather than drawn as another glyph, so a control must never depend on an icon alone. Do not invent icon names. Keep SVG clicks in an external `button` or `pressable`, never on native SVG paths/shapes. Do not embed scripts, foreign HTML or external resources in SVG.
 
 ### Server-linked, references, and links
 
@@ -182,11 +193,10 @@ Use Iconsax Outline; `plus` and `sliders-horizontal` map to Iconsax. Brand logos
 |---|---|---|
 | `Cite` | `params,ref,refs` | Existing source references only |
 | `CodeCite` | `citation_id,line_range_end,line_range_start,tool` | Existing code source lines only |
-| `Entity` | `address,category,disambig,location,query,ref,value` | Grounded names/refs; `category="brand"` needs nonempty `disambig` |
+| `Entity` | `address,category,disambig,location,query,ref,value` | In Zenith: `category="task"` or `"page"`, the item's real ID as `ref`, display text as `value`; other categories are not connected |
 | `FileCite` | `line_range_end,line_range_start,ref` | Actual file ref and evidenced line range |
 | `FileNavList` | `items` | Actual file navigation refs |
 | `FollowUp` | `query,source,value` | Real suggested follow-up query |
-| `MemoryCite` | none | Only when material, citable memory supports a factual detail |
 | `Link` | `ref,title,url` | Generic children; use `url`, not `href` |
 
 Never invent references, citation IDs, file paths, businesses, media refs, URLs or memory evidence. Where the host has not supplied a required capability, omit the component or describe the limitation accurately.
@@ -207,18 +217,9 @@ Never invent references, citation IDs, file paths, businesses, media refs, URLs 
 
 ### AsyncImage
 
-Props: `alt,aspectRatio,fallback,fit,frame,group,height,maxHeight,maxWidth,minHeight,minWidth,mode,query,radius,ref,src,width`.
+Props: `alt,aspectRatio,fallback,fit,frame,height,maxHeight,maxWidth,minHeight,minWidth,radius,src,width`.
 
-Supply exactly **one** of `query`, `ref`, `src`:
-
-- `<AsyncImage query="descriptive subject" />` performs a host-side image lookup. The query must be a literal or an exact authorized model-data path, not computed from state or loop variables.
-- `<AsyncImage ref="turn0product0" />` requires a real supported image/product/business/news ref.
-- `src` takes an **unchanged HTTP(S) image URL obtained from an authorized model-data binding**. Do not construct, alter or guess the URL. Do not combine `src` with `query` or `ref`.
-- Each server-backed image occurrence is resolved independently **once per authored occurrence**, not once per iteration. Different items need separately authored images and appropriate matching refs. Use `group` only when repeated imagery is justified.
-
-### AsyncImageGroup and AsyncVideo
-
-`AsyncImageGroup`: `aspectRatio,fallback,layout,mode,numPerQuery,query,ref,refs,size`. Use it when multiple images independently add value, not as decoration. `AsyncVideo` accepts `ref` from a real supported result.
+In Zenith, supply `src`: an **unchanged HTTPS image URL** that a tool or an authorized Zenith asset already resolved. Do not construct, alter or guess the URL. Use `fallback` for text shown if the image fails. Image search (`query`), media refs (`ref`), `AsyncImageGroup` and `AsyncVideo` need providers Zenith does not connect; do not author them.
 
 ### Chart
 
@@ -233,49 +234,6 @@ Supply exactly **one** of `query`, `ref`, `src`:
 <Chart content={{chartType:"line",xKey:"day",series:[{dataKey:"latency",label:"P95 latency",valueSuffix:" ms"}],data:[{day:"Mon",latency:320},{day:"Tue",latency:270},{day:"Wed",latency:240}]}} />
 ```
 
-### MapWidgetV2
-
-Props: `answer,arrive_by,carousel,depart_at,fill,groups,groups_title,minHeight,narrative,optimize_stop_order,origin,points,show_route,title,travel_mode`.
-
-Use a map for explicit map requests even with 1–2 places, 3+ geolocatable recommendations in the same area, or practical multi-stop routes. For travel-time/ETA, use `show_route={true}` and `carousel={{visibility:"auto"}}`. For comparisons also shown in separate cards/tables, use `carousel={{visibility:"hidden"}}`. Only `auto`/`hidden` are supported visibility overrides. If a map-side comparison is desired, retain its carousel rather than duplicating cards elsewhere. Put the map near the top when map inspection is central.
-
-`points` contains 1–25 supported locators: `{ref:"turnNbusinessM"}` or `{id:"a",address:"Grounded address",name:"Place"}` or `{id:"a",lat:...,long:...,name:"Place"}`. Do not use name-only guesses or source/news refs as point locators. Coordinates and addresses must be evidenced. A point may include category and relevant `icon`. Do not invent geographic data, route metrics, prices, opening hours, ratings, availability or visit times.
-
-`groups` organizes routes/areas/days with ordered `locations:[{point_id:"a",notes:"...",arrival_time:"..."}]`; link consecutive routes by repeating shared endpoint if the user intends a continuous route. Do not join unrelated breaks/transfers. Choose walking/cycling/driving based on the actual request. Routes may omit point icons for automatic numbering or use appropriate consistent emojis; business recommendations generally omit icons for provider stars unless ratings are unwanted/unavailable. For cost comparisons use equivalent price data across all icons or use category icons instead. Explicit ranking icons require actual ranks for every point. Notes should be short, grounded and useful.
-
-`carousel` may include `known_fields`, `visibility` and `cards` keyed by point ID/ref. Card overrides are limited to `title,label,rating_label,hours_label,image_url` with grounded values. `rating_label` is for ratings, while hours labels distinguish published hours from scheduled visits. `origin="user"` is permitted when supplied user location is an authorized origin; don't duplicate it as a point. Never invent ETA or route duration.
-
-## 4. Model-data bindings, evidence, and source integrity
-
-An external tool must explicitly declare a binding in the **current** context. Only declared `WebRef`, `ProductRef`, and `BusinessRef` fields can be accessed in DIL expressions. Use read-only **literal** member paths, e.g. `turn0search0.url.uri`, `turn0product0.title`; indices only where explicitly declared. Do not compute property names, materialize whole refs, or bind to an undeclared field. Previous answers and historical refs alone are not binding declarations.
-
-Supported structured fields:
-
-```text
-WebRef: title?, snippet?, timestamp? (Unix seconds), domain?, url?: {uri}
-ProductRef: title?, brand?, description?, displayed_price?, rating?, review_count?, merchant?, product_page?: {uri}
-BusinessRef: name?, address?, rating? (opaque object), price_str?, is_open?, phone?, categories?
-```
-
-- Products: reuse **the same exact ProductRef** in `<Entity category="product" ref="..." value={...} />`, `<AsyncImage ref="..." />`, and every displayed bound price/title/merchant/link. Prices and titles remain bound; do not copy them to local literals.
-- Businesses: reuse the **same BusinessRef** in Entity, image and displayed `.name`/`.address`. Business ratings are opaque; never access a made-up `.value` or `.score` property.
-- Web citations link claims to actual sources. For news with declared WebRef, display the bound title and use its bound `url.uri` for article actions. `url.uri` and `product_page.uri` are unchanged URL strings.
-- Server-resolved refs/queries should be authored as supported literals or exact declared binding paths. Never derive `AsyncImage.query` from an item inside an iteration. Bind repeated values at each display point rather than embedding a copied name/price in a static array.
-- Cite retrieved claims. Do not fabricate citations, file lines, source references or external URLs. Use `Entity` for identifiable works, people, places, businesses or products where appropriate, respecting its exact props and host availability.
-
-An authorized product binding example (illustrative **syntax only**; do not use the placeholder ref without a matching tool declaration):
-
-```jsx
-<row gap={3} align="center">
-  <AsyncImage ref="turn0product0" width="96px"/>
-  <col gap={1}>
-    <Entity category="product" ref="turn0product0" value={turn0product0.title}/>
-    <text>{turn0product0.displayed_price}</text>
-    <Link url={turn0product0.product_page.uri}>Product page</Link>
-  </col>
-</row>
-```
-
 ## 5. Host actions and interaction restrictions
 
 Only the following direct actions are available, and only from a genuine user interaction on a control with an event callback (such as `button` or `pressable`):
@@ -284,13 +242,12 @@ Only the following direct actions are available, and only from a genuine user in
 GenUI.openUrl(url: string)
 GenUI.copy(text: string)
 GenUI.issueNewTurn(query: string)
-GenUI.openEntityDetail({category:"product"|"business",refId:string})
-GenUI.openEntityDetail({value:string,category:string,disambig?:string,location?:string,address?:string})
+GenUI.openEntityDetail({category:"task"|"page",refId:string})
 ```
 
 - Call a host action synchronously **inside the click/change handler**, not during render, mount, an effect or a computed expression. Do not invent other host calls.
 - `issueNewTurn` submits a new message via the current authorized conversation; it cannot send attachments or metadata.
-- `openEntityDetail` ref form requires a real exact invoking-message product/business ref. Query form requires a supported category and grounded parameters; business queries require a location/address, and product/business query operations must be supported by the host. Do not invent a ref or claim success before host feedback.
+- `openEntityDetail` opens Zenith tasks and Pages: `GenUI.openEntityDetail({category:"task"|"page",refId:realId})`. Product, business and other categories are not connected. Do not invent an ID or claim success before host feedback.
 - A UI component does not grant access to external websites, files, location, personal data, email, calendars, or remote writes. Never promise that a host action completed merely because a button was clicked.
 - Keep state and observable effects consistent. If a button only copies text, call it “Copy”; if it only changes local state, say “Preview locally” rather than “Save”.
 
@@ -311,7 +268,7 @@ A custom AppBlock is justified for an interactive visualization that native comp
 
 ## 7. Layout, content strategy and visual hierarchy
 
-- **Choose the right medium:** prose for short explanatory answers; a table for exact aligned comparisons; cards for a small set of distinct choices; a form only if gathering multiple independent values is essential; charts for trends or distributions; maps for geography/routes; carousels for browsable media or a small series of panels; SVG for bounded static diagrams; AppBlock for genuinely custom visuals.
+- **Choose the right medium:** prose for short explanatory answers; a table for exact aligned comparisons; cards for a small set of distinct choices; a form only if gathering multiple independent values is essential; charts for trends or distributions; grounded addresses and links for places (maps are not connected in Zenith); carousels for browsable media or a small series of panels; SVG for bounded static diagrams; AppBlock for genuinely custom visuals.
 - **Hierarchy:** answer the question near the top. Use a small appropriate title, succinct context, and then meaningful information or controls. Avoid repeated decorative section banners and oversized headings.
 - **Spacing:** one clear primary container or semantic groups. Use deliberate `gap`, consistent padding and only as many nested boxes as necessary. Favor one column on narrow screens, compact rows for peer controls, grids for equal metrics and tables for dense precise comparison.
 - **Color:** neutral surfaces by default, selective semantic colors for meaningful statuses; do not wrap conclusions in colored summary boxes. One standout badge at most when important, not as ordinary metadata or heading decoration.
@@ -426,11 +383,30 @@ The component inventory in Section 2 is the authoritative **prop-name allowlist*
 | `textAlign`, `maxLines`, `minLines`, `truncate`, `preserveWhitespace` | Text-only layout and presentation values | Avoid unsupported CSS props |
 | `onChange`, `onClick`, `onSubmit`, `onHover` | Function with event-specific signature in Section 2 | Change callbacks receive new values, not DOM events |
 | `Chart.content` | One JSON-compatible chart object | Chart renderer controls plotting and colors |
-| `AsyncImage.ref`, `query`, `src` | Exactly one source, according to Section 3 | `src` must be unchanged HTTP(S) URL from authorized binding |
-| `MapWidgetV2.points` | 1–25 grounded locator objects | Missing real location data cannot be manufactured |
+| `AsyncImage.src` | One unchanged, already resolved HTTPS URL (Section 3) | Do not construct or alter URLs |
 | `carousel.activeIndex` | Numeric index | Treat `onChange(nextIndex)` as source of changes |
 
-**Documented defaults and precise constraints:** `checkbox.lineThrough` defaults to `false`. The default `carousel.visibility` in a map shows cards if no override is provided; explicitly use `"auto"` or `"hidden"` for visibility overrides. A host-resolved component occurrence resolves once per authored occurrence. Server-backed data is not dynamically re-resolved from changing client-side state. Do not manufacture default values for every optional prop, exact breakpoint widths, line-height or CSS defaults, or unspecified `useBreakpoint()` return shapes. Prefer omitting those props to taking a guess. The renderer must document additional type-specific enum values it elects to support.
+**Token values in Zenith.** Use only these for the props that take tokens:
+
+| Prop | Values |
+|---|---|
+| `color` | `default`, `primary`, `secondary`, `subtle`, `neutral`, `info`, `success`, `danger`, `warning`, `accent` |
+| `background` | `background`, `surface`, `surface-secondary`, `transparent`, `blue`, `purple`, `yellow`, `green`, `red`, `info`, `success`, `warning`, `danger`, `accent` |
+| `variant` | `default`, `solid`, `soft`, `subtle`, `outline`, `ghost`; WritingBlock: `standard`, `email`, `chat_message`, `social_post`, `document`; AppBlock: `inline` |
+| `size` | `xs`, `sm`, `md`, `lg`, `xl`, `2xl`, `3xl`, or a dimension where the component sizes a box |
+| `weight` | `normal`, `medium`, `semibold`, `bold`, or 100–900 |
+| `radius` | `none`, `sm`, `md`, `lg`, `xl`, `2xl`, `full` |
+| `align` | `start`, `end`, `center`, `stretch`, `baseline` (`table-cell` and `textAlign` also take `left`, `right`, `justify`) |
+| `justify` | `start`, `end`, `center`, `between`, `around`, `evenly` |
+| `direction` | `horizontal`, `vertical` |
+| `theme` | `light`, `dark`, `inherit` |
+| `inputType` | `text`, `number`, `email`, `password`, `search`, `url`, `tel` |
+| `side` | `top`, `right`, `bottom`, `left` |
+| dimensions | numbers (0–2000) or `px`/`pt`/`rem`/`em`/`%`/`vh`/`vw` lengths, `auto`, `fit-content`; `aspectRatio` as `16/9`, `16:9` or a number |
+
+`useBreakpoint()` returns `sm` (under 640px), `md` (under 1024px) or `lg`, measured on the containing view. Layout containers space their children by default; `disableAutoSpacing` removes that.
+
+**Documented defaults and precise constraints:** `checkbox.lineThrough` defaults to `false`. A host-resolved component occurrence resolves once per authored occurrence. Server-backed data is not dynamically re-resolved from changing client-side state. Do not manufacture default values for every optional prop, exact breakpoint widths, line-height or CSS defaults, or unspecified `useBreakpoint()` return shapes. Prefer omitting those props to taking a guess. The renderer must document additional type-specific enum values it elects to support.
 
 ### Core callback signatures
 
@@ -454,70 +430,12 @@ textarea.onChange(nextValue)
 Use `onClick={() => ...}` only on supported click controls. In particular, no event handlers on `svg` or `AsyncImage`. Do not assume setter-updater-function semantics unless tested; direct setters with computed new values are sufficient.
 
 
-## 12. Server-side resolution constraints
-
-
-A **server-backed input** is resolved from host/tool data, not evaluated repeatedly as a client-side fetch. Author each occurrence separately. For server-backed props, the input must be a JSON-compatible literal or an **exact authorized model-data binding path** (where that prop supports bindings); it must not depend on a local state value, callback, loop-local variable, expression operator, array map, or template expansion. Keep ref strings from actual returned sources unchanged.
-
-| Component / source field | Safe authoring form | Invalid assumption |
-|---|---|---|
-| `AsyncImage query` | `<AsyncImage query="single specific subject"/>` | `query={items[i].search}` or `query={queryState}` |
-| `AsyncImage ref` | `<AsyncImage ref="turn0product0"/>` after a real returned product ref | Made-up or cross-type refs |
-| `AsyncImage src` | `<AsyncImage src={turn0item0.image_url}/>` **only if** the exact image URL field is declared as a supported binding | Hardcoded source URL or constructed `"https://" + ...` |
-| `AsyncImageGroup query`, `ref`, `refs` | Static query/ref or exact advertised source path | Client-generated query lists |
-| `AsyncVideo ref` | Real video/media ref | Query text pretending to be a video ref |
-| `Entity query`, `ref`, `value` | Static query/ref and declared field binding where applicable | Loop-derived server search |
-| `Cite`, `FileCite`, `FileNavList`, `CodeCite` | Current real evidence reference and actual ranges | Synthetic IDs or guessed lines |
-| `MapWidgetV2.points`, `groups` | Grounded literal addresses/coordinates or exact returned business refs | Computed geography from local inputs |
-| `Chart content` | JSON-compatible authored data object, matching chart schema | Free-form chart library config |
-
-`AsyncImage.src` specifically accepts unchanged HTTP(S) image URLs from *model-data bindings*; do not swap in a URL scraped into a local string or concatenate URL fragments. A result's reference may be suitable for `AsyncImage.ref` even if no client-readable image URL is declared. Binding declarations only authorize the explicitly advertised fields and indices. Never infer a field from a schema's optional spelling when a particular ref's declaration omits it. Server-backed refs are not available simply because a similar ref appeared in an earlier answer.
-
-For products/businesses, consistently use the same returned reference in `Entity`, `AsyncImage`, and field bindings. For news with returned WebRef, bind the news headline to `.title` and article link to `.url.uri`. For other ordinary webpage search results, cite the source in prose instead of fabricating recommendation cards. Keep citations adjacent to claims. For a source with a numeric timestamp in seconds use `new Date(ref.timestamp * 1000)` where supported; never mistake seconds for milliseconds. Opaque business rating objects are not numbers.
-
-
-## 13. Nested map schema
-
-
-The precise nested shape to author is:
-
-```text
-points: [
-  { ref: "turnNbusinessM", category?: string, icon?: string, label?: string },
-  { id: "p1", address: "Grounded full address", name: "Place", category?: string, icon?: string, label?: string },
-  { id: "p2", lat: NUMBER, long: NUMBER, name: "Place", category?: string, icon?: string, label?: string }
-]
-groups: [
-  {
-    title?: string,
-    travel_mode?: "walking" | "cycling" | "driving",
-    locations: [{ point_id: "p1", arrival_time?: string, notes?: string }]
-  }
-]
-carousel: {
-  visibility?: "auto" | "hidden",
-  known_fields?: string[],
-  cards?: {
-    "p1": { title?: string, label?: string, rating_label?: string, hours_label?: string, image_url?: string }
-  }
-}
-origin: "user" | "grounded origin"
-```
-
-The schema represents authored values; never invent evidence to fill them. Business-reference keys in `cards` use their exact ref instead of `id`. `known_fields` filters provider cards; `[]` suppresses provider metadata, not card overrides. `label` should be grounded and concise (2–3 words) without invented ratings or times, and replaces a category label, not ratings. `rating_label` contains ratings only. If actual planned session/visit time is known, `hours_label` may say `"Session 10 AM"`; distinguish this from ordinary business opening hours. Do not infer "open now" from a scheduled session.
-
-**Map inclusion:** use one map when recommending at least three geolocatable points in one area, or when explicitly asked to show a map even for one/two points. For ETA render a route map with `show_route={true}` and `carousel={{visibility:"auto"}}`; never author an invented travel duration. Itineraries with 2+ practical stops ordinarily show a contiguous route. Use `groups` for days/areas/types where helpful. Routed groups do not connect implicitly: repeat the previous group's endpoint at the next group's start when the itinerary should continue. Keep requested breaks/unsupported transfers disconnected.
-
-**Icon precedence, use the first matching rule for *every* point:** routes → emoji for each or no icons for automatic numbers; cost comparison → comparable price/band for every point only if all costs are grounded, otherwise category emoji for all; explicit ranking → true ranks for all only if all known, otherwise category emoji; business recommendations → omit icons for provider stars, unless any rating missing or ratings unwanted, then category emoji for all; other factual plots → relevant emoji for all. Never mix ranking, price and emoji icon schemes in one map; never use a time as a pin icon. Keep icon text at most 8 characters. Avoid repeating place comparisons in separate cards when map carousel already serves the comparison.
-
-Use only grounded location values; never use placeholders in a live map.
-
-## 14. Streaming and presentation details
+## 12. Streaming and presentation details
 
 
 - Streaming allows completed child nodes to appear inside still-open surrounding components. Rendering a completed child does **not** imply the full message has finished.
 - Incomplete tags, attribute values, expressions, and directives must remain withheld; never auto-complete them into executable expressions, improvise closing text, or run guessed handlers.
-- Controls remain disabled until the **entire assistant message is complete**. A partially streamed button, even if visibly formed, does not invoke a callback before completion.
+- A control appears once its opening tag is complete. Completed controls may change **local state** while the rest of the message streams; host actions (`GenUI.*`), effects and AppBlock scripts wait until the **entire assistant message is complete**. Never rely on an effect or host action running mid-stream.
 - Hook declarations and their consumers must stay in one cohesive view. Do not split dependent UI into unrelated transcript segments, where the state scope or partial rendering behavior would differ.
 - Final malformed or incomplete markup should surface a diagnostic and source-view recovery rather than invent a missing expression or action. Do not rely on the runtime repairing an incorrect source tree.
 - A visible status message that reads “saved”, “sent”, or “booked” must be tied to actual confirmed host results, not to markup completion or local state alone.
@@ -530,14 +448,14 @@ Use only grounded location values; never use placeholders in a live map.
 
 **Badges.** Use sparingly, generally for a single notable status. Neutral gray is the default; color only when status semantics warrant it. Never use badges as list ordinals, headings, metadata decoration, or repeated shared-property labels.
 
-**Summary/recommendation presentation.** Avoid colorful highlighted conclusion boxes, green-bordered winner boxes, and unneeded decorative callouts. Explain recommendations directly. Keep useful text understandable without rendering a widget. For comparisons on a map use its carousel; for precise tabular comparison use a table; don't duplicate equivalent cards, table and map carousel.
+**Summary/recommendation presentation.** Avoid colorful highlighted conclusion boxes, green-bordered winner boxes, and unneeded decorative callouts. Explain recommendations directly. Keep useful text understandable without rendering a widget. For precise tabular comparison use a table; don't duplicate equivalent cards and tables.
 
 **Text and spacing.** Use the smallest heading size sufficient to establish hierarchy. In multi-column views keep titles and body relatively compact. Favor neutral surfaces, a consistent spacing scale, readable units and contrast. Avoid one-sentence stacks, gratuitous section splits, wide controls for tiny tasks, and interaction when text is easier.
 
 **Sources and actions.** Give plain links for browsing choices. Never invent a download sandbox path or declare an operation completed without a successful host response. Use visualizations to supplement—not replace—the useful explanatory answer. Cite evidence near the actual claim.
 
 
-## 15. End-to-end examples
+## 13. End-to-end examples
 
 
 The examples below intentionally exercise supported native components and small state. Their data is illustrative unless declared otherwise. Copy the code **inside** each fence into a live response to render. Each example is independently scoped; do not combine independent `{@body}` declarations into one view without resolving variable names.
@@ -604,7 +522,7 @@ const valid=name.trim().length>0;
 ```
 
 
-## 16. AppBlock example
+## 14. AppBlock example
 
 ### H. Native control with AppBlock visualization bridge
 
@@ -639,7 +557,7 @@ Raw AppBlock execution is a **separately host-enabled** capability. The internal
 This example's raw script runs **only inside the AppBlock sandbox**, never ordinary DIL expressions. It is illustrative and requires actual host support for the embedded script and binding bridge; do not claim that it has been executed unless tested.
 
 
-## 17. Final acceptance checks
+## 15. Final acceptance checks
 
 
 Before treating any example as *runnable* rather than *illustrative syntax*, check it against the active implementation:
@@ -650,7 +568,7 @@ Before treating any example as *runnable* rather than *illustrative syntax*, che
 4. **Corner cases:** Zero/empty, max/min, toggling back, repeated clicks, game over, missing optional source fields and missing host integrations.
 5. **Visualize:** Chart series keys correspond to the data; image sources are distinct; geographic points are grounded; SVG has no interactive native handlers.
 6. **Verify server-backed data:** Exact current ref declarations, no fabricated URLs or IDs, source fields bound at every occurrence, correct source types.
-7. **Stream:** Incomplete syntax withheld; controls activate only at whole-message completion; malformed final output gives diagnostic/source fallback.
+7. **Stream:** Incomplete syntax withheld; local state works once a control is complete, host actions/effects/AppBlock scripts wait for whole-message completion; malformed final output gives diagnostic/source fallback.
 8. **Accessible and responsive:** Small viewport, focus semantics, readable control names, contrast, no clipped labels or unintentionally huge headings.
 9. **Action integrity:** Host permissions checked; direct event dispatch only; success messages derive from host result rather than visual feedback alone.
 10. **Runtime conformance:** Tests must run in the actual renderer. Well-formed authored source by itself does not prove compatibility, exact typography, animation timing, or pixel-identical appearance.

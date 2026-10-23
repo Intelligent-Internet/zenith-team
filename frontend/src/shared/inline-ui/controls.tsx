@@ -34,8 +34,9 @@ export function InlineSelect({
       <Select.Trigger
         id={p.id}
         aria-label={
-          p["aria-label"] ?? p.label ?? p.placeholder ?? p.name ?? "Select"
+          p.labelled ? undefined : (p.placeholder ?? p.name ?? "Select")
         }
+        aria-labelledby={p.labelledBy}
         style={style}
         className={`${control} ${p.block ? "w-full" : "max-w-full"} inline-flex min-h-9 items-center justify-between gap-2`}
       >
@@ -111,7 +112,7 @@ export function InlineDatePicker({
     month.getMonth() + 1,
     0,
   ).getDate();
-  const label = p["aria-label"] ?? p.label ?? p.placeholder ?? "Date";
+  const label = p.placeholder ?? p.name ?? "Date";
   return (
     <Popover.Root
       open={open && !disabled}
@@ -134,10 +135,10 @@ export function InlineDatePicker({
             value={selected}
             min={p.min}
             max={p.max}
-            step={p.step}
             required={p.required}
             disabled={disabled}
-            aria-label={label}
+            aria-label={p.labelled ? undefined : label}
+            aria-labelledby={p.labelledBy}
             name={p.name}
             onChange={(event) => change(event.target.value)}
             style={style}

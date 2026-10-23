@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 const colors: Record<string, string> = {
   default: "var(--workspace-native-text)",
+  primary: "var(--workspace-native-accent)",
   secondary: "var(--workspace-native-text-muted)",
   subtle: "var(--workspace-native-text-faint)",
   neutral: "var(--workspace-native-text)",
@@ -140,11 +141,12 @@ export function layoutStyle(props: Record<string, unknown>): CSSProperties {
   if (props.wrap !== undefined) style.flexWrap = props.wrap ? "wrap" : "nowrap";
   if (props.clip) style.overflow = "hidden";
   if (props.scrollable) style.overflow = "auto";
+  // Accepts 16/9, 16:9 or a single number.
   if (
     props.aspectRatio &&
-    /^[0-9.]+(?:\s*\/\s*[0-9.]+)?$/.test(String(props.aspectRatio))
+    /^[0-9.]+(?:\s*[/:]\s*[0-9.]+)?$/.test(String(props.aspectRatio))
   )
-    style.aspectRatio = String(props.aspectRatio);
+    style.aspectRatio = String(props.aspectRatio).replace(":", "/");
   if (
     ["left", "right", "center", "justify", "start", "end"].includes(
       String(props.textAlign),
@@ -166,8 +168,11 @@ export function layoutStyle(props: Record<string, unknown>): CSSProperties {
   if (props.strong) style.fontWeight = 600;
   if (props.italic) style.fontStyle = "italic";
   if (props.tabularNums) style.fontVariantNumeric = "tabular-nums";
-  if (props.lineThrough) style.textDecoration = "line-through";
-  if (props.underline) style.textDecoration = "underline";
+  const decorations = [
+    props.underline && "underline",
+    props.lineThrough && "line-through",
+  ].filter(Boolean);
+  if (decorations.length) style.textDecoration = decorations.join(" ");
   if (props.maxLines) {
     style.display = "-webkit-box";
     style.WebkitBoxOrient = "vertical";

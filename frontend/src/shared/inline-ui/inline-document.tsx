@@ -4,9 +4,9 @@ import {
   type InlineCaptureReader,
 } from "./capture";
 import { InlineMarkdown } from "./markdown";
+import "./inline-ui.css";
 import schema from "./schema.json";
 import {
-  Component,
   Fragment,
   useContext,
   useEffect,
@@ -18,9 +18,17 @@ import {
 } from "react";
 import { useTheme } from "next-themes";
 import { PreviewContinuationContext } from "@/shared/chat/preview-continuation-context";
-import { parseInlineUI, type InlineNode } from "./parser";
+import { parseInlineUI, inlineFallback, type InlineNode } from "./parser";
+import {
+  failureMessage,
+  recordDiagnostic,
+  repairRequest,
+  type InlineDiagnostic,
+} from "./recovery";
+import { InlineBoundary, InlineStage } from "./render-state";
 import {
   Interpreter,
+  interactionBudget,
   checkLocalValue,
   isCallable,
   valueText,
@@ -31,13 +39,24 @@ import {
 } from "./runtime";
 import { Primitive, Unavailable } from "./primitives";
 import { safeURL } from "./style";
-import { validateProperties } from "./contract";
+import { repairProperties, validateProperties } from "./contract";
 import { InlineAppBlock } from "./app-block";
+import { resolveIconName } from "./icon-aliases";
+import { hasIcon } from "@/shared/ui/icon";
 import {
   InlineReferenceContext,
   InlineInteractionContext,
   type InlineReferenceRenderer,
 } from "./reference-context";
+
+const labelledControls = [
+  "input",
+  "textarea",
+  "select",
+  "date-picker",
+  "slider",
+  "segmented-control",
+];
 
 function hasProse(nodes: InlineNode[]): boolean {
   return nodes.some((node) =>
@@ -98,9 +117,23 @@ function InlineDocumentContent({
   );
   const effectDependencies = useRef(new Map<string, unknown[]>());
   const cleanups = useRef(new Map<string, () => void>());
-  const [, setRevision] = useState(0);
+  const [revision, setRevision] = useState(0);
+  const renderKey = useMemo(() => ({}), [source, revision]);
+  const previousNodes = useRef(new Map<string, ReactNode>());
+  const lastDocument = useRef<ReactNode>(null);
+  const [renderIssues, setRenderIssues] = useState<{
+    key: unknown;
+    items: InlineDiagnostic[];
+  }>({ key: renderKey, items: [] });
   const [actionError, setActionError] = useState("");
+  const [actionStatus, setActionStatus] = useState("");
+  useEffect(() => {
+    if (!actionStatus) return;
+    const timer = setTimeout(() => setActionStatus(""), 2500);
+    return () => clearTimeout(timer);
+  }, [actionStatus]);
   const [showSource, setShowSource] = useState(false);
+  const [requestingRepair, setRequestingRepair] = useState(false);
   const [width, setWidth] = useState(1024);
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -118,22 +151,52 @@ function InlineDocumentContent({
       const nodes: InlineNode[] = [{ type: "text", value: source, start: 0 }];
       return { nodes, complete: true, diagnostic: undefined, overLimit: true };
     }
-    return { ...parseInlineUI(source), overLimit: false };
+    return { ...parseInlineUI(source, { recover: true }), overLimit: false };
   }, [source, maxSourceBytes]);
   const interactive =
-    !streaming &&
     !parsed.overLimit &&
-    parsed.complete &&
     !parsed.diagnostic &&
     hostInteractive &&
     !readOnly &&
     !capture;
+  const canInteract = useRef(interactive);
+  canInteract.current = interactive;
   const effects: RuntimeHost["effects"] = [];
+  const diagnostics: InlineDiagnostic[] = [...(parsed.diagnostics ?? [])];
+  if (renderIssues.key === renderKey)
+    renderIssues.items.forEach((item) => recordDiagnostic(diagnostics, item));
+  const reportRender = (item: InlineDiagnostic) =>
+    setRenderIssues((previous) => {
+      const items = previous.key === renderKey ? [...previous.items] : [];
+      const length = items.length;
+      recordDiagnostic(items, item);
+      return previous.key === renderKey && items.length === length
+        ? previous
+        : { key: renderKey, items };
+    });
+  const reportEvaluation = (
+    error: unknown,
+    start: number,
+    component?: string,
+  ) =>
+    recordDiagnostic(diagnostics, {
+      code: "evaluation_error",
+      phase: "evaluate",
+      start,
+      component,
+      message: failureMessage(error),
+      repair: "omitted",
+    });
   action.current = (name, args) => {
-    if (!interactive)
-      throw new Error("Wait for this response to finish before interacting.");
+    if (!interactive || streaming || !parsed.complete)
+      throw new Error(
+        "Wait for this response to finish before using this action.",
+      );
     if (name === "copy")
-      return navigator.clipboard.writeText(valueText(args[0]));
+      // Confirm only after the clipboard write succeeds.
+      return navigator.clipboard
+        .writeText(valueText(args[0]))
+        .then(() => setActionStatus("Copied to clipboard."));
     if (name === "openUrl") {
       const url = safeURL(args[0]);
       if (!url) throw new Error("This action needs a valid URL.");
@@ -157,6 +220,7 @@ function InlineDocumentContent({
     refs: refs.current,
     memo: memo.current,
     effects,
+    diagnostic: (error, start) => reportEvaluation(error, start, "declaration"),
     theme: capture?.theme ?? resolvedTheme ?? "light",
     width: capture?.width ?? width,
     change: (key, value) => {
@@ -172,12 +236,14 @@ function InlineDocumentContent({
     args: unknown[] = [],
     allowHostActions = true,
   ) => {
-    if (!interactive || !isCallable(callback)) return;
+    if (!canInteract.current || !isCallable(callback)) return;
     setActionError("");
     effectRuns.current = 0;
-    runtime.remaining = 50000;
+    runtime.remaining = interactionBudget;
+    runtime.execution.deadline = performance.now() + 100;
     runtime.event = true;
     runtime.hostActions = allowHostActions;
+    const before = new Map(state.current);
     try {
       const result = runtime.call(callback, args);
       if (result instanceof Promise)
@@ -187,17 +253,17 @@ function InlineDocumentContent({
           ),
         );
     } catch (error) {
+      state.current.clear();
+      before.forEach((value, key) => state.current.set(key, value));
+      setRevision((v) => v + 1);
       setActionError(error instanceof Error ? error.message : "Action failed.");
     } finally {
       runtime.event = false;
       runtime.hostActions = false;
+      runtime.execution.deadline = undefined;
     }
   };
-  let diagnostic =
-    parsed.diagnostic ??
-    (!streaming && !parsed.complete
-      ? "This response ended before its component or expression was complete."
-      : undefined);
+  let diagnostic = parsed.diagnostic;
   let content: ReactNode;
   try {
     const env = runtime.environment();
@@ -210,218 +276,371 @@ function InlineDocumentContent({
       svg = false,
     ): ReactNode => {
       if (depth > 32) throw new Error("UI nesting exceeds its limit.");
-      return nodes.map((node, index) => {
-        runtime.tick();
-        const key = `${path}.${index}`;
-        if (node.type === "text")
-          return inline ? (
-            node.value
-          ) : (
-            <Fragment key={key}>
-              {renderMarkdown ? (
-                renderMarkdown(node.value)
-              ) : (
-                <InlineMarkdown>{node.value}</InlineMarkdown>
-              )}
-            </Fragment>
-          );
-        if (node.type === "body" || node.type === "module") {
-          runtime.hookScope = `${identity}:${path}:${node.start}`;
-          runtime.module = node.type === "module";
-          try {
-            runtime.program(node.program, env);
-          } finally {
-            runtime.module = false;
-          }
-          return null;
-        }
-        if (node.type === "expression") {
-          const value = runtime.evaluate(node.expression, env);
-          checkLocalValue(value);
-          return <span key={key}>{valueText(value)}</span>;
-        }
-        if (node.type === "if")
-          return (
-            <Fragment key={key}>
-              {render(
-                runtime.evaluate(node.expression, env)
-                  ? node.children
-                  : node.otherwise,
-                env,
-                key,
-                depth + 1,
-                inline,
-                svg,
-              )}
-            </Fragment>
-          );
-        if (node.type === "each") {
-          const items = runtime.evaluate(node.expression, env);
-          if (!Array.isArray(items) || items.length > 1000)
-            throw new Error("Each requires an array of at most 1000 items.");
-          return (
-            <Fragment key={key}>
-              {items.map((item, itemIndex) => {
-                const local = Object.create(env);
-                local[node.item] = item;
-                if (node.index) local[node.index] = itemIndex;
-                const keyed = node.children.find(
-                  (child) =>
-                    child.type === "element" && child.props.key !== undefined,
-                );
-                const authoredKey =
-                  keyed?.type === "element" ? keyed.props.key : undefined;
-                const repeatKey =
-                  authoredKey === undefined
-                    ? item && typeof item === "object" && "id" in item
-                      ? String(item.id)
-                      : itemIndex
-                    : valueText(
-                        typeof authoredKey === "object"
-                          ? runtime.evaluate(authoredKey, local)
-                          : authoredKey,
-                      );
-                return (
-                  <Fragment key={repeatKey}>
-                    {render(
-                      node.children,
-                      local,
-                      `${key}.${item && typeof item === "object" && "id" in item ? String(item.id) : itemIndex}`,
-                      depth + 1,
-                      inline,
-                      svg,
-                    )}
-                  </Fragment>
-                );
-              })}
-            </Fragment>
-          );
-        }
-        if (node.type !== "element") return null;
-        const p: Record<string, any> = Object.create(null);
-        for (const [name, value] of Object.entries(node.props))
-          p[name] =
-            typeof value === "object" ? runtime.evaluate(value, env) : value;
-        if (!svg && node.name !== "svg") validateProperties(node.name, p);
-        if (node.name === "")
-          return (
-            <Fragment key={key}>
-              {render(node.children, env, key, depth + 1, inline, svg)}
-            </Fragment>
-          );
-        if (["button", "pressable"].includes(node.name)) {
-          const icon = node.children.find(
-            (child) => child.type === "element" && child.name === "icon",
-          );
-          if (
-            icon?.type === "element" &&
-            !node.children.some(
-              (child) => child.type === "text" && child.value.trim(),
-            )
-          ) {
-            p.accessibilityLabel =
-              p["aria-label"] ??
-              p.tooltip ??
-              icon.props.label ??
-              (icon.props.name === "plus"
-                ? "Increase"
-                : icon.props.name === "minus"
-                  ? "Decrease"
-                  : icon.props.name);
-          }
-        }
-        if (node.name === "WritingBlock")
-          p.onCopy = runtime.property(env.GenUI, "copy");
-        if (node.name === "Entity")
-          p.onEntity = runtime.property(env.GenUI, "openEntityDetail");
-        if (node.name === "FollowUp") {
-          if (!host?.submit)
-            return (
-              <span key={key} role="status">
-                FollowUp: Sending a message is unavailable in this view.
-              </span>
-            );
-          p.onFollowUp = runtime.property(env.GenUI, "issueNewTurn");
-        }
-        const text = node.children
-          .filter((child) => child.type === "text")
-          .map((child) => (child as { value: string }).value)
-          .join("");
+      // `<label>Name</label><input/>` names the control that follows it, as the
+      // authoring guide writes forms, without requiring ids.
+      const labels = new Map<number, string>();
+      nodes.forEach((node, index) => {
         if (
-          node.name === "WritingBlock" &&
-          Array.isArray(p.options) &&
-          p.options[0].content.trim() !== text.trim()
+          node.type !== "element" ||
+          node.name !== "label" ||
+          node.props.htmlFor
         )
-          throw new Error(
-            "WritingBlock's first option must match its primary raw draft.",
-          );
-        if (node.name === "AppBlock")
-          return (
-            <InlineAppBlock
-              key={key}
-              source={p.html ?? text}
-              title={p.title}
-              bindings={p.bind}
-              interactive={interactive}
-              run={(callback, args) => run(callback, args, false)}
-            />
-          );
+          return;
+        let next = index + 1;
+        while (
+          nodes[next]?.type === "text" &&
+          !(nodes[next] as { value: string }).value.trim()
+        )
+          next++;
+        const control = nodes[next];
         if (
-          ["Cite", "FileCite", "CodeCite", "FileNavList"].includes(node.name) ||
-          (node.name === "Link" && p.ref && !p.url && !p.href)
+          control?.type === "element" &&
+          labelledControls.includes(control.name) &&
+          !control.props.id
         ) {
-          const renderer = renderReference ?? referenceHost;
-          if (renderer)
-            return (
-              <Fragment key={key}>
-                {renderer(node.name, p, interactive)}
-              </Fragment>
-            );
+          const id = `${identity}${path}.${index}`.replace(/[^\w-]/g, "-");
+          labels.set(index, id);
+          labels.set(next, id);
         }
-        return (
-          <Primitive
-            key={String(p.key ?? key)}
-            name={node.name}
-            p={p}
-            text={text}
-            run={run}
-            interactive={interactive}
-            svg={svg || node.name === "svg"}
-          >
-            {(() => {
-              const children = render(
-                node.children,
-                env,
-                key,
-                depth + 1,
-                node.name !== "list",
-                svg || node.name === "svg",
+      });
+      return nodes.map((node, index) => {
+        const key = `${path}.${index}`;
+        try {
+          runtime.tick();
+          const rendered = (() => {
+            if (node.type === "pending")
+              return (
+                <InlineStage
+                  key={key}
+                  name={node.name}
+                  failed={node.failed}
+                  streaming={streaming}
+                />
+              );
+            if (node.type === "text")
+              return inline ? (
+                node.value
+              ) : (
+                <Fragment key={key}>
+                  {renderMarkdown ? (
+                    renderMarkdown(node.value)
+                  ) : (
+                    <InlineMarkdown>{node.value}</InlineMarkdown>
+                  )}
+                </Fragment>
+              );
+            if (node.type === "body" || node.type === "module") {
+              runtime.hookScope = `${identity}:body`;
+              runtime.module = node.type === "module";
+              try {
+                runtime.declarations(node.program, env);
+              } finally {
+                runtime.module = false;
+              }
+              return null;
+            }
+            if (node.type === "expression") {
+              const value = runtime.evaluate(node.expression, env);
+              checkLocalValue(value);
+              return svg ? (
+                valueText(value)
+              ) : (
+                <span key={key}>{valueText(value)}</span>
+              );
+            }
+            if (node.type === "if")
+              return (
+                <Fragment key={key}>
+                  {render(
+                    runtime.evaluate(node.expression, env)
+                      ? node.children
+                      : node.otherwise,
+                    env,
+                    key,
+                    depth + 1,
+                    inline,
+                    svg,
+                  )}
+                </Fragment>
+              );
+            if (node.type === "each") {
+              const items = runtime.evaluate(node.expression, env);
+              if (!Array.isArray(items) || items.length > 1000)
+                throw new Error(
+                  "Each requires an array of at most 1000 items.",
+                );
+              return (
+                <Fragment key={key}>
+                  {items.map((item, itemIndex) => {
+                    const local = Object.create(env);
+                    local[node.item] = item;
+                    if (node.index) local[node.index] = itemIndex;
+                    const keyed = node.children.find(
+                      (child) =>
+                        child.type === "element" &&
+                        child.props.key !== undefined,
+                    );
+                    const authoredKey =
+                      keyed?.type === "element" ? keyed.props.key : undefined;
+                    const repeatKey =
+                      authoredKey === undefined
+                        ? item && typeof item === "object" && "id" in item
+                          ? String(item.id)
+                          : itemIndex
+                        : valueText(
+                            typeof authoredKey === "object"
+                              ? runtime.evaluate(authoredKey, local)
+                              : authoredKey,
+                          );
+                    return (
+                      <Fragment key={repeatKey}>
+                        {render(
+                          node.children,
+                          local,
+                          `${key}.${repeatKey}`,
+                          depth + 1,
+                          inline,
+                          svg,
+                        )}
+                      </Fragment>
+                    );
+                  })}
+                </Fragment>
+              );
+            }
+            if (node.type !== "element") return null;
+            const supplied: Record<string, unknown> = Object.create(null);
+            for (const [name, value] of Object.entries(node.props)) {
+              try {
+                supplied[name] =
+                  typeof value === "object"
+                    ? runtime.evaluate(value, env)
+                    : value;
+              } catch (error) {
+                reportEvaluation(error, node.start, `${node.name}.${name}`);
+                if (["disabled", "readOnly", "loading"].includes(name))
+                  supplied[name] = true;
+                if (
+                  ["content", "options", "src", "ref", "refs", "bind"].includes(
+                    name,
+                  )
+                )
+                  throw error;
+              }
+            }
+            const p: Record<string, any> =
+              !svg && node.name !== "svg" && node.name !== ""
+                ? repairProperties(node.name, supplied, diagnostics, node.start)
+                : supplied;
+            if (!svg && node.name !== "svg") validateProperties(node.name, p);
+            const association = labels.get(index);
+            if (association && node.name === "label") {
+              p.id = `${association}-label`;
+              p.htmlFor = `${association}-control`;
+            } else if (association) {
+              p.id = `${association}-control`;
+              p.labelledBy = `${association}-label`;
+              p.labelled = true;
+            } else if (labelledControls.includes(node.name) && p.id)
+              p.labelled = true;
+            if (
+              node.name === "icon" &&
+              !hasIcon(resolveIconName(String(p.name)))
+            ) {
+              // An unknown name never becomes an unrelated fallback glyph.
+              recordDiagnostic(diagnostics, {
+                code: "unknown_icon",
+                phase: "catalog",
+                start: node.start,
+                component: "icon",
+                property: "name",
+                message: `Unknown icon ${String(p.name)}; omitted. Use a Lucide name with a Zenith equivalent or an Iconsax name.`,
+                repair: "omitted",
+              });
+              return null;
+            }
+            if (node.name === "")
+              return (
+                <Fragment key={key}>
+                  {render(node.children, env, key, depth + 1, inline, svg)}
+                </Fragment>
+              );
+            if (["button", "pressable"].includes(node.name)) {
+              const icon = node.children.find(
+                (child) => child.type === "element" && child.name === "icon",
               );
               if (
-                node.name === "list" ||
-                svg ||
-                node.name === "svg" ||
-                node.name === "code" ||
-                ["AppBlock", "CodeBlock", "WritingBlock", "escape"].includes(
-                  node.name,
-                ) ||
-                Object.hasOwn(schema.children, node.name) ||
-                schema.emptyChildren.includes(node.name)
-              )
-                return children;
-              const prose = hasProse(node.children);
-              if (!prose && !schema.inlineParents.includes(node.name))
-                return children;
-              return (
-                <InlineMarkdown
-                  inline={schema.inlineParents.includes(node.name)}
-                >
-                  {children}
-                </InlineMarkdown>
+                icon?.type === "element" &&
+                !node.children.some(
+                  (child) => child.type === "text" && child.value.trim(),
+                )
+              ) {
+                p.accessibilityLabel =
+                  p.tooltip ??
+                  icon.props.label ??
+                  (icon.props.name === "plus"
+                    ? "Increase"
+                    : icon.props.name === "minus"
+                      ? "Decrease"
+                      : icon.props.name);
+              }
+            }
+            if (node.name === "WritingBlock")
+              p.onCopy = runtime.property(env.GenUI, "copy");
+            if (node.name === "Entity")
+              p.onEntity = runtime.property(env.GenUI, "openEntityDetail");
+            if (node.name === "FollowUp") {
+              if (!host?.submit)
+                return (
+                  <span key={key} role="status">
+                    FollowUp: Sending a message is unavailable in this view.
+                  </span>
+                );
+              p.onFollowUp = runtime.property(env.GenUI, "issueNewTurn");
+            }
+            const text = node.children
+              .filter((child) => child.type === "text")
+              .map((child) => (child as { value: string }).value)
+              .join("");
+            if (
+              node.name === "WritingBlock" &&
+              Array.isArray(p.options) &&
+              p.options[0].content.trim() !== text.trim()
+            ) {
+              delete p.options;
+              recordDiagnostic(diagnostics, {
+                code: "conflicting_drafts",
+                phase: "catalog",
+                start: node.start,
+                component: node.name,
+                property: "options",
+                message:
+                  "WritingBlock's first option must match its primary raw draft. Kept the primary draft.",
+                repair: "omitted",
+              });
+            }
+            if (node.name === "AppBlock" && !text.trim())
+              throw new Error(
+                "AppBlock requires complete inline application source.",
               );
-            })()}
-          </Primitive>
-        );
+            if (node.name === "AppBlock")
+              return (
+                <InlineBoundary
+                  key={key}
+                  resetKey={renderKey}
+                  name="AppBlock"
+                  start={node.start}
+                  onDiagnostic={reportRender}
+                >
+                  <InlineAppBlock
+                    key={key}
+                    source={text}
+                    title={p.title}
+                    bindings={p.bind}
+                    interactive={interactive && !streaming && parsed.complete}
+                    run={(callback, args) => run(callback, args, false)}
+                  />
+                </InlineBoundary>
+              );
+            if (
+              ["Cite", "FileCite", "CodeCite", "FileNavList"].includes(
+                node.name,
+              ) ||
+              (node.name === "Link" && p.ref && !p.url)
+            ) {
+              const renderer = renderReference ?? referenceHost;
+              if (renderer)
+                return (
+                  <InlineBoundary
+                    key={key}
+                    resetKey={renderKey}
+                    name={node.name}
+                    start={node.start}
+                    onDiagnostic={reportRender}
+                  >
+                    {renderer(node.name, p, interactive)}
+                  </InlineBoundary>
+                );
+            }
+            return (
+              <Primitive
+                key={String(p.key ?? key)}
+                name={node.name}
+                recovery={{
+                  resetKey: renderKey,
+                  start: node.start,
+                  onDiagnostic: reportRender,
+                }}
+                p={p}
+                text={text}
+                run={run}
+                interactive={interactive}
+                svg={svg || node.name === "svg"}
+              >
+                {(() => {
+                  const children = render(
+                    node.children,
+                    env,
+                    key,
+                    depth + 1,
+                    node.name !== "list",
+                    svg || node.name === "svg",
+                  );
+                  if (
+                    node.name === "list" ||
+                    svg ||
+                    node.name === "svg" ||
+                    node.name === "code" ||
+                    [
+                      "AppBlock",
+                      "CodeBlock",
+                      "WritingBlock",
+                      "escape",
+                    ].includes(node.name) ||
+                    Object.hasOwn(schema.children, node.name) ||
+                    schema.emptyChildren.includes(node.name)
+                  )
+                    return children;
+                  const prose = hasProse(node.children);
+                  if (!prose && !schema.inlineParents.includes(node.name))
+                    return children;
+                  return (
+                    <InlineMarkdown
+                      inline={schema.inlineParents.includes(node.name)}
+                    >
+                      {children}
+                    </InlineMarkdown>
+                  );
+                })()}
+              </Primitive>
+            );
+          })();
+          previousNodes.current.set(key, rendered);
+          if (previousNodes.current.size > 5000)
+            previousNodes.current.delete(
+              previousNodes.current.keys().next().value!,
+            );
+          return rendered;
+        } catch (error) {
+          reportEvaluation(
+            error,
+            node.start,
+            node.type === "element" ? node.name : node.type,
+          );
+          const previous = previousNodes.current.get(key);
+          if (svg) return previous ?? null;
+          return (
+            <Fragment key={key}>
+              {previous ?? (
+                <InlineStage
+                  name={node.type === "element" ? node.name : "content"}
+                  failed={!streaming}
+                  streaming={streaming}
+                />
+              )}
+            </Fragment>
+          );
+        }
       });
     };
     content = parsed.nodes.some((node) => node.type !== "text") ? (
@@ -436,13 +655,31 @@ function InlineDocumentContent({
       error instanceof Error
         ? error.message
         : "Unable to render this response.";
-    content = undefined;
+    content = lastDocument.current ?? (
+      <InlineMarkdown>{inlineFallback(parsed.nodes)}</InlineMarkdown>
+    );
   }
+  useEffect(() => {
+    if (
+      !diagnostic &&
+      !diagnostics.some(
+        (item) => item.phase === "evaluate" || item.phase === "render",
+      )
+    )
+      lastDocument.current = content;
+  });
   const captureReader = useRef<InlineCaptureReader>(() => {
     throw new Error("Wait for this component to render.");
   });
   captureReader.current = () => {
-    if (diagnostic || actionError || streaming || parsed.overLimit)
+    if (
+      diagnostic ||
+      diagnostics.length ||
+      actionError ||
+      streaming ||
+      !parsed.complete ||
+      parsed.overLimit
+    )
       throw new Error("Resolve component errors before capturing this Page.");
     return retainInlineCapture({
       rendererVersion: 1,
@@ -464,7 +701,7 @@ function InlineDocumentContent({
   // Effects can update local state but cannot invoke user-triggered host actions.
   const effectRuns = useRef(0);
   useEffect(() => {
-    if (!interactive || diagnostic) return;
+    if (!interactive || streaming || !parsed.complete || diagnostic) return;
     const activeKeys = new Set(effects.map((effect) => effect.key));
     for (const [key, cleanup] of cleanups.current) {
       if (!activeKeys.has(key)) {
@@ -522,7 +759,8 @@ function InlineDocumentContent({
   return (
     <div
       ref={root}
-      className="min-w-0 space-y-3 text-workspace-text"
+      className="zenith-inline-ui min-w-0 space-y-3 text-workspace-text"
+      data-capture={capture ? "true" : undefined}
       aria-busy={streaming || undefined}
     >
       {content}
@@ -532,76 +770,110 @@ function InlineDocumentContent({
           reason={diagnostic}
         />
       )}
+      <p
+        role="status"
+        aria-live="polite"
+        className="text-xs text-workspace-muted empty:hidden"
+      >
+        {actionStatus}
+      </p>
       {actionError && (
         <p role="alert" className="text-sm text-workspace-danger">
           {actionError}
         </p>
       )}
-      {diagnostic && (
-        <>
-          <button
-            type="button"
-            aria-expanded={showSource}
-            onClick={() => setShowSource((v) => !v)}
-            className="rounded-workspace-control border border-workspace-divider px-3 py-1.5 text-sm hover:bg-workspace-hover focus-visible:outline-2 focus-visible:outline-workspace-accent"
-          >
-            {showSource ? "Hide source" : "Show source"}
-          </button>
-          {showSource && (
-            <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-workspace-control border border-workspace-divider bg-workspace-control p-3 text-xs">
-              <code>{source}</code>
-            </pre>
-          )}
-        </>
-      )}
+      {(diagnostic ||
+        actionError ||
+        diagnostics.length > 0 ||
+        !parsed.complete) &&
+        !streaming && (
+          <details className="text-xs text-workspace-muted">
+            <summary className="cursor-pointer">Display details</summary>
+            <ul className="my-2 list-disc space-y-1 pl-4">
+              {diagnostics.map((item, index) => (
+                <li key={index}>
+                  {item.component ? `${item.component}: ` : ""}
+                  {item.message} ({item.code}, {item.repair})
+                </li>
+              ))}
+              {!parsed.complete && (
+                <li>
+                  The response ended before all components finished. Complete
+                  content is preserved.
+                </li>
+              )}
+            </ul>
+            <button
+              type="button"
+              aria-expanded={showSource}
+              onClick={() => setShowSource((value) => !value)}
+              className="rounded-workspace-control border border-workspace-divider px-3 py-1.5"
+            >
+              {showSource ? "Hide source" : "Show source"}
+            </button>
+            {host?.submit && hostInteractive && !readOnly && !capture && (
+              <button
+                type="button"
+                disabled={requestingRepair}
+                className="ml-2 rounded-workspace-control border border-workspace-divider px-3 py-1.5 disabled:opacity-40"
+                onClick={async () => {
+                  setRequestingRepair(true);
+                  try {
+                    await host.submit!(
+                      repairRequest(
+                        source,
+                        actionError
+                          ? [
+                              ...diagnostics,
+                              {
+                                code: "action_error",
+                                phase: "evaluate",
+                                start: 0,
+                                message: actionError,
+                                repair: "retained",
+                              },
+                            ]
+                          : diagnostics,
+                      ),
+                    );
+                  } catch (error) {
+                    setActionError(failureMessage(error));
+                  } finally {
+                    setRequestingRepair(false);
+                  }
+                }}
+              >
+                {requestingRepair
+                  ? "Requesting repair…"
+                  : "Ask Agent to repair"}
+              </button>
+            )}
+            {showSource && (
+              <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words p-3">
+                <code>{source}</code>
+              </pre>
+            )}
+          </details>
+        )}
     </div>
   );
-}
-
-class RenderBoundary extends Component<
-  { source: string; children: ReactNode },
-  { failed: boolean; showSource: boolean }
-> {
-  state = { failed: false, showSource: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  componentDidUpdate(previous: { source: string }) {
-    if (previous.source !== this.props.source && this.state.failed)
-      this.setState({ failed: false });
-  }
-  render() {
-    if (!this.state.failed) return this.props.children;
-    return (
-      <div className="space-y-3">
-        <Unavailable
-          name="Couldn't display this response"
-          reason="A component could not render its supplied values."
-        />
-        <button
-          type="button"
-          aria-expanded={this.state.showSource}
-          className="rounded-workspace-control border border-workspace-divider px-3 py-1.5 text-sm"
-          onClick={() => this.setState({ showSource: !this.state.showSource })}
-        >
-          {this.state.showSource ? "Hide source" : "Show source"}
-        </button>
-        {this.state.showSource && (
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words text-xs">
-            <code>{this.props.source}</code>
-          </pre>
-        )}
-      </div>
-    );
-  }
 }
 
 export function InlineDocument(
   props: Parameters<typeof InlineDocumentContent>[0],
 ) {
   return (
-    <RenderBoundary source={props.source}>
+    <InlineBoundary
+      resetKey={props.source}
+      name="response"
+      start={0}
+      fallback={
+        <InlineMarkdown>
+          {inlineFallback(parseInlineUI(props.source, { recover: true }).nodes)}
+        </InlineMarkdown>
+      }
+    >
       <InlineDocumentContent {...props} />
-    </RenderBoundary>
+    </InlineBoundary>
   );
 }

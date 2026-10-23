@@ -4396,7 +4396,9 @@
         "severity": {
           "type": "string",
           "enum": [
-            "error"
+            "error",
+            "warning",
+            "info"
           ]
         },
         "start": {

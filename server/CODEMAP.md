@@ -1463,10 +1463,19 @@ The inline renderer also shares a versioned component-property/child schema with
 server source validation. It rejects invalid component structures and non-top-level
 hooks. AppBlock executes only in an opaque-origin iframe, with JSON/local-callback
 bindings and no GenUI action authority; noninteractive/capture views are inert.
-Chat and Page citations use the existing authorized artifact resolver. The
-zenith-intelligent-ui skill's references/renderer-support.md records supported
+Chat and Page citations use the existing authorized artifact resolver.
+`docs/intelligent-ui/renderer-contract.md` records supported
 features and explicit integration deferrals against final_skill.md, the bundled
 authoring baseline. Prose components share Markdown context with inline component
 slots; evaluated values remain text. Typed literal attributes and reverse parent
 constraints use the same parser on server and browser. WritingBlock supports local
 Markdown draft versions; line charts retain shaded bands in their data table.
+
+Streaming display/preview parsing now has bounded deterministic recovery with
+catalog diagnostics, staged unfinished components and complete-statement body
+prefixes. Final Page compilation remains strict. Native expression and React
+boundaries preserve readable siblings and last working content; named hook keys
+survive source shifts and legacy captures migrate. Local controls work during
+streaming, while host actions/effects/apps wait for completion. Bounded loops and
+local mutation support interactive algorithms without exposing browser globals.
+The runtime mapping and verification contract are in docs/intelligent-ui/runtime.md.

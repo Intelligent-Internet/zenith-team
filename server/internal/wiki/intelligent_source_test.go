@@ -193,17 +193,21 @@ func TestIntelligentSkillExamplesCompile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sections := strings.Split(string(raw), "```text\n")
-	if len(sections) < 2 {
-		t.Fatal("authoring skill has no runnable source examples")
-	}
-	for _, section := range sections[1:] {
-		example, _, ok := strings.Cut(section, "```")
-		if !ok {
-			t.Fatal("unclosed source example")
+	// jsx fences are the live authoring examples; text fences are signatures
+	// that must stay readable prose under the same strict compiler.
+	for _, fence := range []string{"```text\n", "```jsx\n"} {
+		sections := strings.Split(string(raw), fence)
+		if len(sections) < 2 {
+			t.Fatalf("authoring skill has no %s examples", strings.TrimSpace(fence))
 		}
-		if _, err = CompileSource(example, 1); err != nil {
-			t.Fatalf("skill source example: %v", err)
+		for _, section := range sections[1:] {
+			example, _, ok := strings.Cut(section, "```")
+			if !ok {
+				t.Fatal("unclosed source example")
+			}
+			if _, err = CompileSource(example, 1); err != nil {
+				t.Fatalf("skill source example %q: %v", example[:min(len(example), 60)], err)
+			}
 		}
 	}
 }
@@ -231,10 +235,12 @@ func TestReactiveSourceSurvivesDocumentCodec(t *testing.T) {
 }
 
 func TestIntelligentSkillGalleryAndOrbitRoundTrip(t *testing.T) {
-	t.Parallel()
+	// The parser has a wall-clock budget. Keep the large gallery out of this
+	// package's parallel integration workload so this checks source support,
+	// not scheduler contention under the race detector.
 	for _, name := range []string{"component-demo.zenith-ui", "orbit-demo.zenith-ui"} {
 		t.Run(name, func(t *testing.T) {
-			source, err := os.ReadFile("../mcp/tools/builtin/zenith-intelligent-ui/" + name)
+			source, err := os.ReadFile("testdata/" + name)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -262,8 +268,13 @@ func TestPreviewSourceRecoversIncompleteConstructs(t *testing.T) {
 	source := `<box><title>Ready</title><input value={"hello"}/></box>`
 	for end := 1; end <= len(source); end++ {
 		preview := PreviewSource(source[:end], 1)
-		if len(preview.Diagnostics) > 0 {
-			t.Fatalf("prefix %q: %#v", source[:end], preview.Diagnostics)
+		for _, diagnostic := range preview.Diagnostics {
+			if diagnostic.Severity != "info" {
+				t.Fatalf("prefix %q: %#v", source[:end], preview.Diagnostics)
+			}
+		}
+		if preview.Content == nil {
+			t.Fatalf("prefix %q lost its preview", source[:end])
 		}
 		if end == len(source) && !preview.Complete {
 			t.Fatal("complete source not recognized")

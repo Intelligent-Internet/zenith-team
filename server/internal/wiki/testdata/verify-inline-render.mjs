@@ -12,14 +12,14 @@ const Module = require("node:module");
 const providers = {
   "next-themes": 'export const useTheme = () => ({resolvedTheme:"light"});',
   streamdown: "export const Streamdown = ({children}) => children;",
-  "@/shared/ui/icon": "export const Icon = () => null;",
+  "@/shared/ui/icon": "export const Icon = () => null; export const hasIcon = (name) => !name.startsWith(\"not-a-\");",
   "@/shared/ui/icons":
     "export const ChevronLeft = () => null; export const ChevronRight = () => null; export const ChevronDown = () => null; export const Check = () => null;",
   "./code-block": "export const InlineCodeBlock = () => null;",
 };
 const result = await build({
   stdin: {
-    contents: 'export {InlineDocument} from "./inline-document"; export {appDocument} from "./app-block";',
+    contents: 'export {InlineDocument} from "./inline-document"; export {appDocument} from "./app-block"; export {PreviewContinuationContext} from "@/shared/chat/preview-continuation-context";',
     resolveDir: frontend + "src/shared/inline-ui",
     loader: "tsx",
   },
@@ -64,6 +64,11 @@ const render = (source, options = {}) =>
     createElement(loaded.exports.InlineDocument, { source, ...options }),
   );
 assert.match(render("<button>Continue</button>"), /<button/);
+// Pretty-printed inline children must not become indented Markdown code blocks.
+assert.match(
+  render('<box><row><button disabled={false}>\n            {"♔"}\n          </button></row></box>'),
+  /<span>♔<\/span>/,
+);
 assert.doesNotMatch(
   render("```zenith-ui\n<button>Continue</button>\n```"),
   /<button/,
@@ -121,7 +126,8 @@ assert.match(orbit, /stop-color="#ffd166"/);
 assert.match(orbit, /stop-opacity="0"/);
 assert.match(orbit, /stroke-opacity="0.35"/);
 assert.match(orbit, /stroke-dasharray="3 7"/);
-assert.match(render('<row justify="space-between"><text>Left</text><text>Right</text></row>'), /justify-content:space-between/);
+assert.match(render('<row justify="between"><text>Left</text><text>Right</text></row>'), /justify-content:space-between/);
+assert.match(render('<row justify="space-between"><text>Left</text></row>'), /invalid_literal/);
 const gradientId = orbit.match(/<radialGradient id="([^"]+)"/)[1];
 assert.ok(orbit.includes(`fill="url(#${gradientId})"`));
 const repeated = render(orbitSource + orbitSource);
@@ -133,12 +139,17 @@ assert.doesNotMatch(unsafeSvg, /fill="url|stroke="url|<script/);
 console.log('Orbit math, local SVG gradients, attribute aliases and reference isolation passed.');
 
 const chartSource =
-  '<Chart content={{chartType:"bar",title:"Quarterly amount",xKey:"quarter",series:[{dataKey:"amount"}],data:[{quarter:"Q1",amount:12},{quarter:"Q2",amount:19}]}} />';
+  '<Chart content={{chartType:"bar",xKey:"quarter",series:[{dataKey:"amount",label:"Quarterly amount"}],data:[{quarter:"Q1",amount:12},{quarter:"Q2",amount:19}]}} />';
 const chart = renderToStaticMarkup(
   createElement(loaded.exports.InlineDocument, { source: chartSource }),
 );
 assert.match(chart, /<figure/);
-assert.match(chart, /Quarterly amount/);
+assert.match(chart, /aria-label="Quarterly amount"/);
+// The guide's chart contract: renderer-chosen colors, no area or title.
+for (const extra of ['chartType:"area"', 'chartType:"bar",title:"T"', 'chartType:"bar",series:[{dataKey:"y",color:"red"}]']) {
+  const html = render(`<Chart content={{${extra.includes('series') ? extra : extra + ',series:[{dataKey:"y"}]'},xKey:"x",data:[{x:"a",y:1}]}}/>`);
+  assert.doesNotMatch(html, /<figure/, extra);
+}
 assert.match(chart, /View data/);
 assert.match(chart, /<table/);
 assert.match(chart, /Q1/);
@@ -154,7 +165,7 @@ assert.match(render(appSource), /sandbox="allow-scripts"/);
 assert.match(render(appSource, {readOnly:true}), /sandbox=""/);
 assert.doesNotMatch(render(appSource), /allow-same-origin/);
 const chessHTML = '<!doctype html><html><head><style>.chess{display:grid}</style></head><body><div class="chess">Pocket Chess</div><script>globalThis.__appBlockHTMLExecuted = true;</script></body></html>';
-const chessSource = '<box><AppBlock app_block_id="pocket-chess" html={`' + chessHTML + '`} /></box>';
+const chessSource = '<box><AppBlock app_block_id="pocket-chess">' + chessHTML + '</AppBlock></box>';
 for (const readOnly of [false, true]) {
   const chess = render(chessSource, {readOnly});
   assert.match(chess, /&lt;!doctype html&gt;/);
@@ -164,10 +175,10 @@ for (const readOnly of [false, true]) {
   assert.doesNotMatch(chess, /Couldn't display|allow-same-origin/);
 }
 assert.equal(globalThis.__appBlockHTMLExecuted, undefined, 'App HTML must not execute in the host renderer');
-assert.match(render('<AppBlock html={42} />'), /AppBlock.html requires string/);
-assert.match(render('{@body const html = 42;}<AppBlock html={html} />'), /AppBlock.html requires string/);
-assert.match(render('<AppBlock html="&lt;div&gt;String HTML&lt;/div&gt;" />'), /String HTML/);
-console.log('AppBlock HTML string input renders through the sandbox and rejects non-string values.');
+// The guide's AppBlock takes its raw HTML/JS body only.
+assert.match(render('<AppBlock html="<div>x</div>"></AppBlock>'), /unknown_prop/);
+assert.match(render('<AppBlock variant="inline" title="Inline">Body</AppBlock>'), /sandbox="allow-scripts"/);
+console.log('AppBlock raw bodies render through the sandbox; no html property.');
 const appHTML = loaded.exports.appDocument('<div>Example</div>', 'channel-123', true);
 assert.match(appHTML, /connect-src 'none'/);
 assert.match(appHTML, /form-action 'none'/);
@@ -229,24 +240,39 @@ assert.match(render('<WritingBlock recipient="team@example.org" subject="Draft">
 assert.match(render('<box>{@body const x=1}</box>'), /document top level/);
 console.log('Native child collections, controlled values, labels, table options, SVG props, spacing and draft metadata passed.');
 
-// Gold-standard authoring syntax must render real controls, not source fallback.
-const goldControls = render('<input type="number" value={2}/><Link href="https://example.com">Example</Link><radio-group name="priority" value="normal" options={[{label:"Low",value:"low"},{label:"Normal",value:"normal"},{label:"High",value:"high",disabled:true}]}/>');
+// Final-guide authoring syntax must render real controls, not source fallback.
+const goldControls = render('<input inputType="number" value={2}/><Link url="https://example.com">Example</Link><radio-group name="priority" value="normal"><radio value="low">Low</radio><radio value="normal">Normal</radio><radio value="high" disabled>High</radio></radio-group>');
 assert.match(goldControls, /type="number"/);
 assert.match(goldControls, /href="https:\/\/example.com"/);
 assert.equal((goldControls.match(/type="radio"/g) ?? []).length, 3);
 assert.match(goldControls, /checked="" value="normal"/);
 assert.match(goldControls, /disabled=""[^>]*value="high"|value="high"[^>]*disabled=""/);
-assert.doesNotMatch(goldControls, /Couldn't display/);
-const readOnlyOptions = render('<radio-group options={[{label:"Yes",value:true}]}/>', {readOnly:true});
-assert.match(readOnlyOptions, /disabled=""/);
+assert.doesNotMatch(goldControls, /Couldn't display|Display details/);
+assert.match(render('<radio-group><radio value="yes">Yes</radio></radio-group>', {readOnly:true}), /disabled=""/);
+// One spelling per concept: earlier aliases are unknown properties now.
+for (const alias of ['<input type="number"/>', '<Link href="https://example.com">x</Link>', '<radio-group options={[{label:"A",value:"a"}]}/>', '<card border radius="xl">x</card>', '<box aria-label="x">x</box>', '<FollowUp text="x"/>']) {
+  assert.match(render(alias), /unknown_prop/, alias);
+}
+// Labels written before a control name it without ids.
+const labelled = render('<label>Quantity</label><input inputType="number" value={2}/>');
+assert.match(labelled, /<label[^>]*for="([^"]+)-control"[^>]*id="\1-label"|<label[^>]*id="([^"]+)-label"[^>]*for="\2-control"/);
+assert.match(labelled, /aria-labelledby="[^"]+-label"/);
+assert.doesNotMatch(labelled, /aria-label="input"/);
+// Buttons and badges use semantic color x variant; primary is valid.
+assert.doesNotMatch(render('<button color="primary">Go</button><button color="danger" variant="outline">Delete</button><badge color="success">Live</badge>'), /Display details/);
+assert.match(render('<button loading>Saving</button>'), /aria-busy="true"[\s\S]*Saving/);
+// Explicit keyed state slots, as in the reference runtime.
+assert.match(render('{@body const [seats, setSeats] = DIL.useState(8, {key:"seats"});}<text>{seats}</text>'), /<span>8<\/span>/);
+// AsyncImage aspect ratios may use 5:4.
+assert.match(render('<AsyncImage src="https://example.org/a.png" aspectRatio="5:4" alt="A"/>'), /aspect-ratio:5\/4/);
 const {readFileSync} = await import('node:fs');
-const playground = readFileSync(new URL('../../mcp/tools/builtin/zenith-intelligent-ui/playground.zenith-ui', import.meta.url), 'utf8');
+const playground = readFileSync(new URL('./playground.zenith-ui', import.meta.url), 'utf8');
 const playgroundHTML = render(playground);
 assert.doesNotMatch(playgroundHTML, /Couldn't display|Show source/);
 assert.match(playgroundHTML, /50<\/span> credits/);
 assert.match(playgroundHTML, /type="number"/);
 assert.match(playgroundHTML, /checked="" value="Normal"/);
-console.log('Gold-standard playground and control aliases render with correct defaults and read-only controls.');
+console.log('Final-guide controls, label association, tones, keyed state and alias rejection passed.');
 
 const mixedMarkdown = render('<text>**Strong <italic>and nested</italic> text**, ~~old~~ and `literal {value}`.</text>');
 assert.match(mixedMarkdown, /<strong>Strong <em/);
@@ -279,3 +305,81 @@ assert.match(render('{@body const value="**not markup**";}<text>{value}</text>')
 console.log('Final guide native examples and outer Markdown composition passed.');
 
 assert.match(render('<box>{#if true}**Conditional prose**{/if}</box>'), /<strong>Conditional prose<\/strong>/);
+
+const chessRetry = (await import("node:fs")).readFileSync(new URL("./chess-retry.zenith-ui", import.meta.url), "utf8");
+const chessRetryHTML = render(chessRetry);
+assert.equal((chessRetryHTML.match(/<button /g) ?? []).length, 65);
+assert.doesNotMatch(chessRetryHTML, /Display details|couldn.t be displayed/);
+const repairedHTML = render('<box><text>Before</text><button disabled={false || ""}>Go</button><text>{missing.value}</text><text>After</text></box>');
+assert.match(repairedHTML, /Before/);
+assert.match(repairedHTML, /After/);
+assert.match(repairedHTML, /normalized_boolean/);
+assert.match(repairedHTML, /evaluation_error/);
+assert.doesNotMatch(repairedHTML, /Couldn.t display this response/);
+assert.match(render('<text>Arrived</text><slider min={', {streaming:true}), /Preparing slider/);
+assert.match(render('<AppBlock><script>window.bad=true', {streaming:true}), /Preparing application/);
+assert.doesNotMatch(render('<AppBlock><script>window.bad=true', {streaming:true}), /<iframe/);
+assert.doesNotMatch(render('<button>Ready</button><text>Still', {streaming:true}), /disabled=""/);
+assert.match(render('<button>Ready</button>', {streaming:true,readOnly:true}), /disabled=""/);
+assert.match(render('{@body const broken=missing.x; const fine=42;}<text>{fine}</text>'), /42/);
+console.log('Chess markup, local recovery, staged apps, streaming controls and readable siblings passed.');
+
+let repairCalls = 0;
+const repairHost = {conversationId:'preview',prepareDraft(){},submit:async()=>{repairCalls++;}};
+const renderWithRepair = options => renderToStaticMarkup(createElement(loaded.exports.PreviewContinuationContext.Provider,{value:repairHost},createElement(loaded.exports.InlineDocument,{source:'<text>{unknown}</text>',...options})));
+assert.match(renderWithRepair({}), /Ask Agent to repair/);
+assert.doesNotMatch(renderWithRepair({readOnly:true}), /Ask Agent to repair/);
+assert.doesNotMatch(renderWithRepair({streaming:true}), /Ask Agent to repair/);
+assert.equal(repairCalls,0,'display recovery never sends a model request automatically');
+assert.match(render('{@body const fine=42; const bad=;}<text>{fine}</text>'), /42/);
+const recoveredTable = render('<table><table-row><card>Bad</card><table-cell>Kept</table-cell></table-row></table>');
+assert.match(recoveredTable, /Kept/);
+assert.doesNotMatch(recoveredTable, /<tr[^>]*><span/);
+const svgText = render('<svg viewBox="0 0 10 10"><text>{42}</text></svg>');
+assert.match(svgText, /<text[^>]*>42<\/text>/);
+assert.doesNotMatch(svgText, /<span/);
+console.log('Explicit repair authority, completed declaration recovery and structural fallbacks passed.');
+
+// Icons: Lucide names resolve to Zenith glyphs; unknown names are reported,
+// never replaced with an unrelated fallback glyph.
+assert.doesNotMatch(render('<icon name="check"/><icon name="chevron-right"/>'), /unknown_icon/);
+const unknownIcon = render('<row><icon name="not-a-real-icon"/><text>Kept</text></row>');
+assert.match(unknownIcon, /unknown_icon/);
+assert.match(unknownIcon, /Kept/);
+console.log('Icon aliases resolve and unknown icon names are diagnosed.');
+
+// Streaming: every prefix of every authoring example renders without raw
+// markup leaking, error states, or per-iteration placeholder floods.
+const visibleText = (html) =>
+  html
+    .replace(/<details[\s\S]*?<\/details>/g, "")
+    .replace(/<(pre|code)[\s\S]*?<\/\1>/g, "")
+    .replace(/<[^>]*data-inline-stage[^>]*>[^<]*<\/[a-z]+>/g, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+const sweep = (label, source, step = 1) => {
+  const full = "Here is the result:\n\n" + source + "\nDone.";
+  for (let end = 1; end < full.length; end += step) {
+    const html = render(full.slice(0, end), { streaming: true });
+    assert.doesNotMatch(html, /data-inline-stage="unavailable"|couldn.t be displayed|role="alert"/, `${label} @${end}`);
+    const leak = visibleText(html).match(/<\/?[a-zA-Z][\w-]*[\s/>]|\{[@#:/][a-z]|=\{|\/>/);
+    assert.equal(leak, null, `${label} leaked ${leak?.[0]} @${end}`);
+    assert.ok((html.match(/data-inline-stage="loading"/g) ?? []).length <= 4, `${label} placeholder flood @${end}`);
+  }
+};
+const skill = readFileSync(new URL('../../mcp/tools/builtin/zenith-intelligent-ui/SKILL.md', import.meta.url), 'utf8');
+const skillExamples = [...skill.matchAll(/```jsx\n([\s\S]*?)```/g)].map((match) => match[1]);
+assert.ok(skillExamples.length >= 10);
+skillExamples.forEach((source, index) => {
+  const output = render(source);
+  // Provider-bound syntax examples may report unavailable integrations only.
+  if (!/turn0product0/.test(source))
+    assert.doesNotMatch(output, /Display details|couldn.t be displayed/, `SKILL.md example ${index}`);
+  sweep(`SKILL.md example ${index}`, source);
+});
+sweep('chess', chessRetry, 7);
+const draftStream = render('<WritingBlock id="12345">Hello there</Writi', { streaming: true });
+assert.match(draftStream, /Hello there/);
+assert.doesNotMatch(draftStream, /&lt;\/Writi/);
+console.log('Streaming prefixes of every skill example and the chess fixture stay clean.');

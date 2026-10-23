@@ -26,6 +26,7 @@ type inlineSourceInfo struct {
 	complete    bool
 	interactive bool
 	diagnostic  string
+	diagnostics []SourceDiagnostic
 }
 
 // HasInlineUI identifies source definitions whose hook state lives only in the
@@ -35,6 +36,10 @@ func HasInlineUI(root BlockNode) bool {
 }
 
 func inspectInlineSource(source string, version int) (inlineSourceInfo, error) {
+	return inspectInlineSourceMode(source, version, false)
+}
+
+func inspectInlineSourceMode(source string, version int, recover bool) (inlineSourceInfo, error) {
 	fail := func(code, repair string) error {
 		return &SourceDiagnostic{
 			Code:     code,
@@ -54,6 +59,7 @@ func inspectInlineSource(source string, version int) (inlineSourceInfo, error) {
 		return inlineSourceInfo{}, fmt.Errorf("compile inline parser: %w", err)
 	}
 	vm := goja.New()
+	vm.SetFieldNameMapper(goja.TagFieldNameMapper("json", true))
 	timer := time.AfterFunc(time.Second, func() { vm.Interrupt("source parse budget exceeded") })
 	defer timer.Stop()
 	if _, err := vm.RunProgram(program); err != nil {
@@ -63,7 +69,7 @@ func inspectInlineSource(source string, version int) (inlineSourceInfo, error) {
 	if !ok {
 		return inlineSourceInfo{}, fmt.Errorf("inline parser entry point unavailable")
 	}
-	value, err := inspect(goja.Undefined(), vm.ToValue(source))
+	value, err := inspect(goja.Undefined(), vm.ToValue(source), vm.ToValue(recover))
 	if err != nil {
 		return inlineSourceInfo{}, fail("source.parse", "The source could not be parsed within its limits.")
 	}
@@ -72,6 +78,9 @@ func inspectInlineSource(source string, version int) (inlineSourceInfo, error) {
 		complete:    result.Get("complete").ToBoolean(),
 		interactive: result.Get("interactive").ToBoolean(),
 		diagnostic:  result.Get("diagnostic").String(),
+	}
+	if err := vm.ExportTo(result.Get("diagnostics"), &info.diagnostics); err != nil {
+		return inlineSourceInfo{}, fmt.Errorf("decode inline diagnostics: %w", err)
 	}
 	if info.diagnostic != "" {
 		return inlineSourceInfo{}, fail("source.syntax", info.diagnostic)

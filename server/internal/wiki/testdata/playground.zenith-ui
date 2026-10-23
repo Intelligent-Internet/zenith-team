@@ -41,7 +41,7 @@ const activity = [
   <segmented-control value={section} options={[{label:"Controls",value:"Controls"},{label:"Layouts",value:"Layouts"},{label:"Content",value:"Content"}]} onChange={setSection} />
 
   {#if section === "Controls"}
-    <card border radius="lg" padding={4} gap={3}>
+    <card padding={4} gap={3}>
       <title size="lg">Scenario inputs</title>
       <caption>Change the fields to update the live preview. Create a snapshot to inspect the current values.</caption>
       <form onSubmit={() => {
@@ -55,7 +55,7 @@ const activity = [
           </col>
           <col gap={2}>
             <label>Quantity: 0–99 whole items</label>
-            <input type="number" value={quantity} onChange={value => {setQuantity(normalizeQuantity(value)); setSnapshot(null);}} />
+            <input inputType="number" value={quantity} onChange={value => {setQuantity(normalizeQuantity(value)); setSnapshot(null);}} />
           </col>
           <checkbox checked={enabled} onChange={value => {setEnabled(value); setSnapshot(null);}}>Show live preview</checkbox>
           <col gap={2}>
@@ -76,7 +76,11 @@ const activity = [
           </col>
           <col gap={2}>
             <label>Priority</label>
-            <radio-group value={priority} options={[{label:"Low",value:"Low"},{label:"Normal",value:"Normal"},{label:"High",value:"High"}]} onChange={value => {setPriority(value); setSnapshot(null);}} />
+            <radio-group value={priority} onChange={value => {setPriority(value); setSnapshot(null);}}>
+              <radio value="Low">Low</radio>
+              <radio value="Normal">Normal</radio>
+              <radio value="High">High</radio>
+            </radio-group>
           </col>
           {#if attempted && name === ""}
             <box background="danger" radius="lg" padding={3}>
@@ -114,7 +118,7 @@ const activity = [
     </card>
 
     {#if enabled}
-      <card border radius="lg" padding={4} gap={3}>
+      <card padding={4} gap={3}>
         <title size="lg">Live preview</title>
         {#if choice === "Compact"}
           <row gap={2} wrap>
@@ -149,7 +153,7 @@ const activity = [
     {/if}
 
     {#if snapshot}
-      <card border radius="lg" padding={4} gap={3}>
+      <card padding={4} gap={3}>
         <title size="lg">Local snapshot</title>
         <text><bold>{snapshot.name}</bold> · {snapshot.quantity} item(s) · {snapshot.total} credits</text>
         <text>Style: {snapshot.choice} · priority: {snapshot.priority} · intensity: {snapshot.level}%</text>
@@ -160,18 +164,18 @@ const activity = [
     {/if}
 
   {:else if section === "Layouts"}
-    <card border radius="lg" padding={4} gap={3}>
+    <card padding={4} gap={3}>
       <title size="lg">Composition patterns</title>
       <text>These small examples show explicit grid items, wrapping rows, columns, and native lists.</text>
       <grid columns={2} gap={3}>
         <grid-item>
-          <card border radius="lg" padding={3} gap={2}>
+          <card padding={3} gap={2}>
             <title size="md">Card</title>
             <text>Group related information.</text>
           </card>
         </grid-item>
         <grid-item>
-          <card border radius="lg" padding={3} gap={2}>
+          <card padding={3} gap={2}>
             <title size="md">Grid item</title>
             <text>Give each tile an explicit item container.</text>
           </card>
@@ -198,7 +202,7 @@ const activity = [
     </card>
 
   {:else}
-    <card border radius="lg" padding={4} gap={3}>
+    <card padding={4} gap={3}>
       <title size="lg">Content components</title>
       <row gap={2} wrap>
         <icon name="star" />
@@ -237,12 +241,12 @@ const activity = [
   <title size="lg">Component names by family</title>
   <caption>The catalog lists declared components. The examples above demonstrate a subset, not every component API.</caption>
   {#each groups as group}
-    <card border radius="lg" padding={3} gap={2}>
+    <card padding={3} gap={2}>
       <title size="md">{group.label}</title>
       <text>{group.items}</text>
     </card>
   {/each}
-  <card border radius="lg" padding={3} gap={2}>
+  <card padding={3} gap={2}>
     <title size="md">Host-backed references and content</title>
     <text>Cite · CodeCite · Entity · FileCite · FileNavList · MemoryCite · AsyncImageGroup · AsyncVideo · MapWidgetV2 · AppBlock</text>
     <caption>These names require the relevant host capabilities and, where applicable, real authorized references. They are not activated by listing them here.</caption>

@@ -1,3 +1,6 @@
+import type { CSSProperties } from "react";
+import { InlineBoundary, InlineStage } from "./render-state";
+import type { InlineDiagnostic } from "./recovery";
 import { InlineDatePicker, InlineSelect, maskInput } from "./controls";
 import { InlineWritingBlock } from "./writing-block";
 import { InlineCodeBlock } from "./code-block";
@@ -28,6 +31,7 @@ import { InlineChart } from "./chart";
 import { layoutStyle, safeURL, uiColor } from "./style";
 import { InlineThemeContext } from "./reference-context";
 import { valueText } from "./runtime";
+import { resolveIconName } from "./icon-aliases";
 
 type Props = Record<string, any>;
 export const InputGroup = createContext<{
@@ -72,6 +76,65 @@ function hasTableRows(children: ReactNode): boolean {
     );
   });
 }
+// Semantic color x variant for buttons and badges. Colors are workspace tokens,
+// so light/dark themes and contrast follow the host palette.
+function toneStyle(color: unknown, variant: unknown): CSSProperties {
+  const tone = (
+    {
+      primary: "var(--workspace-native-accent)",
+      accent: "var(--workspace-native-accent)",
+      default: "var(--workspace-native-accent)",
+      info: "var(--workspace-native-info)",
+      success: "var(--workspace-native-success)",
+      danger: "var(--workspace-native-danger)",
+      warning: "var(--workspace-native-approval)",
+    } as Record<string, string>
+  )[String(color)];
+  const neutral = !tone;
+  const ink = tone ?? "var(--workspace-native-text)";
+  switch (variant) {
+    case "solid":
+      return neutral
+        ? {
+            background: "var(--workspace-control-bg)",
+            color: ink,
+            borderColor: "var(--workspace-divider)",
+          }
+        : {
+            background:
+              color === "primary" || color === "accent" || color === "default"
+                ? "var(--workspace-accent-fill)"
+                : ink,
+            color:
+              color === "primary" || color === "accent" || color === "default"
+                ? "var(--workspace-accent-foreground)"
+                : "var(--workspace-panel-bg)",
+            borderColor: "transparent",
+          };
+    case "outline":
+      return {
+        background: "transparent",
+        color: ink,
+        borderColor: neutral
+          ? "var(--workspace-divider)"
+          : `color-mix(in srgb, ${ink} 45%, transparent)`,
+      };
+    case "ghost":
+      return {
+        background: "transparent",
+        color: ink,
+        borderColor: "transparent",
+      };
+    default:
+      return {
+        background: neutral
+          ? "var(--workspace-control-bg)"
+          : `color-mix(in srgb, ${ink} 14%, transparent)`,
+        color: ink,
+        borderColor: "transparent",
+      };
+  }
+}
 export function Unavailable({
   name,
   reason,
@@ -88,7 +151,38 @@ export function Unavailable({
     </div>
   );
 }
-export function Primitive({
+export function Primitive(
+  props: Parameters<typeof PrimitiveContent>[0] & {
+    recovery?: {
+      resetKey: unknown;
+      start: number;
+      onDiagnostic: (diagnostic: InlineDiagnostic) => void;
+    };
+  },
+) {
+  if (!props.recovery || props.svg) return <PrimitiveContent {...props} />;
+  const issue = <InlineStage name={props.name} failed />;
+  const fallback =
+    props.name === "table-cell" ? (
+      <td>{issue}</td>
+    ) : props.name === "table-row" ? (
+      <tr>
+        <td colSpan={99}>{issue}</td>
+      </tr>
+    ) : props.name === "table-section" ? (
+      <tbody>
+        <tr>
+          <td colSpan={99}>{issue}</td>
+        </tr>
+      </tbody>
+    ) : undefined;
+  return (
+    <InlineBoundary {...props.recovery} name={props.name} fallback={fallback}>
+      <PrimitiveContent {...props} />
+    </InlineBoundary>
+  );
+}
+function PrimitiveContent({
   name,
   p,
   children,
@@ -150,29 +244,59 @@ export function Primitive({
       : {}),
     ...layoutStyle(p),
   };
-  if (p.disableAutoSpacing) style.gap = p.gap === undefined ? 0 : style.gap;
+  // Layout containers space their children unless the author opts out.
+  if (
+    style.gap === undefined &&
+    !p.disableAutoSpacing &&
+    [
+      "box",
+      "row",
+      "col",
+      "form",
+      "carousel-item",
+      "carousel-media-item",
+      "flow-item",
+      "grid-item",
+      "pressable",
+    ].includes(name)
+  )
+    style.gap = "8pt";
+  if (p.disableAutoSpacing && p.gap === undefined) style.gap = 0;
   if (p.uniform) {
     style.aspectRatio = "1";
     style.flexShrink = 0;
   }
-  if (p.variant === "ghost") {
+  const surface = ![
+    "button",
+    "badge",
+    "input",
+    "textarea",
+    "select",
+    "date-picker",
+    "segmented-control",
+  ].includes(name);
+  if (surface && p.variant === "ghost") {
     style.background = "transparent";
     style.border = "none";
   }
-  if (p.variant === "outline") {
+  if (surface && p.variant === "outline") {
     style.background = "transparent";
     style.border = "1px solid var(--workspace-divider)";
   }
-  if (["soft", "subtle"].includes(p.variant))
+  if (surface && ["soft", "subtle"].includes(p.variant))
     style.background = "var(--workspace-control-bg)";
-  if (p.variant === "solid") {
+  if (surface && p.variant === "solid") {
     style.background = "var(--workspace-accent-fill)";
     style.color = "var(--workspace-accent-foreground)";
   }
   if (p.fontSize !== undefined)
     style.fontSize = layoutStyle({ size: p.fontSize }).fontSize ?? p.fontSize;
-  const inputType = p.type ?? p.inputType;
-  const label = p["aria-label"] ?? p.label ?? p.placeholder ?? p.name ?? name;
+  const inputType = p.inputType;
+  // A visible associated <label> names the control; otherwise fall back to the
+  // control's own label, placeholder or name.
+  const label = p.labelled
+    ? undefined
+    : (p.label ?? p.placeholder ?? p.name ?? name);
   const plain = p.label ?? children;
   const props = { style, className: "min-w-0", role: p.role, id: p.id };
   const click = () => {
@@ -275,7 +399,7 @@ export function Primitive({
       attributes.width = p.width ?? p.size;
       attributes.height = p.height ?? p.size;
       attributes.role = "img";
-      attributes["aria-label"] = p["aria-label"] ?? p.label ?? "Illustration";
+      attributes["aria-label"] = p["aria-label"] ?? "Illustration";
       attributes.className = "max-w-full";
     }
     const element = createElement(name, attributes, children);
@@ -298,7 +422,7 @@ export function Primitive({
     return (
       <div
         {...props}
-        className={`min-w-0 ${name === "row" ? "flex flex-row flex-wrap" : "flex flex-col"} ${name === "card" ? "rounded-workspace-panel border border-workspace-divider bg-workspace-panel p-4 gap-3" : ""}`}
+        className={`min-w-0 ${name === "row" || (name !== "card" && p.direction && ["horizontal", "row"].includes(p.direction)) ? "flex flex-row" : "flex flex-col"} ${name === "row" && p.wrap === undefined ? "flex-wrap" : ""} ${name === "card" ? `rounded-workspace-panel ${p.variant === "ghost" ? "" : "border border-workspace-divider"} ${p.background === undefined && !["soft", "subtle", "solid", "ghost", "outline"].includes(p.variant) ? "bg-workspace-panel" : ""} ${p.padding === undefined ? "p-4" : ""} ${p.gap === undefined && !p.disableAutoSpacing ? "gap-3" : ""}` : ""}`}
       >
         {name === "carousel-media-item" && p.media && (
           <Primitive
@@ -307,7 +431,7 @@ export function Primitive({
               typeof p.media === "string"
                 ? {
                     src: p.media,
-                    alt: p.label ?? "",
+                    alt: "",
                     aspectRatio: p.aspectRatio,
                   }
                 : p.media
@@ -375,6 +499,7 @@ export function Primitive({
             overflow: p.aspectMode === "fill" ? "hidden" : undefined,
           }}
           data-aspect-mode={p.aspectMode}
+          data-inline-item=""
           className="min-w-0 data-[aspect-mode=fit]:[&_img]:object-contain data-[aspect-mode=fill]:[&_img]:h-full data-[aspect-mode=fill]:[&_img]:w-full data-[aspect-mode=fill]:[&_img]:object-cover"
         >
           {children}
@@ -387,10 +512,16 @@ export function Primitive({
     return (
       <hr
         style={{
-          ...style,
           marginBlock: layoutStyle({ padding: p.spacing ?? 2 }).padding,
+          borderTopWidth:
+            ({ xs: 1, sm: 1, md: 2, lg: 3, xl: 4 } as Record<string, number>)[
+              p.size
+            ] ??
+            (typeof p.size === "number" ? Math.max(1, Math.min(8, p.size)) : 1),
+          borderColor: p.color ? uiColor(p.color) : undefined,
+          marginInline: p.flush ? "-12pt" : undefined,
         }}
-        className="w-full border-workspace-divider"
+        className="border-0 border-t border-workspace-divider"
       />
     );
   if (
@@ -426,6 +557,7 @@ export function Primitive({
       {
         style,
         htmlFor: p.htmlFor,
+        id: name === "label" ? p.id : undefined,
         className: `min-w-0 break-words ${name === "title" ? "text-xl font-semibold tracking-tight text-balance" : name === "caption" ? "text-xs text-workspace-muted" : name === "label" ? "text-sm font-medium" : name === "blockquote" ? "border-l-2 border-workspace-divider pl-4 text-workspace-muted" : "text-sm leading-relaxed"} ${p.truncate ? "truncate" : ""}`,
       },
       children,
@@ -434,10 +566,11 @@ export function Primitive({
   if (name === "badge")
     return (
       <span
-        style={style}
+        style={{ ...style, ...toneStyle(p.color, p.variant ?? "soft") }}
         onMouseEnter={() => p.onHover && run(p.onHover, [true], false)}
         onMouseLeave={() => p.onHover && run(p.onHover, [false], false)}
-        className="inline-flex w-fit max-w-full rounded-full border border-workspace-divider bg-workspace-control px-2.5 py-0.5 text-xs font-medium"
+        className={`inline-flex w-fit max-w-full items-center gap-1 truncate border px-2 py-0.5 text-xs font-medium ${p.pill === false ? "rounded-workspace-control" : "rounded-full"}`}
+        data-color={p.color ?? "neutral"}
       >
         {plain}
       </span>
@@ -445,13 +578,8 @@ export function Primitive({
   if (name === "icon")
     return (
       <Icon
-        name={String(
-          ({ plus: "add", "sliders-horizontal": "setting-4" } as Props)[
-            p.name
-          ] ?? p.name,
-        )}
-        aria-label={p["aria-label"] ?? p.label}
-        aria-hidden={!p.label && !p["aria-label"]}
+        name={resolveIconName(String(p.name))}
+        aria-hidden
         size={Number(
           ({ xs: 12, sm: 16, md: 20, lg: 24, xl: 32, "2xl": 40 } as Props)[
             p.size
@@ -505,21 +633,56 @@ export function Primitive({
       </InlinePopoverTrigger>
     );
   }
-  if (name === "button" || name === "pressable")
+  if (name === "pressable")
+    return (
+      <button
+        type="button"
+        disabled={disabled}
+        title={p.tooltip}
+        aria-label={p.accessibilityLabel ?? p.tooltip}
+        onClick={click}
+        style={style}
+        className={`${focus} ${p.inline ? "inline-flex" : "flex"} min-w-0 flex-col rounded-workspace-control text-left hover:bg-workspace-hover disabled:cursor-not-allowed disabled:opacity-40`}
+      >
+        {children}
+      </button>
+    );
+  if (name === "button") {
+    const size =
+      (
+        {
+          xs: "min-h-7 px-2 text-xs",
+          sm: "min-h-8 px-2.5 text-xs",
+          md: "min-h-9 px-3 text-sm",
+          lg: "min-h-11 px-4 text-base",
+          xl: "min-h-12 px-5 text-base",
+        } as Record<string, string>
+      )[p.size] ?? "min-h-9 px-3 text-sm";
+    const { fontSize: _size, ...buttonStyle } = style;
     return (
       <button
         type={p.submit ? "submit" : "button"}
         disabled={disabled || !!p.loading}
-        title={p.tooltip}
-        id={p.id}
-        aria-label={p["aria-label"] ?? p.accessibilityLabel ?? p.tooltip}
+        aria-busy={p.loading || undefined}
+        aria-label={p.accessibilityLabel}
         onClick={click}
-        style={style}
-        className={`${focus} ${p.block ? "w-full" : ""} ${name === "button" ? `inline-flex min-h-9 items-center justify-center gap-2 rounded-workspace-control px-3 py-2 text-sm font-medium ${p.variant === "outline" || p.variant === "ghost" ? "border border-workspace-divider bg-workspace-control text-workspace-text hover:bg-workspace-hover" : "bg-workspace-accent-fill text-workspace-accent-foreground hover:opacity-90"}` : "inline-flex min-w-0 flex-col text-left"} disabled:cursor-not-allowed disabled:opacity-40`}
+        style={{
+          ...buttonStyle,
+          ...toneStyle(p.color ?? "primary", p.variant ?? "solid"),
+          ...(p.uniform ? { paddingInline: 0, aspectRatio: "1" } : {}),
+        }}
+        className={`${focus} ${size} ${p.block ? "w-full" : ""} ${p.pill ? "rounded-full" : "rounded-workspace-control"} inline-flex items-center justify-center gap-2 border py-1.5 font-medium transition-[filter] hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-40`}
       >
-        {p.loading ? "Working…" : plain}
+        {p.loading && (
+          <span
+            aria-hidden
+            className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-none"
+          />
+        )}
+        {plain}
       </button>
     );
+  }
   if (name === "form")
     return (
       <form
@@ -546,7 +709,8 @@ export function Primitive({
   if (name === "input" || name === "textarea") {
     const common = {
       id: p.id ?? id,
-      "aria-label": String(label),
+      "aria-label": label === undefined ? undefined : String(label),
+      "aria-labelledby": p.labelledBy,
       disabled,
       required: !!p.required,
       name: p.name,
@@ -569,7 +733,7 @@ export function Primitive({
               : event.target.value,
         ),
       style,
-      className: control,
+      className: `${control} ${p.pill ? "rounded-full" : ""} ${p.invalid ? "border-workspace-danger outline-workspace-danger" : ""} ${p.variant === "ghost" ? "border-transparent bg-transparent" : ""} ${({ sm: "min-h-8 text-xs", lg: "min-h-11 text-base" } as Props)[p.size] ?? "min-h-9"}`,
       "aria-invalid": p.invalid || undefined,
     };
     if (name === "textarea")
@@ -607,9 +771,6 @@ export function Primitive({
             ? inputType
             : "text"
         }
-        min={p.min}
-        max={p.max}
-        step={p.step}
       />
     );
   }
@@ -636,7 +797,8 @@ export function Primitive({
     return (
       <div style={style} className="min-w-0">
         <input
-          aria-label={String(label)}
+          aria-label={label === undefined ? undefined : String(label)}
+          aria-labelledby={p.labelledBy}
           className={`min-h-8 w-full accent-workspace-accent ${focus}`}
           type="range"
           id={p.id}
@@ -657,10 +819,27 @@ export function Primitive({
           onChange={(event) => change(event.target.valueAsNumber)}
         />
         {Array.isArray(p.marks) && (
-          <div className="flex justify-between gap-2 text-xs text-workspace-muted">
-            {p.marks.slice(0, 20).map((mark: Props, index: number) => (
-              <span key={index}>{valueText(mark.label ?? mark.value)}</span>
-            ))}
+          <div className="relative h-4 text-xs text-workspace-muted">
+            {p.marks.slice(0, 20).map((mark: Props, index: number) => {
+              const min = Number(p.min ?? 0),
+                max = Number(p.max ?? 100);
+              const at = Math.max(
+                0,
+                Math.min(
+                  100,
+                  ((Number(mark.value) - min) / (max - min || 1)) * 100,
+                ),
+              );
+              return (
+                <span
+                  key={index}
+                  className="absolute -translate-x-1/2 whitespace-nowrap first:translate-x-0 last:-translate-x-full"
+                  style={{ left: `${at}%` }}
+                >
+                  {valueText(mark.label ?? mark.value)}
+                </span>
+              );
+            })}
           </div>
         )}
       </div>
@@ -677,30 +856,16 @@ export function Primitive({
         }}
       >
         <fieldset
-          aria-label={String(label)}
+          id={p.id}
           style={style}
-          className={`flex gap-3 ${p.direction === "horizontal" ? "flex-wrap" : "flex-col"}`}
+          className={`flex gap-3 ${p.direction === "horizontal" ? "flex-row flex-wrap" : "flex-col"}`}
         >
-          {Array.isArray(p.options)
-            ? p.options.map((option: Props, index: number) => (
-                <label
-                  key={index}
-                  className="inline-flex items-center gap-2 text-sm"
-                >
-                  <input
-                    type="radio"
-                    className={`size-4 accent-workspace-accent ${focus}`}
-                    name={p.name ?? id}
-                    checked={value === option.value}
-                    value={String(option.value)}
-                    required={!!p.required}
-                    disabled={disabled || !!option.disabled}
-                    onChange={() => change(option.value)}
-                  />
-                  {valueText(option.label)}
-                </label>
-              ))
-            : children}
+          {p.label !== undefined && (
+            <legend className="mb-1 text-sm font-medium">
+              {valueText(p.label)}
+            </legend>
+          )}
+          {children}
         </fieldset>
       </InputGroup.Provider>
     );
@@ -740,9 +905,11 @@ export function Primitive({
     return (
       <div
         role="radiogroup"
-        aria-label={String(label)}
+        id={p.id}
+        aria-label={label === undefined ? undefined : String(label)}
+        aria-labelledby={p.labelledBy}
         style={style}
-        className="flex flex-wrap gap-1 rounded-workspace-control border border-workspace-divider bg-workspace-control p-1"
+        className={`flex flex-wrap gap-1 border border-workspace-divider bg-workspace-control p-1 ${p.pill ? "rounded-full [&>label]:rounded-full" : "rounded-workspace-control"} ${({ sm: "text-xs", lg: "text-base" } as Props)[p.size] ?? ""}`}
       >
         {options.map((option: Props, index: number) => (
           <label
@@ -919,7 +1086,14 @@ export function Primitive({
             {valueText(p.marker)}
           </span>
         )}
-        {plain}
+        {p.label !== undefined && (
+          <span className="font-medium">{valueText(p.label)}</span>
+        )}
+        {p.label !== undefined && contentChildren(children).length > 0 ? (
+          <div>{children}</div>
+        ) : (
+          p.label === undefined && children
+        )}
         {p.description && (
           <p className="text-xs text-workspace-muted">
             {valueText(p.description)}
@@ -1037,7 +1211,8 @@ export function Primitive({
       children,
     );
   }
-  if (name === "Chart") return <InlineChart content={p.content} />;
+  if (name === "Chart")
+    return <InlineChart content={p.content} animate={interactive} />;
   if (name === "favicon" || name === "AsyncImage") {
     const url = safeURL(p.src ?? p.url, true);
     if ((!url || imageFailed) && p.fallback)
@@ -1088,7 +1263,7 @@ export function Primitive({
     );
   }
   if (name === "Link") {
-    const href = safeURL(p.href ?? p.url);
+    const href = safeURL(p.url);
     return href ? (
       <a
         style={style}
@@ -1123,17 +1298,19 @@ export function Primitive({
       />
     );
   if (name === "escape") return <span>{text}</span>;
-  if (name === "Entity" && ["task", "page"].includes(p.category))
+  if (name === "Entity" && ["task", "page"].includes(p.category) && p.ref)
     return (
       <button
         type="button"
         disabled={disabled}
         className={`rounded-workspace-control border border-workspace-divider px-3 py-2 text-left text-sm text-workspace-accent hover:bg-workspace-hover ${focus}`}
         onClick={() =>
-          run(p.onEntity, [{ category: p.category, value: p.value }])
+          run(p.onEntity, [{ category: p.category, refId: p.ref }])
         }
       >
-        {p.label ?? `Open ${p.category}`}
+        {contentChildren(children).length
+          ? children
+          : valueText(p.value ?? `Open ${p.category}`)}
       </button>
     );
   if (name === "FollowUp")
@@ -1142,9 +1319,9 @@ export function Primitive({
         type="button"
         disabled={disabled}
         className={`rounded-workspace-control border border-workspace-divider px-3 py-2 text-left text-sm hover:bg-workspace-hover ${focus}`}
-        onClick={() => run(p.onFollowUp, [p.query ?? p.text ?? p.value])}
+        onClick={() => run(p.onFollowUp, [p.query ?? p.value])}
       >
-        {p.text ?? p.value ?? p.query}
+        {p.value ?? p.query}
       </button>
     );
   return <Unavailable name={name} />;

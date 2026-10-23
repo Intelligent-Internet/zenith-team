@@ -1,4 +1,75 @@
 import schema from "./schema.json";
+import {
+  failureMessage,
+  recordDiagnostic,
+  type InlineDiagnostic,
+} from "./recovery";
+
+// Repair only unambiguous scalar mistakes; never invent data, callbacks, URLs,
+// or authority. Invalid optional props are omitted, required data still fails
+// full component validation and is isolated by the renderer.
+export function repairProperties(
+  name: string,
+  supplied: Record<string, unknown>,
+  diagnostics: InlineDiagnostic[],
+  start: number,
+  literal = false,
+) {
+  const props: Record<string, any> = Object.create(null);
+  const allowed = (schema.props as Record<string, string[]>)[name] ?? [];
+  for (const [key, original] of Object.entries(supplied)) {
+    const report = (
+      code: string,
+      message: string,
+      repair: InlineDiagnostic["repair"],
+    ) =>
+      recordDiagnostic(diagnostics, {
+        code,
+        phase: "catalog",
+        start,
+        component: name,
+        property: key,
+        message,
+        repair,
+      });
+    if (!allowed.includes(key)) {
+      report(
+        "unknown_prop",
+        `Unsupported property ${key} on ${name}.`,
+        "omitted",
+      );
+      continue;
+    }
+    let value = original;
+    const type =
+      (schema.componentTypes as Record<string, Record<string, string>>)[name]?.[
+        key
+      ] ?? (schema.types as Record<string, string>)[key];
+    if (type === "boolean" && typeof value !== "boolean" && value != null) {
+      if (value === "false" || value === "" || value === 0) value = false;
+      else if (value === "true" || value === 1) value = true;
+    }
+    try {
+      validateProperties(name, { [key]: value }, true);
+      props[key] = value;
+      if (value !== original)
+        report(
+          "normalized_boolean",
+          `${name}.${key} was normalized to a boolean.`,
+          "normalized",
+        );
+    } catch (error) {
+      report(
+        literal ? "invalid_literal" : "invalid_value",
+        failureMessage(error),
+        "omitted",
+      );
+      // A broken guard must not accidentally enable an action or editing.
+      if (["disabled", "readOnly", "loading"].includes(key)) props[key] = true;
+    }
+  }
+  return props;
+}
 
 // Shared by the portable parser and browser: no DOM or renderer dependencies.
 export function validateProperties(
@@ -78,26 +149,8 @@ export function validateProperties(
     if (choices && !choices.includes(value))
       throw new Error(`${name}.${key} must be ${choices.join(" | ")}.`);
   }
-  for (const [component, primary, alias] of [
-    ["input", "type", "inputType"],
-    ["Link", "href", "url"],
-  ]) {
-    if (
-      name === component &&
-      props[primary] != null &&
-      props[alias] != null &&
-      props[primary] !== props[alias]
-    )
-      throw new Error(
-        `${name}.${primary} and ${alias} must agree when both are supplied.`,
-      );
-  }
   if (name === "Chart" && !partial) validateChart(props.content);
-  if (
-    name === "input" &&
-    props.mask &&
-    (props.type ?? props.inputType) === "number"
-  )
+  if (name === "input" && props.mask && props.inputType === "number")
     throw new Error("Input masks require a text input.");
   if (name === "table" && props.columnSizing !== undefined) {
     const sizing = props.columnSizing;
@@ -128,19 +181,6 @@ export function validateProperties(
           "WritingBlock.options requires {label, content} drafts.",
         );
     }
-  } else if (name === "WritingBlock" && props.options) {
-    for (const [key, value] of Object.entries(props.options)) {
-      if (
-        key === "rows"
-          ? typeof value !== "number" ||
-            !Number.isInteger(value) ||
-            value < 3 ||
-            value > 30
-          : !["readOnly", "showCopyButton"].includes(key) ||
-            typeof value !== "boolean"
-      )
-        throw new Error(`Invalid WritingBlock.options.${key}.`);
-    }
   }
   if (
     name === "AsyncImage" &&
@@ -151,9 +191,7 @@ export function validateProperties(
   )
     throw new Error("AsyncImage requires exactly one of query, ref or src.");
   if (
-    (name === "select" ||
-      name === "segmented-control" ||
-      name === "radio-group") &&
+    (name === "select" || name === "segmented-control") &&
     Array.isArray(props.options)
   ) {
     for (const option of props.options) {
@@ -182,7 +220,6 @@ export function validateChart(content: unknown) {
   const c = content as Record<string, any>;
   const keys = [
     "chartType",
-    "title",
     "xKey",
     "nameKey",
     "valueKey",
@@ -199,8 +236,8 @@ export function validateChart(content: unknown) {
   for (const key of Object.keys(c))
     if (!keys.includes(key))
       throw new Error(`Unsupported Chart.content property ${key}.`);
-  if (!["bar", "line", "area", "scatter", "pie"].includes(c.chartType))
-    throw new Error("Chart.chartType must be bar, line, area, scatter or pie.");
+  if (!["bar", "line", "scatter", "pie"].includes(c.chartType))
+    throw new Error("Chart.chartType must be bar, line, scatter or pie.");
   const x = c.xKey ?? c.nameKey;
   if (typeof x !== "string" || !x)
     throw new Error("Chart requires xKey or nameKey.");
@@ -217,7 +254,6 @@ export function validateChart(content: unknown) {
         ![
           "dataKey",
           "label",
-          "color",
           "valuePrefix",
           "valueSuffix",
           "valueFormat",

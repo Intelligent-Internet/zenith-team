@@ -1,7 +1,10 @@
 # Gold-standard authoring and verification
 
-Historical authoring notes from the earlier guide. The bundled SKILL.md, adapted from final_skill.md, supersedes its vocabulary and capability statements.
-Use [renderer-support.md](renderer-support.md) and [schema.generated.json](schema.generated.json) for the implemented API. The [playground](../playground.zenith-ui) is the reference example; verify its behavior using the matrix below.
+Historical authoring notes from the earlier guide, kept for renderer developers.
+The bundled SKILL.md (adapted from final_skill.md) supersedes their vocabulary;
+[renderer-contract.md](renderer-contract.md) and `frontend/src/shared/inline-ui/schema.json`
+define the implemented API. The playground fixture lives at
+`server/internal/wiki/testdata/playground.zenith-ui`.
 
 ## 7. Composition and visual design
 

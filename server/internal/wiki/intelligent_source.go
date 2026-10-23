@@ -841,7 +841,7 @@ func PreviewSource(source string, version int) SourcePreview {
 		result.AcceptedBytes = len(source)
 		return result
 	}
-	info, err := inspectInlineSource(source, version)
+	info, err := inspectInlineSourceMode(source, version, true)
 	if err != nil {
 		var diagnostic *SourceDiagnostic
 		if errors.As(err, &diagnostic) {
@@ -854,6 +854,7 @@ func PreviewSource(source string, version int) SourcePreview {
 		root = BlocksFromMarkdown(source)
 	}
 	result.Content = &root
+	result.Diagnostics = append(result.Diagnostics, info.diagnostics...)
 	result.AcceptedBytes = len(source)
 	result.Complete = info.complete
 	return result

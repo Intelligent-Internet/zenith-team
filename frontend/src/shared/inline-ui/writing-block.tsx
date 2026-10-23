@@ -86,12 +86,12 @@ export function InlineWritingBlock({
           aria-label="Draft text"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
-          readOnly={!interactive || !!p.options?.readOnly}
-          rows={Math.max(3, Math.min(30, Number(p.options?.rows) || 8))}
+          readOnly={!interactive}
+          rows={8}
           className="w-full rounded-workspace-control border border-workspace-divider bg-workspace-control p-3 text-sm text-workspace-text focus-visible:outline-2 focus-visible:outline-workspace-accent"
         />
       )}
-      {interactive && !p.options?.readOnly && (
+      {interactive && (
         <button
           type="button"
           onClick={() => setEditing(!editing)}
@@ -100,7 +100,7 @@ export function InlineWritingBlock({
           {editing ? "Preview draft" : "Edit draft"}
         </button>
       )}
-      {p.options?.showCopyButton !== false && (
+      {
         <button
           type="button"
           disabled={!interactive}
@@ -109,7 +109,7 @@ export function InlineWritingBlock({
         >
           Copy draft
         </button>
-      )}
+      }
     </section>
   );
 }

@@ -44,6 +44,25 @@ func TestInlineSourceStreamingAndLiteralCode(t *testing.T) {
 	}
 }
 
+func TestInlinePreviewReportsRepairsWithoutLosingContent(t *testing.T) {
+	source := `🌌<box gap="1" invented="x"><text>Kept</text></box>`
+	preview := PreviewSource(source, 1)
+	if !preview.Complete || preview.Content == nil || len(preview.Diagnostics) != 2 {
+		t.Fatalf("missing recovered preview: %#v", preview)
+	}
+	for _, diagnostic := range preview.Diagnostics {
+		if diagnostic.Severity != "warning" || diagnostic.Start != len("🌌") {
+			t.Fatalf("diagnostic must use UTF-8 offsets: %#v", diagnostic)
+		}
+	}
+	if !strings.Contains(InlineSource(preview.Content.Content[0]), "Kept") {
+		t.Fatal("repair lost readable source")
+	}
+	if _, err := CompileSource(source, 1); err == nil {
+		t.Fatal("preview recovery must not silently publish invalid authored source")
+	}
+}
+
 func TestInlineSourceDoesNotExecuteDeclarations(t *testing.T) {
 	// Parsing a declaration must not execute even an unbounded script.
 	root, err := CompileSource(`{@body while (true) {}}<text>Unexecuted</text>`, 1)
@@ -62,7 +81,7 @@ func TestInlineSourceAppBlockHTML(t *testing.T) {
 	// HTML scripts are parsed as source, never executed by the server.
 	for _, source := range []string{
 		`<AppBlock app_block_id="chess"><div>Chess</div><script>while (true) {}</script></AppBlock>`,
-		"<AppBlock app_block_id=\"chess\" html={`<!doctype html><html><body><div>Chess</div><script>while (true) {}</script></body></html>`} />",
+		`<AppBlock app_block_id="chess"><!doctype html><html><body><div>Chess</div><script>while (true) {}</script></body></html></AppBlock>`,
 	} {
 		root, err := CompileSource(source, 1)
 		if err != nil {
@@ -75,8 +94,9 @@ func TestInlineSourceAppBlockHTML(t *testing.T) {
 			t.Fatal("AppBlock source round trip changed")
 		}
 	}
-	if _, err := CompileSource(`<AppBlock html={42} />`, 1); err == nil || !strings.Contains(err.Error(), "AppBlock.html requires string") {
-		t.Fatalf("non-string HTML must be rejected: %v", err)
+	// The final guide's AppBlock carries its source as a raw body only.
+	if _, err := CompileSource("<AppBlock html={`<div>x</div>`} />", 1); err == nil || !strings.Contains(err.Error(), "Unsupported property html") {
+		t.Fatalf("html property must be rejected: %v", err)
 	}
 }
 
