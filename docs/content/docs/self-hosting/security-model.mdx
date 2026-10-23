@@ -71,7 +71,7 @@ The operator owns the host, the network, TLS, and the secrets in `deploy/.env`. 
 
 - Run the [latest release](https://github.com/Intelligent-Internet/zenith-team/releases). Only the latest release gets security fixes. See [Upgrading](/self-hosting/upgrading).
 - Pin image versions, such as `zenith-team-server:1.3.0`, rather than `latest`, so you know what runs.
-- The project updates its dependencies, base images and CI actions every week through Dependabot. A new release picks those up, so upgrading regularly keeps them current.
+- The project updates its dependencies, base images and CI actions as part of its releases, and every release scans the Go dependencies for known vulnerabilities. Upgrading regularly keeps them current.
 - Keep `zen`, `zenith-team-mcp` and desktop apps on the same release as the server.
 
 ## Report a vulnerability
