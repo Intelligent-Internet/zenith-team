@@ -931,6 +931,13 @@ func TestErrorMappersGolden(t *testing.T) {
 					"invalid_credentials",
 				},
 				{
+					"password work busy",
+					auth.ErrPasswordWorkBusy,
+					http.StatusServiceUnavailable,
+					"authentication is busy; retry shortly",
+					"authentication_busy",
+				},
+				{
 					"invalid session",
 					auth.ErrInvalidSession,
 					http.StatusUnauthorized,

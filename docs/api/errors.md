@@ -174,7 +174,7 @@ write again with the new `revision`.
 | `profile_revision_conflict` | `expectedRevision` did not match; body carries `currentUser` | Rebase on `currentUser`, re-apply, write again |
 | `agent_create_conflict` | A second active root agent was requested | Archive or reuse the existing root |
 | `email_already_registered` | | Offer sign-in instead of sign-up |
-| `oauth_account_conflict` | The provider identity belongs to another account | Sign in with the original method and link |
+| `oauth_account_conflict` | A new provider identity has an email already used by another account | Use the original sign-in method. Email-only linking is refused; an explicit authenticated linking flow is not available. |
 | `account_conflict` | Account lifecycle transition is not legal from the current state | Re-read the account |
 | `session_already_rotated` | The refresh token was concurrently exchanged without the same `rotationId` | Retry **once** with the current credential; an exact retry carrying the original `rotationId` returns the committed rotation |
 | `agent_archive_blocked` | The agent still has active dependents | Reassign or archive the dependents first |
@@ -275,6 +275,7 @@ Transient unless stated. Back off exponentially; do not hot-loop.
 | `oauth_provider_unavailable` | 502 | The upstream provider failed | Retry with backoff, or offer another sign-in method |
 | `service_not_ready` | 503 | The server is starting or a dependency is down | Retry with backoff |
 | `email_delivery_unavailable` | 503 | Verification mail could not be sent | Retry; the account is unaffected |
+| `authentication_busy` | 503 | The shared password-work budget is full | Retry with backoff; `Retry-After: 1` is returned. No credential attempt was queued. |
 | `password_reset_unavailable` | 503 | Reset delivery is down | Retry with backoff |
 | `oauth_not_configured` | 503 | This deployment has no OAuth provider configured | **Do not retry.** Hide the button |
 | `attachment_storage_unavailable` | 503 | Object storage is unreachable | Retry with backoff |

@@ -1,5 +1,7 @@
 const fs = require("node:fs");
+const crypto = require("node:crypto");
 const path = require("node:path");
+const { isTrustedMainFrame } = require("./trusted-frame.cjs");
 
 const SHOW_CONTEXT_MENU_CHANNEL = "desktop:show-context-menu";
 const OPEN_RESOURCE_FILE_CHANNEL = "desktop:open-resource-file";
@@ -30,20 +32,31 @@ function registerNativeActions(options = {}) {
     shell: options.shell ?? electron.shell,
   };
   const nativeActions = createNativeActions(dependencies);
+  const trustedAction = (action) => (event, payload) => {
+    if (!isTrustedMainFrame(event, dependencies.getMainWindow?.())) {
+      return { ok: false, reason: "Desktop resource request is invalid." };
+    }
+    return action(payload);
+  };
 
-  dependencies.ipcMain.handle(SHOW_CONTEXT_MENU_CHANNEL, (_event, payload) =>
-    nativeActions.showContextMenu(payload),
+  dependencies.ipcMain.handle(
+    SHOW_CONTEXT_MENU_CHANNEL,
+    trustedAction(nativeActions.showContextMenu),
   );
-  dependencies.ipcMain.handle(OPEN_RESOURCE_FILE_CHANNEL, (_event, payload) =>
-    nativeActions.openResourceFile(payload),
+  dependencies.ipcMain.handle(
+    OPEN_RESOURCE_FILE_CHANNEL,
+    trustedAction(nativeActions.openResourceFile),
   );
-  dependencies.ipcMain.handle(REVEAL_RESOURCE_FILE_CHANNEL, (_event, payload) =>
-    nativeActions.revealResourceFile(payload),
+  dependencies.ipcMain.handle(
+    REVEAL_RESOURCE_FILE_CHANNEL,
+    trustedAction(nativeActions.revealResourceFile),
   );
-  dependencies.ipcMain.handle(SAVE_RESOURCE_FILE_CHANNEL, (_event, payload) =>
-    nativeActions.saveResourceFile(payload),
+  dependencies.ipcMain.handle(
+    SAVE_RESOURCE_FILE_CHANNEL,
+    trustedAction(nativeActions.saveResourceFile),
   );
   dependencies.ipcMain.on(START_RESOURCE_DRAG_CHANNEL, (event, payload) => {
+    if (!isTrustedMainFrame(event, dependencies.getMainWindow?.())) return;
     nativeActions.startResourceDrag(event.sender, payload);
   });
 
@@ -302,8 +315,35 @@ async function prepareManagedResourceFile(payload, { app }) {
   }
 
   const filePath = getManagedResourceFilePath(app, normalized.resource);
+  const cacheDirectory = path.dirname(path.dirname(filePath));
+  await fs.promises.mkdir(cacheDirectory, { recursive: true });
+  const userData = await fs.promises.realpath(app.getPath("userData"));
+  if (
+    (await fs.promises.realpath(cacheDirectory)) !==
+    path.join(userData, "resource-files")
+  ) {
+    return { ok: false, reason: "Desktop resource directory is invalid." };
+  }
   await fs.promises.mkdir(path.dirname(filePath), { recursive: true });
-  await fs.promises.writeFile(filePath, normalized.resource.bytes);
+  const directory = await fs.promises.realpath(path.dirname(filePath));
+  if (!isManagedResourceDirectory(userData, directory, normalized.resource)) {
+    return { ok: false, reason: "Desktop resource directory is invalid." };
+  }
+  // Rename a new file over the destination instead of following an existing
+  // symlink or modifying a hard link to a file outside this resource's cache.
+  const temporaryPath = path.join(
+    directory,
+    `.resource-${crypto.randomUUID()}`,
+  );
+  try {
+    await fs.promises.writeFile(temporaryPath, normalized.resource.bytes, {
+      flag: "wx",
+      mode: 0o600,
+    });
+    await fs.promises.rename(temporaryPath, filePath);
+  } finally {
+    await fs.promises.rm(temporaryPath, { force: true });
+  }
 
   return { filePath, ok: true };
 }
@@ -316,8 +356,32 @@ function prepareManagedResourceFileSync(payload, { app }) {
   }
 
   const filePath = getManagedResourceFilePath(app, normalized.resource);
+  const cacheDirectory = path.dirname(path.dirname(filePath));
+  fs.mkdirSync(cacheDirectory, { recursive: true });
+  const userData = fs.realpathSync(app.getPath("userData"));
+  if (
+    fs.realpathSync(cacheDirectory) !== path.join(userData, "resource-files")
+  ) {
+    return { ok: false, reason: "Desktop resource directory is invalid." };
+  }
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, normalized.resource.bytes);
+  const directory = fs.realpathSync(path.dirname(filePath));
+  if (!isManagedResourceDirectory(userData, directory, normalized.resource)) {
+    return { ok: false, reason: "Desktop resource directory is invalid." };
+  }
+  const temporaryPath = path.join(
+    directory,
+    `.resource-${crypto.randomUUID()}`,
+  );
+  try {
+    fs.writeFileSync(temporaryPath, normalized.resource.bytes, {
+      flag: "wx",
+      mode: 0o600,
+    });
+    fs.renameSync(temporaryPath, filePath);
+  } finally {
+    fs.rmSync(temporaryPath, { force: true });
+  }
 
   return { filePath, ok: true };
 }
@@ -332,7 +396,11 @@ function normalizeResourceFilePayload(payload) {
   const bytes = bufferFromPayloadBytes(payload.bytes);
 
   if (!resourceId) {
-    return { ok: false, reason: "Resource id is required." };
+    return { ok: false, reason: "Resource id is invalid." };
+  }
+
+  if (!filename) {
+    return { ok: false, reason: "Resource filename is invalid." };
   }
 
   if (!bytes || bytes.length === 0) {
@@ -340,7 +408,10 @@ function normalizeResourceFilePayload(payload) {
   }
 
   if (bytes.length > MAX_RESOURCE_FILE_BYTES) {
-    return { ok: false, reason: "Resource file is too large for desktop open." };
+    return {
+      ok: false,
+      reason: "Resource file is too large for desktop open.",
+    };
   }
 
   return {
@@ -354,11 +425,26 @@ function normalizeResourceFilePayload(payload) {
 }
 
 function getManagedResourceFilePath(app, resource) {
-  return path.join(
-    app.getPath("userData"),
-    "resource-files",
+  const directory = path.resolve(app.getPath("userData"), "resource-files");
+  const filePath = path.resolve(
+    directory,
     resource.resourceId,
     resource.filename,
+  );
+  const relativePath = path.relative(directory, filePath);
+  if (
+    path.isAbsolute(relativePath) ||
+    relativePath.split(path.sep).length !== 2 ||
+    relativePath.split(path.sep).some((part) => part === "." || part === "..")
+  ) {
+    throw new Error("Desktop resource path is invalid.");
+  }
+  return filePath;
+}
+
+function isManagedResourceDirectory(userData, directory, resource) {
+  return (
+    directory === path.join(userData, "resource-files", resource.resourceId)
   );
 }
 
@@ -379,14 +465,32 @@ function bufferFromPayloadBytes(bytes) {
 }
 
 function sanitizeResourceFilename(value) {
-  const basename = path.basename(normalizeText(value, 180) || "zenith-team-resource");
+  const name = normalizeText(value, 180) || "zenith-team-resource";
+  if (/[\\/]/.test(name)) return "";
+  const basename = path.basename(name);
   const sanitized = basename.replace(/[^\w .()[\]-]+/g, "_").trim();
-  return sanitized || "zenith-team-resource";
+  if (
+    !sanitized ||
+    sanitized === "." ||
+    sanitized === ".." ||
+    sanitized.endsWith(".") ||
+    /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(sanitized)
+  ) {
+    return "";
+  }
+  return sanitized;
 }
 
 function normalizeIdentifier(value) {
-  const normalized = normalizeText(value, 120).replace(/[^\w.-]+/g, "-");
-  return normalized.replace(/^-+|-+$/g, "");
+  if (
+    typeof value !== "string" ||
+    !/^[a-z0-9][a-z0-9._-]{0,119}$/i.test(value) ||
+    value.endsWith(".") ||
+    /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(value)
+  ) {
+    return "";
+  }
+  return value;
 }
 
 function normalizeText(value, maxLength) {
@@ -482,7 +586,14 @@ function getRuntimeIconPath(platform = process.platform) {
   }
 
   if (platform === "win32") {
-    return path.join(__dirname, "..", "assets", "icons", "windows", "16x16.png");
+    return path.join(
+      __dirname,
+      "..",
+      "assets",
+      "icons",
+      "windows",
+      "16x16.png",
+    );
   }
 
   return path.join(

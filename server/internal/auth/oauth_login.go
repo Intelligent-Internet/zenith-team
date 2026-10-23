@@ -164,34 +164,17 @@ func loginWithOAuthAndCreateSession(
 			return err
 		}
 
-		existing, err := queries.GetUserByEmail(ctx, input.Identity.Email)
+		_, err = queries.GetUserByEmail(ctx, input.Identity.Email)
 		switch {
 		case err == nil:
-			user, err := queries.GetOAuthUserForUpdate(ctx, existing.ID)
-			if err != nil {
-				return err
-			}
-			if user.DisabledAt.Valid {
-				return ErrAccountDisabled
-			}
-			verifiedAt := time.Now().UTC()
-			user, err = queries.MarkUserEmailVerified(ctx, generated.MarkUserEmailVerifiedParams{
-				ID: user.ID, Email: user.Email,
-				VerifiedAt: pgtype.Timestamptz{Time: verifiedAt, Valid: true},
-			})
-			if err != nil {
-				return err
-			}
-			if _, err := queries.CreateOAuthAccount(ctx, generated.CreateOAuthAccountParams{
-				UserID:   user.ID,
-				Provider: input.Identity.Provider,
-				Subject:  input.Identity.Subject,
-				Email:    input.Identity.Email,
-				Profile:  profile,
-			}); err != nil {
-				return err
-			}
-			return createSessionForUser(user.ID)
+			// A provider's verified email proves control of that mailbox, not
+			// of an existing Zenith Team account. Password signup can run
+			// without email verification, and older accounts were marked
+			// verified in that mode. Email-only linking would retain an
+			// attacker's password and sessions when the real owner signs in.
+			// Linking requires a separate flow proving both identities; until
+			// then only an already-linked provider subject may sign in above.
+			return ErrOAuthAccountConflict
 		case !errors.Is(err, pgx.ErrNoRows):
 			return err
 		}

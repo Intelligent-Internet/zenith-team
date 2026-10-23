@@ -367,106 +367,10 @@ func TestOAuthRepositoryLoginUsesProviderSubjectBeforeEmail(t *testing.T) {
 	}
 }
 
-func TestOAuthRepositoryLinksVerifiedEmailAndRejectsDisabledIdentity(t *testing.T) {
+func TestOAuthRepositoryRejectsDisabledIdentity(t *testing.T) {
 	pool, store := startAuthPostgres(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-
-	existingSession := newZenithTeamSession(t, 63)
-	existingUser, _, err := createUserWithSession(ctx, store, NewUser{
-		Email:        "existing@zenith-team.test",
-		PasswordHash: "password-hash", DisplayName: "Existing",
-	}, existingSession)
-	if err != nil {
-		t.Fatalf("CreateUserWithSession(existing) error = %v", err)
-	}
-	existingUserID := existingUser.ID
-	conflicting := OAuthLoginInput{
-		Identity: VerifiedOAuthIdentity{
-			Provider: "google", Subject: "new-google-subject", Email: "EXISTING@zenith-team.test",
-			Profile: OAuthProfileSnapshot{Name: "Existing"},
-		},
-		InitialDisplayName: "Existing",
-		Session:            newOAuthSession(t, 64),
-	}
-	linkedPasswordUser, linkedSessionID, err := loginWithOAuthAndCreateSession(ctx, store, conflicting)
-	if err != nil {
-		t.Fatalf("LoginWithOAuthAndCreateSession(password link) error = %v", err)
-	}
-	if linkedPasswordUser.ID != existingUserID || linkedPasswordUser.Email != "existing@zenith-team.test" ||
-		linkedPasswordUser.PasswordHash != "password-hash" || linkedPasswordUser.DisplayName != "Existing" ||
-		linkedPasswordUser.EmailVerifiedAt == nil {
-		t.Fatalf("linked password user = %#v", linkedPasswordUser)
-	}
-	var conflictingAccountCount int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM oauth_accounts WHERE provider = $1 AND subject = $2`, conflicting.Identity.Provider, conflicting.Identity.Subject).
-		Scan(&conflictingAccountCount); err != nil {
-		t.Fatalf("count linked OAuth accounts: %v", err)
-	}
-	if conflictingAccountCount != 1 {
-		t.Fatalf("linked OAuth accounts = %d, want 1", conflictingAccountCount)
-	}
-	var linkedAccountUserID, linkedSessionUserID uuid.UUID
-	if err := pool.QueryRow(ctx, `SELECT user_id FROM oauth_accounts WHERE provider = $1 AND subject = $2`, conflicting.Identity.Provider, conflicting.Identity.Subject).
-		Scan(&linkedAccountUserID); err != nil {
-		t.Fatalf("query linked OAuth account owner: %v", err)
-	}
-	if err := pool.QueryRow(ctx, `SELECT user_id FROM auth_sessions WHERE id = $1`, linkedSessionID).
-		Scan(&linkedSessionUserID); err != nil {
-		t.Fatalf("query linked OAuth session owner: %v", err)
-	}
-	var linkedEmailUserCount int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM users WHERE lower(email) = 'existing@zenith-team.test'`).
-		Scan(&linkedEmailUserCount); err != nil {
-		t.Fatalf("count linked email users: %v", err)
-	}
-	if linkedAccountUserID != existingUserID || linkedSessionUserID != existingUserID || linkedEmailUserCount != 1 {
-		t.Fatalf(
-			"linked identity/session owners = account:%s session:%s matching-users:%d",
-			linkedAccountUserID,
-			linkedSessionUserID,
-			linkedEmailUserCount,
-		)
-	}
-
-	secondGoogleIdentity := conflicting
-	secondGoogleIdentity.Identity.Subject = "different-google-subject"
-	secondGoogleIdentity.Session = newOAuthSession(t, 73)
-	var sessionsBeforeSecond int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM auth_sessions WHERE user_id = $1`, existingUserID).
-		Scan(&sessionsBeforeSecond); err != nil {
-		t.Fatalf("count sessions before rejected second identity: %v", err)
-	}
-	if _, _, err := loginWithOAuthAndCreateSession(
-		ctx,
-		store,
-		secondGoogleIdentity,
-	); !errors.Is(
-		err,
-		ErrOAuthAccountConflict,
-	) {
-		t.Fatalf(
-			"LoginWithOAuthAndCreateSession(second Google identity) error = %v, want ErrOAuthAccountConflict",
-			err,
-		)
-	}
-	var secondIdentityCount, sessionsAfterSecond int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM oauth_accounts WHERE provider = $1 AND subject = $2`, secondGoogleIdentity.Identity.Provider, secondGoogleIdentity.Identity.Subject).
-		Scan(&secondIdentityCount); err != nil {
-		t.Fatalf("count rejected second OAuth identity: %v", err)
-	}
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM auth_sessions WHERE user_id = $1`, existingUserID).
-		Scan(&sessionsAfterSecond); err != nil {
-		t.Fatalf("count rejected second OAuth session: %v", err)
-	}
-	if secondIdentityCount != 0 || sessionsAfterSecond != sessionsBeforeSecond {
-		t.Fatalf(
-			"rejected second identity mutated state: identities=%d sessions=%d->%d",
-			secondIdentityCount,
-			sessionsBeforeSecond,
-			sessionsAfterSecond,
-		)
-	}
 
 	linked := OAuthLoginInput{
 		Identity: VerifiedOAuthIdentity{

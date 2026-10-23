@@ -134,6 +134,12 @@ paths:
             `503 email_delivery_unavailable` — the verification mail could not be
             sent. Note the asymmetry: `/auth/password-reset/request` swallows the
             identical failure and still answers 202.
+            `503 authentication_busy` — the shared password-work budget is full;
+            retry with backoff. This response includes `Retry-After: 1`.
+          headers:
+            Retry-After:
+              description: Seconds before retrying when authentication is busy.
+              schema: { type: integer, minimum: 1 }
           content:
             application/json:
               schema: { $ref: './_common.yaml#/schemas/Error' }
@@ -199,6 +205,12 @@ paths:
           description: |
             `503 email_delivery_unavailable` — the login re-opened a
             verification flow and its mail could not be sent.
+            `503 authentication_busy` — the shared password-work budget is full;
+            retry with backoff. This response includes `Retry-After: 1`.
+          headers:
+            Retry-After:
+              description: Seconds before retrying when authentication is busy.
+              schema: { type: integer, minimum: 1 }
           content:
             application/json:
               schema: { $ref: './_common.yaml#/schemas/Error' }
@@ -486,7 +498,14 @@ paths:
         '415': { $ref: './_common.yaml#/responses/UnsupportedMediaType' }
         '422': { $ref: './_common.yaml#/responses/ValidationFailed' }
         '503':
-          description: '`503 password_reset_unavailable`.'
+          description: |
+            `503 password_reset_unavailable`, or `503 authentication_busy` when
+            the shared password-work budget is full. The latter includes
+            `Retry-After: 1`; retry with backoff.
+          headers:
+            Retry-After:
+              description: Seconds before retrying when authentication is busy.
+              schema: { type: integer, minimum: 1 }
           content:
             application/json:
               schema: { $ref: './_common.yaml#/schemas/Error' }
@@ -960,8 +979,10 @@ paths:
               schema: { $ref: './_common.yaml#/schemas/Error' }
         '409':
           description: |
-            `409 oauth_account_conflict` — the identity belongs to another
-            account. Sign in with the original method and link.
+            `409 oauth_account_conflict` — a new provider identity has an email
+            already used by another account. Use the original sign-in method.
+            Email-only linking is refused; an explicit authenticated linking
+            flow is not available. Already-linked provider subjects keep working.
           content:
             application/json:
               schema: { $ref: './_common.yaml#/schemas/Error' }

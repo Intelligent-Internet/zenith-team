@@ -30977,9 +30977,13 @@ export interface operations {
              * @description `503 email_delivery_unavailable` — the verification mail could not be
              *     sent. Note the asymmetry: `/auth/password-reset/request` swallows the
              *     identical failure and still answers 202.
+             *     `503 authentication_busy` — the shared password-work budget is full;
+             *     retry with backoff. This response includes `Retry-After: 1`.
              */
             503: {
                 headers: {
+                    /** @description Seconds before retrying when authentication is busy. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -31047,9 +31051,13 @@ export interface operations {
             /**
              * @description `503 email_delivery_unavailable` — the login re-opened a
              *     verification flow and its mail could not be sent.
+             *     `503 authentication_busy` — the shared password-work budget is full;
+             *     retry with backoff. This response includes `Retry-After: 1`.
              */
             503: {
                 headers: {
+                    /** @description Seconds before retrying when authentication is busy. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -31322,9 +31330,15 @@ export interface operations {
             413: components["responses"]["PayloadTooLarge"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["ValidationFailed"];
-            /** @description `503 password_reset_unavailable`. */
+            /**
+             * @description `503 password_reset_unavailable`, or `503 authentication_busy` when
+             *     the shared password-work budget is full. The latter includes
+             *     `Retry-After: 1`; retry with backoff.
+             */
             503: {
                 headers: {
+                    /** @description Seconds before retrying when authentication is busy. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -31845,8 +31859,10 @@ export interface operations {
                 };
             };
             /**
-             * @description `409 oauth_account_conflict` — the identity belongs to another
-             *     account. Sign in with the original method and link.
+             * @description `409 oauth_account_conflict` — a new provider identity has an email
+             *     already used by another account. Use the original sign-in method.
+             *     Email-only linking is refused; an explicit authenticated linking
+             *     flow is not available. Already-linked provider subjects keep working.
              */
             409: {
                 headers: {
