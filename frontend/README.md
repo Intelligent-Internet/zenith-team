@@ -662,13 +662,13 @@ its layer order in both the editor and public viewer.
   override single platforms. Keep signed artifacts out of git; host them in
   release storage whose CORS policy lets the web origin read the manifest.
 - Unsigned packages need no secrets: run `corepack pnpm electron:make`. CI's
-  `desktop` lane builds unsigned macOS and Linux installers as workflow
+  `desktop` lane builds unsigned macOS (Apple silicon) installers as workflow
   artifacts whenever the desktop packaging changes. Signed builds come from
   `.github/workflows/build-desktop.yml`, for Zenith Team on `v*` tags
   (`release.yml`) and for Zenith Team Dev on dev deploys
-  (`build-deploy.yml`, from `main`). Only its macOS signing steps see the
-  Apple secrets, from the `desktop-signing` environment; the Linux job
-  references none.
+  (`build-deploy.yml`, from `main`), for Apple silicon only for now. Only its
+  macOS signing steps see the Apple secrets, from the `desktop-signing`
+  environment.
 - macOS signing is opt-in so unsigned local builds still work. Set
   `ZENITH_TEAM_DESKTOP_MAC_SIGN=true` and optionally
   `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` to enable signing. Set

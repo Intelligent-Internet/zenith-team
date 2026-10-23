@@ -122,8 +122,9 @@ Pull requests labelled `skip-changelog`, and those opened by Dependabot, are lef
 
 While the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`, the release also builds the production desktop app with `.github/workflows/build-desktop.yml`. The macOS builds are signed in the `desktop-signing` environment, the only place the Apple credentials live; it admits `main` and `v*` tags only:
 
-- signed and notarized macOS installers, a `.dmg` to download and a `.zip` for updates, for `arm64` and `x64`;
-- an unsigned Linux `.zip` for `x64`. Windows joins once `zen` builds there.
+- signed and notarized macOS installers for Apple silicon (`arm64`): a `.dmg` to download and a `.zip` for updates.
+
+Intel Macs, Linux and Windows are not shipped for now; adding one back is one more entry in `build-desktop.yml`'s matrix.
 
 These builds sign in to the server at `DESKTOP_API_ORIGIN` and check for updates at `DESKTOP_RELEASE_BASE_URL`; self-hosters still build their own (see [Desktop app](/desktop-app)). Once the images and binaries are out too, `.github/workflows/publish-desktop.yml` uploads the files to `DESKTOP_UPLOAD_URL`, the Cloud Storage location served at `DESKTOP_RELEASE_BASE_URL`, and the GitHub Release gets the same files:
 
@@ -150,7 +151,7 @@ Settings the desktop jobs read:
 | `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
 | `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
 
-Packaging is checked before a tag by CI's `desktop` lane, which builds unsigned macOS (arm64) and Linux (x64) installers with the same setup (`.github/actions/desktop-setup`) whenever a pull request changes the desktop packaging, and keeps them as workflow artifacts for a week. Start the CI workflow by hand to run it on demand.
+Packaging is checked before a tag by CI's `desktop` lane, which builds unsigned macOS (arm64) installers with the same setup (`.github/actions/desktop-setup`) whenever a pull request changes the desktop packaging, and keeps them as workflow artifacts for a week. Start the CI workflow by hand to run it on demand.
 
 ## Dev deployments
 
