@@ -1,0 +1,198 @@
+{
+  "startedAt": "2026-10-23T11:41:53.345500+00:00",
+  "target": "http://localhost:8080",
+  "scope": "local disposable fixtures; no provider execution",
+  "before": {
+    "zenith-team-minimal-server-1": {
+      "image": "sha256:edde3ae37d6c868071a383cdc08f025a74b759513eac1b8fc69b019ab184b297",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    },
+    "zenith-team-minimal-web-1": {
+      "image": "sha256:0740f16ea8b705a5e32a44ef0c9327a35290938ea20fd774da0721fd227fa6bd",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    }
+  },
+  "batches": [
+    {
+      "name": "proxy-denials",
+      "requests": 1200,
+      "concurrency": 32,
+      "elapsedSeconds": 0.238,
+      "requestsPerSecond": 5044.67,
+      "statuses": {
+        "403": 400,
+        "404": 800
+      },
+      "p50Ms": 5.3,
+      "p95Ms": 10.87,
+      "p99Ms": 17.13,
+      "maxMs": 23.38,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "authenticated-company-reads",
+      "requests": 1600,
+      "concurrency": 32,
+      "elapsedSeconds": 0.385,
+      "requestsPerSecond": 4154.71,
+      "statuses": {
+        "200": 1600
+      },
+      "p50Ms": 6.99,
+      "p95Ms": 11.83,
+      "p99Ms": 19.19,
+      "maxMs": 30.09,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "cross-company-access-denials",
+      "requests": 800,
+      "concurrency": 32,
+      "elapsedSeconds": 0.178,
+      "requestsPerSecond": 4505.79,
+      "statuses": {
+        "404": 800
+      },
+      "p50Ms": 6.32,
+      "p95Ms": 10.89,
+      "p99Ms": 13.57,
+      "maxMs": 15.65,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "password-overload",
+      "requests": 2400,
+      "concurrency": 32,
+      "elapsedSeconds": 4.016,
+      "requestsPerSecond": 597.59,
+      "statuses": {
+        "401": 402,
+        "503": 1998
+      },
+      "p50Ms": 48.55,
+      "p95Ms": 97.81,
+      "p99Ms": 128.58,
+      "maxMs": 180.8,
+      "failureSamples": [],
+      "passed": true
+    },
+    {
+      "name": "post-load-company-reads",
+      "requests": 800,
+      "concurrency": 32,
+      "elapsedSeconds": 0.199,
+      "requestsPerSecond": 4029.47,
+      "statuses": {
+        "200": 800
+      },
+      "p50Ms": 7.0,
+      "p95Ms": 11.34,
+      "p99Ms": 12.59,
+      "maxMs": 14.38,
+      "failureSamples": [],
+      "passed": true
+    }
+  ],
+  "loginRecoveryPassed": true,
+  "slowConnections": [
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.005,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.005,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.005,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "headers",
+      "elapsedSeconds": 5.005,
+      "status": null,
+      "passed": true
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.013,
+      "status": 504,
+      "passed": false
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.013,
+      "status": 499,
+      "passed": false
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.013,
+      "status": 504,
+      "passed": false
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.013,
+      "status": 504,
+      "passed": false
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.013,
+      "status": 504,
+      "passed": false
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.012,
+      "status": 499,
+      "passed": false
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.012,
+      "status": 504,
+      "passed": false
+    },
+    {
+      "kind": "body",
+      "elapsedSeconds": 60.013,
+      "status": 499,
+      "passed": false
+    }
+  ],
+  "after": {
+    "zenith-team-minimal-server-1": {
+      "image": "sha256:edde3ae37d6c868071a383cdc08f025a74b759513eac1b8fc69b019ab184b297",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    },
+    "zenith-team-minimal-web-1": {
+      "image": "sha256:0740f16ea8b705a5e32a44ef0c9327a35290938ea20fd774da0721fd227fa6bd",
+      "restartCount": 0,
+      "oomKilled": false,
+      "health": "healthy"
+    }
+  },
+  "containersRecovered": true,
+  "fixtureCleanupPassed": true,
+  "signupClosed": true,
+  "elapsedSeconds": 73.1,
+  "passed": false,
+  "interpretation": "Initial probe expected only the 120-second whole-body deadline. Caddy also has a 60-second idle-body deadline; all eight stalled clients were terminated at60s. This was a probe expectation failure, not evidence of resource exhaustion. Final probe separately measures idle and progressing slow bodies."
+}

@@ -1,0 +1,74 @@
+{
+  "asOf": "2026-10-23",
+  "results": [
+    {
+      "check": "actionlint",
+      "version": "1.7.12",
+      "files": [
+        ".github/workflows/security.yml",
+        ".github/workflows/ci.yml"
+      ],
+      "exitCode": 0
+    },
+    {
+      "check": "govulncheck",
+      "version": "1.9.0",
+      "goVersion": "1.26.10",
+      "target": "linux/amd64",
+      "edition": "full",
+      "exitCode": 0,
+      "symbolVulnerabilities": 0
+    },
+    {
+      "check": "govulncheck",
+      "version": "1.9.0",
+      "goVersion": "1.26.10",
+      "target": "linux/amd64",
+      "edition": "minimal",
+      "exitCode": 0,
+      "symbolVulnerabilities": 0
+    },
+    {
+      "check": "npm-policy",
+      "scope": "all",
+      "pnpmVersion": "9.14.2",
+      "exitCode": 0,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0
+    },
+    {
+      "check": "npm-policy",
+      "scope": "production",
+      "pnpmVersion": "9.14.2",
+      "exitCode": 0,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0
+    },
+    {
+      "check": "voice-osv",
+      "packagesQueried": 76,
+      "affectedPackages": 0,
+      "exitCode": 0
+    },
+    {
+      "check": "npm-scanner-simulated-policy",
+      "cases": 9,
+      "passed": 9
+    },
+    {
+      "check": "voice-scanner-simulated-failures",
+      "cases": 6,
+      "passed": 6
+    },
+    {
+      "check": "node --check scripts/security/check_npm_dependencies.mjs",
+      "exitCode": 0
+    },
+    {
+      "check": "git diff --check",
+      "exitCode": 0
+    }
+  ]
+}

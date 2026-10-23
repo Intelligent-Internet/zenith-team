@@ -1,0 +1,78 @@
+[
+  {
+    "name": "server",
+    "reference": "zenith-team-server:minimal-local",
+    "Id": "sha256:edde3ae37d6c868071a383cdc08f025a74b759513eac1b8fc69b019ab184b297",
+    "RepoDigests": [
+      "zenith-team-server@sha256:edde3ae37d6c868071a383cdc08f025a74b759513eac1b8fc69b019ab184b297"
+    ],
+    "Created": "2026-10-23T11:01:03.968066006Z",
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 21080207,
+    "archive": ".dev/security-image-archives/server.tar",
+    "exitCode": 0,
+    "error": "",
+    "rescannedAt": "2026-10-23T11:06:06.426666+00:00"
+  },
+  {
+    "name": "web",
+    "reference": "zenith-team-web:minimal-local",
+    "Id": "sha256:0740f16ea8b705a5e32a44ef0c9327a35290938ea20fd774da0721fd227fa6bd",
+    "RepoDigests": [
+      "zenith-team-web@sha256:0740f16ea8b705a5e32a44ef0c9327a35290938ea20fd774da0721fd227fa6bd"
+    ],
+    "Created": "2026-10-23T10:55:53.814664501Z",
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 64823381,
+    "archive": ".dev/security-image-archives/web.tar",
+    "exitCode": 0,
+    "error": ""
+  },
+  {
+    "name": "storage",
+    "reference": "zenith-team-storage:minimal-local",
+    "Id": "sha256:7cf9d4c3f6a81cd23bbcf5c8b314805d22bc6458f32d4375dd729a8755999839",
+    "RepoDigests": [
+      "zenith-team-storage@sha256:7cf9d4c3f6a81cd23bbcf5c8b314805d22bc6458f32d4375dd729a8755999839"
+    ],
+    "Created": "2026-10-23T10:54:05.172405382Z",
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 52039185,
+    "archive": ".dev/security-image-archives/storage.tar",
+    "exitCode": 0,
+    "error": ""
+  },
+  {
+    "name": "postgres",
+    "reference": "postgres:17-alpine@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb",
+    "Id": "sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb",
+    "RepoDigests": [
+      "postgres@sha256:eee6c6e1b0894fa4fe0075eb054af9fd1cf39a35321c2d4110626cfe506411fb"
+    ],
+    "Created": "2026-10-21T23:19:22.546755703Z",
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 115044235,
+    "archive": ".dev/security-image-archives/postgres.tar",
+    "exitCode": 0,
+    "error": ""
+  },
+  {
+    "name": "redis",
+    "reference": "redis:7.4-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541",
+    "Id": "sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541",
+    "RepoDigests": [
+      "redis@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541"
+    ],
+    "Created": "2026-10-21T21:14:13.970691305Z",
+    "Architecture": "arm64",
+    "Os": "linux",
+    "Size": 16775509,
+    "archive": ".dev/security-image-archives/redis.tar",
+    "exitCode": 0,
+    "error": ""
+  }
+]

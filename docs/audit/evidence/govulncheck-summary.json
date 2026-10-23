@@ -1,0 +1,5272 @@
+{
+  "command": "GOFLAGS= go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -json ./...",
+  "exitCode": 0,
+  "exitCodeNote": "govulncheck JSON output requires interpreting finding records; exit zero does not mean no vulnerabilities.",
+  "config": {
+    "protocol_version": "v1.0.0",
+    "scanner_name": "govulncheck",
+    "scanner_version": "v1.9.0",
+    "db": "https://vuln.go.dev",
+    "db_last_modified": "2026-10-21T00:27:29Z",
+    "go_version": "go1.26.2",
+    "scan_level": "symbol",
+    "scan_mode": "source"
+  },
+  "uniqueAdvisories": 36,
+  "advisories": [
+    {
+      "id": "GO-2026-4918",
+      "aliases": [
+        "CVE-2026-33814"
+      ],
+      "summary": "Infinite loop in HTTP/2 transport when given bad SETTINGS_MAX_FRAME_SIZE in net/http/internal/http2 in golang.org/x/net",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": true,
+      "findingCount": 8,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4970",
+      "aliases": [
+        "CVE-2026-39822"
+      ],
+      "summary": "Root escape via symlink plus trailing slash in os",
+      "published": "2026-07-07T21:34:47Z",
+      "modified": "2026-07-07T21:34:47Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.5"
+      ],
+      "symbolReachable": true,
+      "findingCount": 7,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "os",
+          "function": "Open",
+          "receiver": "*rootFS",
+          "position": {
+            "filename": "src/os/root.go",
+            "offset": 11431,
+            "line": 363,
+            "column": 20
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "io/fs",
+          "function": "ReadDir",
+          "position": {
+            "filename": "src/io/fs/readdir.go",
+            "offset": 921,
+            "line": 34,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/workflow",
+          "function": "readCatalog",
+          "position": {
+            "filename": "internal/workflow/catalog.go",
+            "offset": 13693,
+            "line": 339,
+            "column": 28
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/workflow",
+          "function": "CheckCatalog",
+          "position": {
+            "filename": "internal/workflow/catalog.go",
+            "offset": 13586,
+            "line": 334,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4971",
+      "aliases": [
+        "CVE-2026-39836"
+      ],
+      "summary": "Panic in Dial and LookupPort when handling NUL byte on Windows in net",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": true,
+      "findingCount": 13,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net",
+          "function": "Dial",
+          "position": {
+            "filename": "src/net/dial.go",
+            "offset": 14286,
+            "line": 470,
+            "column": 6
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "dialer$1",
+          "position": {
+            "filename": "client.go",
+            "offset": 14438,
+            "line": 432,
+            "column": 19
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 1478,
+            "line": 50,
+            "column": 21
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4976",
+      "aliases": [
+        "CVE-2026-39825"
+      ],
+      "summary": "ReverseProxy forwards queries with more than urlmaxqueryparams parameters in net/http/httputil",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": false,
+      "findingCount": 2,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4977",
+      "aliases": [
+        "CVE-2026-42499"
+      ],
+      "summary": "Quadratic string concatenation in consumePhrase in net/mail",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": true,
+      "findingCount": 3,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/mail",
+          "function": "ParseAddress",
+          "position": {
+            "filename": "src/net/mail/message.go",
+            "offset": 6608,
+            "line": 237,
+            "column": 6
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/company",
+          "function": "Create",
+          "receiver": "*DefaultInvitationService",
+          "position": {
+            "filename": "internal/company/invitation_service.go",
+            "offset": 9992,
+            "line": 312,
+            "column": 36
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4980",
+      "aliases": [
+        "CVE-2026-39826"
+      ],
+      "summary": "Escaper bypass leads to XSS in html/template",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": true,
+      "findingCount": 4,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "html/template",
+          "function": "Execute",
+          "receiver": "*Template",
+          "position": {
+            "filename": "src/html/template/template.go",
+            "offset": 3516,
+            "line": 120,
+            "column": 20
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "RenderEvents",
+          "position": {
+            "filename": "trace/events.go",
+            "offset": 2265,
+            "line": 99,
+            "column": 32
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Events",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 5045,
+            "line": 173,
+            "column": 14
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ServeHTTP",
+          "receiver": "HandlerFunc",
+          "position": {
+            "filename": "src/net/http/server.go",
+            "offset": 71218,
+            "line": 2286,
+            "column": 3
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "WrapH$1",
+          "position": {
+            "filename": "utils.go",
+            "offset": 1357,
+            "line": 56,
+            "column": 14
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "Next",
+          "receiver": "*Context",
+          "position": {
+            "filename": "context.go",
+            "offset": 5041,
+            "line": 192,
+            "column": 23
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "handleHTTPRequest",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 24164,
+            "line": 722,
+            "column": 10
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "ServeHTTP",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 22867,
+            "line": 672,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/handler",
+          "function": "ServeHTTP",
+          "receiver": "*Handler",
+          "position": {
+            "filename": "internal/handler/handler.go",
+            "offset": 10626,
+            "line": 262,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4981",
+      "aliases": [
+        "CVE-2026-33811"
+      ],
+      "summary": "Crash when handling long CNAME response in net",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": false,
+      "findingCount": 2,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4982",
+      "aliases": [
+        "CVE-2026-39823"
+      ],
+      "summary": "Bypass of meta content URL escaping causes XSS in html/template",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": true,
+      "findingCount": 4,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "html/template",
+          "function": "Execute",
+          "receiver": "*Template",
+          "position": {
+            "filename": "src/html/template/template.go",
+            "offset": 3516,
+            "line": 120,
+            "column": 20
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "RenderEvents",
+          "position": {
+            "filename": "trace/events.go",
+            "offset": 2265,
+            "line": 99,
+            "column": 32
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Events",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 5045,
+            "line": 173,
+            "column": 14
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ServeHTTP",
+          "receiver": "HandlerFunc",
+          "position": {
+            "filename": "src/net/http/server.go",
+            "offset": 71218,
+            "line": 2286,
+            "column": 3
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "WrapH$1",
+          "position": {
+            "filename": "utils.go",
+            "offset": 1357,
+            "line": 56,
+            "column": 14
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "Next",
+          "receiver": "*Context",
+          "position": {
+            "filename": "context.go",
+            "offset": 5041,
+            "line": 192,
+            "column": 23
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "handleHTTPRequest",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 24164,
+            "line": 722,
+            "column": 10
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "ServeHTTP",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 22867,
+            "line": 672,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/handler",
+          "function": "ServeHTTP",
+          "receiver": "*Handler",
+          "position": {
+            "filename": "internal/handler/handler.go",
+            "offset": 10626,
+            "line": 262,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-4986",
+      "aliases": [
+        "CVE-2026-39820"
+      ],
+      "summary": "Quadratic string concatentation in consumeComment in net/mail",
+      "published": "2026-05-07T19:21:40Z",
+      "modified": "2026-05-07T19:21:40Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.3"
+      ],
+      "symbolReachable": true,
+      "findingCount": 3,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/mail",
+          "function": "ParseAddress",
+          "position": {
+            "filename": "src/net/mail/message.go",
+            "offset": 6608,
+            "line": 237,
+            "column": 6
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/company",
+          "function": "Create",
+          "receiver": "*DefaultInvitationService",
+          "position": {
+            "filename": "internal/company/invitation_service.go",
+            "offset": 9992,
+            "line": 312,
+            "column": 36
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5026",
+      "aliases": [
+        "CVE-2026-39821"
+      ],
+      "summary": "Invoking failure to reject ASCII-only Punycode-encoded labels in golang.org/x/net/idna",
+      "published": "2026-05-22T02:46:43Z",
+      "modified": "2026-08-21T20:38:00Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": true,
+      "findingCount": 8,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5037",
+      "aliases": [
+        "CVE-2026-27145"
+      ],
+      "summary": "Inefficient candidate hostname parsing in crypto/x509",
+      "published": "2026-06-02T21:39:47Z",
+      "modified": "2026-06-02T21:39:47Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.4"
+      ],
+      "symbolReachable": true,
+      "findingCount": 5,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/x509",
+          "function": "Verify",
+          "receiver": "*Certificate",
+          "position": {
+            "filename": "src/crypto/x509/verify.go",
+            "offset": 18349,
+            "line": 542,
+            "column": 23
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "anyValidVerifiedChain",
+          "position": {
+            "filename": "src/crypto/tls/common.go",
+            "offset": 70425,
+            "line": 1890,
+            "column": 28
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "loadSession",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/handshake_client.go",
+            "offset": 13524,
+            "line": 420,
+            "column": 28
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "clientHandshake",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/handshake_client.go",
+            "offset": 7806,
+            "line": 236,
+            "column": 55
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "handleRenegotiation",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/conn.go",
+            "offset": 41071,
+            "line": 1297,
+            "column": 39
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "handlePostHandshakeMessage",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/conn.go",
+            "offset": 41438,
+            "line": 1307,
+            "column": 31
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "Read",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/conn.go",
+            "offset": 44131,
+            "line": 1397,
+            "column": 42
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "Read",
+          "receiver": "*readWriteCloserBody",
+          "position": {
+            "filename": "src/net/http/transport.go",
+            "offset": 82089,
+            "line": 2630,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/attachment",
+          "function": "Read",
+          "receiver": "*safeAttachmentReader",
+          "position": {
+            "filename": "internal/attachment/service.go",
+            "offset": 20510,
+            "line": 602,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5038",
+      "aliases": [
+        "CVE-2026-42504"
+      ],
+      "summary": "Quadratic complexity in WordDecoder.DecodeHeader in mime",
+      "published": "2026-06-02T21:39:47Z",
+      "modified": "2026-06-02T21:39:47Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.4"
+      ],
+      "symbolReachable": false,
+      "findingCount": 2,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5039",
+      "aliases": [
+        "CVE-2026-42507"
+      ],
+      "summary": "Arbitrary inputs are included in errors without any escaping in net/textproto",
+      "published": "2026-06-02T21:39:47Z",
+      "modified": "2026-06-02T21:39:47Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.4"
+      ],
+      "symbolReachable": true,
+      "findingCount": 3,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/textproto",
+          "function": "ReadMIMEHeader",
+          "receiver": "*Reader",
+          "position": {
+            "filename": "src/net/textproto/reader.go",
+            "offset": 13692,
+            "line": 507,
+            "column": 18
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "readTrailer",
+          "receiver": "*body",
+          "position": {
+            "filename": "src/net/http/transfer.go",
+            "offset": 26815,
+            "line": 937,
+            "column": 53
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "readLocked",
+          "receiver": "*body",
+          "position": {
+            "filename": "src/net/http/transfer.go",
+            "offset": 24363,
+            "line": 851,
+            "column": 25
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "Read",
+          "receiver": "*body",
+          "position": {
+            "filename": "src/net/http/transfer.go",
+            "offset": 24099,
+            "line": 837,
+            "column": 21
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/attachment",
+          "function": "Read",
+          "receiver": "*safeAttachmentReader",
+          "position": {
+            "filename": "internal/attachment/service.go",
+            "offset": 20510,
+            "line": 602,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5856",
+      "aliases": [
+        "CVE-2026-42505"
+      ],
+      "summary": "Invoking Encrypted Client Hello privacy leak in crypto/tls",
+      "published": "2026-07-07T21:34:47Z",
+      "modified": "2026-07-07T21:34:47Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.5"
+      ],
+      "symbolReachable": true,
+      "findingCount": 9,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "Dial",
+          "position": {
+            "filename": "src/crypto/tls/tls.go",
+            "offset": 5824,
+            "line": 183,
+            "column": 6
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "dialer$1",
+          "position": {
+            "filename": "client.go",
+            "offset": 14679,
+            "line": 439,
+            "column": 20
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 1478,
+            "line": 50,
+            "column": 21
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5942",
+      "aliases": [
+        "CVE-2026-46600"
+      ],
+      "summary": "Parsing an invalid SVCB or HTTPS RR can panic in golang.org/x/net/dns/dnsmessage",
+      "published": "2026-07-14T17:29:16Z",
+      "modified": "2026-08-14T15:30:22Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": false,
+      "findingCount": 2,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5972",
+      "aliases": [
+        "CVE-2026-33818"
+      ],
+      "summary": "Enforce maximum recursion depth in encoding/asn1",
+      "published": "2026-08-13T21:43:54Z",
+      "modified": "2026-08-13T21:43:54Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": true,
+      "findingCount": 3,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "encoding/asn1",
+          "function": "Unmarshal",
+          "position": {
+            "filename": "src/encoding/asn1/asn1.go",
+            "offset": 33808,
+            "line": 1140,
+            "column": 6
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/x509",
+          "function": "ParsePKIXPublicKey",
+          "position": {
+            "filename": "src/crypto/x509/x509.go",
+            "offset": 2355,
+            "line": 74,
+            "column": 32
+          }
+        },
+        {
+          "module": "github.com/googleapis/enterprise-certificate-proxy",
+          "version": "v0.3.23",
+          "package": "github.com/googleapis/enterprise-certificate-proxy/client",
+          "function": "Cred",
+          "position": {
+            "filename": "client/client.go",
+            "offset": 7031,
+            "line": 197,
+            "column": 43
+          }
+        },
+        {
+          "module": "google.golang.org/api",
+          "version": "v0.303.0",
+          "package": "google.golang.org/api/internal/cert",
+          "function": "NewEnterpriseCertificateProxySource",
+          "position": {
+            "filename": "internal/cert/enterprise_cert.go",
+            "offset": 1365,
+            "line": 36,
+            "column": 25
+          }
+        },
+        {
+          "module": "google.golang.org/api",
+          "version": "v0.303.0",
+          "package": "google.golang.org/api/internal/cert",
+          "function": "DefaultSource$1",
+          "position": {
+            "filename": "internal/cert/default_cert.go",
+            "offset": 1801,
+            "line": 49,
+            "column": 76
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "sync",
+          "function": "doSlow",
+          "receiver": "*Once",
+          "position": {
+            "filename": "src/sync/once.go",
+            "offset": 2517,
+            "line": 78,
+            "column": 4
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "sync",
+          "function": "Do",
+          "receiver": "*Once",
+          "position": {
+            "filename": "src/sync/once.go",
+            "offset": 2390,
+            "line": 69,
+            "column": 11
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/daemon",
+          "function": "Stop",
+          "receiver": "*taskMergeLeaseRenewer",
+          "position": {
+            "filename": "internal/daemon/task_merge.go",
+            "offset": 11554,
+            "line": 398,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6088",
+      "aliases": [
+        "CVE-2026-56859"
+      ],
+      "summary": "Add recursion depth guard during decode in encoding/xml",
+      "published": "2026-08-13T21:43:54Z",
+      "modified": "2026-08-13T21:43:54Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": true,
+      "findingCount": 7,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "encoding/xml",
+          "function": "Decode",
+          "receiver": "*Decoder",
+          "position": {
+            "filename": "src/encoding/xml/read.go",
+            "offset": 5972,
+            "line": 139,
+            "column": 19
+          }
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2",
+          "version": "v1.47.3",
+          "package": "github.com/aws/aws-sdk-go-v2/aws/protocol/xml",
+          "function": "GetErrorResponseComponents",
+          "position": {
+            "filename": "aws/protocol/xml/error_utils.go",
+            "offset": 538,
+            "line": 21,
+            "column": 37
+          }
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/sts",
+          "version": "v1.51.4",
+          "package": "github.com/aws/aws-sdk-go-v2/service/sts",
+          "function": "awsAwsquery_deserializeOpErrorAssumeRole",
+          "position": {
+            "filename": "deserializers.go",
+            "offset": 3629,
+            "line": 118,
+            "column": 59
+          }
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/sts",
+          "version": "v1.51.4",
+          "package": "github.com/aws/aws-sdk-go-v2/service/sts",
+          "function": "HandleDeserialize",
+          "receiver": "*awsAwsquery_deserializeOpAssumeRole",
+          "position": {
+            "filename": "deserializers.go",
+            "offset": 1806,
+            "line": 59,
+            "column": 65
+          }
+        },
+        {
+          "module": "github.com/aws/smithy-go",
+          "version": "v1.28.5",
+          "package": "github.com/aws/smithy-go/middleware",
+          "function": "HandleDeserialize",
+          "receiver": "decoratedDeserializeHandler",
+          "position": {
+            "filename": "middleware/step_deserialize.go",
+            "offset": 8338,
+            "line": 289,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/aws/smithy-go",
+          "version": "v1.28.5",
+          "package": "github.com/aws/smithy-go/middleware",
+          "function": "HandleMiddleware",
+          "receiver": "*DeserializeStep",
+          "position": {
+            "filename": "middleware/step_deserialize.go",
+            "offset": 3695,
+            "line": 115,
+            "column": 48
+          }
+        },
+        {
+          "module": "github.com/aws/smithy-go",
+          "version": "v1.28.5",
+          "package": "github.com/aws/smithy-go/middleware",
+          "function": "Handle",
+          "receiver": "decoratedHandler",
+          "position": {
+            "filename": "middleware/middleware.go",
+            "offset": 1818,
+            "line": 57,
+            "column": 32
+          }
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/s3",
+          "version": "v1.114.3",
+          "package": "github.com/aws/aws-sdk-go-v2/service/s3",
+          "function": "invokeOperation",
+          "receiver": "*Client",
+          "position": {
+            "filename": "api_client.go",
+            "offset": 9822,
+            "line": 331,
+            "column": 42
+          }
+        },
+        {
+          "module": "github.com/aws/aws-sdk-go-v2/service/s3",
+          "version": "v1.114.3",
+          "package": "github.com/aws/aws-sdk-go-v2/service/s3",
+          "function": "GetObject",
+          "receiver": "*Client",
+          "position": {
+            "filename": "api_op_GetObject.go",
+            "offset": 9349,
+            "line": 173,
+            "column": 44
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/infra/storage",
+          "function": "GetReader",
+          "receiver": "*S3",
+          "position": {
+            "filename": "internal/infra/storage/s3.go",
+            "offset": 8308,
+            "line": 296,
+            "column": 35
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6089",
+      "aliases": [
+        "CVE-2026-56853"
+      ],
+      "summary": "Apply ReadHeaderTimeout when doing unencrypted HTTP/2 check in net/http",
+      "published": "2026-08-13T21:43:54Z",
+      "modified": "2026-08-13T21:43:54Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": true,
+      "findingCount": 4,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ListenAndServe",
+          "receiver": "*Server",
+          "position": {
+            "filename": "src/net/http/server.go",
+            "offset": 110448,
+            "line": 3348,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/cmd/server",
+          "function": "serveHTTP$1",
+          "position": {
+            "filename": "cmd/server/lifecycle.go",
+            "offset": 3227,
+            "line": 109,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/cmd/server",
+          "function": "serveHTTP",
+          "position": {
+            "filename": "cmd/server/lifecycle.go",
+            "offset": 3177,
+            "line": 108,
+            "column": 2
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/cmd/server",
+          "function": "serveApplication",
+          "position": {
+            "filename": "cmd/server/lifecycle.go",
+            "offset": 1800,
+            "line": 62,
+            "column": 23
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/cmd/server",
+          "function": "run",
+          "position": {
+            "filename": "cmd/server/app.go",
+            "offset": 38426,
+            "line": 999,
+            "column": 28
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/cmd/server",
+          "function": "mainExitCode",
+          "position": {
+            "filename": "cmd/server/main.go",
+            "offset": 805,
+            "line": 34,
+            "column": 15
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/cmd/server",
+          "function": "main",
+          "position": {
+            "filename": "cmd/server/main.go",
+            "offset": 357,
+            "line": 19,
+            "column": 22
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6090",
+      "aliases": [
+        "CVE-2026-56862"
+      ],
+      "summary": "Limit handshake messages we are willing to accept post-handshake in crypto/tls",
+      "published": "2026-08-13T21:43:54Z",
+      "modified": "2026-08-13T21:43:54Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": true,
+      "findingCount": 9,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "Dial",
+          "position": {
+            "filename": "src/crypto/tls/tls.go",
+            "offset": 5824,
+            "line": 183,
+            "column": 6
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "dialer$1",
+          "position": {
+            "filename": "client.go",
+            "offset": 14679,
+            "line": 439,
+            "column": 20
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 1478,
+            "line": 50,
+            "column": 21
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6091",
+      "aliases": [
+        "CVE-2026-56858"
+      ],
+      "summary": "Fix Javascript regexp context tracking in html/template",
+      "published": "2026-08-13T21:43:54Z",
+      "modified": "2026-08-13T21:43:54Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": true,
+      "findingCount": 4,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "html/template",
+          "function": "ExecuteTemplate",
+          "receiver": "*Template",
+          "position": {
+            "filename": "src/html/template/template.go",
+            "offset": 4100,
+            "line": 134,
+            "column": 20
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Render",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 8022,
+            "line": 283,
+            "column": 38
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Traces",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 4569,
+            "line": 158,
+            "column": 8
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ServeHTTP",
+          "receiver": "HandlerFunc",
+          "position": {
+            "filename": "src/net/http/server.go",
+            "offset": 71218,
+            "line": 2286,
+            "column": 3
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "WrapH$1",
+          "position": {
+            "filename": "utils.go",
+            "offset": 1357,
+            "line": 56,
+            "column": 14
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "Next",
+          "receiver": "*Context",
+          "position": {
+            "filename": "context.go",
+            "offset": 5041,
+            "line": 192,
+            "column": 23
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "handleHTTPRequest",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 24164,
+            "line": 722,
+            "column": 10
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "ServeHTTP",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 22867,
+            "line": 672,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/handler",
+          "function": "ServeHTTP",
+          "receiver": "*Handler",
+          "position": {
+            "filename": "internal/handler/handler.go",
+            "offset": 10626,
+            "line": 262,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6218",
+      "aliases": [
+        "CVE-2026-56860"
+      ],
+      "summary": "Avoid quadratic complexity in resolvePath in net/url",
+      "published": "2026-08-13T21:43:54Z",
+      "modified": "2026-08-13T21:43:54Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.6"
+      ],
+      "symbolReachable": true,
+      "findingCount": 4,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/url",
+          "function": "ResolveReference",
+          "receiver": "*URL",
+          "position": {
+            "filename": "src/net/url/url.go",
+            "offset": 31750,
+            "line": 1111,
+            "column": 15
+          }
+        },
+        {
+          "module": "google.golang.org/api",
+          "version": "v0.303.0",
+          "package": "google.golang.org/api/googleapi",
+          "function": "ResolveRelative",
+          "position": {
+            "filename": "googleapi/googleapi.go",
+            "offset": 12184,
+            "line": 391,
+            "column": 24
+          }
+        },
+        {
+          "module": "google.golang.org/api",
+          "version": "v0.303.0",
+          "package": "google.golang.org/api/run/v2",
+          "function": "doRequest",
+          "receiver": "*ProjectsLocationsServicesCreateCall",
+          "position": {
+            "filename": "run/v2/run-gen.go",
+            "offset": 531507,
+            "line": 11154,
+            "column": 35
+          }
+        },
+        {
+          "module": "google.golang.org/api",
+          "version": "v0.303.0",
+          "package": "google.golang.org/api/run/v2",
+          "function": "Do",
+          "receiver": "*ProjectsLocationsServicesCreateCall",
+          "position": {
+            "filename": "run/v2/run-gen.go",
+            "offset": 532582,
+            "line": 11176,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/infra/cloudrun",
+          "function": "deployService",
+          "receiver": "*PublisherService",
+          "position": {
+            "filename": "internal/infra/cloudrun/publisher.go",
+            "offset": 15560,
+            "line": 463,
+            "column": 6
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/infra/cloudrun",
+          "function": "Publish",
+          "receiver": "*PublisherService",
+          "position": {
+            "filename": "internal/infra/cloudrun/publisher.go",
+            "offset": 6639,
+            "line": 218,
+            "column": 36
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6599",
+      "aliases": [
+        "CVE-2026-94448"
+      ],
+      "summary": "Reset context tracking on consecutive template expressions in html/template",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 4,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "html/template",
+          "function": "ExecuteTemplate",
+          "receiver": "*Template",
+          "position": {
+            "filename": "src/html/template/template.go",
+            "offset": 4100,
+            "line": 134,
+            "column": 20
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Render",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 8022,
+            "line": 283,
+            "column": 38
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Traces",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 4569,
+            "line": 158,
+            "column": 8
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ServeHTTP",
+          "receiver": "HandlerFunc",
+          "position": {
+            "filename": "src/net/http/server.go",
+            "offset": 71218,
+            "line": 2286,
+            "column": 3
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "WrapH$1",
+          "position": {
+            "filename": "utils.go",
+            "offset": 1357,
+            "line": 56,
+            "column": 14
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "Next",
+          "receiver": "*Context",
+          "position": {
+            "filename": "context.go",
+            "offset": 5041,
+            "line": 192,
+            "column": 23
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "handleHTTPRequest",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 24164,
+            "line": 722,
+            "column": 10
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "ServeHTTP",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 22867,
+            "line": 672,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/handler",
+          "function": "ServeHTTP",
+          "receiver": "*Handler",
+          "position": {
+            "filename": "internal/handler/handler.go",
+            "offset": 10626,
+            "line": 262,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6600",
+      "aliases": [
+        "CVE-2026-97030"
+      ],
+      "summary": "Recognize yield as regexp preceder keyword in html/template",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 4,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "html/template",
+          "function": "ExecuteTemplate",
+          "receiver": "*Template",
+          "position": {
+            "filename": "src/html/template/template.go",
+            "offset": 4100,
+            "line": 134,
+            "column": 20
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Render",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 8022,
+            "line": 283,
+            "column": 38
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Traces",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 4569,
+            "line": 158,
+            "column": 8
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ServeHTTP",
+          "receiver": "HandlerFunc",
+          "position": {
+            "filename": "src/net/http/server.go",
+            "offset": 71218,
+            "line": 2286,
+            "column": 3
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "WrapH$1",
+          "position": {
+            "filename": "utils.go",
+            "offset": 1357,
+            "line": 56,
+            "column": 14
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "Next",
+          "receiver": "*Context",
+          "position": {
+            "filename": "context.go",
+            "offset": 5041,
+            "line": 192,
+            "column": 23
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "handleHTTPRequest",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 24164,
+            "line": 722,
+            "column": 10
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "ServeHTTP",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 22867,
+            "line": 672,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/handler",
+          "function": "ServeHTTP",
+          "receiver": "*Handler",
+          "position": {
+            "filename": "internal/handler/handler.go",
+            "offset": 10626,
+            "line": 262,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6603",
+      "aliases": [
+        "CVE-2026-78659"
+      ],
+      "summary": "HTTP/2 server memory exhaustion due to Trailer headers in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 206,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6604",
+      "aliases": [
+        "CVE-2026-56857"
+      ],
+      "summary": "Root.Mkdir(All) can follow junctions out of the root on Windows in os",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 7,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "os",
+          "function": "doInRoot[os.FileInfo]",
+          "position": {
+            "filename": "src/os/root_openat.go",
+            "offset": 7944,
+            "line": 265,
+            "column": 6
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "os",
+          "function": "rootStat",
+          "position": {
+            "filename": "src/os/root_unix.go",
+            "offset": 3802,
+            "line": 132,
+            "column": 21
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "os",
+          "function": "Lstat",
+          "receiver": "*Root",
+          "position": {
+            "filename": "src/os/root.go",
+            "offset": 7118,
+            "line": 211,
+            "column": 17
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools",
+          "function": "validateSkillSnapshot",
+          "position": {
+            "filename": "internal/mcp/tools/skills.go",
+            "offset": 11994,
+            "line": 391,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools",
+          "function": "NewSkillService",
+          "position": {
+            "filename": "internal/mcp/tools/skills.go",
+            "offset": 3775,
+            "line": 125,
+            "column": 33
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6605",
+      "aliases": [
+        "CVE-2026-56866"
+      ],
+      "summary": "HTTP/1 client connection desynchronization after CONNECT rejection in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 10,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6607",
+      "aliases": [
+        "CVE-2026-97031"
+      ],
+      "summary": "Reject malformed ECH outer extension references in crypto/tls",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 9,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "Dial",
+          "position": {
+            "filename": "src/crypto/tls/tls.go",
+            "offset": 5824,
+            "line": 183,
+            "column": 6
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "dialer$1",
+          "position": {
+            "filename": "client.go",
+            "offset": 14679,
+            "line": 439,
+            "column": 20
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 1478,
+            "line": 50,
+            "column": 21
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6608",
+      "aliases": [
+        "CVE-2026-94440"
+      ],
+      "summary": "Memory limit bypass when parsing MIME headers in net/textproto, mime/multipart",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 7,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "mime/multipart",
+          "function": "ReadForm",
+          "receiver": "*Reader",
+          "position": {
+            "filename": "src/mime/multipart/formdata.go",
+            "offset": 958,
+            "line": 32,
+            "column": 18
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ParseMultipartForm",
+          "receiver": "*Request",
+          "position": {
+            "filename": "src/net/http/request.go",
+            "offset": 44785,
+            "line": 1389,
+            "column": 23
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "FormValue",
+          "receiver": "*Request",
+          "position": {
+            "filename": "src/net/http/request.go",
+            "offset": 45767,
+            "line": 1421,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "RenderEvents",
+          "position": {
+            "filename": "trace/events.go",
+            "offset": 2142,
+            "line": 92,
+            "column": 49
+          }
+        },
+        {
+          "module": "golang.org/x/net",
+          "version": "v0.61.0",
+          "package": "golang.org/x/net/trace",
+          "function": "Events",
+          "position": {
+            "filename": "trace/trace.go",
+            "offset": 5045,
+            "line": 173,
+            "column": 14
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "ServeHTTP",
+          "receiver": "HandlerFunc",
+          "position": {
+            "filename": "src/net/http/server.go",
+            "offset": 71218,
+            "line": 2286,
+            "column": 3
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "WrapH$1",
+          "position": {
+            "filename": "utils.go",
+            "offset": 1357,
+            "line": 56,
+            "column": 14
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "Next",
+          "receiver": "*Context",
+          "position": {
+            "filename": "context.go",
+            "offset": 5041,
+            "line": 192,
+            "column": 23
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "handleHTTPRequest",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 24164,
+            "line": 722,
+            "column": 10
+          }
+        },
+        {
+          "module": "github.com/gin-gonic/gin",
+          "version": "v1.12.0",
+          "package": "github.com/gin-gonic/gin",
+          "function": "ServeHTTP",
+          "receiver": "*Engine",
+          "position": {
+            "filename": "gin.go",
+            "offset": 22867,
+            "line": 672,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/handler",
+          "function": "ServeHTTP",
+          "receiver": "*Handler",
+          "position": {
+            "filename": "internal/handler/handler.go",
+            "offset": 10626,
+            "line": 262,
+            "column": 20
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6609",
+      "aliases": [
+        "CVE-2026-78667"
+      ],
+      "summary": "Lack of limit on size of parsed Range headers in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": false,
+      "findingCount": 2,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2"
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6610",
+      "aliases": [
+        "CVE-2026-78660"
+      ],
+      "summary": "HTTP/2 transport accepts malformed framing-related headers in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 16,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6611",
+      "aliases": [
+        "CVE-2026-78669"
+      ],
+      "summary": "Excessive CPU consumption from repeated initial window changes in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 206,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6612",
+      "aliases": [
+        "CVE-2026-78663"
+      ],
+      "summary": "Double flow control refund on HTTP/2 server streams in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 206,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6613",
+      "aliases": [
+        "CVE-2026-94439"
+      ],
+      "summary": "HTTP/1 server connection desynchronization after 2xx CONNECT response in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 76,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6617",
+      "aliases": [
+        "CVE-2026-97032"
+      ],
+      "summary": "HTTP/2 server crash due to HPACK encoder race in net/http",
+      "published": "2026-10-08T22:31:09Z",
+      "modified": "2026-10-08T22:31:09Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.9"
+      ],
+      "symbolReachable": true,
+      "findingCount": 206,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "PostForm",
+          "receiver": "*Client",
+          "position": {
+            "filename": "src/net/http/client.go",
+            "offset": 31069,
+            "line": 917,
+            "column": 18
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2/jwt",
+          "function": "Token",
+          "receiver": "jwtSource",
+          "position": {
+            "filename": "jwt/jwt.go",
+            "offset": 3970,
+            "line": 133,
+            "column": 26
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "Token",
+          "receiver": "*reuseTokenSource",
+          "position": {
+            "filename": "oauth2.go",
+            "offset": 10424,
+            "line": 314,
+            "column": 23
+          }
+        },
+        {
+          "module": "golang.org/x/oauth2",
+          "version": "v0.37.0",
+          "package": "golang.org/x/oauth2",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 1215,
+            "line": 45,
+            "column": 30
+          }
+        },
+        {
+          "module": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "version": "v0.69.0",
+          "package": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+          "function": "RoundTrip",
+          "receiver": "*Transport",
+          "position": {
+            "filename": "transport.go",
+            "offset": 2867,
+            "line": 92,
+            "column": 25
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "setupHijackConn",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 2349,
+            "line": 73,
+            "column": 50
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "postHijacked",
+          "receiver": "*Client",
+          "position": {
+            "filename": "hijack.go",
+            "offset": 661,
+            "line": 25,
+            "column": 41
+          }
+        },
+        {
+          "module": "github.com/moby/moby/client",
+          "version": "v0.5.0",
+          "package": "github.com/moby/moby/client",
+          "function": "ExecAttach",
+          "receiver": "*Client",
+          "position": {
+            "filename": "container_exec.go",
+            "offset": 4872,
+            "line": 145,
+            "column": 35
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Exec",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 16961,
+            "line": 586,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "internalCheck",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 8598,
+            "line": 294,
+            "column": 34
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*HostPortStrategy",
+          "position": {
+            "filename": "wait/host_port.go",
+            "offset": 7143,
+            "line": 240,
+            "column": 24
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go/wait",
+          "function": "WaitUntilReady",
+          "receiver": "*MultiStrategy",
+          "position": {
+            "filename": "wait/all.go",
+            "offset": 2847,
+            "line": 108,
+            "column": 33
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "init$5$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 7428,
+            "line": 230,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "containerHookFn$1",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 14149,
+            "line": 417,
+            "column": 18
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "applyLifecycleHooks",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 12228,
+            "line": 358,
+            "column": 56
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "terminatingHook",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "lifecycle.go",
+            "offset": 11413,
+            "line": 342,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/testcontainers/testcontainers-go",
+          "version": "v0.44.0",
+          "package": "github.com/testcontainers/testcontainers-go",
+          "function": "Terminate",
+          "receiver": "*DockerContainer",
+          "position": {
+            "filename": "docker.go",
+            "offset": 10518,
+            "line": 350,
+            "column": 39
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "startDatabaseServer$1",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 3482,
+            "line": 132,
+            "column": 30
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "runWithDatabase",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 2016,
+            "line": 85,
+            "column": 26
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/tests/testpostgres",
+          "function": "main",
+          "position": {
+            "filename": "tests/testpostgres/main.go",
+            "offset": 1107,
+            "line": 45,
+            "column": 24
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-6809",
+      "aliases": [
+        "CVE-2026-111943"
+      ],
+      "summary": "Distrust compromised intermediate certificates in crypto/x509",
+      "published": "2026-10-21T00:27:29Z",
+      "modified": "2026-10-21T00:27:29Z",
+      "module": "stdlib",
+      "fixedVersions": [
+        "v1.26.10"
+      ],
+      "symbolReachable": true,
+      "findingCount": 3,
+      "exampleTrace": [
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/x509",
+          "function": "Verify",
+          "receiver": "*Certificate",
+          "position": {
+            "filename": "src/crypto/x509/verify.go",
+            "offset": 18349,
+            "line": 542,
+            "column": 23
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "anyValidVerifiedChain",
+          "position": {
+            "filename": "src/crypto/tls/common.go",
+            "offset": 70425,
+            "line": 1890,
+            "column": 28
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "loadSession",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/handshake_client.go",
+            "offset": 13524,
+            "line": 420,
+            "column": 28
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "clientHandshake",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/handshake_client.go",
+            "offset": 7806,
+            "line": 236,
+            "column": 55
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "handleRenegotiation",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/conn.go",
+            "offset": 41071,
+            "line": 1297,
+            "column": 39
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "handlePostHandshakeMessage",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/conn.go",
+            "offset": 41438,
+            "line": 1307,
+            "column": 31
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "crypto/tls",
+          "function": "Read",
+          "receiver": "*Conn",
+          "position": {
+            "filename": "src/crypto/tls/conn.go",
+            "offset": 44131,
+            "line": 1397,
+            "column": 42
+          }
+        },
+        {
+          "module": "stdlib",
+          "version": "v1.26.2",
+          "package": "net/http",
+          "function": "Read",
+          "receiver": "*readWriteCloserBody",
+          "position": {
+            "filename": "src/net/http/transport.go",
+            "offset": 82089,
+            "line": 2630,
+            "column": 31
+          }
+        },
+        {
+          "module": "github.com/Intelligent-Internet/zenith-team/server",
+          "package": "github.com/Intelligent-Internet/zenith-team/server/internal/attachment",
+          "function": "Read",
+          "receiver": "*safeAttachmentReader",
+          "position": {
+            "filename": "internal/attachment/service.go",
+            "offset": 20510,
+            "line": 602,
+            "column": 28
+          }
+        }
+      ]
+    },
+    {
+      "id": "GO-2026-5932",
+      "aliases": [],
+      "summary": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+      "published": "2026-07-07T22:15:29Z",
+      "modified": "2026-07-07T22:15:29Z",
+      "module": "golang.org/x/crypto",
+      "fixedVersions": [
+        ""
+      ],
+      "symbolReachable": false,
+      "findingCount": 1,
+      "exampleTrace": [
+        {
+          "module": "golang.org/x/crypto",
+          "version": "v0.58.0"
+        }
+      ]
+    }
+  ],
+  "originalOutputSHA256": "1fdc340094e4d767b62ee01aea7564098030a8602e4f71fdc4b015aef12d9017",
+  "originalOutputBytes": 2771423,
+  "retention": "Summary retains one longest trace per unique finding and advisory metadata; redundant full database records and other traces omitted."
+}

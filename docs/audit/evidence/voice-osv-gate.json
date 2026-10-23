@@ -1,0 +1,389 @@
+{
+  "checkedAt": "2026-10-23T10:55:38.230817+00:00",
+  "endpoint": "https://api.osv.dev/v1/querybatch",
+  "lockfile": "voice-agent/uv.lock",
+  "packagesQueried": 76,
+  "results": [
+    {
+      "name": "aiofiles",
+      "version": "25.1.0",
+      "vulns": []
+    },
+    {
+      "name": "aiohappyeyeballs",
+      "version": "2.7.1",
+      "vulns": []
+    },
+    {
+      "name": "aiohttp",
+      "version": "3.14.5",
+      "vulns": []
+    },
+    {
+      "name": "aiosignal",
+      "version": "1.4.0",
+      "vulns": []
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "vulns": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "vulns": []
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "vulns": []
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "vulns": []
+    },
+    {
+      "name": "av",
+      "version": "18.1.0",
+      "vulns": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.10.19",
+      "vulns": []
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "vulns": []
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "vulns": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "vulns": []
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "vulns": []
+    },
+    {
+      "name": "docstring-parser",
+      "version": "0.18.0",
+      "vulns": []
+    },
+    {
+      "name": "eval-type-backport",
+      "version": "0.4.0",
+      "vulns": []
+    },
+    {
+      "name": "frozenlist",
+      "version": "1.8.0",
+      "vulns": []
+    },
+    {
+      "name": "googleapis-common-protos",
+      "version": "1.75.4",
+      "vulns": []
+    },
+    {
+      "name": "grpcio",
+      "version": "1.84.0",
+      "vulns": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "vulns": []
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "vulns": []
+    },
+    {
+      "name": "httpcore2",
+      "version": "2.16.0",
+      "vulns": []
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "vulns": []
+    },
+    {
+      "name": "httpx2",
+      "version": "2.16.0",
+      "vulns": []
+    },
+    {
+      "name": "httpx2-jsfetch",
+      "version": "1.0",
+      "vulns": []
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "vulns": []
+    },
+    {
+      "name": "jiter",
+      "version": "0.17.0",
+      "vulns": []
+    },
+    {
+      "name": "json-repair",
+      "version": "0.63.5",
+      "vulns": []
+    },
+    {
+      "name": "livekit",
+      "version": "1.1.20",
+      "vulns": []
+    },
+    {
+      "name": "livekit-agents",
+      "version": "1.8.8",
+      "vulns": []
+    },
+    {
+      "name": "livekit-api",
+      "version": "1.2.1",
+      "vulns": []
+    },
+    {
+      "name": "livekit-blingfire",
+      "version": "1.1.0",
+      "vulns": []
+    },
+    {
+      "name": "livekit-local-inference",
+      "version": "0.2.7",
+      "vulns": []
+    },
+    {
+      "name": "livekit-plugins-openai",
+      "version": "1.8.8",
+      "vulns": []
+    },
+    {
+      "name": "livekit-protocol",
+      "version": "1.1.27",
+      "vulns": []
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "vulns": []
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "vulns": []
+    },
+    {
+      "name": "multidict",
+      "version": "6.9.1",
+      "vulns": []
+    },
+    {
+      "name": "nest-asyncio",
+      "version": "1.6.0",
+      "vulns": []
+    },
+    {
+      "name": "numpy",
+      "version": "2.5.3",
+      "vulns": []
+    },
+    {
+      "name": "openai",
+      "version": "3.35.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.45.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-exporter-http-transport",
+      "version": "0.66b1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-exporter-otlp",
+      "version": "1.45.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-common",
+      "version": "0.66b1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-common",
+      "version": "1.45.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-grpc",
+      "version": "1.45.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-http",
+      "version": "1.45.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-proto",
+      "version": "1.45.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-sdk",
+      "version": "1.45.1",
+      "vulns": []
+    },
+    {
+      "name": "opentelemetry-semantic-conventions",
+      "version": "0.66b1",
+      "vulns": []
+    },
+    {
+      "name": "pillow",
+      "version": "13.0.0",
+      "vulns": []
+    },
+    {
+      "name": "prometheus-client",
+      "version": "0.26.0",
+      "vulns": []
+    },
+    {
+      "name": "propcache",
+      "version": "0.5.4",
+      "vulns": []
+    },
+    {
+      "name": "protobuf",
+      "version": "7.36.2",
+      "vulns": []
+    },
+    {
+      "name": "psutil",
+      "version": "7.2.2",
+      "vulns": []
+    },
+    {
+      "name": "pycparser",
+      "version": "3.0",
+      "vulns": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.5",
+      "vulns": []
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.46.5",
+      "vulns": []
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "vulns": []
+    },
+    {
+      "name": "pyjwt",
+      "version": "2.15.0",
+      "vulns": []
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "vulns": []
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "vulns": []
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "vulns": []
+    },
+    {
+      "name": "ruff",
+      "version": "0.17.1",
+      "vulns": []
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "vulns": []
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "vulns": []
+    },
+    {
+      "name": "sounddevice",
+      "version": "0.5.6",
+      "vulns": []
+    },
+    {
+      "name": "truststore",
+      "version": "0.10.5",
+      "vulns": []
+    },
+    {
+      "name": "typer",
+      "version": "0.27.2",
+      "vulns": []
+    },
+    {
+      "name": "types-protobuf",
+      "version": "7.35.1.20260906",
+      "vulns": []
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "vulns": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "vulns": []
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "vulns": []
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.3.0",
+      "vulns": []
+    },
+    {
+      "name": "yarl",
+      "version": "1.25.1",
+      "vulns": []
+    }
+  ],
+  "affectedPackages": 0
+}

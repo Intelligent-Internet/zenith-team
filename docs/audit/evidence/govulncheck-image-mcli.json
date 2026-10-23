@@ -1,0 +1,344 @@
+{
+  "binary": "mcli",
+  "exitCode": 0,
+  "seconds": 0.76,
+  "advisoryMatches": 14,
+  "advisoriesWithBinarySymbol": 14,
+  "matchedIds": [
+    "GO-2026-5932",
+    "GO-2026-6599",
+    "GO-2026-6600",
+    "GO-2026-6603",
+    "GO-2026-6605",
+    "GO-2026-6607",
+    "GO-2026-6608",
+    "GO-2026-6609",
+    "GO-2026-6610",
+    "GO-2026-6611",
+    "GO-2026-6612",
+    "GO-2026-6613",
+    "GO-2026-6617",
+    "GO-2026-6809"
+  ],
+  "symbolMatchedIds": [
+    "GO-2026-5932",
+    "GO-2026-6599",
+    "GO-2026-6600",
+    "GO-2026-6603",
+    "GO-2026-6605",
+    "GO-2026-6607",
+    "GO-2026-6608",
+    "GO-2026-6609",
+    "GO-2026-6610",
+    "GO-2026-6611",
+    "GO-2026-6612",
+    "GO-2026-6613",
+    "GO-2026-6617",
+    "GO-2026-6809"
+  ],
+  "stderr": "",
+  "config": {
+    "protocol_version": "v1.0.0",
+    "scanner_name": "govulncheck",
+    "scanner_version": "v1.9.0",
+    "db": "https://vuln.go.dev",
+    "db_last_modified": "2026-10-21T00:27:29Z",
+    "scan_level": "symbol",
+    "scan_mode": "binary"
+  },
+  "originalOutputSHA256": "516085f7af4f4041552b110e990cc9b81021a1f59fed9c118bb5368ad14560c4",
+  "originalOutputLocal": ".dev/security-trivy-reports/govulncheck-image-mcli.json",
+  "advisories": [
+    {
+      "id": "GO-2026-5932",
+      "aliases": [],
+      "summary": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-5932",
+        "trace": [
+          {
+            "module": "golang.org/x/crypto",
+            "version": "v0.57.0",
+            "package": "golang.org/x/crypto/openpgp/elgamal",
+            "function": "org/x/crypto/openpgp/elgamal/*",
+            "receiver": "golang"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6603",
+      "aliases": [
+        "CVE-2026-78659"
+      ],
+      "summary": "HTTP/2 server memory exhaustion due to Trailer headers in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6603",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "net/http/internal/http2",
+            "function": "Flush",
+            "receiver": "bufferedWriter"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6610",
+      "aliases": [
+        "CVE-2026-78660"
+      ],
+      "summary": "HTTP/2 transport accepts malformed framing-related headers in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6610",
+        "fixed_version": "v0.60.0",
+        "trace": [
+          {
+            "module": "golang.org/x/net",
+            "version": "v0.59.0",
+            "package": "golang.org/x/net/http2",
+            "function": "NewClientConn",
+            "receiver": "Transport"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6611",
+      "aliases": [
+        "CVE-2026-78669"
+      ],
+      "summary": "Excessive CPU consumption from repeated initial window changes in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6611",
+        "fixed_version": "v0.60.0",
+        "trace": [
+          {
+            "module": "golang.org/x/net",
+            "version": "v0.59.0",
+            "package": "golang.org/x/net/http2",
+            "function": "ReadFrameHeader",
+            "receiver": "Framer"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6612",
+      "aliases": [
+        "CVE-2026-78663"
+      ],
+      "summary": "Double flow control refund on HTTP/2 server streams in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6612",
+        "fixed_version": "v0.60.0",
+        "trace": [
+          {
+            "module": "golang.org/x/net",
+            "version": "v0.59.0",
+            "package": "golang.org/x/net/http2",
+            "function": "WriteDataPadded",
+            "receiver": "Framer"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6617",
+      "aliases": [
+        "CVE-2026-97032"
+      ],
+      "summary": "HTTP/2 server crash due to HPACK encoder race in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6617",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "net/http/internal/http2",
+            "function": "WriteSettings",
+            "receiver": "Framer"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6599",
+      "aliases": [
+        "CVE-2026-94448"
+      ],
+      "summary": "Reset context tracking on consecutive template expressions in html/template",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6599",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "html/template",
+            "function": "ExecuteTemplate",
+            "receiver": "Template"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6600",
+      "aliases": [
+        "CVE-2026-97030"
+      ],
+      "summary": "Recognize yield as regexp preceder keyword in html/template",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6600",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "html/template",
+            "function": "ExecuteTemplate",
+            "receiver": "Template"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6605",
+      "aliases": [
+        "CVE-2026-56866"
+      ],
+      "summary": "HTTP/1 client connection desynchronization after CONNECT rejection in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6605",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "net/http",
+            "function": "CloseIdleConnections",
+            "receiver": "Client"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6607",
+      "aliases": [
+        "CVE-2026-97031"
+      ],
+      "summary": "Reject malformed ECH outer extension references in crypto/tls",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6607",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "crypto/tls",
+            "function": "Start",
+            "receiver": "QUICConn"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6608",
+      "aliases": [
+        "CVE-2026-94440"
+      ],
+      "summary": "Memory limit bypass when parsing MIME headers in net/textproto, mime/multipart",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6608",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "net/textproto",
+            "function": "ReadContinuedLine",
+            "receiver": "Reader"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6609",
+      "aliases": [
+        "CVE-2026-78667"
+      ],
+      "summary": "Lack of limit on size of parsed Range headers in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6609",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "net/http",
+            "function": "ServeFile"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6613",
+      "aliases": [
+        "CVE-2026-94439"
+      ],
+      "summary": "HTTP/1 server connection desynchronization after 2xx CONNECT response in net/http",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6613",
+        "fixed_version": "v1.27.2",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "net/http",
+            "function": "CancelRequest",
+            "receiver": "Transport"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6809",
+      "aliases": [
+        "CVE-2026-111943"
+      ],
+      "summary": "Distrust compromised intermediate certificates in crypto/x509",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6809",
+        "fixed_version": "v1.27.3",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.27.1",
+            "package": "crypto/x509",
+            "function": "Verify",
+            "receiver": "Certificate"
+          }
+        ]
+      }
+    }
+  ],
+  "interpretation": "Binary symbol records are not source call graphs or proof of exploitation; wildcard symbol records can be broad. Missing symbols do not establish a fork has patched a module-level advisory."
+}

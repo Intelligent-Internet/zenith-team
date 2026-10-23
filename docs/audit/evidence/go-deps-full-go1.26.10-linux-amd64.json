@@ -1,0 +1,871 @@
+{
+  "command": "go list -mod=readonly -deps -json ./cmd/server",
+  "goVersion": "go1.26.10",
+  "GOOS": "linux",
+  "GOARCH": "amd64",
+  "CGO_ENABLED": "0",
+  "edition": "full",
+  "totalPackages": 803,
+  "thirdPartyModules": 85,
+  "thirdPartyPackages": 516,
+  "modules": [
+    {
+      "path": "github.com/google/uuid",
+      "version": "v1.6.0"
+    },
+    {
+      "path": "github.com/jackc/pgx/v5",
+      "version": "v5.11.0"
+    },
+    {
+      "path": "github.com/jackc/pgpassfile",
+      "version": "v1.0.0"
+    },
+    {
+      "path": "github.com/jackc/pgservicefile",
+      "version": "v0.0.0-20240606120523-5a60cdf6a761"
+    },
+    {
+      "path": "golang.org/x/text",
+      "version": "v0.43.0"
+    },
+    {
+      "path": "github.com/golang-migrate/migrate/v4",
+      "version": "v4.20.1"
+    },
+    {
+      "path": "github.com/lib/pq",
+      "version": "v1.10.9"
+    },
+    {
+      "path": "github.com/jackc/puddle/v2",
+      "version": "v2.2.2"
+    },
+    {
+      "path": "golang.org/x/sync",
+      "version": "v0.24.0"
+    },
+    {
+      "path": "github.com/gin-contrib/sse",
+      "version": "v1.1.0"
+    },
+    {
+      "path": "github.com/gin-gonic/gin",
+      "version": "v1.12.0"
+    },
+    {
+      "path": "github.com/gabriel-vasile/mimetype",
+      "version": "v1.4.15"
+    },
+    {
+      "path": "github.com/go-playground/locales",
+      "version": "v0.14.1"
+    },
+    {
+      "path": "github.com/go-playground/universal-translator",
+      "version": "v0.18.1"
+    },
+    {
+      "path": "github.com/leodido/go-urn",
+      "version": "v1.5.0"
+    },
+    {
+      "path": "golang.org/x/sys",
+      "version": "v0.49.0"
+    },
+    {
+      "path": "golang.org/x/crypto",
+      "version": "v0.58.0"
+    },
+    {
+      "path": "github.com/go-playground/validator/v10",
+      "version": "v10.30.5"
+    },
+    {
+      "path": "github.com/goccy/go-yaml",
+      "version": "v1.19.2"
+    },
+    {
+      "path": "github.com/pelletier/go-toml/v2",
+      "version": "v2.4.3"
+    },
+    {
+      "path": "github.com/ugorji/go/codec",
+      "version": "v1.3.1"
+    },
+    {
+      "path": "go.mongodb.org/mongo-driver/v2",
+      "version": "v2.5.0"
+    },
+    {
+      "path": "google.golang.org/protobuf",
+      "version": "v1.36.12"
+    },
+    {
+      "path": "github.com/mattn/go-isatty",
+      "version": "v0.0.20"
+    },
+    {
+      "path": "golang.org/x/net",
+      "version": "v0.61.0"
+    },
+    {
+      "path": "github.com/quic-go/qpack",
+      "version": "v0.6.0"
+    },
+    {
+      "path": "github.com/quic-go/quic-go",
+      "version": "v0.59.1"
+    },
+    {
+      "path": "github.com/golang-jwt/jwt/v5",
+      "version": "v5.3.1"
+    },
+    {
+      "path": "golang.org/x/oauth2",
+      "version": "v0.37.0"
+    },
+    {
+      "path": "cloud.google.com/go/compute/metadata",
+      "version": "v0.10.0"
+    },
+    {
+      "path": "cloud.google.com/go/auth",
+      "version": "v0.24.1-0.20261001053825-dbc26066f70a"
+    },
+    {
+      "path": "github.com/googleapis/gax-go/v2",
+      "version": "v2.26.2"
+    },
+    {
+      "path": "github.com/googleapis/enterprise-certificate-proxy",
+      "version": "v0.3.23"
+    },
+    {
+      "path": "google.golang.org/grpc",
+      "version": "v1.84.0"
+    },
+    {
+      "path": "github.com/google/s2a-go",
+      "version": "v0.1.11"
+    },
+    {
+      "path": "google.golang.org/genproto/googleapis/rpc",
+      "version": "v0.0.0-20261005182115-fad411399dd8"
+    },
+    {
+      "path": "go.opentelemetry.io/otel",
+      "version": "v1.45.0"
+    },
+    {
+      "path": "github.com/cespare/xxhash/v2",
+      "version": "v2.3.0"
+    },
+    {
+      "path": "google.golang.org/api",
+      "version": "v0.303.0"
+    },
+    {
+      "path": "github.com/go-logr/logr",
+      "version": "v1.4.4"
+    },
+    {
+      "path": "github.com/go-logr/stdr",
+      "version": "v1.2.2"
+    },
+    {
+      "path": "go.opentelemetry.io/auto/sdk",
+      "version": "v1.2.1"
+    },
+    {
+      "path": "go.opentelemetry.io/otel/trace",
+      "version": "v1.45.0"
+    },
+    {
+      "path": "go.opentelemetry.io/otel/metric",
+      "version": "v1.45.0"
+    },
+    {
+      "path": "github.com/felixge/httpsnoop",
+      "version": "v1.1.0"
+    },
+    {
+      "path": "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+      "version": "v0.69.0"
+    },
+    {
+      "path": "cloud.google.com/go/auth/oauth2adapt",
+      "version": "v0.3.0"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2",
+      "version": "v1.47.3"
+    },
+    {
+      "path": "github.com/aws/smithy-go",
+      "version": "v1.28.5"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/config",
+      "version": "v1.33.9"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/credentials",
+      "version": "v1.20.9"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/feature/ec2/imds",
+      "version": "v1.20.3"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/internal/configsources",
+      "version": "v1.5.6"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2",
+      "version": "v2.8.6"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/signin",
+      "version": "v1.10.4"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/sso",
+      "version": "v1.38.4"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/ssooidc",
+      "version": "v1.43.4"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/internal/v4a",
+      "version": "v1.5.6"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding",
+      "version": "v1.13.21"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/internal/presigned-url",
+      "version": "v1.14.6"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/sts",
+      "version": "v1.51.4"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream",
+      "version": "v1.7.22"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/internal/checksum",
+      "version": "v1.11.7"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/internal/s3shared",
+      "version": "v1.20.6"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/service/s3",
+      "version": "v1.114.3"
+    },
+    {
+      "path": "github.com/aws/aws-sdk-go-v2/feature/s3/manager",
+      "version": "v1.23.14"
+    },
+    {
+      "path": "github.com/reearth/ygo",
+      "version": "v1.51.9"
+    },
+    {
+      "path": "github.com/yuin/goldmark",
+      "version": "v1.8.6"
+    },
+    {
+      "path": "golang.org/x/image",
+      "version": "v0.47.0"
+    },
+    {
+      "path": "github.com/redis/go-redis/v9",
+      "version": "v9.23.0"
+    },
+    {
+      "path": "go.uber.org/atomic",
+      "version": "v1.12.0"
+    },
+    {
+      "path": "github.com/beorn7/perks",
+      "version": "v1.0.1"
+    },
+    {
+      "path": "github.com/prometheus/client_model",
+      "version": "v0.6.3"
+    },
+    {
+      "path": "github.com/prometheus/common",
+      "version": "v0.72.0"
+    },
+    {
+      "path": "github.com/prometheus/client_golang",
+      "version": "v1.25.0"
+    },
+    {
+      "path": "github.com/munnerz/goautoneg",
+      "version": "v0.0.0-20191010083416-a7dc8b61c822"
+    },
+    {
+      "path": "github.com/prometheus/procfs",
+      "version": "v0.22.0"
+    },
+    {
+      "path": "github.com/shopspring/decimal",
+      "version": "v1.5.0"
+    },
+    {
+      "path": "github.com/hibiken/asynq",
+      "version": "v0.26.0"
+    },
+    {
+      "path": "github.com/spf13/cast",
+      "version": "v1.10.0"
+    },
+    {
+      "path": "github.com/robfig/cron/v3",
+      "version": "v3.0.1"
+    },
+    {
+      "path": "golang.org/x/time",
+      "version": "v0.16.0"
+    },
+    {
+      "path": "gopkg.in/yaml.v3",
+      "version": "v3.0.1"
+    },
+    {
+      "path": "github.com/gorilla/websocket",
+      "version": "v1.5.3"
+    },
+    {
+      "path": "github.com/oklog/ulid/v2",
+      "version": "v2.1.2"
+    }
+  ],
+  "thirdPartyImportPaths": [
+    "github.com/google/uuid",
+    "github.com/jackc/pgx/v5/internal/pgio",
+    "github.com/jackc/pgx/v5/internal/pgdatetime",
+    "github.com/jackc/pgx/v5/internal/sanitize",
+    "github.com/jackc/pgpassfile",
+    "github.com/jackc/pgservicefile",
+    "github.com/jackc/pgx/v5/internal/iobufpool",
+    "github.com/jackc/pgx/v5/pgconn/ctxwatch",
+    "github.com/jackc/pgx/v5/pgconn/internal/bgreader",
+    "github.com/jackc/pgx/v5/pgproto3",
+    "github.com/jackc/pgx/v5/pgtype",
+    "golang.org/x/text/internal/tag",
+    "golang.org/x/text/internal/language",
+    "golang.org/x/text/internal/language/compact",
+    "golang.org/x/text/language",
+    "golang.org/x/text/internal",
+    "golang.org/x/text/transform",
+    "golang.org/x/text/unicode/norm",
+    "golang.org/x/text/cases",
+    "golang.org/x/text/runes",
+    "golang.org/x/text/unicode/bidi",
+    "golang.org/x/text/secure/bidirule",
+    "golang.org/x/text/width",
+    "golang.org/x/text/secure/precis",
+    "github.com/jackc/pgx/v5/pgconn",
+    "github.com/jackc/pgx/v5/internal/stmtcache",
+    "github.com/jackc/pgx/v5",
+    "github.com/golang-migrate/migrate/v4/internal/url",
+    "github.com/golang-migrate/migrate/v4/database",
+    "github.com/golang-migrate/migrate/v4/source",
+    "github.com/golang-migrate/migrate/v4",
+    "github.com/golang-migrate/migrate/v4/database/multistmt",
+    "github.com/lib/pq/oid",
+    "github.com/lib/pq/scram",
+    "github.com/lib/pq",
+    "github.com/golang-migrate/migrate/v4/database/postgres",
+    "github.com/golang-migrate/migrate/v4/source/iofs",
+    "github.com/jackc/puddle/v2/internal/genstack",
+    "golang.org/x/sync/semaphore",
+    "github.com/jackc/puddle/v2",
+    "github.com/jackc/pgx/v5/pgxpool",
+    "github.com/jackc/pgx/v5/stdlib",
+    "github.com/gin-contrib/sse",
+    "github.com/gin-gonic/gin/codec/json",
+    "github.com/gin-gonic/gin/internal/bytesconv",
+    "github.com/gabriel-vasile/mimetype/internal/scan",
+    "github.com/gabriel-vasile/mimetype/internal/markup",
+    "github.com/gabriel-vasile/mimetype/internal/charset",
+    "github.com/gabriel-vasile/mimetype/internal/cdf",
+    "github.com/gabriel-vasile/mimetype/internal/csv",
+    "github.com/gabriel-vasile/mimetype/internal/json",
+    "github.com/gabriel-vasile/mimetype/internal/mp3",
+    "github.com/gabriel-vasile/mimetype/internal/magic",
+    "github.com/gabriel-vasile/mimetype",
+    "github.com/go-playground/locales/currency",
+    "github.com/go-playground/locales",
+    "github.com/go-playground/universal-translator",
+    "github.com/leodido/go-urn/scim/schema",
+    "github.com/leodido/go-urn",
+    "golang.org/x/sys/cpu",
+    "golang.org/x/crypto/sha3",
+    "github.com/go-playground/validator/v10",
+    "github.com/goccy/go-yaml/token",
+    "github.com/goccy/go-yaml/ast",
+    "github.com/goccy/go-yaml/printer",
+    "github.com/goccy/go-yaml/internal/errors",
+    "github.com/goccy/go-yaml/internal/format",
+    "github.com/goccy/go-yaml/scanner",
+    "github.com/goccy/go-yaml/lexer",
+    "github.com/goccy/go-yaml/parser",
+    "github.com/goccy/go-yaml",
+    "github.com/pelletier/go-toml/v2/internal/parserbridge",
+    "github.com/pelletier/go-toml/v2/unstable",
+    "github.com/pelletier/go-toml/v2/internal/tracker",
+    "github.com/pelletier/go-toml/v2",
+    "github.com/ugorji/go/codec",
+    "go.mongodb.org/mongo-driver/v2/internal/decimal128",
+    "go.mongodb.org/mongo-driver/v2/internal/binaryutil",
+    "go.mongodb.org/mongo-driver/v2/internal/bsoncoreutil",
+    "go.mongodb.org/mongo-driver/v2/x/bsonx/bsoncore",
+    "go.mongodb.org/mongo-driver/v2/bson",
+    "google.golang.org/protobuf/internal/detrand",
+    "google.golang.org/protobuf/internal/errors",
+    "google.golang.org/protobuf/encoding/protowire",
+    "google.golang.org/protobuf/internal/pragma",
+    "google.golang.org/protobuf/reflect/protoreflect",
+    "google.golang.org/protobuf/internal/encoding/messageset",
+    "google.golang.org/protobuf/internal/flags",
+    "google.golang.org/protobuf/internal/genid",
+    "google.golang.org/protobuf/internal/order",
+    "google.golang.org/protobuf/internal/strs",
+    "google.golang.org/protobuf/reflect/protoregistry",
+    "google.golang.org/protobuf/runtime/protoiface",
+    "google.golang.org/protobuf/proto",
+    "github.com/gin-gonic/gin/binding",
+    "github.com/gin-gonic/gin/internal/fs",
+    "github.com/gin-gonic/gin/render",
+    "golang.org/x/sys/unix",
+    "github.com/mattn/go-isatty",
+    "golang.org/x/net/http2/hpack",
+    "github.com/quic-go/qpack",
+    "github.com/quic-go/quic-go/internal/monotime",
+    "github.com/quic-go/quic-go/quicvarint",
+    "github.com/quic-go/quic-go/internal/protocol",
+    "github.com/quic-go/quic-go/internal/utils",
+    "github.com/quic-go/quic-go/internal/qerr",
+    "github.com/quic-go/quic-go/internal/wire",
+    "github.com/quic-go/quic-go/qlogwriter/jsontext",
+    "github.com/quic-go/quic-go/qlogwriter",
+    "github.com/quic-go/quic-go/qlog",
+    "github.com/quic-go/quic-go/internal/congestion",
+    "github.com/quic-go/quic-go/internal/ackhandler",
+    "github.com/quic-go/quic-go/internal/flowcontrol",
+    "golang.org/x/crypto/internal/alias",
+    "golang.org/x/crypto/chacha20",
+    "golang.org/x/crypto/internal/poly1305",
+    "golang.org/x/crypto/chacha20poly1305",
+    "golang.org/x/crypto/hkdf",
+    "github.com/quic-go/quic-go/internal/handshake",
+    "github.com/quic-go/quic-go/internal/utils/linkedlist",
+    "github.com/quic-go/quic-go/internal/utils/ringbuffer",
+    "golang.org/x/net/bpf",
+    "golang.org/x/net/internal/iana",
+    "golang.org/x/net/internal/socket",
+    "golang.org/x/net/ipv4",
+    "golang.org/x/net/ipv6",
+    "github.com/quic-go/quic-go",
+    "github.com/quic-go/quic-go/http3/qlog",
+    "golang.org/x/net/idna",
+    "golang.org/x/net/http/httpguts",
+    "github.com/quic-go/quic-go/http3",
+    "golang.org/x/net/internal/httpcommon",
+    "golang.org/x/net/internal/httpsfv",
+    "golang.org/x/net/http2",
+    "golang.org/x/net/http2/h2c",
+    "github.com/gin-gonic/gin",
+    "github.com/golang-jwt/jwt/v5",
+    "golang.org/x/crypto/blake2b",
+    "golang.org/x/crypto/argon2",
+    "golang.org/x/oauth2/internal",
+    "golang.org/x/oauth2",
+    "cloud.google.com/go/compute/metadata",
+    "golang.org/x/oauth2/authhandler",
+    "golang.org/x/oauth2/google/internal/impersonate",
+    "golang.org/x/oauth2/google/internal/stsexchange",
+    "golang.org/x/oauth2/google/externalaccount",
+    "golang.org/x/oauth2/google/internal/externalaccountauthorizeduser",
+    "golang.org/x/oauth2/jws",
+    "golang.org/x/oauth2/jwt",
+    "golang.org/x/oauth2/google",
+    "cloud.google.com/go/auth/internal",
+    "cloud.google.com/go/auth/internal/jwt",
+    "github.com/googleapis/gax-go/v2/internallog/internal",
+    "github.com/googleapis/gax-go/v2/internallog",
+    "cloud.google.com/go/auth",
+    "cloud.google.com/go/auth/internal/retry",
+    "cloud.google.com/go/auth/internal/regionalaccessboundary",
+    "cloud.google.com/go/auth/internal/transport/headers",
+    "cloud.google.com/go/auth/credentials/internal/impersonate",
+    "cloud.google.com/go/auth/credentials/internal/stsexchange",
+    "cloud.google.com/go/auth/internal/credsfile",
+    "github.com/googleapis/enterprise-certificate-proxy/client/util",
+    "github.com/googleapis/enterprise-certificate-proxy/client",
+    "cloud.google.com/go/auth/internal/transport/cert",
+    "cloud.google.com/go/auth/credentials/internal/externalaccount",
+    "cloud.google.com/go/auth/credentials/internal/externalaccountuser",
+    "cloud.google.com/go/auth/credentials/internal/gdch",
+    "cloud.google.com/go/auth/credentials",
+    "google.golang.org/grpc/attributes",
+    "google.golang.org/grpc/grpclog/internal",
+    "google.golang.org/grpc/grpclog",
+    "google.golang.org/grpc/internal/credentials",
+    "google.golang.org/grpc/internal/envconfig",
+    "google.golang.org/grpc/credentials",
+    "github.com/google/s2a-go/fallback",
+    "google.golang.org/protobuf/internal/descfmt",
+    "google.golang.org/protobuf/internal/descopts",
+    "google.golang.org/protobuf/internal/editiondefaults",
+    "google.golang.org/protobuf/internal/encoding/text",
+    "google.golang.org/protobuf/internal/encoding/defval",
+    "google.golang.org/protobuf/internal/filedesc",
+    "google.golang.org/protobuf/internal/set",
+    "google.golang.org/protobuf/encoding/prototext",
+    "google.golang.org/protobuf/internal/encoding/tag",
+    "google.golang.org/protobuf/internal/protolazy",
+    "google.golang.org/protobuf/internal/impl",
+    "google.golang.org/protobuf/internal/filetype",
+    "google.golang.org/protobuf/internal/version",
+    "google.golang.org/protobuf/runtime/protoimpl",
+    "github.com/google/s2a-go/internal/proto/common_go_proto",
+    "github.com/google/s2a-go/internal/proto/s2a_context_go_proto",
+    "golang.org/x/net/internal/timeseries",
+    "golang.org/x/net/trace",
+    "google.golang.org/grpc/backoff",
+    "google.golang.org/grpc/connectivity",
+    "google.golang.org/grpc/serviceconfig",
+    "google.golang.org/grpc/internal",
+    "google.golang.org/grpc/internal/channelz",
+    "google.golang.org/grpc/channelz",
+    "google.golang.org/grpc/metadata",
+    "google.golang.org/grpc/stats",
+    "google.golang.org/grpc/experimental/stats",
+    "google.golang.org/grpc/resolver",
+    "google.golang.org/grpc/balancer",
+    "google.golang.org/grpc/balancer/base",
+    "google.golang.org/grpc/balancer/pickfirst/internal",
+    "google.golang.org/grpc/experimental/balancer/weight",
+    "google.golang.org/grpc/internal/grpclog",
+    "google.golang.org/protobuf/internal/encoding/json",
+    "google.golang.org/protobuf/encoding/protojson",
+    "google.golang.org/protobuf/protoadapt",
+    "google.golang.org/grpc/internal/pretty",
+    "google.golang.org/grpc/balancer/pickfirst",
+    "google.golang.org/grpc/balancer/endpointsharding",
+    "google.golang.org/grpc/balancer/roundrobin",
+    "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/credentials/insecure",
+    "google.golang.org/grpc/encoding/internal",
+    "google.golang.org/grpc/internal/grpcutil",
+    "google.golang.org/grpc/internal/mem",
+    "google.golang.org/grpc/mem",
+    "google.golang.org/grpc/encoding",
+    "google.golang.org/grpc/encoding/proto",
+    "google.golang.org/grpc/internal/backoff",
+    "google.golang.org/grpc/internal/balancer/gracefulswitch",
+    "google.golang.org/grpc/internal/balancerload",
+    "google.golang.org/protobuf/types/known/durationpb",
+    "google.golang.org/protobuf/types/known/timestamppb",
+    "google.golang.org/grpc/binarylog/grpc_binarylog_v1",
+    "google.golang.org/protobuf/types/known/anypb",
+    "google.golang.org/genproto/googleapis/rpc/status",
+    "google.golang.org/grpc/internal/status",
+    "google.golang.org/grpc/status",
+    "google.golang.org/grpc/internal/binarylog",
+    "google.golang.org/grpc/internal/buffer",
+    "google.golang.org/grpc/internal/grpcsync",
+    "google.golang.org/grpc/internal/idle",
+    "google.golang.org/grpc/internal/metadata",
+    "google.golang.org/grpc/internal/serviceconfig",
+    "google.golang.org/grpc/internal/resolver",
+    "google.golang.org/grpc/internal/proxyattributes",
+    "google.golang.org/grpc/internal/stats",
+    "google.golang.org/grpc/internal/syscall",
+    "google.golang.org/grpc/internal/transport/internal",
+    "google.golang.org/grpc/internal/transport/networktype",
+    "google.golang.org/grpc/internal/transport/readyreader",
+    "google.golang.org/grpc/keepalive",
+    "google.golang.org/grpc/peer",
+    "google.golang.org/grpc/tap",
+    "google.golang.org/grpc/internal/transport",
+    "google.golang.org/grpc/internal/resolver/delegatingresolver",
+    "google.golang.org/grpc/internal/resolver/passthrough",
+    "google.golang.org/grpc/internal/resolver/unix",
+    "google.golang.org/grpc/balancer/grpclb/state",
+    "google.golang.org/grpc/internal/resolver/dns/internal",
+    "google.golang.org/grpc/internal/resolver/dns",
+    "google.golang.org/grpc/resolver/dns",
+    "google.golang.org/grpc",
+    "github.com/google/s2a-go/internal/proto/s2a_go_proto",
+    "github.com/google/s2a-go/internal/authinfo",
+    "github.com/google/s2a-go/internal/handshaker/service",
+    "github.com/google/s2a-go/internal/record/internal/aeadcrypter",
+    "golang.org/x/crypto/cryptobyte/asn1",
+    "golang.org/x/crypto/cryptobyte",
+    "github.com/google/s2a-go/internal/record/internal/halfconn",
+    "github.com/google/s2a-go/internal/proto/v2/common_go_proto",
+    "github.com/google/s2a-go/internal/tokenmanager",
+    "github.com/google/s2a-go/internal/record",
+    "github.com/google/s2a-go/internal/handshaker",
+    "github.com/google/s2a-go/internal/proto/v2/s2a_context_go_proto",
+    "github.com/google/s2a-go/internal/proto/v2/s2a_go_proto",
+    "github.com/google/s2a-go/stream",
+    "github.com/google/s2a-go/internal/v2/certverifier",
+    "github.com/google/s2a-go/internal/v2/remotesigner",
+    "github.com/google/s2a-go/internal/v2/tlsconfigstore",
+    "github.com/google/s2a-go/retry",
+    "github.com/google/s2a-go/internal/v2",
+    "github.com/google/s2a-go",
+    "go.opentelemetry.io/otel/attribute/internal",
+    "github.com/cespare/xxhash/v2",
+    "go.opentelemetry.io/otel/attribute/internal/xxhash",
+    "go.opentelemetry.io/otel/attribute",
+    "cloud.google.com/go/auth/internal/transport",
+    "google.golang.org/genproto/googleapis/rpc/code",
+    "github.com/googleapis/gax-go/v2/apierror/internal/proto",
+    "google.golang.org/api/internal/third_party/uritemplates",
+    "google.golang.org/api/googleapi",
+    "google.golang.org/genproto/googleapis/rpc/errdetails",
+    "github.com/googleapis/gax-go/v2/apierror",
+    "github.com/googleapis/gax-go/v2/callctx",
+    "github.com/googleapis/gax-go/v2/internal",
+    "github.com/go-logr/logr",
+    "github.com/go-logr/logr/funcr",
+    "github.com/go-logr/stdr",
+    "go.opentelemetry.io/auto/sdk/internal/telemetry",
+    "go.opentelemetry.io/otel/codes",
+    "go.opentelemetry.io/otel/semconv/v1.37.0",
+    "go.opentelemetry.io/otel/semconv/v1.43.0",
+    "go.opentelemetry.io/otel/trace/embedded",
+    "go.opentelemetry.io/otel/trace/internal/telemetry",
+    "go.opentelemetry.io/otel/trace",
+    "go.opentelemetry.io/otel/trace/noop",
+    "go.opentelemetry.io/auto/sdk",
+    "go.opentelemetry.io/otel/internal/errorhandler",
+    "go.opentelemetry.io/otel/metric/embedded",
+    "go.opentelemetry.io/otel/metric",
+    "go.opentelemetry.io/otel/internal/baggage",
+    "go.opentelemetry.io/otel/baggage",
+    "go.opentelemetry.io/otel/propagation",
+    "go.opentelemetry.io/otel/internal/global",
+    "go.opentelemetry.io/otel",
+    "github.com/googleapis/gax-go/v2",
+    "github.com/felixge/httpsnoop",
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/internal/request",
+    "go.opentelemetry.io/otel/semconv/v1.41.0",
+    "go.opentelemetry.io/otel/metric/noop",
+    "go.opentelemetry.io/otel/semconv/internal/metricpool",
+    "go.opentelemetry.io/otel/semconv/v1.41.0/httpconv",
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp/internal/semconv",
+    "go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp",
+    "cloud.google.com/go/auth/httptransport",
+    "cloud.google.com/go/auth/credentials/impersonate",
+    "cloud.google.com/go/auth/credentials/idtoken",
+    "cloud.google.com/go/auth/oauth2adapt",
+    "google.golang.org/api/internal/cert",
+    "google.golang.org/api/internal/credentialstype",
+    "google.golang.org/api/internal/impersonate",
+    "google.golang.org/api/internal",
+    "google.golang.org/api/option",
+    "google.golang.org/api/option/internaloption",
+    "google.golang.org/api/googleapi/transport",
+    "google.golang.org/api/transport/http",
+    "google.golang.org/api/impersonate",
+    "google.golang.org/api/idtoken",
+    "github.com/aws/aws-sdk-go-v2/internal/rand",
+    "github.com/aws/aws-sdk-go-v2/internal/sdk",
+    "github.com/aws/aws-sdk-go-v2/internal/sync/singleflight",
+    "github.com/aws/smithy-go/context",
+    "github.com/aws/smithy-go/internal/sync/singleflight",
+    "github.com/aws/smithy-go/logging",
+    "github.com/aws/smithy-go/middleware",
+    "github.com/aws/smithy-go/document",
+    "github.com/aws/smithy-go",
+    "github.com/aws/smithy-go/auth",
+    "github.com/aws/smithy-go/traits",
+    "github.com/aws/smithy-go/eventstream",
+    "github.com/aws/smithy-go/metrics",
+    "github.com/aws/smithy-go/sync",
+    "github.com/aws/smithy-go/time",
+    "github.com/aws/smithy-go/tracing",
+    "github.com/aws/smithy-go/transport/http/internal/io",
+    "github.com/aws/smithy-go/transport/http",
+    "github.com/aws/smithy-go/auth/bearer",
+    "github.com/aws/smithy-go/ptr",
+    "github.com/aws/aws-sdk-go-v2/aws",
+    "github.com/aws/smithy-go/rand",
+    "github.com/aws/aws-sdk-go-v2/aws/middleware",
+    "github.com/aws/aws-sdk-go-v2/internal/strings",
+    "github.com/aws/aws-sdk-go-v2/aws/signer/internal/v4",
+    "github.com/aws/aws-sdk-go-v2/internal/auth",
+    "github.com/aws/smithy-go/encoding/httpbinding",
+    "github.com/aws/aws-sdk-go-v2/aws/signer/v4",
+    "github.com/aws/aws-sdk-go-v2/aws/transport/http",
+    "github.com/aws/aws-sdk-go-v2/config/internal/ini",
+    "github.com/aws/aws-sdk-go-v2/credentials",
+    "github.com/aws/aws-sdk-go-v2/aws/ratelimit",
+    "github.com/aws/aws-sdk-go-v2/internal/context",
+    "github.com/aws/aws-sdk-go-v2/internal/timeconv",
+    "github.com/aws/aws-sdk-go-v2/aws/retry",
+    "github.com/aws/aws-sdk-go-v2/feature/ec2/imds/internal/config",
+    "github.com/aws/smithy-go/io",
+    "github.com/aws/aws-sdk-go-v2/feature/ec2/imds",
+    "github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds",
+    "github.com/aws/aws-sdk-go-v2/credentials/endpointcreds/internal/client",
+    "github.com/aws/aws-sdk-go-v2/credentials/endpointcreds",
+    "github.com/aws/aws-sdk-go-v2/internal/shareddefaults",
+    "github.com/aws/aws-sdk-go-v2/aws/defaults",
+    "github.com/aws/aws-sdk-go-v2/aws/protocol/restjson",
+    "github.com/aws/aws-sdk-go-v2/internal/auth/smithy",
+    "github.com/aws/aws-sdk-go-v2/internal/configsources",
+    "github.com/aws/aws-sdk-go-v2/internal/endpoints",
+    "github.com/aws/aws-sdk-go-v2/internal/endpoints/awsrulesfn",
+    "github.com/aws/aws-sdk-go-v2/internal/timeouts",
+    "github.com/aws/aws-sdk-go-v2/internal/endpoints/v2",
+    "github.com/aws/aws-sdk-go-v2/service/signin/internal/endpoints",
+    "github.com/aws/aws-sdk-go-v2/service/signin/types",
+    "github.com/aws/smithy-go/encoding",
+    "github.com/aws/smithy-go/encoding/json",
+    "github.com/aws/smithy-go/endpoints",
+    "github.com/aws/smithy-go/endpoints/private/bdd",
+    "github.com/aws/smithy-go/endpoints/private/rulesfn",
+    "github.com/aws/aws-sdk-go-v2/service/signin",
+    "github.com/aws/aws-sdk-go-v2/credentials/logincreds",
+    "github.com/aws/aws-sdk-go-v2/internal/sdkio",
+    "github.com/aws/aws-sdk-go-v2/credentials/processcreds",
+    "github.com/aws/aws-sdk-go-v2/service/sso/internal/endpoints",
+    "github.com/aws/aws-sdk-go-v2/service/sso/types",
+    "github.com/aws/aws-sdk-go-v2/service/sso",
+    "github.com/aws/aws-sdk-go-v2/service/ssooidc/internal/endpoints",
+    "github.com/aws/aws-sdk-go-v2/service/ssooidc/types",
+    "github.com/aws/aws-sdk-go-v2/service/ssooidc",
+    "github.com/aws/aws-sdk-go-v2/credentials/ssocreds",
+    "github.com/aws/aws-sdk-go-v2/aws/protocol/query",
+    "github.com/aws/aws-sdk-go-v2/aws/protocol/xml",
+    "github.com/aws/aws-sdk-go-v2/internal/v4a/internal/crypto",
+    "github.com/aws/aws-sdk-go-v2/internal/v4a/internal/v4",
+    "github.com/aws/aws-sdk-go-v2/internal/v4a",
+    "github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding",
+    "github.com/aws/aws-sdk-go-v2/service/internal/presigned-url",
+    "github.com/aws/aws-sdk-go-v2/service/sts/internal/endpoints",
+    "github.com/aws/aws-sdk-go-v2/service/sts/types",
+    "github.com/aws/smithy-go/encoding/xml",
+    "github.com/aws/aws-sdk-go-v2/service/sts",
+    "github.com/aws/aws-sdk-go-v2/credentials/stscreds",
+    "github.com/aws/smithy-go/private/requestcompression",
+    "github.com/aws/aws-sdk-go-v2/config",
+    "github.com/aws/aws-sdk-go-v2/aws/arn",
+    "github.com/aws/aws-sdk-go-v2/internal/awsutil",
+    "github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream",
+    "github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream/eventstreamapi",
+    "github.com/aws/aws-sdk-go-v2/service/internal/checksum",
+    "github.com/aws/aws-sdk-go-v2/service/internal/s3shared/arn",
+    "github.com/aws/aws-sdk-go-v2/service/internal/s3shared",
+    "github.com/aws/aws-sdk-go-v2/service/internal/s3shared/config",
+    "github.com/aws/aws-sdk-go-v2/service/s3/internal/arn",
+    "github.com/aws/aws-sdk-go-v2/service/s3/internal/endpoints",
+    "github.com/aws/aws-sdk-go-v2/service/s3/internal/customizations",
+    "github.com/aws/aws-sdk-go-v2/service/s3/types",
+    "github.com/aws/smithy-go/container/private/cache",
+    "github.com/aws/smithy-go/container/private/cache/lru",
+    "github.com/aws/smithy-go/waiter",
+    "github.com/aws/aws-sdk-go-v2/service/s3",
+    "github.com/aws/aws-sdk-go-v2/feature/s3/manager",
+    "github.com/reearth/ygo/internal/anycodec",
+    "github.com/reearth/ygo/encoding",
+    "github.com/reearth/ygo/crdt",
+    "github.com/yuin/goldmark/util",
+    "github.com/yuin/goldmark/text",
+    "github.com/yuin/goldmark/ast",
+    "github.com/yuin/goldmark/parser",
+    "github.com/yuin/goldmark/renderer",
+    "github.com/yuin/goldmark/renderer/html",
+    "github.com/yuin/goldmark",
+    "github.com/yuin/goldmark/extension/ast",
+    "github.com/yuin/goldmark/extension",
+    "golang.org/x/image/math/f64",
+    "golang.org/x/image/draw",
+    "golang.org/x/image/math/fixed",
+    "golang.org/x/image/font",
+    "golang.org/x/text/encoding/internal/identifier",
+    "golang.org/x/text/encoding",
+    "golang.org/x/text/encoding/internal",
+    "golang.org/x/text/encoding/charmap",
+    "golang.org/x/image/font/sfnt",
+    "golang.org/x/image/vector",
+    "golang.org/x/image/font/opentype",
+    "golang.org/x/image/riff",
+    "golang.org/x/image/vp8",
+    "golang.org/x/image/vp8l",
+    "golang.org/x/image/webp",
+    "golang.org/x/sync/singleflight",
+    "github.com/redis/go-redis/v9/auth",
+    "go.uber.org/atomic",
+    "github.com/redis/go-redis/v9/internal/util",
+    "github.com/redis/go-redis/v9/internal",
+    "github.com/redis/go-redis/v9/internal/maintnotifications/logs",
+    "github.com/redis/go-redis/v9/internal/proto",
+    "github.com/redis/go-redis/v9/internal/pool",
+    "github.com/redis/go-redis/v9/internal/auth/streaming",
+    "github.com/redis/go-redis/v9/internal/hashtag",
+    "github.com/redis/go-redis/v9/internal/hscan",
+    "github.com/redis/go-redis/v9/internal/interfaces",
+    "github.com/redis/go-redis/v9/internal/otel",
+    "github.com/redis/go-redis/v9/internal/routing",
+    "github.com/redis/go-redis/v9/push",
+    "github.com/redis/go-redis/v9/maintnotifications",
+    "github.com/redis/go-redis/v9",
+    "golang.org/x/net/html/atom",
+    "golang.org/x/net/html",
+    "github.com/beorn7/perks/quantile",
+    "github.com/prometheus/client_model/go",
+    "github.com/prometheus/common/model",
+    "github.com/prometheus/client_golang/prometheus/internal",
+    "github.com/munnerz/goautoneg",
+    "google.golang.org/protobuf/encoding/protodelim",
+    "github.com/prometheus/common/expfmt",
+    "github.com/prometheus/procfs/internal/fs",
+    "github.com/prometheus/procfs/internal/parsers",
+    "github.com/prometheus/procfs",
+    "github.com/prometheus/client_golang/prometheus",
+    "github.com/prometheus/client_golang/prometheus/collectors",
+    "github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil/header",
+    "github.com/prometheus/client_golang/internal/github.com/golang/gddo/httputil",
+    "github.com/prometheus/client_golang/prometheus/promhttp/internal",
+    "github.com/prometheus/client_golang/prometheus/promhttp",
+    "github.com/shopspring/decimal",
+    "github.com/hibiken/asynq/internal/errors",
+    "github.com/hibiken/asynq/internal/proto",
+    "github.com/hibiken/asynq/internal/timeutil",
+    "github.com/hibiken/asynq/internal/base",
+    "github.com/hibiken/asynq/internal/context",
+    "github.com/hibiken/asynq/internal/log",
+    "github.com/spf13/cast/internal",
+    "github.com/spf13/cast",
+    "github.com/hibiken/asynq/internal/rdb",
+    "github.com/robfig/cron/v3",
+    "golang.org/x/time/rate",
+    "github.com/hibiken/asynq",
+    "gopkg.in/yaml.v3",
+    "github.com/gorilla/websocket",
+    "github.com/oklog/ulid/v2",
+    "google.golang.org/api/internal/gensupport",
+    "google.golang.org/api/artifactregistry/v1",
+    "google.golang.org/api/cloudbuild/v1",
+    "google.golang.org/api/run/v2",
+    "google.golang.org/api/storage/v1"
+  ]
+}

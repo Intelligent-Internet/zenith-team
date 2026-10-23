@@ -1,0 +1,248 @@
+{
+  "checkedAt": "2026-10-23T11:55:53.057479+00:00",
+  "source": "https://api.osv.dev/v1/querybatch",
+  "results": [
+    {
+      "mode": "current",
+      "name": "baseline-browser-mapping",
+      "version": "2.11.31",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "brace-expansion",
+      "version": "1.1.21",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "brace-expansion",
+      "version": "2.1.7",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "brace-expansion",
+      "version": "5.0.12",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "browserslist",
+      "version": "4.29.4",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "fast-uri",
+      "version": "3.1.9",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "follow-redirects",
+      "version": "1.16.1",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "image-size",
+      "version": "2.0.4",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "js-yaml",
+      "version": "4.3.2",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "source-map-js",
+      "version": "1.2.2",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "tar",
+      "version": "7.5.22",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "tmp",
+      "version": "0.2.7",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "uuid",
+      "version": "14.0.3",
+      "advisoryIds": []
+    },
+    {
+      "mode": "current",
+      "name": "uuid",
+      "version": "8.3.2",
+      "advisoryIds": [
+        "GHSA-w5hq-g745-h8pq"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "baseline-browser-mapping",
+      "version": "2.10.42",
+      "advisoryIds": [
+        "GHSA-w5vr-8v7q-w6rv"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "brace-expansion",
+      "version": "1.1.16",
+      "advisoryIds": [
+        "GHSA-6j4f-fj2g-mc7p",
+        "GHSA-mh99-v99m-4gvg",
+        "GHSA-q2hr-2g5m-vwhr",
+        "GHSA-qhr7-859c-m2p7",
+        "GHSA-rgw5-rvv9-x895"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "brace-expansion",
+      "version": "2.1.2",
+      "advisoryIds": [
+        "GHSA-6j4f-fj2g-mc7p",
+        "GHSA-mh99-v99m-4gvg",
+        "GHSA-q2hr-2g5m-vwhr",
+        "GHSA-qhr7-859c-m2p7",
+        "GHSA-rgw5-rvv9-x895"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "braces",
+      "version": "3.0.3",
+      "advisoryIds": [
+        "GHSA-vfj7-8cjw-p6xm"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "browserslist",
+      "version": "4.28.5",
+      "advisoryIds": [
+        "GHSA-73wf-gq98-2v4g",
+        "GHSA-c83g-rgw3-j3cx"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "extract-zip",
+      "version": "2.0.1",
+      "advisoryIds": [
+        "GHSA-7pqw-9j4j-h8q3",
+        "GHSA-jmr9-qjv8-65gv"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "fast-uri",
+      "version": "3.1.3",
+      "advisoryIds": [
+        "GHSA-5jgf-p345-68v8",
+        "GHSA-7p8r-x3mc-p8w7",
+        "GHSA-f65p-4m7j-42xc",
+        "GHSA-fph4-wmhf-6fwf",
+        "GHSA-hrr3-gc8f-f4qj",
+        "GHSA-jqff-g426-hqxp",
+        "GHSA-qw65-cvwx-89v3",
+        "GHSA-v2hh-gcrm-f6hx"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "follow-redirects",
+      "version": "1.16.0",
+      "advisoryIds": [
+        "GHSA-8r9p-f939-6h3c",
+        "GHSA-q3jh-wrc6-jgq8"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "http-cache-semantics",
+      "version": "4.2.0",
+      "advisoryIds": [
+        "GHSA-ch52-4w7c-c8xp"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "image-size",
+      "version": "0.7.5",
+      "advisoryIds": [
+        "GHSA-w3rx-r6r6-pgpr"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "js-yaml",
+      "version": "4.3.1",
+      "advisoryIds": [
+        "GHSA-2883-xcg3-v3hh"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "source-map-js",
+      "version": "1.2.1",
+      "advisoryIds": [
+        "GHSA-68fv-2mgg-jv7q"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "sprintf-js",
+      "version": "1.1.3",
+      "advisoryIds": []
+    },
+    {
+      "mode": "reported",
+      "name": "tar",
+      "version": "6.2.1",
+      "advisoryIds": [
+        "GHSA-23hp-3jrh-7fpw",
+        "GHSA-34x7-hfp2-rc4v",
+        "GHSA-83g3-92jg-28cx",
+        "GHSA-8qq5-rm4j-mr97",
+        "GHSA-8x88-c5mf-7j5w",
+        "GHSA-9ppj-qmqm-q256",
+        "GHSA-gvwx-54wh-qm9j",
+        "GHSA-qffp-2rhf-9h96",
+        "GHSA-r292-9mhp-454m",
+        "GHSA-r6q2-hw4h-h46w",
+        "GHSA-vmf3-w455-68vh",
+        "GHSA-w8wr-v893-vjvp"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "tmp",
+      "version": "0.0.33",
+      "advisoryIds": [
+        "GHSA-52f5-9888-hmc6",
+        "GHSA-ph9p-34f9-6g65"
+      ]
+    },
+    {
+      "mode": "reported",
+      "name": "uuid",
+      "version": "8.3.2",
+      "advisoryIds": [
+        "GHSA-w5hq-g745-h8pq"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,277 @@
+{
+  "name": "web",
+  "scanner": "Trivy 0.76.1",
+  "platform": "linux/arm64",
+  "imageMetadata": {
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.23.7"
+    },
+    "ImageID": "sha256:4d1dff09ce2e773f058317582007075979aee3881c724320eabf0eb144eec512",
+    "DiffIDs": [
+      "sha256:2f7dba9f9c89c5b6e380a5b9715b862f20d7e33da6e6923a90f089210f2a5de9",
+      "sha256:75c603cdd8cbb64c6533bb3622f4bf9402d7266aeedac641b5776e21758e5d92",
+      "sha256:b1ffc5d14a06124c3f72236c1e5643a60685e001e5e1033b5633e3db9ab4729a",
+      "sha256:e33c43b193ef565348ee443846b6d5fb32e86b94808715295f14d7ea2fdd736c",
+      "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "sha256:faa0a58749133bc3a9b7d3919347c06a476f763d13b32290b57572138cda2c02",
+      "sha256:56a7a40a4a33d823f1a1d1bb146299794003220f74a3445aff34a755701a251f",
+      "sha256:74116e961c883d3cacbc98fa5422fef615767a7678624735fab4fdef182cecd1",
+      "sha256:913d29634b9f55bd781b2379b5cf5b531dc23d35a5979e0845aaafa7f81d4628"
+    ],
+    "RepoTags": [
+      "zenith-team-web:minimal-local"
+    ],
+    "RepoDigests": null
+  },
+  "rawOutputSHA256": "133898b8e395ad6173a719225292879b4f5be34694d87bb0c01cdfad8c4830c5",
+  "rawOutputBytes": 220298,
+  "rawOutputLocal": ".dev/security-trivy-reports/trivy-web.json",
+  "findingInstances": 20,
+  "uniqueAdvisories": 15,
+  "severityCounts": {
+    "UNKNOWN": 1,
+    "HIGH": 5,
+    "MEDIUM": 13,
+    "LOW": 1
+  },
+  "targets": [
+    {
+      "target": "/images/web.tar (alpine 3.23.7)",
+      "type": "alpine",
+      "packageCount": 32,
+      "severityCounts": {}
+    },
+    {
+      "target": "usr/bin/caddy",
+      "type": "gobinary",
+      "packageCount": 149,
+      "severityCounts": {
+        "UNKNOWN": 1,
+        "HIGH": 5,
+        "MEDIUM": 13,
+        "LOW": 1
+      }
+    }
+  ],
+  "findings": [
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "GO-2026-5932",
+      "PkgName": "golang.org/x/crypto",
+      "InstalledVersion": "v0.57.0",
+      "Status": "affected",
+      "Severity": "UNKNOWN",
+      "Title": "The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design, and has known security issues"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78669",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: net/http/internal/http2: golang.org/x/net/http2: net/http: Denial of Service via excessive HTTP/2 SETTINGS frames",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78669"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78659",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang.org/x/net/http2: golang: net/http: Denial of Service via HTTP/2 trailer header memory exhaustion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78659"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78660",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang.org/x/net/http2: net/http: HTTP response smuggling via malformed HTTP/2 framing headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78660"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78663",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: golang: flow control limit bypass via double refund in HTTP/2 server",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78663"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-97032",
+      "PkgName": "golang.org/x/net",
+      "InstalledVersion": "v0.59.0",
+      "FixedVersion": "0.60.0",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: net/http: Denial of Service via concurrent HPACK encoder modification",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97032"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-111943",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.10, 1.27.3",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "crypto/x509: golang: crypto/x509: Man-in-the-middle attacks via untrusted intermediate certificates",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-111943"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78667",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: golang: golang: Denial of Service via crafted HTTP Range headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78667"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78669",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "net/http: net/http/internal/http2: golang.org/x/net/http2: net/http: Denial of Service via excessive HTTP/2 SETTINGS frames",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78669"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-97031",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "HIGH",
+      "Title": "crypto/tls: golang: crypto/tls: Denial of Service via multiple ECH outer extension references",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97031"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-56866",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang: Cross-user response poisoning via desynchronized HTTP CONNECT connections",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56866"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78659",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang.org/x/net/http2: golang: net/http: Denial of Service via HTTP/2 trailer header memory exhaustion",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78659"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78660",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: golang.org/x/net/http2: net/http: HTTP response smuggling via malformed HTTP/2 framing headers",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78660"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-78663",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: golang: flow control limit bypass via double refund in HTTP/2 server",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-78663"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-94439",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: golang: net/http: HTTP request smuggling via improper handling of HTTP/1 CONNECT responses",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94439"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-94440",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/textproto: mime/multipart: golang: golang: Denial of Service via memory limit bypass in multipart form parsing",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94440"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-94448",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "html/template: golang: golang: cross-site scripting via consecutive expressions in JavaScript template literals",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-94448"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-97030",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "html/template: golang: html/template: Cross-site scripting via improper escaping of yield keyword",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97030"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-97032",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "MEDIUM",
+      "Title": "net/http: net/http/internal/http2: golang: golang.org/x/net/http2: net/http: Denial of Service via concurrent HPACK encoder modification",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-97032"
+    },
+    {
+      "target": "usr/bin/caddy",
+      "VulnerabilityID": "CVE-2026-56857",
+      "PkgName": "stdlib",
+      "InstalledVersion": "v1.26.8",
+      "FixedVersion": "1.26.9, 1.27.2",
+      "Status": "fixed",
+      "Severity": "LOW",
+      "Title": "os: golang: golang: Directory traversal via Windows junction handling",
+      "PrimaryURL": "https://avd.aquasec.com/nvd/cve-2026-56857"
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "name": "redis",
+  "scanner": "Trivy 0.76.1",
+  "platform": "linux/arm64",
+  "imageMetadata": {
+    "OS": {
+      "Family": "alpine",
+      "Name": "3.21.9"
+    },
+    "ImageID": "sha256:db1bf92695ab04a675308ded995fb54f73a8dafdc4b7b5dbe60a62e8c7c94039",
+    "DiffIDs": [
+      "sha256:ef97815dec74d93f38e45f1cd002d4892d65e2e4eadf7fc57ece9510f5a42d7d",
+      "sha256:26f47d5e7c15fa728879045e7039649e4c81e6fe0ce7d6e9d6054b64cec74145",
+      "sha256:235a221198ac618beb325d8020dfc67625ff591b55230894b9b72212971e4b27",
+      "sha256:527fdf092597b1aca2074635e1b0e682251562d55970cb192a9dcd0a7462e0ef",
+      "sha256:e2deee0f0c00f47d153de73f2a5d182f798b96c8f76a18a293a5f30cbc48b3f1",
+      "sha256:5f70bf18a086007016e948b04aed3b82103a36bea41755b6cddfaf10ace3c6ef",
+      "sha256:b1bd404ed89270675abbb9175c8c553bd553b642b7b32230d5b70cd911a8dbf4"
+    ],
+    "RepoTags": null,
+    "RepoDigests": null
+  },
+  "rawOutputSHA256": "de75df8d39450ed9e4e07c2d5e37d65decc509f05ff3902fbbf30f6c68b090f6",
+  "rawOutputBytes": 64194,
+  "rawOutputLocal": ".dev/security-trivy-reports/trivy-redis.json",
+  "findingInstances": 0,
+  "uniqueAdvisories": 0,
+  "severityCounts": {},
+  "targets": [
+    {
+      "target": "/images/redis.tar (alpine 3.21.9)",
+      "type": "alpine",
+      "packageCount": 19,
+      "severityCounts": {}
+    }
+  ],
+  "findings": []
+}

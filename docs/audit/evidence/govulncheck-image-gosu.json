@@ -1,0 +1,1165 @@
+{
+  "binary": "gosu",
+  "exitCode": 0,
+  "seconds": 1.37,
+  "advisoryMatches": 59,
+  "advisoriesWithBinarySymbol": 1,
+  "matchedIds": [
+    "GO-2025-4006",
+    "GO-2025-4007",
+    "GO-2025-4008",
+    "GO-2025-4009",
+    "GO-2025-4010",
+    "GO-2025-4011",
+    "GO-2025-4012",
+    "GO-2025-4013",
+    "GO-2025-4014",
+    "GO-2025-4015",
+    "GO-2025-4155",
+    "GO-2025-4175",
+    "GO-2026-4337",
+    "GO-2026-4340",
+    "GO-2026-4341",
+    "GO-2026-4342",
+    "GO-2026-4601",
+    "GO-2026-4602",
+    "GO-2026-4603",
+    "GO-2026-4864",
+    "GO-2026-4865",
+    "GO-2026-4869",
+    "GO-2026-4870",
+    "GO-2026-4918",
+    "GO-2026-4946",
+    "GO-2026-4947",
+    "GO-2026-4970",
+    "GO-2026-4971",
+    "GO-2026-4976",
+    "GO-2026-4977",
+    "GO-2026-4980",
+    "GO-2026-4981",
+    "GO-2026-4982",
+    "GO-2026-4986",
+    "GO-2026-5026",
+    "GO-2026-5037",
+    "GO-2026-5038",
+    "GO-2026-5039",
+    "GO-2026-5856",
+    "GO-2026-5972",
+    "GO-2026-6088",
+    "GO-2026-6089",
+    "GO-2026-6090",
+    "GO-2026-6091",
+    "GO-2026-6218",
+    "GO-2026-6599",
+    "GO-2026-6600",
+    "GO-2026-6603",
+    "GO-2026-6605",
+    "GO-2026-6607",
+    "GO-2026-6608",
+    "GO-2026-6609",
+    "GO-2026-6610",
+    "GO-2026-6611",
+    "GO-2026-6612",
+    "GO-2026-6613",
+    "GO-2026-6617",
+    "GO-2026-6686",
+    "GO-2026-6809"
+  ],
+  "symbolMatchedIds": [
+    "GO-2026-6686"
+  ],
+  "stderr": "",
+  "config": {
+    "protocol_version": "v1.0.0",
+    "scanner_name": "govulncheck",
+    "scanner_version": "v1.9.0",
+    "db": "https://vuln.go.dev",
+    "db_last_modified": "2026-10-21T00:27:29Z",
+    "scan_level": "symbol",
+    "scan_mode": "binary"
+  },
+  "originalOutputSHA256": "f831b2f6d63699a827da2ef1df8932c1a2c6f7039c6b40c9b69f524c03cc2541",
+  "originalOutputLocal": ".dev/security-trivy-reports/govulncheck-image-gosu.json",
+  "advisories": [
+    {
+      "id": "GO-2026-6686",
+      "aliases": [
+        "CVE-2026-61801",
+        "GHSA-mjcv-p78q-w5fw"
+      ],
+      "summary": "Possible DoS via unbounded parsing of user and group database files in github.com/moby/sys/user",
+      "hasSymbolRecord": true,
+      "exampleFinding": {
+        "osv": "GO-2026-6686",
+        "fixed_version": "v0.4.1",
+        "trace": [
+          {
+            "module": "github.com/moby/sys/user",
+            "version": "v0.1.0",
+            "package": "github.com/moby/sys/user",
+            "function": "GetExecUserPath"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4006",
+      "aliases": [
+        "CVE-2025-61725",
+        "CVE-2025-61725"
+      ],
+      "summary": "Excessive CPU consumption in ParseAddress in net/mail",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4006",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4007",
+      "aliases": [
+        "CVE-2025-58187",
+        "CVE-2025-58187"
+      ],
+      "summary": "Quadratic complexity when checking name constraints in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4007",
+        "fixed_version": "v1.24.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4008",
+      "aliases": [
+        "CVE-2025-58189",
+        "CVE-2025-58189"
+      ],
+      "summary": "ALPN negotiation error contains attacker controlled information in crypto/tls",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4008",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4009",
+      "aliases": [
+        "CVE-2025-61723",
+        "CVE-2025-61723"
+      ],
+      "summary": "Quadratic complexity when parsing some invalid inputs in encoding/pem",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4009",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4010",
+      "aliases": [
+        "CVE-2025-47912",
+        "CVE-2025-47912"
+      ],
+      "summary": "Insufficient validation of bracketed IPv6 hostnames in net/url",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4010",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4011",
+      "aliases": [
+        "CVE-2025-58185",
+        "CVE-2025-58185"
+      ],
+      "summary": "Parsing DER payload can cause memory exhaustion in encoding/asn1",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4011",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4012",
+      "aliases": [
+        "CVE-2025-58186",
+        "CVE-2025-58186"
+      ],
+      "summary": "Lack of limit when parsing cookies can cause memory exhaustion in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4012",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4013",
+      "aliases": [
+        "CVE-2025-58188",
+        "CVE-2025-58188"
+      ],
+      "summary": "Panic when validating certificates with DSA public keys in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4013",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4014",
+      "aliases": [
+        "CVE-2025-58183",
+        "CVE-2025-58183"
+      ],
+      "summary": "Unbounded allocation when parsing GNU sparse map in archive/tar",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4014",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4015",
+      "aliases": [
+        "CVE-2025-61724",
+        "CVE-2025-61724"
+      ],
+      "summary": "Excessive CPU consumption in Reader.ReadResponse in net/textproto",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4015",
+        "fixed_version": "v1.24.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4155",
+      "aliases": [
+        "CVE-2025-61729",
+        "CVE-2025-61729"
+      ],
+      "summary": "Excessive resource consumption when printing error string for host certificate validation in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4155",
+        "fixed_version": "v1.24.11",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2025-4175",
+      "aliases": [
+        "CVE-2025-61727"
+      ],
+      "summary": "Improper application of excluded DNS name constraints when verifying wildcard names in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2025-4175",
+        "fixed_version": "v1.24.11",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4337",
+      "aliases": [
+        "CVE-2025-68121"
+      ],
+      "summary": "Unexpected session resumption in crypto/tls",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4337",
+        "fixed_version": "v1.24.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4340",
+      "aliases": [
+        "CVE-2025-61730",
+        "CVE-2025-61730"
+      ],
+      "summary": "Handshake messages may be processed at the incorrect encryption level in crypto/tls",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4340",
+        "fixed_version": "v1.24.12",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4341",
+      "aliases": [
+        "CVE-2025-61726",
+        "CVE-2025-61726"
+      ],
+      "summary": "Memory exhaustion in query parameter parsing in net/url",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4341",
+        "fixed_version": "v1.24.12",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4342",
+      "aliases": [
+        "CVE-2025-61728",
+        "CVE-2025-61728"
+      ],
+      "summary": "Excessive CPU consumption when building archive index in archive/zip",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4342",
+        "fixed_version": "v1.24.12",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4601",
+      "aliases": [
+        "CVE-2026-25679"
+      ],
+      "summary": "Incorrect parsing of IPv6 host literals in net/url",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4601",
+        "fixed_version": "v1.25.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4602",
+      "aliases": [
+        "CVE-2026-27139"
+      ],
+      "summary": "FileInfo can escape from a Root in os",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4602",
+        "fixed_version": "v1.25.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4603",
+      "aliases": [
+        "CVE-2026-27142"
+      ],
+      "summary": "URLs in meta content attribute actions are not escaped in html/template",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4603",
+        "fixed_version": "v1.25.8",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4864",
+      "aliases": [
+        "CVE-2026-32282"
+      ],
+      "summary": "TOCTOU permits root escape on Linux via Root.Chmod in os in internal/syscall/unix",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4864",
+        "fixed_version": "v1.25.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4865",
+      "aliases": [
+        "CVE-2026-32289"
+      ],
+      "summary": "JsBraceDepth Context Tracking Bugs (XSS) in html/template",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4865",
+        "fixed_version": "v1.25.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4869",
+      "aliases": [
+        "CVE-2026-32288"
+      ],
+      "summary": "Unbounded allocation for old GNU sparse in archive/tar",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4869",
+        "fixed_version": "v1.25.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4870",
+      "aliases": [
+        "CVE-2026-32283"
+      ],
+      "summary": "Unauthenticated TLS 1.3 KeyUpdate record can cause persistent connection retention and DoS in crypto/tls",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4870",
+        "fixed_version": "v1.25.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4918",
+      "aliases": [
+        "CVE-2026-33814"
+      ],
+      "summary": "Infinite loop in HTTP/2 transport when given bad SETTINGS_MAX_FRAME_SIZE in net/http/internal/http2 in golang.org/x/net",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4918",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4946",
+      "aliases": [
+        "CVE-2026-32281"
+      ],
+      "summary": "Inefficient policy validation in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4946",
+        "fixed_version": "v1.25.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4947",
+      "aliases": [
+        "CVE-2026-32280"
+      ],
+      "summary": "Unexpected work during chain building in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4947",
+        "fixed_version": "v1.25.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4970",
+      "aliases": [
+        "CVE-2026-39822"
+      ],
+      "summary": "Root escape via symlink plus trailing slash in os",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4970",
+        "fixed_version": "v1.25.12",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4971",
+      "aliases": [
+        "CVE-2026-39836"
+      ],
+      "summary": "Panic in Dial and LookupPort when handling NUL byte on Windows in net",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4971",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4976",
+      "aliases": [
+        "CVE-2026-39825"
+      ],
+      "summary": "ReverseProxy forwards queries with more than urlmaxqueryparams parameters in net/http/httputil",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4976",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4977",
+      "aliases": [
+        "CVE-2026-42499"
+      ],
+      "summary": "Quadratic string concatenation in consumePhrase in net/mail",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4977",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4980",
+      "aliases": [
+        "CVE-2026-39826"
+      ],
+      "summary": "Escaper bypass leads to XSS in html/template",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4980",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4981",
+      "aliases": [
+        "CVE-2026-33811"
+      ],
+      "summary": "Crash when handling long CNAME response in net",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4981",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4982",
+      "aliases": [
+        "CVE-2026-39823"
+      ],
+      "summary": "Bypass of meta content URL escaping causes XSS in html/template",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4982",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-4986",
+      "aliases": [
+        "CVE-2026-39820"
+      ],
+      "summary": "Quadratic string concatentation in consumeComment in net/mail",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-4986",
+        "fixed_version": "v1.25.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-5026",
+      "aliases": [
+        "CVE-2026-39821"
+      ],
+      "summary": "Invoking failure to reject ASCII-only Punycode-encoded labels in golang.org/x/net/idna",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-5026",
+        "fixed_version": "v1.25.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-5037",
+      "aliases": [
+        "CVE-2026-27145"
+      ],
+      "summary": "Inefficient candidate hostname parsing in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-5037",
+        "fixed_version": "v1.25.11",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-5038",
+      "aliases": [
+        "CVE-2026-42504"
+      ],
+      "summary": "Quadratic complexity in WordDecoder.DecodeHeader in mime",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-5038",
+        "fixed_version": "v1.25.11",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-5039",
+      "aliases": [
+        "CVE-2026-42507"
+      ],
+      "summary": "Arbitrary inputs are included in errors without any escaping in net/textproto",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-5039",
+        "fixed_version": "v1.25.11",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-5856",
+      "aliases": [
+        "CVE-2026-42505"
+      ],
+      "summary": "Invoking Encrypted Client Hello privacy leak in crypto/tls",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-5856",
+        "fixed_version": "v1.25.12",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-5972",
+      "aliases": [
+        "CVE-2026-33818"
+      ],
+      "summary": "Enforce maximum recursion depth in encoding/asn1",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-5972",
+        "fixed_version": "v1.25.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6088",
+      "aliases": [
+        "CVE-2026-56859"
+      ],
+      "summary": "Add recursion depth guard during decode in encoding/xml",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6088",
+        "fixed_version": "v1.25.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6089",
+      "aliases": [
+        "CVE-2026-56853"
+      ],
+      "summary": "Apply ReadHeaderTimeout when doing unencrypted HTTP/2 check in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6089",
+        "fixed_version": "v1.25.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6090",
+      "aliases": [
+        "CVE-2026-56862"
+      ],
+      "summary": "Limit handshake messages we are willing to accept post-handshake in crypto/tls",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6090",
+        "fixed_version": "v1.25.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6091",
+      "aliases": [
+        "CVE-2026-56858"
+      ],
+      "summary": "Fix Javascript regexp context tracking in html/template",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6091",
+        "fixed_version": "v1.25.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6218",
+      "aliases": [
+        "CVE-2026-56860"
+      ],
+      "summary": "Avoid quadratic complexity in resolvePath in net/url",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6218",
+        "fixed_version": "v1.25.13",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6599",
+      "aliases": [
+        "CVE-2026-94448"
+      ],
+      "summary": "Reset context tracking on consecutive template expressions in html/template",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6599",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6600",
+      "aliases": [
+        "CVE-2026-97030"
+      ],
+      "summary": "Recognize yield as regexp preceder keyword in html/template",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6600",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6603",
+      "aliases": [
+        "CVE-2026-78659"
+      ],
+      "summary": "HTTP/2 server memory exhaustion due to Trailer headers in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6603",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6605",
+      "aliases": [
+        "CVE-2026-56866"
+      ],
+      "summary": "HTTP/1 client connection desynchronization after CONNECT rejection in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6605",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6607",
+      "aliases": [
+        "CVE-2026-97031"
+      ],
+      "summary": "Reject malformed ECH outer extension references in crypto/tls",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6607",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6608",
+      "aliases": [
+        "CVE-2026-94440"
+      ],
+      "summary": "Memory limit bypass when parsing MIME headers in net/textproto, mime/multipart",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6608",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6609",
+      "aliases": [
+        "CVE-2026-78667"
+      ],
+      "summary": "Lack of limit on size of parsed Range headers in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6609",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6610",
+      "aliases": [
+        "CVE-2026-78660"
+      ],
+      "summary": "HTTP/2 transport accepts malformed framing-related headers in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6610",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6611",
+      "aliases": [
+        "CVE-2026-78669"
+      ],
+      "summary": "Excessive CPU consumption from repeated initial window changes in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6611",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6612",
+      "aliases": [
+        "CVE-2026-78663"
+      ],
+      "summary": "Double flow control refund on HTTP/2 server streams in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6612",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6613",
+      "aliases": [
+        "CVE-2026-94439"
+      ],
+      "summary": "HTTP/1 server connection desynchronization after 2xx CONNECT response in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6613",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6617",
+      "aliases": [
+        "CVE-2026-97032"
+      ],
+      "summary": "HTTP/2 server crash due to HPACK encoder race in net/http",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6617",
+        "fixed_version": "v1.26.9",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    },
+    {
+      "id": "GO-2026-6809",
+      "aliases": [
+        "CVE-2026-111943"
+      ],
+      "summary": "Distrust compromised intermediate certificates in crypto/x509",
+      "hasSymbolRecord": false,
+      "exampleFinding": {
+        "osv": "GO-2026-6809",
+        "fixed_version": "v1.26.10",
+        "trace": [
+          {
+            "module": "stdlib",
+            "version": "v1.24.6"
+          }
+        ]
+      }
+    }
+  ],
+  "interpretation": "Binary symbol records are not source call graphs or proof of exploitation; wildcard symbol records can be broad. Missing symbols do not establish a fork has patched a module-level advisory."
+}

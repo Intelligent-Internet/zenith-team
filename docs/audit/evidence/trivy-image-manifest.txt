@@ -1,0 +1,48 @@
+Name:      docker.io/aquasec/trivy:0.76.1
+MediaType: application/vnd.oci.image.index.v1+json
+Digest:    sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+
+Manifests:
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:2e6c00d711ab4ae41d8a30c2c1fd3bd3b62704c177bb120f95012e939edfb3df
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/amd64
+
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:fc223b6f033406fd0c5efe59b566295e90cff76ccd2af696bd0d66d53ad83a2d
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/arm64
+
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:14c20d2b1a033cc152b49b6d4fc56062eee0fb10d5fcc89f5e3e3981702bd4bf
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/s390x
+
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:24338f55d3c85be9e06c9b442df6aea59077f530e7fb347e9b1d2502da62975f
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    linux/ppc64le
+
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:1988dda1bf8ac0833db6ad41006cf7add49692de48b1bd8f03a83b7ffa1bb6a9
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.digest: sha256:2e6c00d711ab4ae41d8a30c2c1fd3bd3b62704c177bb120f95012e939edfb3df
+    vnd.docker.reference.type:   attestation-manifest
+
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:50a0c4df556bfb26b78681b816f64a2bff6be9538e1db0e9d0663f32f9bea136
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.digest: sha256:fc223b6f033406fd0c5efe59b566295e90cff76ccd2af696bd0d66d53ad83a2d
+    vnd.docker.reference.type:   attestation-manifest
+
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:75e5b5d00770f83324a8a9884a3c42adbac1a4dddd6baadf77a8c26654ff93aa
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.digest: sha256:14c20d2b1a033cc152b49b6d4fc56062eee0fb10d5fcc89f5e3e3981702bd4bf
+    vnd.docker.reference.type:   attestation-manifest
+
+  Name:        docker.io/aquasec/trivy:0.76.1@sha256:db01f549bbc88df70c055c1b05840688e9bf889c36a7188c91dec7953abbea37
+  MediaType:   application/vnd.oci.image.manifest.v1+json
+  Platform:    unknown/unknown
+  Annotations:
+    vnd.docker.reference.digest: sha256:24338f55d3c85be9e06c9b442df6aea59077f530e7fb347e9b1d2502da62975f
+    vnd.docker.reference.type:   attestation-manifest

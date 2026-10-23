@@ -1,0 +1,23 @@
+Unable to find image 'aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c' locally
+docker.io/aquasec/trivy@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c: Pulling from aquasec/trivy
+7982da00fb0e: Pulling fs layer
+a9986cd6f37d: Pulling fs layer
+c1eb83f5f90e: Pulling fs layer
+776313edbc56: Pulling fs layer
+7982da00fb0e: Download complete
+44136fa355b3: Already exists
+efa2b9ef3cb0: Download complete
+a9986cd6f37d: Download complete
+a9986cd6f37d: Pull complete
+9fb4ec2ae1a3: Download complete
+c1eb83f5f90e: Download complete
+776313edbc56: Download complete
+c1eb83f5f90e: Pull complete
+7982da00fb0e: Pull complete
+776313edbc56: Pull complete
+Digest: sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+Status: Downloaded newer image for aquasec/trivy@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+2026-10-23T11:00:33Z	INFO	[vulndb] Need to update DB
+2026-10-23T11:00:33Z	INFO	[vulndb] Downloading vulnerability DB...
+2026-10-23T11:00:33Z	INFO	[vulndb] Downloading artifact...	repo="mirror.gcr.io/aquasec/trivy-db:2"
+2026-10-23T11:00:45Z	INFO	[vulndb] Artifact successfully downloaded	repo="mirror.gcr.io/aquasec/trivy-db:2"

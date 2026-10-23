@@ -1,0 +1,22 @@
+{
+  "source": "https://registry.npmjs.org/exceljs/-/exceljs-4.4.0.tgz",
+  "version": "4.4.0",
+  "readOnlyArchiveInspection": true,
+  "matches": [
+    {
+      "path": "package/lib/xlsx/xform/sheet/cf-ext/cf-rule-ext-xform.js",
+      "line": 1,
+      "text": "const {v4: uuidv4} = require('uuid');"
+    },
+    {
+      "path": "package/lib/xlsx/xform/sheet/cf-ext/cf-rule-ext-xform.js",
+      "line": 43,
+      "text": "model.x14Id = `{${uuidv4()}}`.toUpperCase();"
+    },
+    {
+      "path": "package/lib/xlsx/xform/sheet/cf-ext/cf-rule-ext-xform.js",
+      "line": 77,
+      "text": "id: model.x14Id || `{${uuidv4()}}`,"
+    }
+  ]
+}

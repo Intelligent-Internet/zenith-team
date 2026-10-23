@@ -1,0 +1,32 @@
+[
+  {
+    "case": "clean",
+    "expectedExit": 0,
+    "actualExit": 0
+  },
+  {
+    "case": "affected",
+    "expectedExit": 1,
+    "actualExit": 1
+  },
+  {
+    "case": "truncated",
+    "expectedExit": 2,
+    "actualExit": 2
+  },
+  {
+    "case": "query_error",
+    "expectedExit": 2,
+    "actualExit": 2
+  },
+  {
+    "case": "paginated",
+    "expectedExit": 2,
+    "actualExit": 2
+  },
+  {
+    "case": "network_failure",
+    "expectedExit": 2,
+    "actualExit": 2
+  }
+]
