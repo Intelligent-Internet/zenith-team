@@ -30,27 +30,27 @@ on:
     # The Apple credentials, which exist only in the desktop-signing
     # environment. A called workflow sees an environment's secrets only when
     # its caller passes them, by name here rather than with secrets: inherit;
-    # GitHub then resolves them in the macOS jobs' environment. Required, so a
-    # missing one stops the run instead of arriving empty.
+    # GitHub then resolves them in the macOS jobs' environment. A secret that
+    # is not passed arrives empty, so the macOS job checks all six first.
     secrets:
       ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64:
         description: "Developer ID Application certificate with its key (.p12), base64"
-        required: true
+        required: false
       ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD:
         description: "Password of that .p12"
-        required: true
+        required: false
       ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY:
         description: "The certificate's name, Developer ID Application: <team> (<team ID>)"
-        required: true
+        required: false
       ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64:
         description: "App Store Connect API key (.p8), base64"
-        required: true
+        required: false
       ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID:
         description: "That key's ID"
-        required: true
+        required: false
       ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER:
         description: "The App Store Connect issuer ID"
-        required: true
+        required: false
 
 permissions: {}
 
@@ -106,6 +106,29 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      # All six at once, before anything else, so a missing one is named here
+      # rather than failing the build half an hour later.
+      - name: Require the signing secrets
+        env:
+          ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+          ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+          ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
+        run: |
+          missing=()
+          for name in ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD \
+            ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 \
+            ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing in the desktop-signing environment, or not passed by the caller: ${missing[*]}"
+            exit 1
+          fi
       # Before any dependency is installed: install scripts are third-party
       # code, and the certificate file and its password must be gone by then.
       - name: Load the signing certificate into a temporary keychain
@@ -114,20 +137,18 @@ jobs:
           CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
         run: |
           set -euo pipefail
-          if [ -z "$CERTIFICATE_BASE64" ]; then
-            echo "::error::The signing certificate is missing; check the desktop-signing environment's secrets."
-            exit 1
-          fi
           keychain_password="$(uuidgen)"
           keychain="$RUNNER_TEMP/zenith-team-release.keychain-db"
           certificate="$RUNNER_TEMP/zenith-team-mac-certificate.p12"
-          printf '%s' "$CERTIFICATE_BASE64" | base64 --decode > "$certificate"
-          chmod 600 "$certificate"
+          umask 077
+          # The same decode the boardly desktop pipeline used.
+          python3 -c 'import base64, os, sys; sys.stdout.buffer.write(base64.b64decode(os.environ["CERTIFICATE_BASE64"]))' > "$certificate"
           security create-keychain -p "$keychain_password" "$keychain"
           security set-keychain-settings -lut 21600 "$keychain"
           security unlock-keychain -p "$keychain_password" "$keychain"
-          # Only codesign may use the key, and it cannot be exported (-x).
-          security import "$certificate" -P "$CERTIFICATE_PASSWORD" -x -T /usr/bin/codesign -t cert -f pkcs12 -k "$keychain"
+          # As boardly imported it (-A, with the partition list below), but the
+          # private key cannot be exported (-x).
+          security import "$certificate" -P "$CERTIFICATE_PASSWORD" -A -x -t cert -f pkcs12 -k "$keychain"
           rm -f "$certificate"
           # Keep the existing search list and put the release keychain first.
           keychains=("$keychain")
@@ -148,12 +169,8 @@ jobs:
           NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
         run: |
           set -euo pipefail
-          if [ -z "$NOTARY_API_KEY_BASE64" ]; then
-            echo "::error::The notary key is missing; check the desktop-signing environment's secrets."
-            exit 1
-          fi
           umask 077
-          printf '%s' "$NOTARY_API_KEY_BASE64" | base64 --decode > "$RUNNER_TEMP/zenith-team-notary-api-key.p8"
+          python3 -c 'import base64, os, sys; sys.stdout.buffer.write(base64.b64decode(os.environ["NOTARY_API_KEY_BASE64"]))' > "$RUNNER_TEMP/zenith-team-notary-api-key.p8"
       - name: Make signed and notarized macOS installers
         working-directory: frontend
         env:
