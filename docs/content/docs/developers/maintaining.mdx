@@ -26,7 +26,7 @@ Do not require the individual CI lanes. They skip when their folders did not cha
 
 When you squash-merge, make sure the title is a Conventional Commit: it becomes the commit message on `main`. Contributors check their own commit messages and branch names with the local hooks (`make hooks`).
 
-Keep **secret scanning**, **push protection** and **Dependabot alerts** on under **Settings → Code security**. They are the project's secret and dependency checks; no workflow repeats them. **Dependabot security updates** are paused for now, together with version updates (see below); turn them back on here when Dependabot resumes.
+Keep **secret scanning**, **push protection** and **Dependabot alerts** on under **Settings → Code security**. They are the project's secret and dependency checks; no workflow repeats them. **Dependabot security updates** are off for now, together with version updates (see below); turn them back on here when Dependabot resumes.
 
 ### Sign-off
 
@@ -84,7 +84,7 @@ The desktop jobs then also require `frontend/package.json` to carry each tag's v
 ## Regular work
 
 - **Triage.** Label new issues, and answer or close questions that belong in Discussions.
-- **Dependabot.** Update pull requests are paused for now: `.github/dependabot.yml` sets `open-pull-requests-limit: 0` on every ecosystem, and security updates are off. Dependabot alerts still list vulnerable dependencies under the **Security** tab. To resume, delete those limit lines and turn security updates back on; Dependabot then opens grouped weekly pull requests for Go, npm, Python, GitHub Actions and Docker base images. Merge them once CI is green.
+- **Dependabot.** Update pull requests are off for now: the repository has no `.github/dependabot.yml`, so Dependabot runs no update jobs, and security updates are off. Dependabot alerts still list vulnerable dependencies under the **Security** tab. To resume, restore `.github/dependabot.yml` from git history (it was removed in the commit that touched this line) and turn security updates back on; Dependabot then opens grouped weekly pull requests for Go, npm, Python, GitHub Actions and Docker base images. Merge them once CI is green.
 - **Nightly.** The Nightly workflow runs the PostgreSQL integration suites and the Windows and macOS checks each night. A red nightly run means something drifted that no single pull request touched. Fix it before the next release.
 - **Security alerts.** Review secret-scanning and Dependabot alerts under the **Security** tab. Close a test fixture as "used in tests"; rotate anything real.
 - **Platform bundles.** Workflow and skill content is pinned from a separate plugins repository ([ADR 0016](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/adr/0016-platform-content-bundles.md)). Updating a pin needs access to that repository, so only maintainers can do it, with `make bundle-bump`, `make bundle-verify` and `make bundle-diff`.

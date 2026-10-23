@@ -131,7 +131,7 @@ Pull requests from forks run with a read-only token and no secrets.
 
 ### Secrets and dependencies
 
-GitHub does this work, so no workflow repeats it: secret scanning with push protection refuses a push that contains a known secret format, and Dependabot alerts track vulnerable dependencies. Dependabot's update pull requests are paused for now (see [Maintaining](/developers/maintaining#regular-work)). The nightly run and every tag release run `govulncheck`, and a release fails on a known vulnerability (see [Releasing](/developers/releasing)).
+GitHub does this work, so no workflow repeats it: secret scanning with push protection refuses a push that contains a known secret format, and Dependabot alerts track vulnerable dependencies. Dependabot's update pull requests are off for now (see [Maintaining](/developers/maintaining#regular-work)). The nightly run and every tag release run `govulncheck`, and a release fails on a known vulnerability (see [Releasing](/developers/releasing)).
 
 `.github/workflows/codeql.yml` runs CodeQL code scanning on the Go server, the TypeScript apps, the voice worker and the workflows: on every pull request, on pushes to `main` and weekly. Findings appear under **Security → Code scanning** and on the pull request; it is not a required check.
 
