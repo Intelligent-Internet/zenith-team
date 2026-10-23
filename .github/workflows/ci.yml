@@ -1,5 +1,6 @@
 # Checks every pull request and every push to main. On a pull request each
-# lane runs when the files it reads change; a push to main and a manual run
+# lane runs when the files it reads change; dependency security runs on every
+# pull request. A push to main and a manual run
 # check every lane (the desktop lane only when its files change), so a green
 # ci-gate on a main commit vouches for the whole tree, which is what
 # release.yml relies on. ci-gate is the one required check. Slow, platform-specific suites live in nightly.yml. Fork
@@ -311,19 +312,27 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  # The one required status check: fails when any lane failed or was
-  # cancelled; lanes that did not need to run are skipped.
+  dependency-security:
+    uses: ./.github/workflows/security.yml
+
+  # The one required status check: dependency security must succeed; any
+  # failed/cancelled lane blocks. Other lanes may skip when not needed.
   ci-gate:
     if: always()
-    needs: [changes, server-test, server-lint, frontend, voice, selfhost, workflows, desktop]
+    needs: [changes, server-test, server-lint, frontend, voice, selfhost, workflows, desktop, dependency-security]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Require every lane to pass or be skipped
+      - name: Require dependency security and selected lanes to pass
         env:
           RESULTS: ${{ join(needs.*.result, ' ') }}
+          SECURITY_RESULT: ${{ needs.dependency-security.result }}
         run: |
           echo "$RESULTS"
+          if [ "$SECURITY_RESULT" != success ]; then
+            echo "Dependency security must succeed; got: $SECURITY_RESULT" >&2
+            exit 1
+          fi
           case " $RESULTS " in
             *" failure "*|*" cancelled "*) exit 1 ;;
           esac

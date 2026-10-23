@@ -1,0 +1,120 @@
+# Called by CI so ci-gate includes these results; the daily run catches new
+# advisories even when no dependency changes. All scanners fail on network or
+# parse errors. Frontend and Python scans do not install application packages.
+name: Dependency security
+
+on:
+  workflow_call:
+  schedule:
+    - cron: "17 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    name: Go (${{ matrix.edition }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - edition: full
+            tags: ""
+          - edition: minimal
+            tags: zenith_minimal,nomsgpack
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          check-latest: true
+          cache: false
+      - name: Scan server symbols
+        working-directory: server
+        env:
+          BUILD_TAGS: ${{ matrix.tags }}
+          CGO_ENABLED: "0"
+          GOOS: linux
+          GOARCH: amd64
+        # cmd/server does not import internal/daemon or its generated assets.
+        # The broader minimal tests below prepare those assets through make.
+        # Use text mode: govulncheck JSON mode exits zero even with findings.
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 -tags "$BUILD_TAGS" ./cmd/server | tee "$RUNNER_TEMP/go-vulnerabilities.txt"
+      - name: Verify minimal dependency boundary
+        if: matrix.edition == 'minimal'
+        # Prepare verified embedded assets, then use setup-go's patched version.
+        run: make minimal-check MINIMAL_GOTOOLCHAIN=auto
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: go-vulnerabilities-${{ matrix.edition }}
+          path: ${{ runner.temp }}/go-vulnerabilities.txt
+          retention-days: 30
+          if-no-files-found: warn
+
+  frontend:
+    name: npm (${{ matrix.scope }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        scope: [all, production]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: frontend/package.json
+          run_install: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Exercise scanner failure handling
+        if: matrix.scope == 'all'
+        # Uses only Python/Node/Ruby already provided by the runner.
+        run: python3 -B scripts/security/stress_scanners.py --output "$RUNNER_TEMP/security-gate-stress.json"
+      - name: Scan locked package versions
+        shell: bash
+        env:
+          AUDIT_SCOPE: ${{ matrix.scope }}
+        # Retain every severity; block high/critical. The moderate uuid finding
+        # and current ExcelJS v4-only call path are documented in the audit.
+        run: node scripts/security/check_npm_dependencies.mjs "$AUDIT_SCOPE" "$RUNNER_TEMP/npm-vulnerabilities.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: npm-vulnerabilities-${{ matrix.scope }}
+          path: |
+            ${{ runner.temp }}/npm-vulnerabilities.json
+            ${{ runner.temp }}/security-gate-stress.json
+          retention-days: 30
+          if-no-files-found: warn
+
+  voice:
+    name: Python voice lockfile
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Query OSV for every locked registry package
+        run: python3 scripts/security/check_voice_dependencies.py --output "$RUNNER_TEMP/voice-vulnerabilities.json"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: voice-vulnerabilities
+          path: ${{ runner.temp }}/voice-vulnerabilities.json
+          retention-days: 30
+          if-no-files-found: warn
