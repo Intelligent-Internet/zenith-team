@@ -235,13 +235,13 @@ importers:
     devDependencies:
       '@electron-forge/cli':
         specifier: ^7.11.2
-        version: 7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)
+        version: 7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)
       '@electron-forge/maker-dmg':
         specifier: ^8.0.1
         version: 8.0.1
       '@electron-forge/maker-squirrel':
-        specifier: ^7.11.2
-        version: 7.11.2
+        specifier: ^8.0.1
+        version: 8.0.1
       '@electron-forge/maker-zip':
         specifier: ^8.0.1
         version: 8.0.1
@@ -256,7 +256,7 @@ importers:
         version: 2.63.0
       '@sentry/vite-plugin':
         specifier: 5.4.1
-        version: 5.4.1(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
+        version: 5.4.1(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@6.4.4(@types/node@26.6.5)(jiti@2.7.0)(lightningcss@1.32.0)(terser@5.49.0))
@@ -488,9 +488,9 @@ packages:
     resolution: {integrity: sha512-/FtNihspOpY+SKzyUClCsSgc+W4BJdHttA+eZh7mMs6DFNjJzO8xgJwOjLuHi1oVahrpRsw8UVRejs1wrk7YBw==}
     engines: {node: '>= 22.13.0'}
 
-  '@electron-forge/maker-squirrel@7.11.2':
-    resolution: {integrity: sha512-4CILo57ZDEQH1mJxjhYCSXuv+WaU7oPq67KqiTLEUOEzmiPg9u9/z7FXE34H/Tn5aKWN3dy+ngAETzv6iERCGg==}
-    engines: {node: '>= 16.4.0'}
+  '@electron-forge/maker-squirrel@8.0.1':
+    resolution: {integrity: sha512-V6QrJvvmX2xbITXP1+/bXYe2hkMM7BYnQ8vzVHDOca2P6pn68MZsCSewqm8wiBIBSEeYuRhrztvV8aMlJ5n5Mg==}
+    engines: {node: '>= 22.13.0'}
 
   '@electron-forge/maker-zip@8.0.1':
     resolution: {integrity: sha512-EyMyAMFRZTPKbe6K1HEAgnpAMC7OvR8tQ2iG/5Vd++iG2AVdFJ9usChfW72n172jk9CTfFc7L88IF8lXMYYvIQ==}
@@ -548,6 +548,10 @@ packages:
 
   '@electron-internal/extract-zip@1.0.5':
     resolution: {integrity: sha512-+bqFCP98pLI0Tt0XQo1TmlXtwjWchISndDOxCkEcIuUgXWpBnLyRI+2DU+mesvnMMX6L1XDqYNA0lXNDHd/yiA==}
+    engines: {node: '>=22.12.0'}
+
+  '@electron-internal/extract-zip@1.0.6':
+    resolution: {integrity: sha512-/aQLgFDdCSnwChfUwqekSmE1q2dCTzhUy5saIHBb5vyYn5LzWaKPaIz1wM0lDMCZYBoIG4svJNvAJb6vkI8BuA==}
     engines: {node: '>=22.12.0'}
 
   '@electron/asar@3.4.1':
@@ -2914,8 +2918,8 @@ packages:
   bplist-creator@0.0.8:
     resolution: {integrity: sha512-Za9JKzD6fjLC16oX2wsXfc+qBEhJBJB1YPInoAQpMLhDuj5aVOv1baGeIQSq1Fr3OCqzvsoQcSBSwGId/Ja2PA==}
 
-  brace-expansion@1.1.16:
-    resolution: {integrity: sha512-IDw48K2/2kRkg9LdJxurvq3lV3aBgq0REY89duEqFRthjlPdXHKMj7EnQOXVckxzgisinf3nHfrcE2FufFLXMw==}
+  brace-expansion@1.1.21:
+    resolution: {integrity: sha512-9zeA+KLZNNzglF2TPKRQEDyx6Yby7daAkuy8MiPzpXPsYDWi/DRM8jmwUDxokQjYqBpv5DgPiwD4h4ZZSy1Ujw==}
 
   brace-expansion@2.1.2:
     resolution: {integrity: sha512-w5JZcKgdhDOgOwm8H+KgbosopHMuGcl6qbulwjtz3SM7I7P3yW1eAjzMPLrIE+NQ9vjgANKHWeMHnrT0OXW1oA==}
@@ -3486,8 +3490,9 @@ packages:
   encode-utf8@1.0.3:
     resolution: {integrity: sha512-ucAnuBEhUK4boH2HjVYG5Q2mQyPorvv0u/ocS+zhdw0S8AlHYY+GOFhP1Gio5z4icpP2ivFSvhtFjQi8+T9ppw==}
 
-  encoding@0.1.13:
-    resolution: {integrity: sha512-ETBauow1T35Y/WZMkio9jiM0Z5xjHHmJ4XmjZOq1l/dXz3lr2sRn87nJy20RupqSh1F2m3HHPSp8ShIPQJrJ3A==}
+  encoding@0.1.14:
+    resolution: {integrity: sha512-pqH+jIxIhwX5U4w+Tnu3jjowTo5QTACbqef2C5Cw2RhApr7COQqgnai53u8VbtqjWRcSoAcTf7uZ62dO5kC8Iw==}
+    engines: {node: '>=20.0.0'}
 
   end-of-stream@1.4.5:
     resolution: {integrity: sha512-ooEGc6HP26xXq/N+GCGOT0JKCLDGrq2bQUZrQ7gyrJiZANJ/8YDTxTpQBXGMn+WbIQXNVpyWymm7KYVICQnyOg==}
@@ -3746,6 +3751,10 @@ packages:
     resolution: {integrity: sha512-w8ZNZr2mKIc7qeNaQ9AVPT1+iFaI+Avd4xudVOvdDJ8VytREi1Ft5Ih7hd9jjehod8vAM5GMsfQ/TpPf4EyoEA==}
     engines: {node: '>=14.14'}
 
+  fs-extra@11.4.1:
+    resolution: {integrity: sha512-KYAb4c9BJQI6QqGKthV68OHe0badztdXJWKo0WtBA9IuCFPTKvE5ZdUBglP833aMjhaSPNO4A5j/EkzZtGlKjA==}
+    engines: {node: '>=14.14'}
+
   fs-extra@7.0.1:
     resolution: {integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==}
     engines: {node: '>=6 <7 || >=8'}
@@ -3991,6 +4000,10 @@ packages:
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
+    engines: {node: '>=0.10.0'}
+
+  iconv-lite@0.7.3:
+    resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
 
   ieee754@1.2.1:
@@ -4870,8 +4883,8 @@ packages:
     resolution: {integrity: sha512-W5ZNO5KRPB5TkYmGVD9F6YqhsglXJzE6etpbmT+f6EQElhiX/UTG551cnsRGvLG3fyZEg9HwaDmNmj5nwJ4z9g==}
     engines: {node: '>=10'}
 
-  node-abi@4.38.0:
-    resolution: {integrity: sha512-suSdznUPfabdaeLiNERA0LHod14RhcEn8wMPUZEQ6bKvajUCZ+aizY4pIvlLU+gImeLKp2bFDHhOc9yonISsXw==}
+  node-abi@4.39.0:
+    resolution: {integrity: sha512-pULjI3qsVrn6K5DZz5tCpX2dL8IKM9/xBMRz29hBko8UFXZ/C3QxRMl/Z7wKaQwaxPmYU+7UPKbDf7EO+ASvfA==}
     engines: {node: '>=22.12.0'}
 
   node-api-version@0.2.1:
@@ -6453,9 +6466,9 @@ snapshots:
       react: 19.3.1
       tslib: 2.8.1
 
-  '@electron-forge/cli@7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)':
+  '@electron-forge/cli@7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)':
     dependencies:
-      '@electron-forge/core': 7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)
+      '@electron-forge/core': 7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)
       '@electron-forge/core-utils': 7.11.2
       '@electron-forge/shared-types': 7.11.2
       '@electron/get': 3.1.0
@@ -6513,7 +6526,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron-forge/core@7.11.2(encoding@0.1.13)(esbuild@0.28.2)(lightningcss@1.32.0)':
+  '@electron-forge/core@7.11.2(encoding@0.1.14)(esbuild@0.28.2)(lightningcss@1.32.0)':
     dependencies:
       '@electron-forge/core-utils': 7.11.2
       '@electron-forge/maker-base': 7.11.2
@@ -6544,7 +6557,7 @@ snapshots:
       jiti: 2.7.0
       listr2: 7.0.2
       log-symbols: 4.1.0
-      node-fetch: 2.7.0(encoding@0.1.13)
+      node-fetch: 2.7.0(encoding@0.1.14)
       rechoir: 0.8.0
       semver: 7.8.5
       source-map-support: 0.5.21
@@ -6592,15 +6605,14 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@electron-forge/maker-squirrel@7.11.2':
+  '@electron-forge/maker-squirrel@8.0.1':
     dependencies:
-      '@electron-forge/maker-base': 7.11.2
-      '@electron-forge/shared-types': 7.11.2
-      fs-extra: 10.1.0
+      '@electron-forge/core-utils': 8.0.1
+      '@electron-forge/maker-base': 8.0.1
+      '@electron-forge/shared-types': 8.0.1
     optionalDependencies:
       electron-winstaller: 5.4.4
     transitivePeerDependencies:
-      - bluebird
       - supports-color
 
   '@electron-forge/maker-zip@8.0.1':
@@ -6728,6 +6740,8 @@ snapshots:
 
   '@electron-internal/extract-zip@1.0.5': {}
 
+  '@electron-internal/extract-zip@1.0.6': {}
+
   '@electron/asar@3.4.1':
     dependencies:
       commander: 5.1.0
@@ -6851,7 +6865,7 @@ snapshots:
 
   '@electron/packager@20.3.0':
     dependencies:
-      '@electron-internal/extract-zip': 1.0.5
+      '@electron-internal/extract-zip': 1.0.6
       '@electron/asar': 4.3.1
       '@electron/get': 5.1.0
       '@electron/notarize': 3.1.2
@@ -6895,7 +6909,7 @@ snapshots:
     dependencies:
       '@malept/cross-spawn-promise': 2.0.0
       debug: 4.4.3(supports-color@10.2.2)
-      node-abi: 4.38.0
+      node-abi: 4.39.0
       node-api-version: 0.2.1
       node-gyp: 12.4.0
       read-binary-file-arch: 1.0.6
@@ -6908,7 +6922,7 @@ snapshots:
       '@malept/cross-spawn-promise': 2.0.0
       debug: 4.4.3(supports-color@10.2.2)
       dir-compare: 4.2.0
-      fs-extra: 11.3.6
+      fs-extra: 11.4.1
       minimatch: 9.0.9
       plist: 3.1.1
     transitivePeerDependencies:
@@ -6926,7 +6940,7 @@ snapshots:
     dependencies:
       cross-dirname: 0.1.0
       debug: 4.4.3(supports-color@10.2.2)
-      fs-extra: 11.3.6
+      fs-extra: 11.4.1
       minimist: 1.2.8
       postject: 1.0.0-alpha.6
     transitivePeerDependencies:
@@ -7985,10 +7999,10 @@ snapshots:
       '@sentry/replay': 11.7.0
       '@sentry/replay-canvas': 11.7.0
 
-  '@sentry/bundler-plugins@10.76.2(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
+  '@sentry/bundler-plugins@10.76.2(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
     dependencies:
       '@babel/core': 7.29.7
-      '@sentry/cli': 2.58.6(encoding@0.1.13)
+      '@sentry/cli': 2.58.6(encoding@0.1.14)
       '@sentry/core': 10.76.2
       dotenv: 17.4.2
       find-up: 5.0.0
@@ -8039,10 +8053,10 @@ snapshots:
   '@sentry/cli-win32-x64@2.58.6':
     optional: true
 
-  '@sentry/cli@2.58.6(encoding@0.1.13)':
+  '@sentry/cli@2.58.6(encoding@0.1.14)':
     dependencies:
       https-proxy-agent: 5.0.1
-      node-fetch: 2.7.0(encoding@0.1.13)
+      node-fetch: 2.7.0(encoding@0.1.14)
       progress: 2.0.3
       proxy-from-env: 1.1.0
       which: 2.0.2
@@ -8137,9 +8151,9 @@ snapshots:
       '@sentry/conventions': 0.27.0
       '@sentry/core': 11.7.0
 
-  '@sentry/vite-plugin@5.4.1(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
+  '@sentry/vite-plugin@5.4.1(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))':
     dependencies:
-      '@sentry/bundler-plugins': 10.76.2(encoding@0.1.13)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
+      '@sentry/bundler-plugins': 10.76.2(encoding@0.1.14)(rollup@4.64.12)(webpack@5.108.4(esbuild@0.28.2)(lightningcss@1.32.0))
     transitivePeerDependencies:
       - encoding
       - rollup
@@ -9111,7 +9125,7 @@ snapshots:
       stream-buffers: 2.2.0
     optional: true
 
-  brace-expansion@1.1.16:
+  brace-expansion@1.1.21:
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
@@ -9724,9 +9738,9 @@ snapshots:
   encode-utf8@1.0.3:
     optional: true
 
-  encoding@0.1.13:
+  encoding@0.1.14:
     dependencies:
-      iconv-lite: 0.6.3
+      iconv-lite: 0.7.3
     optional: true
 
   end-of-stream@1.4.5:
@@ -10025,6 +10039,12 @@ snapshots:
       universalify: 2.0.1
 
   fs-extra@11.3.6:
+    dependencies:
+      graceful-fs: 4.2.11
+      jsonfile: 6.2.1
+      universalify: 2.0.1
+
+  fs-extra@11.4.1:
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 6.2.1
@@ -10408,6 +10428,11 @@ snapshots:
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
+
+  iconv-lite@0.7.3:
+    dependencies:
+      safer-buffer: 2.1.2
+    optional: true
 
   ieee754@1.2.1: {}
 
@@ -11305,7 +11330,7 @@ snapshots:
 
   minimatch@3.1.5:
     dependencies:
-      brace-expansion: 1.1.16
+      brace-expansion: 1.1.21
 
   minimatch@5.1.9:
     dependencies:
@@ -11338,7 +11363,7 @@ snapshots:
       minipass-sized: 1.0.3
       minizlib: 2.1.2
     optionalDependencies:
-      encoding: 0.1.13
+      encoding: 0.1.14
 
   minipass-flush@1.0.7:
     dependencies:
@@ -11417,7 +11442,7 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  node-abi@4.38.0:
+  node-abi@4.39.0:
     dependencies:
       semver: 7.8.5
 
@@ -11425,11 +11450,11 @@ snapshots:
     dependencies:
       semver: 7.8.5
 
-  node-fetch@2.7.0(encoding@0.1.13):
+  node-fetch@2.7.0(encoding@0.1.14):
     dependencies:
       whatwg-url: 5.0.0
     optionalDependencies:
-      encoding: 0.1.13
+      encoding: 0.1.14
 
   node-gyp@12.4.0:
     dependencies:
