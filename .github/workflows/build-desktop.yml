@@ -27,6 +27,30 @@ on:
         description: "The version to build; a prod build must match frontend/package.json"
         required: true
         type: string
+    # The Apple credentials, which exist only in the desktop-signing
+    # environment. A called workflow sees an environment's secrets only when
+    # its caller passes them, by name here rather than with secrets: inherit;
+    # GitHub then resolves them in the macOS jobs' environment. Required, so a
+    # missing one stops the run instead of arriving empty.
+    secrets:
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64:
+        description: "Developer ID Application certificate with its key (.p12), base64"
+        required: true
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD:
+        description: "Password of that .p12"
+        required: true
+      ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY:
+        description: "The certificate's name, Developer ID Application: <team> (<team ID>)"
+        required: true
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64:
+        description: "App Store Connect API key (.p8), base64"
+        required: true
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID:
+        description: "That key's ID"
+        required: true
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER:
+        description: "The App Store Connect issuer ID"
+        required: true
 
 permissions: {}
 

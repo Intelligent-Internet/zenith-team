@@ -215,6 +215,14 @@ jobs:
     with:
       channel: prod
       version: ${{ needs.verify.outputs.version }}
+    # Resolved in desktop-signing, where only the macOS jobs run.
+    secrets:
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+      ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
 
   # Only once the images and binaries exist too, so a failed release never
   # leaves its desktop app downloadable on its own.
