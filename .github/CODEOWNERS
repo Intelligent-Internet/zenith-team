@@ -1,31 +1,11 @@
-# Code owners. GitHub asks these teams to review pull requests that touch the
-# paths below; the main-branch ruleset requires that review to merge.
+# Code owners. GitHub asks this team to review every pull request, and the
+# main-branch ruleset requires that review to merge.
 #
-# Maintainers own everything by default. The security-sensitive paths below
-# belong to the security team alone (the last matching line wins), so changes
-# to authentication, configuration, run isolation, the database schema, CI,
-# and these ownership rules need a security team review.
+# The ii-agent team maintains Zenith Team and owns every path. To give the
+# security-sensitive paths their own reviewers later (sign-in, configuration,
+# middleware, run isolation, the agent adapters, migrations, the desktop app's
+# native code, CI, the secret-scan rules and the security policy), add a line
+# for each below this one: the last matching line wins. A team must exist and
+# have write access to the repository, or GitHub ignores its lines.
 
-* @Intelligent-Internet/zenith-team-maintainers
-
-# Security-sensitive paths.
-/server/internal/auth/ @Intelligent-Internet/zenith-team-security
-/server/internal/config/ @Intelligent-Internet/zenith-team-security
-/server/internal/middleware/ @Intelligent-Internet/zenith-team-security
-/server/internal/daemon/execenv/ @Intelligent-Internet/zenith-team-security
-/server/pkg/agent/ @Intelligent-Internet/zenith-team-security
-/server/migrations/ @Intelligent-Internet/zenith-team-security
-/frontend/electron/ @Intelligent-Internet/zenith-team-security
-/.github/ @Intelligent-Internet/zenith-team-security
-/.gitleaks.toml @Intelligent-Internet/zenith-team-security
-/SECURITY.md @Intelligent-Internet/zenith-team-security
-
-# Platform content every Task Run can load (ADR 0016): the pinned plugin
-# releases with the Workflow harness, the compiled zenith-platform skill, the
-# only writer of the pin, and the attributes that keep it byte-exact on a
-# Windows checkout.
-/server/internal/platformbundle/ @Intelligent-Internet/zenith-team-maintainers
-/server/internal/mcp/tools/builtin/ @Intelligent-Internet/zenith-team-maintainers
-/server/internal/mcp/tools/platform_skills.go @Intelligent-Internet/zenith-team-maintainers
-/server/cmd/bundlectl/ @Intelligent-Internet/zenith-team-maintainers
-/.gitattributes @Intelligent-Internet/zenith-team-maintainers
+* @Intelligent-Internet/ii-agent

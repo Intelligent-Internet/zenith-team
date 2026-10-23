@@ -9,12 +9,7 @@ This page is for maintainers with admin access to the GitHub repository. The fir
 
 ### Teams
 
-Create the two teams that [`.github/CODEOWNERS`](https://github.com/Intelligent-Internet/zenith-team/blob/main/.github/CODEOWNERS) names, and give both write access to the repository:
-
-- `@Intelligent-Internet/zenith-team-maintainers`, which owns everything except the paths below
-- `@Intelligent-Internet/zenith-team-security`, which owns the security-sensitive paths (sign-in, configuration, middleware, the agent sandbox, provider adapters, migrations, `frontend/electron/`, `.github/`, `.gitleaks.toml` and `SECURITY.md`)
-
-GitHub ignores a CODEOWNERS line whose team does not exist or has no write access.
+[`.github/CODEOWNERS`](https://github.com/Intelligent-Internet/zenith-team/blob/main/.github/CODEOWNERS) names `@Intelligent-Internet/ii-agent`, which maintains the repository and owns every path. Keep that team's write (or maintain) access: GitHub ignores a CODEOWNERS line whose team does not exist or has no write access. To route the security-sensitive paths to a separate team later, add their lines below the catch-all; the file lists them.
 
 ### Protect `main`
 

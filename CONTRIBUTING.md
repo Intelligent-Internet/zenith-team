@@ -438,22 +438,8 @@ There is no CLA.
 
 ### Code owner review
 
-A pull request needs a review from the code owners of the paths it changes.
-`@Intelligent-Internet/zenith-team-maintainers` owns every path except these
-security-sensitive ones, which `@Intelligent-Internet/zenith-team-security`
-owns:
-
-- `server/internal/auth/`
-- `server/internal/config/`
-- `server/internal/middleware/`
-- `server/internal/daemon/execenv/`
-- `server/pkg/agent/`
-- `server/migrations/`
-- `frontend/electron/`
-- `.github/`
-- `.gitleaks.toml`
-- `SECURITY.md`
-
+A pull request needs a review from the code owners. `@Intelligent-Internet/ii-agent`,
+the team that maintains Zenith Team, owns every path.
 [.github/CODEOWNERS](.github/CODEOWNERS) is the source of truth.
 
 ### Secrets and test data
