@@ -59,7 +59,7 @@ Pull requests with no matching label land under **Other changes**.
 
 ### Releases
 
-Only maintainers should be able to push version tags, because a pushed `v*` tag publishes images and a GitHub Release at once. Add a tag ruleset for `v*` that only maintainers can bypass.
+Only admins can push version tags, because a pushed `v*` tag publishes images and a GitHub Release at once, and runs the release workflow of whatever commit it points at. The `release-tags` ruleset blocks creating, moving and deleting `v*` tags for everyone else; only repository admins and organization admins bypass it, the same as `main-protection`.
 
 Only the desktop jobs use secrets. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
 
@@ -71,7 +71,7 @@ Deployments and desktop builds run in three environments, under **Settings → E
 | `prod` | The `main` branch and `v*` tags only | The prod desktop variables | `release.yml`'s desktop jobs |
 | `desktop-signing` | The `main` branch and `v*` tags only | The six Apple secrets, nothing else | The macOS builds of both |
 
-Only `desktop-signing` holds secrets, so no branch can reach the Developer ID: only code on `main`, which needs a reviewed pull request, or a `v*` tag. A tag can point at any commit, and the release runs that commit's workflow, so whoever may push `v*` tags can reach the Developer ID and the prod downloads without review. Keep that set to admins in the `release-tags` ruleset, or add required reviewers to `desktop-signing`. Required reviewers on `prod` are optional: the `main` and tag rulesets already decide what can release, and with reviewers every release waits for approval twice, when its desktop build starts and again before the upload.
+Only `desktop-signing` holds secrets, so no branch can reach the Developer ID: only code on `main`, which needs a reviewed pull request, or a `v*` tag. A tag can point at any commit, and the release runs that commit's workflow, so whoever may push `v*` tags can reach the Developer ID and the prod downloads without review. That is why the `release-tags` ruleset admits admins only; required reviewers on `desktop-signing` would be the next step. Required reviewers on `prod` are optional: the `main` and tag rulesets already decide what can release, and with reviewers every release waits for approval twice, when its desktop build starts and again before the upload.
 
 To publish the desktop app with releases:
 
