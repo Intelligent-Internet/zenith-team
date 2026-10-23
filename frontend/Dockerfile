@@ -18,6 +18,7 @@ ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN corepack enable
 
 COPY frontend/package.json frontend/pnpm-lock.yaml frontend/.npmrc ./
+COPY frontend/patches ./patches
 # The web build needs no package install scripts (Electron, native addons).
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
