@@ -1,6 +1,12 @@
 # Weekly dependency updates, grouped so minor and patch bumps arrive as one
 # pull request per ecosystem. The cooldown skips versions younger than a week,
 # which keeps a freshly compromised release out of the queue.
+#
+# Paused for now: open-pull-requests-limit: 0 on every ecosystem stops version
+# update pull requests (GitHub's documented way to pause them), and security
+# update pull requests are off under Settings -> Code security. Dependabot
+# alerts stay on. To resume, delete the limit lines (npm had 10) and turn
+# security updates back on.
 version: 2
 updates:
   - package-ecosystem: gomod
@@ -9,6 +15,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    open-pull-requests-limit: 0
     groups:
       go-minor-patch:
         update-types: [minor, patch]
@@ -19,7 +26,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 0
     groups:
       npm-minor-patch:
         update-types: [minor, patch]
@@ -30,6 +37,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    open-pull-requests-limit: 0
     groups:
       python-minor-patch:
         update-types: [minor, patch]
@@ -41,6 +49,7 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    open-pull-requests-limit: 0
     groups:
       actions:
         patterns: ["*"]
@@ -51,3 +60,4 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+    open-pull-requests-limit: 0
