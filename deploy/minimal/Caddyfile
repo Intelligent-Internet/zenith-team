@@ -1,0 +1,52 @@
+{
+	admin off
+	auto_https off
+	servers {
+		timeouts {
+			read_header 5s
+			read_body 2m
+			read_body_idle 1m
+			idle 2m
+		}
+	}
+}
+
+:8080 {
+	encode gzip
+
+	# Preserve deny-before-proxy ordering; Caddy otherwise sorts directives.
+	route {
+		# Only enabled temporarily by an operator on the private bootstrap origin.
+		@closedSignup {
+			path /api/v1/auth/signup
+			expression `"{$ZENITH_TEAM_ALLOW_SIGNUP:false}" != "true"`
+		}
+		respond @closedSignup "Registration is closed" 403
+
+		# Public shares, external OAuth and workload-only APIs are outside this profile.
+		@disabled path /api/v1/public/* /api/v1/social/oauth/* /api/v1/webhooks/* /api/v1/internal/* /api/v1/auth/google/*
+		respond @disabled "Unavailable in this deployment" 404
+
+		handle /api/* {
+			reverse_proxy server:8788 {
+				flush_interval -1
+			}
+		}
+
+		handle {
+			root * /srv
+			@assets path /assets/*
+			header @assets Cache-Control "public, max-age=31536000, immutable"
+			try_files {path} /index.html
+			file_server
+		}
+	}
+
+	header {
+		Content-Security-Policy "frame-ancestors 'none'"
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+}

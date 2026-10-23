@@ -7,7 +7,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -123,52 +122,6 @@ func TestOAuthServiceProviderCapabilityIsNilSafe(t *testing.T) {
 	}
 	if !enabled.ProviderEnabled() || !enabled.WebEnabled() || !enabled.DesktopEnabled() {
 		t.Fatal("configured legacy OAuth provider did not report both client capabilities")
-	}
-}
-
-// TestOAuthServiceRejectsWebStartForDesktopOnlyProvider pins that a provider
-// configured for desktop only refuses Web starts outright — before the flow
-// row, and without requiring a Web redirect URI at construction.
-func TestOAuthServiceRejectsWebStartForDesktopOnlyProvider(t *testing.T) {
-	t.Parallel()
-
-	provider, err := NewGoogleProvider(GoogleProviderOptions{
-		Desktop: GoogleOAuthClientConfig{
-			ClientID: "desktop-client.apps.googleusercontent.com", ClientSecret: "desktop-secret",
-		},
-		HTTPClient:      &http.Client{Timeout: time.Second},
-		ExchangeTimeout: time.Second,
-	})
-	if err != nil {
-		t.Fatalf("NewGoogleProvider() error = %v", err)
-	}
-	service, err := NewOAuthService(OAuthServiceOptions{
-		Store:    &db.Store{},
-		Provider: provider,
-		Tokens:   &fakeOAuthTokenIssuer{},
-		Random:   bytes.NewReader(make([]byte, 64)),
-	})
-	if err != nil {
-		t.Fatalf("NewOAuthService() error = %v", err)
-	}
-	if !service.ProviderEnabled() {
-		t.Fatal("desktop-only OAuth service reports disabled")
-	}
-	if service.WebEnabled() || !service.DesktopEnabled() {
-		t.Fatalf(
-			"desktop-only OAuth capabilities = web %t, desktop %t",
-			service.WebEnabled(),
-			service.DesktopEnabled(),
-		)
-	}
-	if _, err := service.StartWeb(
-		context.Background(),
-		WebOAuthStartInput{ReturnPath: "/"},
-	); !errors.Is(
-		err,
-		ErrOAuthNotConfigured,
-	) {
-		t.Fatalf("StartWeb() error = %v, want ErrOAuthNotConfigured", err)
 	}
 }
 

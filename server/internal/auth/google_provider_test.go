@@ -1,6 +1,9 @@
+//go:build !zenith_minimal
+
 package auth
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"errors"
@@ -14,6 +17,8 @@ import (
 	"time"
 
 	"google.golang.org/api/idtoken"
+
+	"github.com/Intelligent-Internet/zenith-team/server/internal/db"
 )
 
 func TestGoogleProviderAuthorizationURLUsesExactClientFieldsAndDesktopOnlyPKCE(t *testing.T) {
@@ -707,4 +712,50 @@ func (f *fakeGoogleIDTokenValidator) Validate(
 	rawIDToken, audience string,
 ) (*idtoken.Payload, error) {
 	return f.validate(ctx, rawIDToken, audience)
+}
+
+// TestOAuthServiceRejectsWebStartForDesktopOnlyProvider pins that a provider
+// configured for desktop only refuses Web starts outright — before the flow
+// row, and without requiring a Web redirect URI at construction.
+func TestOAuthServiceRejectsWebStartForDesktopOnlyProvider(t *testing.T) {
+	t.Parallel()
+
+	provider, err := NewGoogleProvider(GoogleProviderOptions{
+		Desktop: GoogleOAuthClientConfig{
+			ClientID: "desktop-client.apps.googleusercontent.com", ClientSecret: "desktop-secret",
+		},
+		HTTPClient:      &http.Client{Timeout: time.Second},
+		ExchangeTimeout: time.Second,
+	})
+	if err != nil {
+		t.Fatalf("NewGoogleProvider() error = %v", err)
+	}
+	service, err := NewOAuthService(OAuthServiceOptions{
+		Store:    &db.Store{},
+		Provider: provider,
+		Tokens:   &fakeOAuthTokenIssuer{},
+		Random:   bytes.NewReader(make([]byte, 64)),
+	})
+	if err != nil {
+		t.Fatalf("NewOAuthService() error = %v", err)
+	}
+	if !service.ProviderEnabled() {
+		t.Fatal("desktop-only OAuth service reports disabled")
+	}
+	if service.WebEnabled() || !service.DesktopEnabled() {
+		t.Fatalf(
+			"desktop-only OAuth capabilities = web %t, desktop %t",
+			service.WebEnabled(),
+			service.DesktopEnabled(),
+		)
+	}
+	if _, err := service.StartWeb(
+		context.Background(),
+		WebOAuthStartInput{ReturnPath: "/"},
+	); !errors.Is(
+		err,
+		ErrOAuthNotConfigured,
+	) {
+		t.Fatalf("StartWeb() error = %v, want ErrOAuthNotConfigured", err)
+	}
 }

@@ -9,11 +9,15 @@
 # non-root user. Configuration is entirely environment-driven (documented in
 # deploy/README.md) and PostgreSQL migrations run automatically at startup.
 
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+ARG BUILD_IMAGE=golang:1.26-alpine
+ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian12:nonroot
+FROM --platform=$BUILDPLATFORM ${BUILD_IMAGE} AS build
 ARG TARGETOS=linux
 ARG TARGETARCH
 # Release builds pass the tag without its leading "v"; logged at startup.
 ARG VERSION=dev
+# Optional minimal edition; empty preserves the standard build.
+ARG BUILD_TAGS=
 WORKDIR /src/server
 
 # Cache module downloads independently of source edits.
@@ -21,7 +25,7 @@ COPY server/go.mod server/go.sum ./
 RUN go mod download
 
 COPY server/ ./
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath \
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -tags="${BUILD_TAGS}" -trimpath \
     -ldflags="-s -w -X main.version=${VERSION}" -o /out/zenith-team-server ./cmd/server
 
 # Distroless has no shell or curl, so the container healthcheck is a tiny
@@ -55,7 +59,7 @@ RUN mkdir -p /out/probe && printf '%s\n' \
     && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -trimpath -ldflags="-s -w" \
        -o /out/zenith-team-readyz main.go
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM ${RUNTIME_IMAGE}
 COPY --from=build /out/zenith-team-server /usr/local/bin/zenith-team-server
 COPY --from=build /out/zenith-team-readyz /usr/local/bin/zenith-team-readyz
 COPY LICENSE THIRD_PARTY_NOTICES.md /usr/share/doc/zenith-team/
