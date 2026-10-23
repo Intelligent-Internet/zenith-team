@@ -5,7 +5,7 @@ description: How maintainers cut a Zenith Team release, and what the release wor
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. Only its desktop jobs use secrets and cloud access, from the `prod` and `desktop-signing` environments; everything else runs on the workflow's own GitHub token.
+A release starts with one action: a repository admin pushes a version tag on `main` (the `release-tags` ruleset lets only admins push `v*` tags; see [Maintaining](/developers/maintaining#releases)). `.github/workflows/release.yml` does the rest. Only its desktop jobs use secrets and cloud access, from the `prod` and `desktop-signing` environments; everything else runs on the workflow's own GitHub token.
 
 Only a tag publishes a release. The project's own dev server, deployed from any branch, and its dev desktop app, built from `main`, go through a separate workflow that publishes only to the dev environment and the dev downloads (see [Dev deployments](#dev-deployments)).
 
