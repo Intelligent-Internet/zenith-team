@@ -134,9 +134,8 @@ docker build -t zenith-helia:0.1.0 voice-agent
 docker run --env-file <your env file> -p 8081:8081 zenith-helia:0.1.0
 ```
 
-CI builds and tests this image on every change to `voice-agent/`. Each
-release publishes it as `ghcr.io/intelligent-internet/zenith-team-voice`,
-tagged like the server image; nothing deploys it.
+CI builds and tests this image on every change to `voice-agent/`. Releases
+do not publish it for now, so build it yourself as above; nothing deploys it.
 
 ### Kubernetes
 

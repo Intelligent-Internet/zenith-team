@@ -56,11 +56,12 @@ Verify runs first; images, binaries and the desktop app then build side by side,
 
 ### 2. Images
 
-Builds the server, web and voice images (`server/Dockerfile`, `frontend/Dockerfile` and `voice-agent/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to GitHub Container Registry. `.github/workflows/build-image.yml` does the work, the same steps dev deployments use: the build jobs hold no registry credentials, and one publish job pushes the platform images, merges them and tags the result.
+Builds the server and web images (`server/Dockerfile` and `frontend/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to GitHub Container Registry. `.github/workflows/build-image.yml` does the work, the same steps dev deployments use: the build jobs hold no registry credentials, and one publish job pushes the platform images, merges them and tags the result.
 
 - `ghcr.io/intelligent-internet/zenith-team-server`
 - `ghcr.io/intelligent-internet/zenith-team-web`
-- `ghcr.io/intelligent-internet/zenith-team-voice`, the AI voice worker for Huddles
+
+The AI voice worker for Huddles (`voice-agent/Dockerfile`) is not released for now; build it from `voice-agent/`.
 
 For `v1.3.0`, each image gets up to four tags:
 
@@ -85,7 +86,7 @@ gh attestation verify oci://ghcr.io/intelligent-internet/zenith-team-server:1.3.
 
 Always pin `--source-ref`: without it, a build of any branch passes.
 
-The first publish creates each GHCR package as private. A maintainer makes `zenith-team-server`, `zenith-team-web` and `zenith-team-voice` public once, in the package settings; until then nobody can pull them anonymously.
+The first publish creates each GHCR package as private. A maintainer makes `zenith-team-server` and `zenith-team-web` public once, in the package settings; until then nobody can pull them anonymously.
 
 ### 3. Binaries
 

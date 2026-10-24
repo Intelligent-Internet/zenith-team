@@ -570,7 +570,7 @@ isolated database + fixture per caller.
   (`make hooks`). Pushing a `v<major>.<minor>.<patch>` tag (or an `-alpha.N`,
   `-beta.N` or `-rc.N` pre-release) at a commit on `main` requires `ci-gate`
   to have passed on it, scans Go dependencies fail-closed, and publishes the
-  server, web and voice images to GHCR and the `zen` CLI to a GitHub Release
+  server and web images to GHCR and the `zen` CLI to a GitHub Release
   (`.github/workflows/release.yml`); while the `ZENITH_TEAM_DESKTOP_RELEASE`
   variable is `true` it also signs and notarizes the desktop app and uploads it
   to the prod downloads, from the `prod` environment. The dev server deploys
