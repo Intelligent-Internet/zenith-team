@@ -25,13 +25,16 @@ import {
 } from "react";
 import katex from "katex";
 import "katex/dist/katex.min.css";
-import { Icon } from "@/shared/ui/icon";
-import { ChevronLeft, ChevronRight } from "@/shared/ui/icons";
+import {
+  ChevronLeft,
+  ChevronRight,
+  iconsaxIcons,
+  type IconsaxIconName,
+} from "@/shared/ui/icons";
 import { InlineChart } from "./chart";
 import { layoutStyle, safeURL, uiColor } from "./style";
 import { InlineThemeContext } from "./reference-context";
 import { valueText } from "./runtime";
-import { resolveIconName } from "./icon-aliases";
 
 type Props = Record<string, any>;
 export const InputGroup = createContext<{
@@ -575,10 +578,13 @@ function PrimitiveContent({
         {plain}
       </span>
     );
-  if (name === "icon")
+  if (name === "icon") {
+    // Inline UI draws Iconsax Outline glyphs by their own names only; unknown
+    // names were already diagnosed and omitted by the document renderer.
+    const Glyph = iconsaxIcons[String(p.name) as IconsaxIconName];
+    if (!Glyph) return null;
     return (
-      <Icon
-        name={resolveIconName(String(p.name))}
+      <Glyph
         aria-hidden
         size={Number(
           ({ xs: 12, sm: 16, md: 20, lg: 24, xl: 32, "2xl": 40 } as Props)[
@@ -592,6 +598,7 @@ function PrimitiveContent({
         }}
       />
     );
+  }
   if (name === "math") {
     try {
       return (
@@ -642,7 +649,9 @@ function PrimitiveContent({
         aria-label={p.accessibilityLabel ?? p.tooltip}
         onClick={click}
         style={style}
-        className={`${focus} ${p.inline ? "inline-flex" : "flex"} min-w-0 flex-col rounded-workspace-control text-left hover:bg-workspace-hover disabled:cursor-not-allowed disabled:opacity-40`}
+        // Buttons shrink to their content even as flex boxes; a block pressable
+        // fills its container like any layout surface (grid squares, cards).
+        className={`${focus} ${p.inline ? "inline-flex" : "flex w-full"} min-w-0 flex-col rounded-workspace-control text-left hover:bg-workspace-hover disabled:cursor-not-allowed disabled:opacity-40`}
       >
         {children}
       </button>
@@ -1139,7 +1148,7 @@ function PrimitiveContent({
             )}
             <tbody>
               {hasTableRows(children) ? (
-                children
+                contentChildren(children)
               ) : (
                 <tr>
                   <td className="p-3">{p.emptyLabel ?? "No rows"}</td>
@@ -1167,7 +1176,7 @@ function PrimitiveContent({
             </th>
           </tr>
         )}
-        {children}
+        {contentChildren(children)}
       </TableContext.Provider>
     );
   if (name === "table-row")
@@ -1189,7 +1198,7 @@ function PrimitiveContent({
               {valueText(p.label)}
             </th>
           )}
-          {children}
+          {contentChildren(children)}
         </tr>
       </TableContext.Provider>
     );

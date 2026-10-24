@@ -224,3 +224,19 @@ func TestIntelligentUISkillIsAvailableWithoutCustomSkills(t *testing.T) {
 		t.Fatal("custom snapshot could shadow authoring contract")
 	}
 }
+
+func TestIntelligentUICoreIsTheMarkedSummary(t *testing.T) {
+	t.Parallel()
+	core := IntelligentUICore()
+	for _, want := range []string{"Conversational Authoring", "## Where it runs", "## Quick start"} {
+		if !strings.Contains(core, want) {
+			t.Errorf("core lacks %q", want)
+		}
+	}
+	if strings.Contains(core, "## 2. Component grammar") || strings.Contains(core, "<!--") {
+		t.Fatal("core includes the full grammar or marker comments")
+	}
+	if full := IntelligentUIInstructions(); len(core)*3 > len(full) {
+		t.Fatalf("core is %d of %d bytes; it should stay a compact summary", len(core), len(full))
+	}
+}

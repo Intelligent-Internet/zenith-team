@@ -159,6 +159,22 @@ func (h *Handler) askQuestion(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
+	texts := []storedText{{"Question title", request.Title}}
+	for _, prompt := range request.Prompts {
+		texts = append(texts, storedText{"Question prompt", prompt.Prompt})
+		if prompt.HelpText != nil {
+			texts = append(texts, storedText{"Question help text", *prompt.HelpText})
+		}
+		for _, option := range prompt.Options {
+			texts = append(texts, storedText{"Question option", option.Label})
+		}
+		if prompt.SocialPost != nil {
+			texts = append(texts, storedText{"Social post", prompt.SocialPost.Text})
+		}
+	}
+	if rejectInlineUI(c, texts...) {
+		return
+	}
 	for index := range request.Prompts {
 		prompt := &request.Prompts[index]
 		if prompt.SocialPost == nil {

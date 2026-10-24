@@ -9,12 +9,15 @@ const { build } = require("esbuild");
 const Module = require("node:module");
 // Isolate unrelated providers/media while retaining the real parser, renderer,
 // and SVG primitives. This verifies structure, not browser layout or interaction.
+// Real Iconsax names, so icon validation is exercised without bundling SVGs.
+const iconsSource = (await import("node:fs")).readFileSync(frontend + "src/shared/ui/icons.tsx", "utf8");
+const iconsaxNames = [...iconsSource.slice(iconsSource.indexOf("export const iconsaxIcons = {")).split(/\n}/)[0].matchAll(/^\s+"?([\w-]+)"?:/gm)].map((match) => match[1]);
 const providers = {
   "next-themes": 'export const useTheme = () => ({resolvedTheme:"light"});',
   streamdown: "export const Streamdown = ({children}) => children;",
-  "@/shared/ui/icon": "export const Icon = () => null; export const hasIcon = (name) => !name.startsWith(\"not-a-\");",
+  "@/shared/ui/icon": "export const Icon = () => null;",
   "@/shared/ui/icons":
-    "export const ChevronLeft = () => null; export const ChevronRight = () => null; export const ChevronDown = () => null; export const Check = () => null;",
+    "export const ChevronLeft = () => null; export const ChevronRight = () => null; export const ChevronDown = () => null; export const Check = () => null; export const iconsaxIcons = Object.fromEntries(" + JSON.stringify(iconsaxNames) + ".map((name) => [name, () => null]));",
   "./code-block": "export const InlineCodeBlock = () => null;",
 };
 const result = await build({
@@ -340,13 +343,15 @@ assert.match(svgText, /<text[^>]*>42<\/text>/);
 assert.doesNotMatch(svgText, /<span/);
 console.log('Explicit repair authority, completed declaration recovery and structural fallbacks passed.');
 
-// Icons: Lucide names resolve to Zenith glyphs; unknown names are reported,
-// never replaced with an unrelated fallback glyph.
-assert.doesNotMatch(render('<icon name="check"/><icon name="chevron-right"/>'), /unknown_icon/);
+// Icons: Iconsax names only. Other icon sets (Lucide) and the product's own
+// aliases are unknown names, reported and omitted, never redrawn as a glyph.
+assert.doesNotMatch(render('<icon name="tick-circle"/><icon name="arrow-right-02"/>'), /unknown_icon/);
+for (const name of ['check', 'chevron-right', 'x', 'chart'])
+  assert.match(render(`<icon name="${name}"/>`), /unknown_icon/, name);
 const unknownIcon = render('<row><icon name="not-a-real-icon"/><text>Kept</text></row>');
 assert.match(unknownIcon, /unknown_icon/);
 assert.match(unknownIcon, /Kept/);
-console.log('Icon aliases resolve and unknown icon names are diagnosed.');
+console.log('Iconsax icon names render; other icon sets are diagnosed and omitted.');
 
 // Streaming: every prefix of every authoring example renders without raw
 // markup leaking, error states, or per-iteration placeholder floods.
@@ -383,3 +388,55 @@ const draftStream = render('<WritingBlock id="12345">Hello there</Writi', { stre
 assert.match(draftStream, /Hello there/);
 assert.doesNotMatch(draftStream, /&lt;\/Writi/);
 console.log('Streaming prefixes of every skill example and the chess fixture stay clean.');
+
+// Budget: a full legal-move search at render (an agent-authored chess board)
+// costs 60k–210k steps; it must render in the opening and an open position.
+const budgetChess = readFileSync(new URL('./chess-budget.zenith-ui', import.meta.url), 'utf8');
+for (const position of [null, '....k...........................................................R...K..R']) {
+  const source = position ? budgetChess.replace('["rnbqkbnr","pppppppp","........","........","........","........","PPPPPPPP","RNBQKBNR"].join("")', JSON.stringify('....k......................Q..................B................R...K..R'.padEnd(64, '.').slice(0, 64))) : budgetChess;
+  const html = render(source);
+  assert.doesNotMatch(html, /work budget|time limit|Display details/, position ?? 'opening');
+  assert.equal((html.match(/<button[^>]*title="Square/g) ?? []).length, 64, position ?? 'opening');
+}
+assert.match(render('{@body let n=0; while(true){n++;}}<text>{n}</text>'), /work budget|time limit/);
+console.log('Render budget fits a full chess legal-move search and still stops runaway loops.');
+
+// HTML in prose: a bare component-named tag mid-sentence with no closing tag
+// is prose about HTML and stays literal; genuine UI with those names renders.
+const proseText = (html) =>
+  html.replace(/<details[\s\S]*?<\/details>/g, "").replace(/<[^>]+>/g, "")
+    .replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&").trim();
+for (const sentence of [
+  "Use a <button> element for actions.",
+  "Every <input> needs a label.",
+  "Put rows in a <table> element.",
+  "Wrap code in <code> tags.",
+  "Use the <title> tag in HTML head.",
+  "Close it with </div> and </button>.",
+  "Use <text> in SVG for captions.",
+]) {
+  const html = render(sentence);
+  assert.equal(proseText(html), sentence, sentence);
+  assert.doesNotMatch(html, /couldn.t be displayed|Display details/, sentence);
+  for (let end = 1; end < sentence.length; end++)
+    assert.doesNotMatch(render(sentence.slice(0, end), { streaming: true }), /data-inline-stage/, `${sentence} @${end}`);
+}
+assert.match(render('<label>Name</label>\n<input value="a"/>'), /<label[^>]*>Name<\/label>/);
+// A prose mention stays literal even when the same answer has real controls
+// with that name further down (found in the browser pass).
+const mixed = render('Use a <button> element for actions.\n\n{@body const [n, setN] = DIL.useState(1);}\n<box>\n<button onClick={() => setN(n + 1)}>Add</button>\n<text>{n}</text>\n</box>');
+assert.match(proseText(mixed), /^Use a <button> element for actions\./);
+assert.match(mixed, /<button[^>]*>Add<\/button>/);
+assert.doesNotMatch(mixed, /couldn.t be displayed|Display details/);
+assert.match(render('Click <button>Go</button> to continue.'), /<button[^>]*>[\s\S]*Go[\s\S]*<\/button>/);
+assert.match(render('Totals:\n<table>\n<table-row><table-cell>A</table-cell></table-row>\n</table>'), /<table/);
+assert.match(render('Here is the form <form onSubmit={() => {}}><button submit>Send</button></form>'), /<form/);
+console.log('HTML tag names in prose stay literal; genuine UI with the same names renders.');
+
+// Browser-found layout regressions: a block pressable fills its container
+// (buttons otherwise shrink to their content and a grid square collapses to
+// 0x0), and table bodies carry no whitespace text nodes.
+assert.match(render('<grid columns={2}><grid-item><pressable aspectRatio={1}><text> </text></pressable></grid-item></grid>'), /<button[^>]*class="[^"]*\bw-full\b/);
+assert.doesNotMatch(render('<pressable inline><text>x</text></pressable>'), /<button[^>]*class="[^"]*\bw-full\b/);
+assert.doesNotMatch(render('<table>\n  <table-row>\n    <table-cell>A</table-cell>\n  </table-row>\n</table>'), /<tbody>\s+<|<tr>\s+<td|<\/td>\s+<\/tr>/);
+console.log('Pressables fill their grid cells and table bodies hold no whitespace nodes.');

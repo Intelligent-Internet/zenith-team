@@ -10,6 +10,219 @@ Use this guide as the sole authoring reference for interactive UI in assistant r
 The goal is an accurate and useful answer first. Use UI only where layout, interaction, visualization, or navigation materially improves the task. Prefer restrained visual hierarchy over decorative density. Only use the component names, properties, structures, bindings, and actions described below. Do not imply the host has capabilities or data that it has not supplied.
 
 
+<!-- core -->
+## Intelligent UI — Conversational Authoring
+
+Treat interactive components, Markdown, visualizations, and prose as
+parts of one unified conversational response.
+
+The objective is to answer the user's question accurately, clearly,
+and usefully. Choose the response format that best communicates the
+answer rather than defaulting to either plain text or an interface.
+
+### 1. Automatic UI selection
+
+Do not require the user to explicitly request a UI.
+
+Use interactive components when layout, structured information,
+visualization, or interaction materially improves the response.
+
+Prefer ordinary prose when it communicates the answer more clearly.
+
+Choose the appropriate presentation:
+
+- Factual questions: concise prose.
+- Explanations: prose, with diagrams or interactive demonstrations
+  when they significantly improve understanding.
+- Comparisons: tables for precise attributes; cards for a small
+  number of distinct alternatives.
+- Calculations: interactive controls when users benefit from
+  modifying assumptions or exploring scenarios.
+- Trends and distributions: charts with clear units and context.
+- Geographic information: grounded addresses, links and tables
+  (maps are not connected in Zenith yet).
+- Image exploration: a carousel or grid of already-resolved HTTPS
+  images when they provide meaningful information (image search
+  is not connected in Zenith yet).
+- Sequential processes: progressive or step-based interfaces
+  when users benefit from exploring individual stages.
+- Games and simulations: interactive interfaces when the
+  required state transitions and domain logic can be implemented.
+- Writing: appropriate writing artifacts without unnecessary UI.
+
+### 2. Seamless conversational integration
+
+Write components directly within the response.
+
+Markdown prose may appear before, between, and after components.
+A component does not require an enclosing application or card.
+
+Position UI where it contributes most to comprehension.
+
+- Start with a direct answer when appropriate.
+- Introduce the interactive element naturally.
+- Continue with analysis or interpretation when helpful.
+- Do not unnecessarily announce that a UI is being generated.
+- Do not automatically wrap the entire response in a container.
+- Do not duplicate the same information in prose and UI.
+- Keep the essential answer understandable without interaction.
+
+When the UI itself is the requested deliverable, such as a game,
+calculator, or interactive dashboard, place it prominently and
+avoid unnecessary introductory explanation.
+
+### 3. Choose the smallest useful interface
+
+Prefer the least complex composition that fully serves the task.
+
+Use:
+- Text for ordinary explanations.
+- Tables for aligned data.
+- Rows and columns for compact groupings.
+- Cards for semantically distinct information.
+- Controls for meaningful user-adjustable values.
+- Charts for quantitative relationships.
+- SVG for constrained graphical explanations.
+- AppBlock for specialized visualizations that native components
+  cannot adequately express.
+
+Avoid decorative components, redundant nested containers, and
+controls that do not provide meaningful interaction.
+
+### 4. Visual hierarchy and consistency
+
+Use a restrained, coherent visual system.
+
+- Establish one clear information hierarchy.
+- Use the smallest heading size that communicates that hierarchy.
+- Prefer neutral surfaces and consistent spacing.
+- Use color for meaningful status or emphasis, not decoration.
+- Keep related information visually grouped.
+- Use concise labels and explanatory captions.
+- Maintain consistent number formatting and units.
+- Keep multi-column content compact and scannable.
+- Use responsive layouts when appropriate: one column on narrow
+  screens, compact rows for peer controls, grids for equal metrics.
+- Avoid stacked one-sentence paragraphs, gratuitous section splits
+  and wide controls for tiny tasks.
+- Keep a logical reading order with native controls, clear labels
+  and text alternatives; never rely on color alone. Respect the
+  component schema rather than inventing aria or DOM props.
+
+Use at most one standout badge, for a single notable status;
+neutral is the default. Do not use badges as decorative headings,
+list numbers or repeated metadata.
+Do not place recommendations inside colorful summary boxes
+merely to make them stand out.
+
+### 5. Functional interaction
+
+Every interactive control must have a meaningful purpose.
+
+- Use local state when interaction changes visible content.
+- Keep inputs connected to their corresponding callbacks.
+- Derive calculations from state rather than duplicating them.
+- Ensure selections update all dependent displays consistently.
+- Provide sensible defaults and appropriate constraints.
+- Handle invalid, empty, and boundary values.
+- Make button labels accurately describe their actions.
+- Offer a reset when users can drift far from the defaults.
+- Do not imply that local changes were saved remotely.
+- Invoke authorized host actions only from explicit user gestures.
+
+Do not create decorative or inert buttons, selectors, or forms.
+
+### 6. Forms and clarification
+
+Use conversational questions by default.
+
+Use a form only when multiple independent details are necessary,
+collecting them together is clearly more efficient, and the
+interface's visual footprint is justified.
+
+Avoid large forms for simple clarification.
+
+Prefer allowing partial submissions unless every field is
+strictly necessary.
+
+Use at most one form per response.
+
+### 7. Images and media
+
+Use images when they materially improve comprehension. In Zenith,
+images are already-resolved HTTPS assets in `AsyncImage src`.
+
+Prefer compact carousels or grids over unnecessarily
+large full-width images.
+
+When a full-width image is appropriate, prefer a 16:9 aspect ratio.
+
+For collections:
+- Use distinct, relevant images.
+- Avoid duplicates and ornamental stock imagery.
+- Keep adjacent titles and descriptions consistently sized.
+- Use ordinary text links for opening sources, not button-style
+  navigation; mark titles with bold rather than larger fonts.
+- Prefer vertical imagery alongside longer descriptions.
+- Preserve source integrity and supported image references.
+
+Never invent image URLs, source references, or media assets.
+
+### 8. Evidence and reliability
+
+The response must remain accurate independently of its
+visual presentation.
+
+- Ground factual claims in available evidence.
+- Clearly distinguish illustrative values from real data.
+- Never invent citations, prices, availability, locations,
+  ratings, or successful external actions.
+- Use only supported components and authorized bindings.
+- Respect component prop types and child structures.
+- Do not imply that rendering a control grants external access.
+- Keep source-linked information consistent across text and UI.
+- Cite evidence next to the claim it supports; use plain links for
+  browsing choices; never invent a download path.
+
+If a host capability is unavailable, provide a useful
+supported alternative rather than fabricating functionality.
+
+### 9. Interaction versus explanation
+
+An interactive UI supplements reasoning; it does not replace it.
+
+For educational or analytical questions, explain the relevant
+concepts and use interaction to make relationships explorable.
+
+For an application-style request, prioritize a functioning
+interface and correct state transitions. Substantial domain logic
+must be real: a chess game handles legal moves, check, castling,
+en passant, promotion, game over and history, not a decorative
+64-square grid.
+
+Do not add interaction when a static explanation is clearer.
+
+Do not force every response into a dashboard.
+
+### 10. Final authoring check
+
+Before responding, determine internally:
+
+1. Does the response directly address the user's goal?
+2. Is UI genuinely useful for this request?
+3. Is the chosen UI the smallest effective composition?
+4. Is it naturally positioned within the conversation?
+5. Is the source valid (Section 8: grammar, API, hooks, wiring, data, host actions)?
+6. Do all interactions behave as described?
+7. Are data and claims properly grounded?
+8. Is the response visually clear without excessive decoration?
+9. Does the answer remain useful if visualization is unavailable?
+10. Can the user understand the result without unnecessary steps?
+
+Generate one cohesive conversational experience, not a prose
+answer with an unrelated widget attached.
+<!-- /core -->
+
 ## Zenith host contract
 
 This is the main authoring guide, adapted from `final_skill.md`. The renderer
@@ -20,7 +233,7 @@ two extensions, noted where they apply: `id` on form controls and
 
 Zenith implements all native components, Markdown inside prose components,
 WritingBlock drafts/variants, chart bands and sandboxed AppBlock HTML/JS. Exact
-token values are in Section 11. Pages use this grammar with languageVersion 1 and
+token values are in Section 9. Pages use this grammar with languageVersion 1 and
 existing revision/permission/proposal rules. Local state is temporary; native
 scenario captures are read-only and AppBlock captures use its static fallback.
 
@@ -40,6 +253,37 @@ Zenith task/Page entities and authorized artifact references work through the
 viewer’s existing access. Resolved authorized HTTPS asset URLs work in
 `AsyncImage src`. External AppBlock bundles are not loaded; supply the complete
 inline HTML/JS.
+
+<!-- core -->
+## Where it runs
+
+The same grammar renders in chat and in Pages, but the surfaces behave differently:
+
+| Surface | What works | Author for it |
+|---|---|---|
+| Chat and Task chat | Live while streaming; local state per viewer; `FollowUp` and `GenUI.issueNewTurn` send into this chat | A component or prop mistake is dropped with a diagnostic and the rest still renders |
+| Pages (`page_edit` source, inline writing, generation) | Same components and local state; `GenUI.copy`, `GenUI.openUrl`, `Link`, task/Page `Entity` | Saving is **strict**: one unknown prop, invalid value or unclosed tag rejects the whole change. Use exact names and values from this guide. There is no chat here: do not use `FollowUp` or `GenUI.issueNewTurn` |
+| Channels and group threads | Same renderer for your reply, with per-member local state | No chat-send capability: no `FollowUp` or `GenUI.issueNewTurn` |
+| Agent comments on Pages | Same renderer and references | No chat-send capability: no `FollowUp` or `GenUI.issueNewTurn` |
+| Read-only, comparison and scenario-capture views | Rendered with interaction disabled; AppBlock shows its static content | Make the static first render meaningful; never rely on a click to reveal the answer |
+| Stored or external content | Nothing: there is no Intelligent UI renderer | Files, Wiki pages, memory, Task titles and descriptions, approval questions, emails, social posts, calendar events, commit messages and other tool arguments are plain Markdown or the destination's own format, never components |
+
+In Pages, source that contains any component becomes one interactive block, and any prose inside it can only be edited as source. Keep explanatory prose that readers should edit as ordinary Page paragraphs, and keep the component block focused on the interactive part. A `{@body}` and the components that use its state must stay in the same block.
+
+Local state is per reader and temporary in every surface: it is not shared with collaborators and not saved. Never describe a Page widget as shared, saved or synced.
+
+## Quick start
+
+- Write components directly in the response with Markdown around them; a Markdown code fence shows source instead of UI.
+- Use exact component and prop names from the full guide; close every tag (`<text>Hi</text>`, `<divider/>`).
+- State and logic go in one top-level `{@body ...}` before the UI: `const [n, setN] = DIL.useState(0);`. Hooks only at its top level.
+- `{expression}` interpolates, `{#if cond}...{:else}...{/if}` branches, `{#each items as item, i}...{/each}` repeats.
+- Change callbacks receive the new value (`onChange={setN}`); buttons use `onClick={() => ...}`.
+- Host actions (`GenUI.copy`, `GenUI.openUrl`, `GenUI.issueNewTurn`, `GenUI.openEntityDetail`) run only inside a user's click or change handler.
+- Icons are Iconsax Outline names; pair every icon with a text label.
+- Prefer prose; use the smallest UI that genuinely helps.
+
+<!-- /core -->
 
 ## 1. Syntax, text, and evaluation
 
@@ -181,11 +425,13 @@ const valid = name.trim().length > 0;
 
 | Component | Props | Rules |
 |---|---|---|
-| `icon` | `color,inline,name,size` | Lucide names listed in [icons](references/icons.generated.md), mapped to Zenith’s Iconsax catalog, or Zenith Iconsax names |
+| `icon` | `color,inline,name,size` | Iconsax Outline names |
 | `favicon` | `alt,frame,inline,size,url` | Use a supported URL |
 | `svg` | `color,fill,height,preserveAspectRatio,size,stroke,strokeLinecap,strokeLinejoin,strokeWidth,viewBox,width,xmlns` | Native constrained SVG children; state-derived attributes allowed; no event handlers inside SVG |
 
-Use only names in [icons](references/icons.generated.md): Lucide names with a Zenith equivalent, or Zenith’s own Iconsax and brand names. An unknown name is omitted with a diagnostic rather than drawn as another glyph, so a control must never depend on an icon alone. Do not invent icon names. Keep SVG clicks in an external `button` or `pressable`, never on native SVG paths/shapes. Do not embed scripts, foreign HTML or external resources in SVG.
+Icons use **Iconsax Outline** names. An unknown name is omitted rather than drawn, so always pair an icon with a text label.
+
+Keep SVG clicks in an external `button` or `pressable`, never on native SVG paths/shapes. Do not embed scripts, foreign HTML or external resources in SVG.
 
 ### Server-linked, references, and links
 
@@ -234,7 +480,7 @@ In Zenith, supply `src`: an **unchanged HTTPS image URL** that a tool or an auth
 <Chart content={{chartType:"line",xKey:"day",series:[{dataKey:"latency",label:"P95 latency",valueSuffix:" ms"}],data:[{day:"Mon",latency:320},{day:"Tue",latency:270},{day:"Wed",latency:240}]}} />
 ```
 
-## 5. Host actions and interaction restrictions
+## 4. Host actions and interaction restrictions
 
 Only the following direct actions are available, and only from a genuine user interaction on a control with an event callback (such as `button` or `pressable`):
 
@@ -260,33 +506,24 @@ Example:
 </row>
 ```
 
-## 6. AppBlock bridge
+## 5. AppBlock bridge
 
 AppBlock is a raw HTML/JS visualization block, not ordinary component syntax. For normal interactive responses, keep the controls in native DIL and pass only necessary value/callback bindings to AppBlock: `bind={{value,setValue}}`. Inside raw JS, read `globalThis.__bindings?.value` from `globalThis.__effect?.(() => { ... })`. Only a direct user interaction **inside the visualization** may call `globalThis.__bindings?.setValue?.(nextValue)`. **Never call that setter from an effect.** Every access to `__bindings` and every invocation of `__effect` must optional-chain the global, even after another guard. Include an intelligible static visualization if bindings/effects are unavailable.
 
 A custom AppBlock is justified for an interactive visualization that native components cannot adequately express, not as a generic replacement for inputs, cards or charts. Its execution must remain in the host's supported sandbox, with no assumed access to privileged services. Do not treat AppBlock's raw JS privileges as available to `{@body}` expressions.
 
-## 7. Layout, content strategy and visual hierarchy
+## 6. Streaming, identity, and limitations
 
-- **Choose the right medium:** prose for short explanatory answers; a table for exact aligned comparisons; cards for a small set of distinct choices; a form only if gathering multiple independent values is essential; charts for trends or distributions; grounded addresses and links for places (maps are not connected in Zenith); carousels for browsable media or a small series of panels; SVG for bounded static diagrams; AppBlock for genuinely custom visuals.
-- **Hierarchy:** answer the question near the top. Use a small appropriate title, succinct context, and then meaningful information or controls. Avoid repeated decorative section banners and oversized headings.
-- **Spacing:** one clear primary container or semantic groups. Use deliberate `gap`, consistent padding and only as many nested boxes as necessary. Favor one column on narrow screens, compact rows for peer controls, grids for equal metrics and tables for dense precise comparison.
-- **Color:** neutral surfaces by default, selective semantic colors for meaningful statuses; do not wrap conclusions in colored summary boxes. One standout badge at most when important, not as ordinary metadata or heading decoration.
-- **Text:** keep paragraphs cohesive, readable and directly useful. Avoid stacked one-sentence paragraphs, verbose labels and redundant captions. Distinguish units, data provenance, assumptions and illustrative numbers.
-- **Inputs:** don't show a large form when one conversational question suffices. Display results that change as values change. Include sensible defaults, minimum/maximum, disabled states and reset where useful. Use validated data and handle empty/invalid input.
-- **Images:** use media only when it adds information, not decoration. Prefer compact multi-image groups/carousels to full-width imagery unless a larger image is central. Prefer a 16:9 ratio for a full-width image. In collections, keep title and description type sizes restrained and consistent. Image list items should use plain text links, not artificial buttons.
-- **Responsive/accessibility:** aim for logical reading order, native controls, clear labels, text alternatives, keyboard-usable interactions where provided by native components, sufficient contrast and labels that do not rely on color alone. Do not invent unsupported aria/DOM props to achieve this; respect the component schema.
-- **Truthfulness:** differentiate sourced facts from user-provided inputs and hypothetical data; never imply real-time availability, verified rating, a saved record or successful remote action without evidence.
+- The response renders while it streams. Completed children appear inside still-open components, and a component appears once its opening tag is complete. That does **not** mean the message has finished.
+- Incomplete tags, attribute values, expressions and directives stay withheld; they are never auto-completed into executable code, closing text or guessed handlers. Malformed final markup surfaces a diagnostic and source view; do not rely on the renderer repairing it.
+- Completed controls may change **local state** while the rest of the message streams. Host actions (`GenUI.*`), effects and AppBlock scripts wait until the **entire message is complete**; never rely on them running mid-stream. A status that reads “saved”, “sent” or “booked” must come from a confirmed host result, never from local state.
+- Keep a `{@body}` and the components that use its state in one cohesive view, not split across unrelated parts of the transcript.
+- Hard limits: 256 KiB source, nesting depth 32, arrays of 1,000 items, bounded evaluation work. Each render may run about a million interpreter steps; a full chess legal-move search fits comfortably. Wrap expensive derived values in `DIL.useMemo(() => ..., [inputs])` so they recompute only when their inputs change (legal moves depend on the board and turn, not on selection), and keep loops bounded.
+- Stable identity matters for repeated stateful elements. Use `key` only on components that document it; for complex repeated layouts, key a compatible container inside the list.
+- Expressions cannot reach the internet, storage, filesystem, DOM or other APIs. Host and tool declarations determine what references and external operations exist.
+- Source meant to be read rather than rendered goes in a code block; never render a live demonstration of raw markup unless the user wants it live.
 
-## 8. Streaming, identity, and limitations
-
-- Parse and display valid completed markup. An unfinished expression/attribute is incomplete, not silently repaired into executable JavaScript. Interactions should only be active once complete and authorized.
-- Keep outputs bounded and cohesive: avoid deeply nested UI, huge local arrays, large heavy computation, repeated server media queries, or content that obscures the answer. Practical response limits include 256 KiB source, nesting depth 32, array sizes 1,000 and bounded evaluation work.
-- Stable UI identity matters when using repeated stateful elements. Only use `key` on components that document it; for complex repeated layouts, key a compatible container inside the list.
-- No access to arbitrary internet, storage, host filesystem, DOM or APIs through normal inline expressions. The host and tool declarations determine what references and external operations are actually available.
-- A source-only response must be clearly in a code block. Do not accidentally render a demonstration of raw markup unless the user wants it live.
-
-## 9. Quick reference patterns
+## 7. Quick reference patterns
 
 ### Native grid
 
@@ -343,27 +580,18 @@ A custom AppBlock is justified for an interactive visualization that native comp
 </table>
 ```
 
-## 10. Final validation checklist
+## 8. Source validity checklist
 
-Before sending, verify all of the following:
+Check the source itself before sending (the authoring judgment is the final check in Conversational Authoring):
 
-1. **Useful answer:** Does the visible response itself answer the user's request, rather than depending on a visualization or interaction alone?
-2. **Valid grammar:** Declarations before use; all tags, fragments and directives closed; ambiguous literals escaped; raw blocks kept raw; Markdown parsed intentionally.
-3. **Exact API:** Every component and prop exists above. Layout props inherit only where documented. `grid`, `flow`, table, carousel, radio-group and popover have correct direct children.
-4. **Correct hooks:** Unconditional top-level `{@body}` hook calls, stable order, bounded computation, no browser globals in ordinary expressions.
-5. **Real interaction:** Every input state and callback is wired correctly; changes affect the view; controls are not fake; submits/resets have appropriate effects and labels.
-6. **Data validity:** No invented source IDs, product/business refs, URLs, ratings, opening hours, reservations, map points, chart observations, or file links. Bound fields match the actual declared schema.
-7. **Media and visualizations:** Proper image source mode, distinct server-backed media occurrences, appropriate chart schema and units, grounded mapping, constrained SVG, permitted AppBlock bindings.
-8. **Host security:** Actions only on direct interaction; no actions on mount/effect; no fabricated remote success or host permission.
-9. **Usability:** Clear hierarchy, mobile-friendly structure, accessible labels, semantic color use, sensible density, and concise explanatory text.
-10. **Limits and streaming:** Keep the view compact, bounded, stable and complete, with no assumption that partially authored source will be auto-fixed or executed.
+1. **Grammar:** declarations before use; every tag, fragment and directive closed; ambiguous literals escaped; raw blocks kept raw; components never inside a Markdown fence.
+2. **Exact API:** every component, prop and token value exists in this guide; layout props only where inherited; `grid`, `flow`, table, carousel, radio-group and popover have their required direct children.
+3. **Hooks:** unconditional top-level `{@body}` hook calls in a stable order; no browser globals; bounded computation.
+4. **Wiring:** every control's state and callback is connected and changes the view; submits and resets do what their labels say; no inert controls.
+5. **Data and media:** no invented IDs, refs, URLs, ratings, hours, chart observations or file links; images use an already-resolved HTTPS `src`; chart series keys exist in the data; SVG has no event handlers.
+6. **Host actions:** only from a direct user interaction, never on mount or in an effect, and only where the surface supports them (see Where it runs).
 
-
-
----
-
-
-## 11. Exact prop types and defaults
+## 9. Exact prop types and defaults
 
 
 The component inventory in Section 2 is the authoritative **prop-name allowlist**. The rules here further constrain values. A prop being present in the allowlist does not mean every JavaScript value or CSS string is accepted. Omit undocumented values rather than inventing them. **Do not claim an unspecified default is guaranteed.**
@@ -430,32 +658,7 @@ textarea.onChange(nextValue)
 Use `onClick={() => ...}` only on supported click controls. In particular, no event handlers on `svg` or `AsyncImage`. Do not assume setter-updater-function semantics unless tested; direct setters with computed new values are sufficient.
 
 
-## 12. Streaming and presentation details
-
-
-- Streaming allows completed child nodes to appear inside still-open surrounding components. Rendering a completed child does **not** imply the full message has finished.
-- Incomplete tags, attribute values, expressions, and directives must remain withheld; never auto-complete them into executable expressions, improvise closing text, or run guessed handlers.
-- A control appears once its opening tag is complete. Completed controls may change **local state** while the rest of the message streams; host actions (`GenUI.*`), effects and AppBlock scripts wait until the **entire assistant message is complete**. Never rely on an effect or host action running mid-stream.
-- Hook declarations and their consumers must stay in one cohesive view. Do not split dependent UI into unrelated transcript segments, where the state scope or partial rendering behavior would differ.
-- Final malformed or incomplete markup should surface a diagnostic and source-view recovery rather than invent a missing expression or action. Do not rely on the runtime repairing an incorrect source tree.
-- A visible status message that reads “saved”, “sent”, or “booked” must be tied to actual confirmed host results, not to markup completion or local state alone.
-- Treat maximum source length (256 KiB), nesting depth (32), array length (1000), and evaluation budget as hard safety limits. Prefer smaller components, bounded datasets, and nonrecursive calculation.
-
-
-**Forms.** Ask conversationally for one essential missing fact. Use a form only when the task cannot reasonably proceed without several independent facts *and* collecting them together is easier than a brief conversation *and* the visual footprint is worthwhile. At most one form per response. Permit partial submission unless completion of a field is absolutely required.
-
-**Media.** Prefer grouped/carousel imagery rather than oversized full-width images. For genuinely full-width media prefer 16:9. Image groups must contain independent visual evidence, not near-duplicates. In side-by-side image lists, use ordinary links rather than button-style navigation, keep all titles/descriptions the same relatively small text size, use bold rather than oversized fonts to mark titles, and prefer portrait images adjacent to long descriptions. Do not query the same image once inside a loop over different items; author distinct server-resolved occurrences.
-
-**Badges.** Use sparingly, generally for a single notable status. Neutral gray is the default; color only when status semantics warrant it. Never use badges as list ordinals, headings, metadata decoration, or repeated shared-property labels.
-
-**Summary/recommendation presentation.** Avoid colorful highlighted conclusion boxes, green-bordered winner boxes, and unneeded decorative callouts. Explain recommendations directly. Keep useful text understandable without rendering a widget. For precise tabular comparison use a table; don't duplicate equivalent cards and tables.
-
-**Text and spacing.** Use the smallest heading size sufficient to establish hierarchy. In multi-column views keep titles and body relatively compact. Favor neutral surfaces, a consistent spacing scale, readable units and contrast. Avoid one-sentence stacks, gratuitous section splits, wide controls for tiny tasks, and interaction when text is easier.
-
-**Sources and actions.** Give plain links for browsing choices. Never invent a download sandbox path or declare an operation completed without a successful host response. Use visualizations to supplement—not replace—the useful explanatory answer. Cite evidence near the actual claim.
-
-
-## 13. End-to-end examples
+## 10. End-to-end examples
 
 
 The examples below intentionally exercise supported native components and small state. Their data is illustrative unless declared otherwise. Copy the code **inside** each fence into a live response to render. Each example is independently scoped; do not combine independent `{@body}` declarations into one view without resolving variable names.
@@ -522,7 +725,7 @@ const valid=name.trim().length>0;
 ```
 
 
-## 14. AppBlock example
+## 11. AppBlock example
 
 ### H. Native control with AppBlock visualization bridge
 
@@ -555,22 +758,3 @@ Raw AppBlock execution is a **separately host-enabled** capability. The internal
 ```
 
 This example's raw script runs **only inside the AppBlock sandbox**, never ordinary DIL expressions. It is illustrative and requires actual host support for the embedded script and binding bridge; do not claim that it has been executed unless tested.
-
-
-## 15. Final acceptance checks
-
-
-Before treating any example as *runnable* rather than *illustrative syntax*, check it against the active implementation:
-
-1. **Parse:** No unsupported props or children; tags/directives closed; raw block boundaries respected; expressions compile within the restricted runtime.
-2. **Initialize:** Every state read has an unconditional top-level declaration; no hooks inside loops or conditionals; first render is coherent.
-3. **Interact:** Every control changes visible state and advertised actions operate; no disabled-by-mistake, no inert submit handler; reset returns to default.
-4. **Corner cases:** Zero/empty, max/min, toggling back, repeated clicks, game over, missing optional source fields and missing host integrations.
-5. **Visualize:** Chart series keys correspond to the data; image sources are distinct; geographic points are grounded; SVG has no interactive native handlers.
-6. **Verify server-backed data:** Exact current ref declarations, no fabricated URLs or IDs, source fields bound at every occurrence, correct source types.
-7. **Stream:** Incomplete syntax withheld; local state works once a control is complete, host actions/effects/AppBlock scripts wait for whole-message completion; malformed final output gives diagnostic/source fallback.
-8. **Accessible and responsive:** Small viewport, focus semantics, readable control names, contrast, no clipped labels or unintentionally huge headings.
-9. **Action integrity:** Host permissions checked; direct event dispatch only; success messages derive from host result rather than visual feedback alone.
-10. **Runtime conformance:** Tests must run in the actual renderer. Well-formed authored source by itself does not prove compatibility, exact typography, animation timing, or pixel-identical appearance.
-
-The examples teach construction patterns, not a fixed library of prebuilt applications. For substantial domain logic (for example a complete legal chess game), use a validated domain implementation alongside the UI grammar. Chess must handle legal moves, check, castling, en passant, promotion, game-over conditions, and history; a decorative 64-square grid with piece glyphs is not sufficient to call a working chess game.

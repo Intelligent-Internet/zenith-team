@@ -29,6 +29,9 @@ import { InlineBoundary, InlineStage } from "./render-state";
 import {
   Interpreter,
   interactionBudget,
+  interactionDeadlineMs,
+  renderBudget,
+  renderDeadlineMs,
   checkLocalValue,
   isCallable,
   valueText,
@@ -41,8 +44,7 @@ import { Primitive, Unavailable } from "./primitives";
 import { safeURL } from "./style";
 import { repairProperties, validateProperties } from "./contract";
 import { InlineAppBlock } from "./app-block";
-import { resolveIconName } from "./icon-aliases";
-import { hasIcon } from "@/shared/ui/icon";
+import { iconsaxIcons } from "@/shared/ui/icons";
 import {
   InlineReferenceContext,
   InlineInteractionContext,
@@ -101,7 +103,7 @@ function InlineDocumentContent({
     new Map<string, unknown>(Object.entries(capture?.state ?? {})),
   );
   const execution = useRef<RuntimeExecution>({
-    remaining: 50000,
+    remaining: renderBudget,
     depth: 0,
     event: false,
     hostActions: false,
@@ -212,8 +214,9 @@ function InlineDocumentContent({
       return (openEntity ?? host!.openEntity!)(args[0]);
     throw new Error(`${name} is not connected in Zenith Team.`);
   };
-  execution.current.remaining = 50000;
+  execution.current.remaining = renderBudget;
   execution.current.depth = 0;
+  execution.current.deadline = performance.now() + renderDeadlineMs;
   const runtime = new Interpreter({
     execution: execution.current,
     state: state.current,
@@ -240,7 +243,7 @@ function InlineDocumentContent({
     setActionError("");
     effectRuns.current = 0;
     runtime.remaining = interactionBudget;
-    runtime.execution.deadline = performance.now() + 100;
+    runtime.execution.deadline = performance.now() + interactionDeadlineMs;
     runtime.event = true;
     runtime.hostActions = allowHostActions;
     const before = new Map(state.current);
@@ -445,7 +448,7 @@ function InlineDocumentContent({
               p.labelled = true;
             if (
               node.name === "icon" &&
-              !hasIcon(resolveIconName(String(p.name)))
+              !Object.hasOwn(iconsaxIcons, String(p.name))
             ) {
               // An unknown name never becomes an unrelated fallback glyph.
               recordDiagnostic(diagnostics, {
@@ -454,7 +457,7 @@ function InlineDocumentContent({
                 start: node.start,
                 component: "icon",
                 property: "name",
-                message: `Unknown icon ${String(p.name)}; omitted. Use a Lucide name with a Zenith equivalent or an Iconsax name.`,
+                message: `Unknown icon ${String(p.name)}; omitted. Use an Iconsax Outline name from the authoring guide.`,
                 repair: "omitted",
               });
               return null;
@@ -658,6 +661,8 @@ function InlineDocumentContent({
     content = lastDocument.current ?? (
       <InlineMarkdown>{inlineFallback(parsed.nodes)}</InlineMarkdown>
     );
+  } finally {
+    execution.current.deadline = undefined;
   }
   useEffect(() => {
     if (
@@ -726,13 +731,14 @@ function InlineDocumentContent({
         effectDependencies.current.set(effect.key, effect.dependencies);
       cleanups.current.get(effect.key)?.();
       cleanups.current.delete(effect.key);
-      runtime.remaining = 50000;
+      runtime.remaining = renderBudget;
+      runtime.execution.deadline = performance.now() + renderDeadlineMs;
       try {
         runtime.event = true;
         const cleanup = runtime.call(effect.callback, []);
         if (isCallable(cleanup))
           cleanups.current.set(effect.key, () => {
-            runtime.remaining = 50000;
+            runtime.remaining = renderBudget;
             try {
               runtime.call(cleanup, []);
             } catch {
@@ -745,6 +751,7 @@ function InlineDocumentContent({
         );
       } finally {
         runtime.event = false;
+        runtime.execution.deadline = undefined;
       }
     }
   });

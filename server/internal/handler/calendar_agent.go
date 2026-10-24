@@ -87,6 +87,13 @@ func (h *Handler) writeAgentCalendar(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
+	if request.Input != nil && rejectInlineUI(c,
+		storedText{"Calendar event title", request.Input.Title},
+		storedText{"Calendar event description", request.Input.Description},
+		storedText{"Calendar event location", request.Input.Location},
+	) {
+		return
+	}
 	command := calendar.Command{
 		Action:         request.Action,
 		EventID:        request.EventID,

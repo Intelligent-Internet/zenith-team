@@ -193,3 +193,25 @@ func TestFinalSkillExamplesCompile(t *testing.T) {
 		}
 	}
 }
+
+func TestContainsInlineUI(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		text string
+		want bool
+	}{
+		{"<box><text>Total</text></box>", true},
+		{"{@body const [n, setN] = DIL.useState(0);}<text>{n}</text>", true},
+		{"Intro\n\n<button onClick={() => GenUI.copy(\"x\")}>Copy</button>", true},
+		{"<box aria-label=\"bad\">invalid props still count</box>", true},
+		{"## Plain Markdown\n\n- one\n- two", false},
+		{"Use a <button> element and close it with </div>.", false},
+		{"```jsx\n<box><text>literal</text></box>\n```", false},
+		{"If a < b and {count} is small, stop.", false},
+		{"A trailing bracket <", false},
+	} {
+		if got := ContainsInlineUI(test.text); got != test.want {
+			t.Errorf("ContainsInlineUI(%q) = %v, want %v", test.text, got, test.want)
+		}
+	}
+}

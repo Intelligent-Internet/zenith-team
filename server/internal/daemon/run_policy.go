@@ -332,7 +332,8 @@ func buildRunSystemPromptWithCLI(
 		"\n\nZenith Team platform execution policy (takes precedence over editable Agent instructions):",
 	)
 	if !slices.Contains(zenithTeamMCPToolsForRun(doc), "load_skill_reference") {
-		builder.WriteString("\n\nBuilt-in zenith-intelligent-ui skill (authoring guidance only; the Run restrictions below still apply):\n")
+		builder.WriteString(intelligentUIPolicy(false))
+		builder.WriteString("\n\nBuilt-in zenith-intelligent-ui skill (required authoring guide; the Run restrictions below still apply):\n")
 		builder.WriteString(tools.IntelligentUIInstructions())
 		builder.WriteString("\n\nRun restrictions:")
 	}
@@ -373,9 +374,9 @@ func buildRunSystemPromptWithCLI(
 	appendProjectDocuments(&builder, doc)
 	appendWikiInstructions(&builder, zenithTeamMCPToolsForRun(doc))
 	if slices.Contains(zenithTeamMCPToolsForRun(doc), "load_skill_reference") {
-		builder.WriteString(
-			"\n\nFor interactive explanations, calculators, comparisons, charts or local scenario controls in ordinary chat, load_skill_reference with skillKey zenith-intelligent-ui and path SKILL.md. Write version-1 component source directly in your assistant response, with ordinary Markdown around it. Do not wrap components in a Markdown fence. The chat renders it inline; no presentation tool or Page is required. Keep ordinary answers as prose when controls add no value. Controls never grant write authority. Follow-up actions use the current chat's normal send path when the member activates them.",
-		)
+		builder.WriteString(intelligentUIPolicy(true))
+		builder.WriteString("\n\nzenith-intelligent-ui core:\n")
+		builder.WriteString(tools.IntelligentUICore())
 	}
 	appendWhiteboardInstructions(&builder, doc, zenithTeamMCPToolsForRun(doc))
 	appendPageInstructions(
@@ -708,6 +709,27 @@ func appendPresentOutputPolicy(builder *strings.Builder, inPlace, available bool
 	)
 }
 
+// intelligentUIPolicy makes the built-in authoring guide mandatory for every
+// Agent and separates rendered responses from stored or external content,
+// which has no Intelligent UI renderer.
+func intelligentUIPolicy(loadable bool) string {
+	read := "The built-in zenith-intelligent-ui skill below is required: follow it for every response a person reads."
+	if loadable {
+		read = "The core of the built-in zenith-intelligent-ui skill is below and applies to every response a person reads, " +
+			"including short answers. Before writing any Intelligent UI component in this Run, call load_skill_reference with skillKey " +
+			"zenith-intelligent-ui and path SKILL.md for the full grammar, and follow it."
+	}
+	return "\n\nIntelligent UI (required platform policy):\n- " + read + "\n" +
+		"- Rendered with Intelligent UI (follow the skill): your final answer and messages in direct chats, Task conversations, " +
+		"scheduled-run conversations, channel and group threads, Page document threads, and Page source edits or writing suggestions. " +
+		"Write component source directly in the response with ordinary Markdown around it, never inside a Markdown fence. " +
+		"Controls never grant write authority.\n" +
+		"- Stored or external content has no Intelligent UI renderer: write it as plain Markdown or the destination's own format, " +
+		"with no components. This covers files you write or present, Wiki pages, memory, Task titles and descriptions, " +
+		"questions to approvers, emails, social posts, calendar events, commit messages and every other tool argument. " +
+		"Wiki, mail, calendar and question tools reject component source."
+}
+
 // appendConversationParticipants tells the agent how a shared chat works:
 // messages carry their authors, the message to answer arrives last in the
 // prompt, history is reference material, and zen reads what the prompt left
@@ -723,7 +745,9 @@ func appendConversationParticipants(builder *strings.Builder, doc RunContext, cl
 			"- Use the supplied bounded channel history. Do not infer access to personal chats or other channels. " +
 			"If essential context is absent, ask the caller for it.\n" +
 			"- Your answer goes to everyone in this chat. Zenith Team shows you the Projects and Tasks that the person who asked can see. " +
-			"Share only what the request needs; the person who asked is responsible for what you share here.\n")
+			"Share only what the request needs; the person who asked is responsible for what you share here.\n" +
+			"- Intelligent UI components in your answer render for every member, each with their own local state. " +
+			"A channel has no chat-send path: do not use FollowUp or GenUI.issueNewTurn.\n")
 		return
 	}
 	if isScheduledRun(doc) || !cliCommandAdmitted(cli, runConversationMessagesUse) {

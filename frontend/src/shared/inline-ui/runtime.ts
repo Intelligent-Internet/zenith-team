@@ -90,7 +90,13 @@ function freezeLocal(value: unknown): unknown {
 class ReturnValue {
   constructor(readonly value: unknown) {}
 }
-export const interactionBudget = 250000;
+// Deterministic operation budgets sized for real interactive programs (a full
+// chess legal-move search is ~60k–210k steps, a few milliseconds), with a
+// wall-clock watchdog so a slow device or runaway loop cannot freeze the page.
+export const renderBudget = 1_000_000;
+export const renderDeadlineMs = 200;
+export const interactionBudget = 2_000_000;
+export const interactionDeadlineMs = 250;
 
 export class Interpreter {
   hookScope = "";
@@ -99,7 +105,7 @@ export class Interpreter {
   readonly execution: RuntimeExecution;
   constructor(readonly host: RuntimeHost) {
     this.execution = host.execution ??= {
-      remaining: 50000,
+      remaining: renderBudget,
       depth: 0,
       event: false,
       hostActions: false,
@@ -136,7 +142,11 @@ export class Interpreter {
         this.execution.deadline !== undefined &&
         performance.now() > this.execution.deadline)
     )
-      throw new Error("UI computation exceeded its work budget.");
+      throw new Error(
+        this.remaining < 0
+          ? "UI computation exceeded its work budget. Cache heavy derived values with DIL.useMemo and bound loops."
+          : "UI computation exceeded its time limit. Cache heavy derived values with DIL.useMemo and bound loops.",
+      );
   }
   call(value: unknown, args: unknown[], name?: string) {
     this.tick();

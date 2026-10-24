@@ -3,6 +3,7 @@ package wiki
 import (
 	_ "embed"
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -25,6 +26,7 @@ var inlineParserProgram = sync.OnceValues(func() (*goja.Program, error) {
 type inlineSourceInfo struct {
 	complete    bool
 	interactive bool
+	components  bool
 	diagnostic  string
 	diagnostics []SourceDiagnostic
 }
@@ -77,6 +79,7 @@ func inspectInlineSourceMode(source string, version int, recover bool) (inlineSo
 	info := inlineSourceInfo{
 		complete:    result.Get("complete").ToBoolean(),
 		interactive: result.Get("interactive").ToBoolean(),
+		components:  result.Get("components").ToBoolean(),
 		diagnostic:  result.Get("diagnostic").String(),
 	}
 	if err := vm.ExportTo(result.Get("diagnostics"), &info.diagnostics); err != nil {
@@ -86,6 +89,22 @@ func inspectInlineSourceMode(source string, version int, recover bool) (inlineSo
 		return inlineSourceInfo{}, fail("source.syntax", info.diagnostic)
 	}
 	return info, nil
+}
+
+var inlineTagShape = regexp.MustCompile(`<[A-Za-z][\w-]*[\s/>]`)
+
+// ContainsInlineUI reports whether text carries Intelligent UI component source.
+// Stored and external content (Wiki pages, mail, posts, events, questions) has
+// no inline renderer, so request boundaries reject it there. Prose that only
+// mentions HTML tags and fenced code stay plain text.
+func ContainsInlineUI(text string) bool {
+	// Only text with a directive or a tag-shaped construct can hold components;
+	// the parser VM is skipped for ordinary prose.
+	if !strings.Contains(text, "{@") && !strings.Contains(text, "{#") && !inlineTagShape.MatchString(text) {
+		return false
+	}
+	info, err := inspectInlineSourceMode(text, 1, true)
+	return err == nil && info.components
 }
 
 // InlineSource reads the source text shared by the editor and the renderer.

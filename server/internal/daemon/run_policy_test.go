@@ -1465,3 +1465,49 @@ func TestDocumentRunRequiresPageToolExecutable(t *testing.T) {
 		})
 	}
 }
+
+func TestEveryRunMustReadIntelligentUISkill(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		doc  RunContext
+	}{
+		{"chat", RunContext{}},
+		{"task", RunContext{ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{}}}},
+		{"page tag", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentThreadID: "thread"}}},
+		{"page generate", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentWriting: true}}},
+		{"schedule", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceSchedule}}},
+		{"company research", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceCompanyResearch}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			prompt := buildRunSystemPrompt(test.doc, "/scratch", runMemoryContext{})
+			for _, want := range []string{
+				"Intelligent UI (required platform policy)",
+				"Stored or external content has no Intelligent UI renderer",
+				"Intelligent UI — Conversational Authoring",
+				"## Where it runs",
+			} {
+				if !strings.Contains(prompt, want) {
+					t.Fatalf("prompt lacks %q", want)
+				}
+			}
+			loadable := slices.Contains(zenithTeamMCPToolsForRun(test.doc), "load_skill_reference")
+			if loadable != strings.Contains(prompt, "call load_skill_reference with skillKey zenith-intelligent-ui") {
+				t.Fatalf("loadable=%v but the prompt disagrees about loading the skill", loadable)
+			}
+			if strings.Contains(prompt, "authoring guidance only") {
+				t.Fatal("the skill is still described as optional guidance")
+			}
+		})
+	}
+}
+
+func TestChannelRunsAuthorUIWithoutSendActions(t *testing.T) {
+	t.Parallel()
+	doc := RunContext{ChannelInvocation: &RunChannelInvocation{}}
+	prompt := buildRunSystemPrompt(doc, "/scratch", runMemoryContext{})
+	if !strings.Contains(prompt, "do not use FollowUp or GenUI.issueNewTurn") {
+		t.Fatal("channel Runs are not told that a channel has no chat-send path")
+	}
+}

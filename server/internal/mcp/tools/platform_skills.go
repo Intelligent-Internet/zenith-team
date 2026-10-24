@@ -148,6 +148,32 @@ func IntelligentUIInstructions() string {
 	return string(content)
 }
 
+// IntelligentUICore is the always-inlined part of the guide: the authoring
+// judgment, where it renders, and a quick start. SKILL.md marks it with
+// <!-- core --> … <!-- /core -->, so the full skill stays the single source.
+func IntelligentUICore() string {
+	content := IntelligentUIInstructions()
+	var core strings.Builder
+	for {
+		start := strings.Index(content, "<!-- core -->")
+		if start < 0 {
+			break
+		}
+		content = content[start+len("<!-- core -->"):]
+		end := strings.Index(content, "<!-- /core -->")
+		if end < 0 {
+			panic("SKILL.md has an unterminated core section")
+		}
+		core.WriteString(strings.TrimSpace(content[:end]))
+		core.WriteString("\n\n")
+		content = content[end+len("<!-- /core -->"):]
+	}
+	if core.Len() == 0 {
+		panic("SKILL.md marks no core section")
+	}
+	return strings.TrimSpace(core.String())
+}
+
 func compiledSkillFiles(root string) fs.FS {
 	files, err := fs.Sub(platformSkillFiles, root)
 	if err != nil {

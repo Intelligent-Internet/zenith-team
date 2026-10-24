@@ -2,6 +2,8 @@ package canvas
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 	"unicode/utf16"
 
@@ -190,5 +192,21 @@ func TestWritingReplacementIntelligentUI(t *testing.T) {
 				t.Fatalf("replacement is not a valid native Page document: %v", err)
 			}
 		})
+	}
+}
+
+func TestWritingSourceFailureNamesTheConstruct(t *testing.T) {
+	t.Parallel()
+	_, err := wiki.CompileSource(`<input type="number"/>`, 1)
+	if err == nil {
+		t.Fatal("alias property compiled")
+	}
+	message := writingSourceFailure(err)
+	if !strings.Contains(message, "Unsupported property type on input") ||
+		!strings.Contains(message, "repair it") {
+		t.Fatalf("message does not name the invalid construct: %q", message)
+	}
+	if got := writingSourceFailure(errors.New("other")); !strings.Contains(got, "invalid or incomplete") {
+		t.Fatalf("non-diagnostic errors keep the generic message: %q", got)
 	}
 }

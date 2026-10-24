@@ -36,9 +36,10 @@ no aliases. Zenith adds only two extensions: `id` on form controls (a target for
   outside interaction and hover leave dismiss. `onOpenChange(open)` keeps
   authored state in sync with that dismissal.
 - Visuals: icon, constrained svg, favicon, AsyncImage `src`, Chart, CodeBlock,
-  WritingBlock, AppBlock, escape. Icon names come from
-  [icons.generated.md](../../server/internal/mcp/tools/builtin/zenith-intelligent-ui/references/icons.generated.md): Lucide names map to equivalent
-  Iconsax glyphs; an unknown name is omitted with an `unknown_icon` diagnostic.
+  WritingBlock, AppBlock, escape. `icon` and `select icon` take Iconsax Outline
+  names only (the `iconsaxIcons` map in `frontend/src/shared/ui/icons.tsx`),
+  rendered directly with no translation from Lucide or the product's own icon
+  aliases. An unknown name is omitted with an `unknown_icon` diagnostic.
 - Host-backed: Entity for Zenith tasks and Pages (`category="task"|"page"`,
   `ref` = the item's ID, `value` = display text), Link.url, FollowUp, and
   artifact-reference Cite/FileCite/CodeCite/FileNavList/Link.ref in authorized
@@ -218,7 +219,10 @@ during streaming; effects, host actions and application scripts wait for
 completion. Each expression and component fails locally, keeping its last
 working rendering when possible. Display details expose diagnostics and source;
 chat hosts offer an explicit Agent repair request and never send automatically.
-User callbacks allow 250,000 steps and a 100 ms deadline; render/effects 50,000.
+Each render and effect run allows 1,000,000 interpreter steps with a 200 ms
+watchdog; user callbacks allow 2,000,000 steps with a 250 ms watchdog. A full
+chess legal-move search costs 60k–210k steps (a few milliseconds), so real
+game and calculator logic fits; runaway loops still stop.
 
 Motion follows the reference renderer: prose fades in over 0.7s, new rows, list
 items, grid/flow items and carousel slides slide in over 0.42s, and charts draw

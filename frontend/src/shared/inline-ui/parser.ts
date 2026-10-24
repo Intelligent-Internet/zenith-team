@@ -128,6 +128,23 @@ const svgNames = new Set([
   "mask",
   "tspan",
 ]);
+// Component names that are also HTML elements. A bare one in the middle of a
+// sentence with no closing tag ("use a <button> element") is prose about HTML,
+// not UI: real UI tags start a line or follow markup, and are closed.
+const proseTagNames = new Set([
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "form",
+  "table",
+  "label",
+  "code",
+  "title",
+  "svg",
+  "text",
+  "blockquote",
+]);
 const isName = (c = "") =>
   !!c &&
   "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-:".includes(
@@ -175,6 +192,20 @@ class Reader {
       name,
     );
     nodes.push({ type: "pending", start, name });
+  }
+  // Inline UI written mid-sentence closes on the same line
+  // ("Click <button>Go</button>"); a prose mention never does, even when the
+  // response contains real controls with the same name further down.
+  closesOnLine(start: number, name: string) {
+    const lineEnd = this.source.indexOf("\n", start);
+    const close = this.source.indexOf(`</${name}>`, start);
+    return close >= 0 && (lineEnd < 0 || close < lineEnd);
+  }
+  // True when the tag at `start` follows prose on its own line.
+  midSentence(start: number) {
+    const lineStart = this.source.lastIndexOf("\n", start - 1) + 1;
+    const before = this.source.slice(lineStart, start).trimEnd();
+    return !!before && !/[>}]$/.test(before);
   }
   space() {
     while (
@@ -321,13 +352,16 @@ class Reader {
     if (depth > 32) throw new Error("UI nesting exceeds 32 levels.");
     const nodes: InlineNode[] = [];
     let textStart = this.at;
+    // Adjacent prose (including escaped tag mentions) stays one text node, so
+    // Markdown sees one paragraph and keeps its spacing.
+    const text = (value: string, start: number) => {
+      const last = nodes[nodes.length - 1];
+      if (last?.type === "text") last.value += value;
+      else nodes.push({ type: "text", value, start });
+    };
     const flush = () => {
       if (this.at > textStart)
-        nodes.push({
-          type: "text",
-          value: this.source.slice(textStart, this.at),
-          start: textStart,
-        });
+        text(this.source.slice(textStart, this.at), textStart);
     };
     while (this.at < this.source.length) {
       if (++this.count > 262144)
@@ -352,18 +386,20 @@ class Reader {
         flush();
         const end = this.source.indexOf(">", this.at);
         if (end < 0) {
-          this.pending(nodes, this.at, "closing tag");
+          // A partial closing tag at the stream's end is withheld silently.
           this.complete = false;
           this.at = this.source.length;
-        } else {
-          this.report(
-            this.at,
-            "unexpected_close",
-            "Omitted an unmatched closing tag.",
-            "omitted",
-          );
-          this.at = end + 1;
+          return nodes;
         }
+        // An unmatched closing tag is prose ("close it with </div>"): keep it
+        // visible. Component names are escaped so no renderer treats them as HTML.
+        const tag = this.source.slice(this.at, end + 1);
+        const closing = tag.slice(2, -1).trim();
+        text(
+          componentNames.has(closing) ? `&lt;/${closing}&gt;` : tag,
+          this.at,
+        );
+        this.at = end + 1;
         textStart = this.at;
         continue;
       }
@@ -402,6 +438,28 @@ class Reader {
         this.at++;
         const name = this.name();
         this.at = start;
+        const mid = !svg && parent !== "code" && this.midSentence(start);
+        // A partial tag in the middle of a sentence at the stream's end is
+        // withheld silently: it may become prose or inline UI.
+        if (mid && start + name.length + 1 === this.source.length) {
+          flush();
+          this.complete = false;
+          this.at = this.source.length;
+          return nodes;
+        }
+        if (
+          mid &&
+          proseTagNames.has(name) &&
+          this.source[start + name.length + 1] === ">" &&
+          !this.closesOnLine(start, name)
+        ) {
+          flush();
+          // Entities keep the tag literal in every Markdown renderer.
+          text(`&lt;${name}&gt;`, start);
+          this.at = start + name.length + 2;
+          textStart = this.at;
+          continue;
+        }
         if (
           start + name.length + 1 === this.source.length &&
           (name === "" ||
@@ -996,6 +1054,10 @@ export function inspectInlineSource(source: string, recover = false) {
     complete: result.complete,
     diagnostic: result.diagnostic ?? "",
     interactive: result.nodes.some((node) => node.type !== "text"),
+    // Real UI constructs only: unfinished fragments are not components.
+    components: result.nodes.some(
+      (node) => node.type !== "text" && node.type !== "pending",
+    ),
     diagnostics: (result.diagnostics ?? []).map((item) => ({
       code: `source.${item.code}`,
       severity:

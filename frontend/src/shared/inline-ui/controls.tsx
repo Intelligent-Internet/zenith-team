@@ -2,7 +2,12 @@ import * as Select from "@radix-ui/react-select";
 import * as Popover from "@radix-ui/react-popover";
 import { useState, type CSSProperties } from "react";
 import { Icon } from "@/shared/ui/icon";
-import { ChevronDown, Check } from "@/shared/ui/icons";
+import {
+  ChevronDown,
+  Check,
+  iconsaxIcons,
+  type IconsaxIconName,
+} from "@/shared/ui/icons";
 
 const control =
   "min-w-0 rounded-workspace-control border border-workspace-divider bg-workspace-control px-3 py-2 text-sm text-workspace-text focus-visible:outline-2 focus-visible:outline-workspace-accent disabled:opacity-40";
@@ -40,7 +45,11 @@ export function InlineSelect({
         style={style}
         className={`${control} ${p.block ? "w-full" : "max-w-full"} inline-flex min-h-9 items-center justify-between gap-2`}
       >
-        {p.icon && <Icon name={p.icon} size={18} />}
+        {p.icon &&
+          (() => {
+            const Glyph = iconsaxIcons[String(p.icon) as IconsaxIconName];
+            return Glyph ? <Glyph size={18} /> : null;
+          })()}
         <Select.Value placeholder={p.placeholder ?? "Choose"} />
         <Select.Icon>
           <ChevronDown size={16} />

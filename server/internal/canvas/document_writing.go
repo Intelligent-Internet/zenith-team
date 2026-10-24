@@ -349,7 +349,7 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, in DocumentAge
 	}
 	replacement, err := writingReplacement(base, target, response)
 	if err != nil {
-		return "The response could not be staged because its component source is invalid or incomplete. Ask the Agent to repair it and try again.", nil
+		return writingSourceFailure(err), nil
 	}
 	if in.Authoring.Check(int(draft.SchemaVersion), replacement) != nil {
 		return "The writing suggestion was not staged because Intelligent UI authoring is temporarily disabled.", nil
@@ -403,4 +403,23 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, in DocumentAge
 		Summary:       "Suggested writing",
 	})
 	return "", err
+}
+
+// writingSourceFailure posts the parser's exact reason in the thread, so a
+// follow-up "repair it" request gives the Agent the construct to fix.
+func writingSourceFailure(err error) string {
+	const generic = "The response could not be staged because its component source is invalid or incomplete. Ask the Agent to repair it and try again."
+	var diagnostic *wiki.SourceDiagnostic
+	if !errors.As(err, &diagnostic) || strings.TrimSpace(diagnostic.Repair) == "" {
+		return generic
+	}
+	reason := strings.TrimSpace(diagnostic.Repair)
+	if runes := []rune(reason); len(runes) > 300 {
+		reason = string(runes[:300]) + "…"
+	}
+	return fmt.Sprintf(
+		"The response could not be staged because its component source is invalid (%s): %s Ask the Agent to repair it and try again.",
+		diagnostic.Code,
+		reason,
+	)
 }

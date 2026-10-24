@@ -163,18 +163,6 @@ export type IconName =
   | keyof typeof brandIcons
   | keyof typeof brandImages;
 
-// Lets authored surfaces report unknown names instead of rendering the
-// generic fallback glyph.
-export function hasIcon(name: string): boolean {
-  if (
-    Object.hasOwn(brandImages, name) ||
-    Object.hasOwn(brandIcons, name) ||
-    Object.hasOwn(iconComponents, name)
-  )
-    return true;
-  return Object.hasOwn(productIcons, name);
-}
-
 export function Icon({
   name,
   size,
