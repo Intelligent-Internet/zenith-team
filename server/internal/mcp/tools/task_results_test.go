@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -60,5 +61,31 @@ func TestFinalizeTaskResultsUsesRunTaskAndStableReplay(t *testing.T) {
 	in.OutputIDs = append(in.OutputIDs, in.OutputIDs[0])
 	if _, err = service.FinalizeTaskResults(t.Context(), in); err == nil || api.calls != 2 {
 		t.Fatal("duplicate selection reached API")
+	}
+}
+
+// An answer-only Run presents nothing, so an empty selection tells the Agent
+// to end without finalizing instead of reporting an unexplained invalid input.
+func TestFinalizeTaskResultsWithoutOutputsSaysToSkip(t *testing.T) {
+	t.Parallel()
+	api := &taskResultsAPIStub{}
+	service, err := NewTaskResultToolService(api, RunContext{
+		CompanyID:      uuid.NewString(),
+		ConversationID: uuid.NewString(),
+		RunID:          uuid.NewString(),
+		AgentID:        uuid.NewString(),
+		TaskID:         uuid.NewString(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, ids := range [][]string{nil, {}} {
+		_, err = service.FinalizeTaskResults(
+			t.Context(),
+			FinalizeTaskResultsInput{ExpectedRevision: 1, OutputIDs: ids},
+		)
+		if err == nil || !strings.Contains(err.Error(), "end the Run without finalizing") || api.calls != 0 {
+			t.Fatalf("ids=%v err=%v calls=%d", ids, err, api.calls)
+		}
 	}
 }

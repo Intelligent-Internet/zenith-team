@@ -92,10 +92,11 @@ a Run with exit code `3`.
    Task result review. Present each completed file or app Artifact with the `present_output` MCP
    tool. Choose `type`; supply ordered `items` with `primary`, `final`, and
    `supporting` roles, or structured `app.commands` for an app. See
-   `references/outputs.md` for the JSON contract. For a Task Run, read the current
-   Task revision and call `finalize_task_results` with the final outputIds in order
-   before ending. This selects evidence without accepting suggestions or approving
-   results.
+   `references/outputs.md` for the JSON contract. For a Task Run that presented
+   outputs, read the current Task revision and call `finalize_task_results` with
+   the final outputIds in order before ending. This selects evidence without
+   accepting suggestions or approving results. A Run that presented no outputs,
+   such as an answer-only Task, ends without calling it.
 5. If a founder decision blocks you, finish every independent part first,
    then `zen question ask` exactly once with one consolidated question and
    end the Run. Do not also ask in assistant text.
