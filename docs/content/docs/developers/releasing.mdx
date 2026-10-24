@@ -122,7 +122,7 @@ Pull requests labelled `skip-changelog`, and those opened by Dependabot, are lef
 
 While the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`, the release also builds the production desktop app with `.github/workflows/build-desktop.yml`. The macOS builds are signed in the `desktop-signing` environment, the only place the Apple credentials live; it admits `main` and `v*` tags only:
 
-- signed and notarized macOS installers for Apple silicon (`arm64`): a `.dmg` to download and a `.zip` for updates.
+- signed and notarized macOS installers for Apple silicon (`arm64`): a `.dmg` to download and a `.zip` for updates. The `.dmg` itself is also signed, notarized and stapled, and the build fails unless Gatekeeper accepts it.
 
 Intel Macs, Linux and Windows are not shipped for now; adding one back is one more entry in `build-desktop.yml`'s matrix.
 
