@@ -1,7 +1,19 @@
 const LOCAL_DEV_ACCESS_TOKEN_STORAGE_KEY = "ZENITH_TEAM_ACCESS_TOKEN";
+// Renew this long before the access token expires. It stays inside the
+// desktop main process's own renewal window (REFRESH_SKEW_MS in
+// electron/main/desktop-auth-store.cjs): asked any earlier, it hands back
+// the same token.
+const ACCESS_RENEWAL_LEAD_MS = 20_000;
 
 let accessToken: string | null = null;
 let hasHydratedDesktopAccessToken = false;
+// When the access token is due for renewal, on this computer's wall clock;
+// null while no signed-in session is known.
+let accessRenewalDueAt: number | null = null;
+
+export type AccessSessionTiming =
+  | { transport: "cookie"; issuedAt: string; accessExpiresAt: string }
+  | { transport: "bearer"; accessExpiresAt: string };
 
 function isLocalhost(hostname: string): boolean {
   return (
@@ -54,6 +66,12 @@ export async function hydrateStoredAccessToken(): Promise<void> {
 
     if (result.ok) {
       accessToken = normalizeAccessToken(result.accessToken);
+      if (accessToken && result.accessExpiresAt) {
+        noteAccessSession({
+          transport: "bearer",
+          accessExpiresAt: result.accessExpiresAt,
+        });
+      }
     }
   } catch {
     // Desktop credential hydration is best-effort; route guards can still
@@ -92,10 +110,34 @@ export function cacheStoredAccessToken(token: string | null | undefined): void {
 export function clearStoredAccessToken(): void {
   currentSessionId = null;
   setStoredAccessToken(null);
+  cancelAccessRenewal();
 
   if (typeof window !== "undefined" && isLocalhost(window.location.hostname)) {
     getLocalStorage()?.removeItem(LOCAL_DEV_ACCESS_TOKEN_STORAGE_KEY);
   }
+}
+
+export function getAccessRenewalDueAt(): number | null {
+  return accessRenewalDueAt;
+}
+
+export function noteAccessSession(session: AccessSessionTiming): void {
+  const expiresAt = Date.parse(session.accessExpiresAt);
+  // The browser drops the access cookie by Max-Age, counted from when it
+  // arrived, so a cookie session is timed from now. A bearer token is timed
+  // against this computer's clock, as the desktop main process times its
+  // own renewal.
+  const lapsesAt =
+    session.transport === "cookie"
+      ? Date.now() + expiresAt - Date.parse(session.issuedAt)
+      : expiresAt;
+  accessRenewalDueAt = Number.isFinite(lapsesAt)
+    ? lapsesAt - ACCESS_RENEWAL_LEAD_MS
+    : null;
+}
+
+export function cancelAccessRenewal(): void {
+  accessRenewalDueAt = null;
 }
 
 export function getStoredAuthorizationHeader(): string | null {
