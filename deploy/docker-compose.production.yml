@@ -59,6 +59,7 @@ services:
       # --- Core process ---
       APP_NAME: ${APP_NAME:-Zenith Team API}
       APP_ENVIRONMENT: ${APP_ENVIRONMENT:-production}
+      INTELLIGENT_UI_AUTHORING_ENABLED: ${INTELLIGENT_UI_AUTHORING_ENABLED:-true}
       APP_LOG_LEVEL: ${APP_LOG_LEVEL:-info}
       APP_API_REPLICAS: ${APP_API_REPLICAS:-1}
       APP_REDIS_URL: ${APP_REDIS_URL:-redis://redis:6379/0}

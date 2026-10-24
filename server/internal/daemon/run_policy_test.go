@@ -9,6 +9,47 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
+func TestRunPromptAuthorsRawInlineComponents(t *testing.T) {
+	t.Parallel()
+	doc := RunContext{ExecutionProfile: RunExecutionProfileContext{Source: "message"}}
+	prompt := buildRunSystemPrompt(doc, "/scratch", runMemoryContext{})
+	if !strings.Contains(prompt, "zenith-intelligent-ui") {
+		t.Fatal("ordinary chat cannot discover its inline authoring guide")
+	}
+	for _, retired := range []string{"fenced zenith-ui", "Continue only prepares"} {
+		if strings.Contains(prompt, retired) {
+			t.Errorf("chat prompt retains retired instruction %q", retired)
+		}
+	}
+}
+
+func TestIntelligentUIGuideReachesEveryRunProfile(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		doc  RunContext
+	}{
+		{"chat", RunContext{}},
+		{"task", RunContext{ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{}}}},
+		{"page tag", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentThreadID: "thread"}}},
+		{"page generate", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentWriting: true}}},
+		{"schedule", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceSchedule}}},
+		{"company research", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceCompanyResearch}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			prompt := buildRunSystemPrompt(test.doc, "/scratch", runMemoryContext{})
+			if !strings.Contains(prompt, "zenith-intelligent-ui") {
+				t.Fatal("Run cannot discover its built-in Intelligent UI skill")
+			}
+			if !slices.Contains(zenithTeamMCPToolsForRun(test.doc), "load_skill_reference") &&
+				!strings.Contains(prompt, "DIL.useState") {
+				t.Fatal("Run without skill tools did not receive the compiled guide")
+			}
+		})
+	}
+}
+
 func TestDocumentRunToolPolicy(t *testing.T) {
 	t.Parallel()
 	for _, writing := range []bool{false, true} {
@@ -23,7 +64,14 @@ func TestDocumentRunToolPolicy(t *testing.T) {
 			}}
 			var wantTools, wantServers []string
 			if !writing {
-				wantTools = []string{"page_read", "page_edit", "source_read"}
+				wantTools = []string{
+					"page_read",
+					"page_edit",
+					"source_read",
+					"page_source_preview_start",
+					"page_source_preview_read",
+					"page_source_preview_patch",
+				}
 				wantServers = []string{zenithTeamMCPServerName}
 			}
 			if got := zenithTeamMCPToolsForRun(doc); !slices.Equal(got, wantTools) {
@@ -135,6 +183,7 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"page_create",
 				"page_read",
 				"page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 		},
 		{
@@ -150,11 +199,11 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 			},
 			forbid: []string{
 				"mark_task_failed",
-				"search_skills",
 				"project_read",
 				"page_create",
 				"page_read",
 				"page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 		},
 		{
@@ -174,6 +223,7 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"list_agents",
 				"mark_task_failed",
 				"project_read", "page_create", "page_read", "page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 		},
 		{
@@ -226,6 +276,7 @@ func TestZenithTeamMCPToolsFollowFrozenExecutionProfile(t *testing.T) {
 				"page_create",
 				"page_read",
 				"page_edit",
+				"page_source_preview_start", "page_source_preview_read", "page_source_preview_patch",
 			},
 			forbid: []string{"company_plan_transaction_apply", "list_agents"},
 		},
@@ -1429,5 +1480,51 @@ func TestDocumentRunRequiresPageToolExecutable(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEveryRunMustReadIntelligentUISkill(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		doc  RunContext
+	}{
+		{"chat", RunContext{}},
+		{"task", RunContext{ExecutionProfile: RunExecutionProfileContext{Task: &RunTaskContext{}}}},
+		{"page tag", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentThreadID: "thread"}}},
+		{"page generate", RunContext{ExecutionProfile: RunExecutionProfileContext{DocumentWriting: true}}},
+		{"schedule", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceSchedule}}},
+		{"company research", RunContext{ExecutionProfile: RunExecutionProfileContext{Source: runSourceCompanyResearch}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			prompt := buildRunSystemPrompt(test.doc, "/scratch", runMemoryContext{})
+			for _, want := range []string{
+				"Intelligent UI (required platform policy)",
+				"Stored or external content has no Intelligent UI renderer",
+				"Intelligent UI — Conversational Authoring",
+				"## Where it runs",
+			} {
+				if !strings.Contains(prompt, want) {
+					t.Fatalf("prompt lacks %q", want)
+				}
+			}
+			loadable := slices.Contains(zenithTeamMCPToolsForRun(test.doc), "load_skill_reference")
+			if loadable != strings.Contains(prompt, "call load_skill_reference with skillKey zenith-intelligent-ui") {
+				t.Fatalf("loadable=%v but the prompt disagrees about loading the skill", loadable)
+			}
+			if strings.Contains(prompt, "authoring guidance only") {
+				t.Fatal("the skill is still described as optional guidance")
+			}
+		})
+	}
+}
+
+func TestChannelRunsAuthorUIWithoutSendActions(t *testing.T) {
+	t.Parallel()
+	doc := RunContext{ChannelInvocation: &RunChannelInvocation{}}
+	prompt := buildRunSystemPrompt(doc, "/scratch", runMemoryContext{})
+	if !strings.Contains(prompt, "do not use FollowUp or GenUI.issueNewTurn") {
+		t.Fatal("channel Runs are not told that a channel has no chat-send path")
 	}
 }

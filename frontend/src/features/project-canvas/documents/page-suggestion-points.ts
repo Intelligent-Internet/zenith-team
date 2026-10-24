@@ -1,3 +1,4 @@
+import { hasTextDiff } from "./suggestion-text-diff";
 import type { Editor } from "@tiptap/react";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
@@ -7,16 +8,21 @@ import type { Block } from "./block-editor-schema";
 
 type Suggestion = components["schemas"]["PageSuggestion"];
 
-export function suggestionPlacement(
-  doc: ProseMirrorNode,
-  suggestion: Suggestion,
-  after: Block,
-) {
+function documentBlocks(doc: ProseMirrorNode) {
   const blocks = new Map<string, { from: number; to: number }>();
   doc.descendants((node, from) => {
     if (node.attrs.blockId)
       blocks.set(node.attrs.blockId, { from, to: from + node.nodeSize });
   });
+  return blocks;
+}
+
+export function suggestionPlacement(
+  doc: ProseMirrorNode,
+  suggestion: Suggestion,
+  after: Block,
+  blocks = documentBlocks(doc),
+) {
   const original = blocks.get(suggestion.blockId);
   if (original && suggestion.type !== "move")
     return { position: original.to, original };
@@ -106,6 +112,8 @@ type SuggestionBlock = {
 function blocksInDocumentOrder(
   doc: ProseMirrorNode,
   entries: Iterable<InlineEntry>,
+  selectedVersions: Map<string, string>,
+  positions: ReturnType<typeof documentBlocks>,
 ) {
   const blocks = new Map<string, SuggestionBlock>();
   for (const entry of entries) {
@@ -113,10 +121,13 @@ function blocksInDocumentOrder(
       doc,
       entry.suggestion,
       entry.after,
+      positions,
     );
     const point = widgetPosition(doc, position);
     // Insertions can share an anchor without being alternatives for the same block.
-    const blockKey = entry.suggestion.blockId || entry.suggestion.type;
+    const blockKey = entry.suggestion.competingChangeIds.length
+      ? entry.suggestion.blockId || entry.suggestion.type
+      : entry.id;
     const block = blocks.get(blockKey) ?? {
       key: blockKey,
       position: point,
@@ -128,6 +139,29 @@ function blocksInDocumentOrder(
     block.entries.push(entry);
     block.order = Math.min(block.order, entry.order);
     blocks.set(blockKey, block);
+  }
+  for (const block of blocks.values()) {
+    block.entries.sort(
+      (a, b) =>
+        a.priority.localeCompare(b.priority) ||
+        a.order - b.order ||
+        a.id.localeCompare(b.id),
+    );
+    const selected =
+      block.entries.find(
+        (entry) => entry.id === selectedVersions.get(block.key),
+      ) ?? block.entries[0];
+    const placement = suggestionPlacement(
+      doc,
+      selected.suggestion,
+      selected.after,
+      positions,
+    );
+    block.position = widgetPosition(doc, placement.position);
+    block.readingPosition =
+      selected.suggestion.type === "move"
+        ? placement.position
+        : (placement.original?.from ?? placement.position);
   }
   return [...blocks.values()].sort(
     (a, b) => a.readingPosition - b.readingPosition || a.order - b.order,
@@ -173,9 +207,12 @@ export function suggestionPointsFor(editor: Editor): ReviewWidgets {
         decorations(state) {
           const decorations: Decoration[] = [];
           const used = new Set<string>();
+          const positions = documentBlocks(state.doc);
           const orderedBlocks = blocksInDocumentOrder(
             state.doc,
             entries.values(),
+            selectedVersions,
+            positions,
           );
           entryBlocks.clear();
           const activeBlocks = new Set(orderedBlocks.map((block) => block.key));
@@ -232,17 +269,21 @@ export function suggestionPointsFor(editor: Editor): ReviewWidgets {
                 state.doc,
                 entry.suggestion,
                 entry.after,
+                positions,
               );
               if (
                 visible &&
                 original &&
                 entry.suggestion.status === "pending"
               ) {
-                const className = ["remove", "update"].includes(
-                  entry.suggestion.type,
+                const className = hasTextDiff(
+                  entry.suggestion.current ?? entry.suggestion.before,
+                  entry.suggestion.after,
                 )
-                  ? "pc-suggestion-removed"
-                  : "pc-suggestion-moved";
+                  ? "pc-suggestion-replaced-preview"
+                  : ["remove", "update"].includes(entry.suggestion.type)
+                    ? "pc-suggestion-removed"
+                    : "pc-suggestion-moved";
                 const originalNode = state.doc.nodeAt(original.from);
                 if (
                   originalNode &&

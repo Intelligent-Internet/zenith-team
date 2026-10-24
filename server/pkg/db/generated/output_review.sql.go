@@ -178,17 +178,23 @@ func (q *Queries) GetOutputReviewSource(ctx context.Context, arg GetOutputReview
 }
 
 const getOutputReviewThread = `-- name: GetOutputReviewThread :one
-SELECT id, company_id, project_id, artifact_version_id, anchor, status, version, created_by_user_id, created_at, resolved_by_user_id, resolved_at, page_id, output_id, document_revision_id FROM review_threads WHERE company_id=$1 AND output_id=$2 AND id=$3
+SELECT t.id, t.company_id, t.project_id, t.artifact_version_id, t.anchor, t.status, t.version, t.created_by_user_id, t.created_at, t.resolved_by_user_id, t.resolved_at, t.page_id, t.output_id, t.document_revision_id FROM review_threads t WHERE t.company_id=$1 AND t.output_id=$2 AND t.id=$3 AND (t.page_id IS NULL AND t.document_revision_id IS NULL OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=t.company_id AND access.artifact_id=COALESCE(t.page_id,(SELECT page_id FROM document_snapshots WHERE id=t.document_revision_id)) AND access.user_id=$4::uuid))
 `
 
 type GetOutputReviewThreadParams struct {
-	CompanyID uuid.UUID     `json:"company_id"`
-	OutputID  uuid.NullUUID `json:"output_id"`
-	ID        uuid.UUID     `json:"id"`
+	CompanyID   uuid.UUID     `json:"company_id"`
+	OutputID    uuid.NullUUID `json:"output_id"`
+	ID          uuid.UUID     `json:"id"`
+	ActorUserID uuid.UUID     `json:"actor_user_id"`
 }
 
 func (q *Queries) GetOutputReviewThread(ctx context.Context, arg GetOutputReviewThreadParams) (ReviewThread, error) {
-	row := q.db.QueryRow(ctx, getOutputReviewThread, arg.CompanyID, arg.OutputID, arg.ID)
+	row := q.db.QueryRow(ctx, getOutputReviewThread,
+		arg.CompanyID,
+		arg.OutputID,
+		arg.ID,
+		arg.ActorUserID,
+	)
 	var i ReviewThread
 	err := row.Scan(
 		&i.ID,
@@ -213,16 +219,17 @@ const listOutputReviewThreads = `-- name: ListOutputReviewThreads :many
 SELECT jsonb_build_object('id',t.id,'versionId',COALESCE(t.document_revision_id,t.output_id),'pageId',t.page_id,'anchor',t.anchor,'status',t.status,'revision',t.version,'createdAt',t.created_at,
  'comments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',c.id,'body',CASE WHEN c.deleted_at IS NULL THEN c.body ELSE '' END,'revision',c.version,'authorId',c.author_user_id,'authorAgentId',c.author_agent_id,'runId',c.agent_run_id,'authorName',COALESCE(a.name,u.display_name,'Former teammate'),'createdAt',c.created_at,'editedAt',c.edited_at,'deleted',c.deleted_at IS NOT NULL) ORDER BY c.created_at,c.id)
  FROM review_comments c LEFT JOIN users u ON u.id=c.author_user_id LEFT JOIN agents a ON a.id=c.author_agent_id WHERE c.thread_id=t.id),'[]'::jsonb)) AS payload
-FROM review_threads t WHERE t.company_id=$1 AND t.output_id=$2 ORDER BY t.created_at,t.id
+FROM review_threads t WHERE t.company_id=$1 AND t.output_id=$2 AND (t.page_id IS NULL AND t.document_revision_id IS NULL OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=t.company_id AND access.artifact_id=COALESCE(t.page_id,(SELECT page_id FROM document_snapshots WHERE id=t.document_revision_id)) AND access.user_id=$3::uuid)) ORDER BY t.created_at,t.id
 `
 
 type ListOutputReviewThreadsParams struct {
-	CompanyID uuid.UUID     `json:"company_id"`
-	OutputID  uuid.NullUUID `json:"output_id"`
+	CompanyID   uuid.UUID     `json:"company_id"`
+	OutputID    uuid.NullUUID `json:"output_id"`
+	ActorUserID uuid.UUID     `json:"actor_user_id"`
 }
 
 func (q *Queries) ListOutputReviewThreads(ctx context.Context, arg ListOutputReviewThreadsParams) ([][]byte, error) {
-	rows, err := q.db.Query(ctx, listOutputReviewThreads, arg.CompanyID, arg.OutputID)
+	rows, err := q.db.Query(ctx, listOutputReviewThreads, arg.CompanyID, arg.OutputID, arg.ActorUserID)
 	if err != nil {
 		return nil, err
 	}

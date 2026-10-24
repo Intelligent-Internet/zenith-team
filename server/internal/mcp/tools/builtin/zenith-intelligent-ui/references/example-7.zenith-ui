@@ -1,0 +1,5 @@
+{@body const [index,setIndex] = DIL.useState(0);}
+<carousel activeIndex={index} onChange={setIndex} showArrows>
+  <carousel-item><box padding={4}><title size="md">First</title><text>Panel one</text></box></carousel-item>
+  <carousel-item><box padding={4}><title size="md">Second</title><text>Panel two</text></box></carousel-item>
+</carousel>

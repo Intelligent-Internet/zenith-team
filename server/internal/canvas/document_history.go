@@ -17,7 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type DocumentHistoryRef struct{ ProjectID, VersionID, OutputID, ItemID uuid.UUID }
+type DocumentHistoryRef struct{ ProjectID, VersionID, PageID uuid.UUID }
 
 func (r DocumentHistoryRef) target() documentTarget {
 	return documentTarget(r)
@@ -44,7 +44,7 @@ type DocumentHistoryEntry struct {
 type DocumentSuggestionReview struct {
 	ID               uuid.UUID  `json:"id"`
 	ChangeID         uuid.UUID  `json:"changeId"`
-	ProjectID        uuid.UUID  `json:"projectId"`
+	ProjectID        *uuid.UUID `json:"projectId,omitempty"`
 	PageID           uuid.UUID  `json:"pageId"`
 	AgentID          *uuid.UUID `json:"agentId,omitempty"`
 	AgentName        string     `json:"agentName"`
@@ -68,6 +68,7 @@ type DocumentHistory struct {
 	CanEdit            bool                   `json:"canEdit"`
 }
 type DocumentHistoryState struct {
+	SchemaVersion     int                        `json:"schemaVersion"`
 	PreviousSequence  int64                      `json:"previousSequence"`
 	Sequence          int64                      `json:"sequence"`
 	Markdown          string                     `json:"markdown"`
@@ -76,14 +77,19 @@ type DocumentHistoryState struct {
 }
 
 type DocumentSuggestionCapture struct {
-	BeforeContent  json.RawMessage `json:"beforeContent"`
-	ResultContent  json.RawMessage `json:"resultContent"`
-	BeforeMarkdown string          `json:"beforeMarkdown"`
-	ResultMarkdown string          `json:"resultMarkdown"`
+	BeforeSchemaVersion int             `json:"beforeSchemaVersion"`
+	ResultSchemaVersion int             `json:"resultSchemaVersion"`
+	BeforeContent       json.RawMessage `json:"beforeContent"`
+	ResultContent       json.RawMessage `json:"resultContent"`
+	BeforeMarkdown      string          `json:"beforeMarkdown"`
+	ResultMarkdown      string          `json:"resultMarkdown"`
 }
 type (
-	DocumentHistoryRestore struct{ Sequence, ExpectedSequence int64 }
-	DocumentHistoryName    struct {
+	DocumentHistoryRestore struct {
+		Sequence, ExpectedSequence int64
+		SchemaVersion              int
+	}
+	DocumentHistoryName struct {
 		Sequence int64
 		Label    string
 	}
@@ -102,7 +108,7 @@ func (s *DefaultPageService) DocumentHistory(
 			return err
 		}
 		// Published Wiki access does not grant access to its draft history.
-		if !page.ProjectID.Valid && !page.SourceOutputID.Valid {
+		if page.ArtifactType == "wiki" {
 			return ErrForbidden
 		}
 		result.CanEdit = edit
@@ -149,7 +155,7 @@ func (s *DefaultPageService) DocumentHistory(
 			applications[review.AfterSequence] = &DocumentSuggestionReview{
 				ID:        review.ID,
 				ChangeID:  review.ChangeID,
-				ProjectID: review.ProjectID,
+				ProjectID: outputSource(review.ProjectID),
 				PageID:    review.PageID,
 				AgentID: outputSource(
 					review.ActorAgentID,
@@ -215,7 +221,7 @@ func (s *DefaultPageService) DocumentHistoryState(
 			return err
 		}
 		// Published Wiki access does not grant access to its draft history.
-		if !page.ProjectID.Valid && !page.SourceOutputID.Valid {
+		if page.ArtifactType == "wiki" {
 			return ErrForbidden
 		}
 		state, err := wiki.ReadDocumentHistoryInTx(
@@ -226,11 +232,12 @@ func (s *DefaultPageService) DocumentHistoryState(
 		if err != nil {
 			return lookup(err)
 		}
+		var content wiki.BlockNode
+		if err = json.Unmarshal(state.Content, &content); err != nil {
+			return err
+		}
+		schemaVersion := wiki.UIDocumentSchema(content)
 		if page.ProjectID.Valid {
-			var content wiki.BlockNode
-			if err = json.Unmarshal(state.Content, &content); err != nil {
-				return err
-			}
 			if err = redactUnavailableReferences(ctx, q, p, page.ProjectID.UUID, &content); err != nil {
 				return err
 			}
@@ -252,6 +259,7 @@ func (s *DefaultPageService) DocumentHistoryState(
 			return err
 		}
 		result = DocumentHistoryState{
+			SchemaVersion:    schemaVersion,
 			Sequence:         sequence,
 			PreviousSequence: previous,
 			Markdown:         state.Markdown,
@@ -287,8 +295,9 @@ func documentSuggestionCapture(
 	if err = json.Unmarshal(row.ResultContent, &result); err != nil {
 		return nil, err
 	}
+	beforeSchema, resultSchema := wiki.UIDocumentSchema(before), wiki.UIDocumentSchema(result)
 	for _, content := range []*wiki.BlockNode{&before, &result} {
-		if err = redactUnavailableReferences(ctx, q, p, row.ProjectID, content); err != nil {
+		if err = redactUnavailableReferences(ctx, q, p, row.ProjectID.UUID, content); err != nil {
 			return nil, err
 		}
 	}
@@ -301,6 +310,7 @@ func documentSuggestionCapture(
 		return nil, err
 	}
 	return &DocumentSuggestionCapture{
+		BeforeSchemaVersion: beforeSchema, ResultSchemaVersion: resultSchema,
 		BeforeContent: beforeContent, ResultContent: resultContent,
 		BeforeMarkdown: wiki.BlocksMarkdown(before), ResultMarkdown: wiki.BlocksMarkdown(result),
 	}, nil
@@ -373,6 +383,13 @@ func (s *DefaultPageService) RestoreDocumentHistory(
 		if input.ExpectedSequence != draft.HeadSeq {
 			return ErrConflict
 		}
+		if err := wiki.CheckUIDocumentWrite(
+			input.SchemaVersion,
+			int(draft.SchemaVersion),
+			wiki.BlockNode{},
+		); err != nil {
+			return err
+		}
 		historical, err := wiki.ReadDocumentHistoryInTx(
 			ctx,
 			q,
@@ -383,6 +400,12 @@ func (s *DefaultPageService) RestoreDocumentHistory(
 		}
 		var root wiki.BlockNode
 		if err = json.Unmarshal(historical.Content, &root); err != nil {
+			return err
+		}
+		if err := s.authoring.Check(int(draft.SchemaVersion), root); err != nil {
+			return err
+		}
+		if err := wiki.CheckUIDocumentWrite(input.SchemaVersion, int(draft.SchemaVersion), root); err != nil {
 			return err
 		}
 		if err = validateDocumentReferences(ctx, q, p, page.ProjectID, root); err != nil {
@@ -399,13 +422,14 @@ func (s *DefaultPageService) RestoreDocumentHistory(
 		n, err := q.UpdateWikiBlockDraft(
 			ctx,
 			generated.UpdateWikiBlockDraftParams{
-				CompanyID:  p.CompanyID,
-				PageID:     page.ID,
-				State:      state,
-				Content:    content,
-				Markdown:   markdown,
-				HeadSeq:    draft.HeadSeq,
-				Structural: true,
+				SchemaVersion: int32(wiki.UIDocumentSchema(root)),
+				CompanyID:     p.CompanyID,
+				PageID:        page.ID,
+				State:         state,
+				Content:       content,
+				Markdown:      markdown,
+				HeadSeq:       draft.HeadSeq,
+				Structural:    true,
 			},
 		)
 		if err != nil {
@@ -441,7 +465,12 @@ func (s *DefaultPageService) RestoreDocumentHistory(
 			return err
 		}
 		pending, err = target.changed(ctx, q, p, draft.HeadSeq+1, page.ID)
-		result = DocumentHistoryState{Sequence: draft.HeadSeq + 1, Markdown: markdown, Content: content}
+		result = DocumentHistoryState{
+			SchemaVersion: max(int(draft.SchemaVersion), wiki.UIDocumentSchema(root)),
+			Sequence:      draft.HeadSeq + 1,
+			Markdown:      markdown,
+			Content:       content,
+		}
 		return err
 	})
 	if err != nil {

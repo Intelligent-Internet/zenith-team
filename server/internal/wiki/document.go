@@ -20,18 +20,19 @@ import (
 // Document is the canonical saved editing state. Published readers receive the
 // immutable projection on PageResponse instead, never this working draft.
 type Document struct {
-	PageID            uuid.UUID       `json:"pageId"`
-	State             []byte          `json:"state"`
-	StateVector       []byte          `json:"stateVector,omitempty"`
-	Content           json.RawMessage `json:"content,omitempty"`
-	Markdown          string          `json:"markdown"`
-	Sequence          int64           `json:"sequence"`
-	StructureSequence int64           `json:"structureSequence"`
-	SchemaVersion     int32           `json:"schemaVersion"`
-	CanEdit           bool            `json:"canEdit"`
-	Title             string          `json:"title"`
-	Summary           string          `json:"summary"`
-	CollectionID      *uuid.UUID      `json:"collectionId"`
+	IntelligentUIAuthoringEnabled bool            `json:"intelligentUIAuthoringEnabled"`
+	PageID                        uuid.UUID       `json:"pageId"`
+	State                         []byte          `json:"state"`
+	StateVector                   []byte          `json:"stateVector,omitempty"`
+	Content                       json.RawMessage `json:"content,omitempty"`
+	Markdown                      string          `json:"markdown"`
+	Sequence                      int64           `json:"sequence"`
+	StructureSequence             int64           `json:"structureSequence"`
+	SchemaVersion                 int32           `json:"schemaVersion"`
+	CanEdit                       bool            `json:"canEdit"`
+	Title                         string          `json:"title"`
+	Summary                       string          `json:"summary"`
+	CollectionID                  *uuid.UUID      `json:"collectionId"`
 }
 
 type DocumentReadInput struct {
@@ -40,8 +41,9 @@ type DocumentReadInput struct {
 	Projection  bool
 }
 type SyncDocumentInput struct {
-	Update       []byte
-	BaseSequence int64
+	SchemaVersion int
+	Update        []byte
+	BaseSequence  int64
 }
 type DraftMetadataInput struct {
 	ExpectedSequence int64
@@ -50,7 +52,10 @@ type DraftMetadataInput struct {
 }
 type (
 	PublishPageInput     struct{ ExpectedRevision, ExpectedSequence int64 }
-	RestoreRevisionInput struct{ ExpectedRevision, ExpectedSequence int64 }
+	RestoreRevisionInput struct {
+		ExpectedRevision, ExpectedSequence int64
+		SchemaVersion                      int
+	}
 )
 
 func revisionContent(content []byte, markdown string) json.RawMessage {
@@ -62,9 +67,10 @@ func revisionContent(content []byte, markdown string) json.RawMessage {
 	return data
 }
 
-func documentResponse(d generated.WikiCanvasDraft) Document {
+func (s *DefaultWikiService) documentResponse(d generated.WikiCanvasDraft) Document {
 	return Document{
-		PageID: d.PageID, State: d.State, Content: d.Content, Markdown: d.Markdown,
+		IntelligentUIAuthoringEnabled: !s.authoring.Disabled,
+		PageID:                        d.PageID, State: d.State, Content: d.Content, Markdown: d.Markdown,
 		Sequence: d.HeadSeq, StructureSequence: d.StructureSeq, SchemaVersion: d.SchemaVersion,
 		CanEdit: true, Title: d.Title, Summary: d.Summary, CollectionID: uuidPointer(d.CollectionID),
 	}
@@ -217,7 +223,7 @@ func (s *DefaultWikiService) readUpgradedDraft(
 			if errors.Is(err, pgx.ErrNoRows) {
 				return nil
 			}
-			ok = err == nil && draft.SchemaVersion == 1
+			ok = err == nil && draft.SchemaVersion >= 1
 			return err
 		},
 	)
@@ -246,7 +252,8 @@ func (s *DefaultWikiService) ReadDocument(
 			return Document{}, err
 		}
 	}
-	result := documentResponse(draft)
+	result := s.documentResponse(draft)
+	result.CanEdit = result.CanEdit && s.authoring.AllowsSchema(int(draft.SchemaVersion))
 	if input.Since == draft.HeadSeq {
 		result.State = nil
 		result.Content = nil
@@ -301,9 +308,19 @@ func (s *DefaultWikiService) SyncDocument(
 		if err != nil {
 			return err
 		}
-		result = documentResponse(draft)
+		result = s.documentResponse(draft)
+		result.CanEdit = result.CanEdit && s.authoring.AllowsSchema(int(draft.SchemaVersion))
+		if err := CheckUIDocumentWrite(input.SchemaVersion, int(draft.SchemaVersion), BlockNode{}); err != nil {
+			return err
+		}
 		state, root, markdown, structural, err := MergeDraftChanges(result, input.Update, input.BaseSequence)
 		if err != nil {
+			return err
+		}
+		if err := s.authoring.Check(int(draft.SchemaVersion), root); err != nil {
+			return err
+		}
+		if err := CheckUIDocumentWrite(input.SchemaVersion, int(draft.SchemaVersion), root); err != nil {
 			return err
 		}
 		if bytes.Equal(state, draft.State) {
@@ -330,13 +347,14 @@ func (s *DefaultWikiService) SyncDocument(
 		rows, err := q.UpdateWikiBlockDraft(
 			ctx,
 			generated.UpdateWikiBlockDraftParams{
-				CompanyID:  p.CompanyID,
-				PageID:     id,
-				State:      state,
-				Content:    content,
-				Markdown:   strings.TrimRight(markdown, "\n"),
-				HeadSeq:    draft.HeadSeq,
-				Structural: structural,
+				SchemaVersion: int32(UIDocumentSchema(root)),
+				CompanyID:     p.CompanyID,
+				PageID:        id,
+				State:         state,
+				Content:       content,
+				Markdown:      strings.TrimRight(markdown, "\n"),
+				HeadSeq:       draft.HeadSeq,
+				Structural:    structural,
 			},
 		)
 		if err != nil {
@@ -362,6 +380,7 @@ func (s *DefaultWikiService) SyncDocument(
 			return err
 		}
 		result.State, result.Content, result.Markdown = state, content, strings.TrimRight(markdown, "\n")
+		result.SchemaVersion = max(draft.SchemaVersion, int32(UIDocumentSchema(root)))
 		result.Sequence++
 		if structural {
 			result.StructureSequence = result.Sequence
@@ -450,7 +469,8 @@ func (s *DefaultWikiService) UpdateDraftMetadata(
 		}
 		if draft.Title == title && draft.Summary == summary &&
 			draft.CollectionID == nullableUUID(input.CollectionID) {
-			result = documentResponse(draft)
+			result = s.documentResponse(draft)
+			result.CanEdit = result.CanEdit && s.authoring.AllowsSchema(int(draft.SchemaVersion))
 			return nil
 		}
 		draft, err = q.UpdateWikiDraftMetadata(
@@ -467,7 +487,8 @@ func (s *DefaultWikiService) UpdateDraftMetadata(
 		if err != nil {
 			return err
 		}
-		result = documentResponse(draft)
+		result = s.documentResponse(draft)
+		result.CanEdit = result.CanEdit && s.authoring.AllowsSchema(int(draft.SchemaVersion))
 		return nil
 	})
 	return result, err
@@ -532,6 +553,9 @@ func publishDraftInTx(
 	var root BlockNode
 	if err = json.Unmarshal(draft.Content, &root); err != nil {
 		return response, created, err
+	}
+	if err = ValidateInlinePublication(root); err != nil {
+		return response, false, err
 	}
 	if err = ValidateStandaloneBlocks(root); err != nil {
 		return response, created, err
@@ -679,6 +703,9 @@ func (s *DefaultWikiService) RestoreRevision(
 		if draft.HeadSeq != input.ExpectedSequence {
 			return ErrPageConflict
 		}
+		if err := CheckUIDocumentWrite(input.SchemaVersion, int(draft.SchemaVersion), BlockNode{}); err != nil {
+			return err
+		}
 		revision, err := q.GetWikiRevisionForMember(
 			ctx,
 			generated.GetWikiRevisionForMemberParams{
@@ -704,6 +731,12 @@ func (s *DefaultWikiService) RestoreRevision(
 		if err != nil {
 			return err
 		}
+		if err := s.authoring.Check(int(draft.SchemaVersion), root); err != nil {
+			return err
+		}
+		if err := CheckUIDocumentWrite(input.SchemaVersion, int(draft.SchemaVersion), root); err != nil {
+			return err
+		}
 		if err = ValidateStandaloneBlocks(root); err != nil {
 			return err
 		}
@@ -718,6 +751,7 @@ func (s *DefaultWikiService) RestoreRevision(
 		restored, err := q.RestoreWikiBlockDraft(
 			ctx,
 			generated.RestoreWikiBlockDraftParams{
+				SchemaVersion:      int32(UIDocumentSchema(root)),
 				CompanyID:          p.CompanyID,
 				PageID:             id,
 				State:              state,
@@ -749,7 +783,7 @@ func (s *DefaultWikiService) RestoreRevision(
 		); err != nil {
 			return err
 		}
-		result = documentResponse(restored)
+		result = s.documentResponse(restored)
 		return nil
 	})
 	return result, err

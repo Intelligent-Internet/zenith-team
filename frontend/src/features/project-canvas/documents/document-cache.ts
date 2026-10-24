@@ -25,10 +25,12 @@ const currentKey = (key: string) => {
 function open() {
   if (!database) {
     database = new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open("zenith-document-cache", 1);
+      const request = indexedDB.open("zenith-document-cache", 2);
       request.onupgradeneeded = () => {
-        request.result.createObjectStore("snapshots", { keyPath: "key" });
-        request.result.createObjectStore("recoveries", { keyPath: "key" });
+        for (const name of ["snapshots", "recoveries", "sourceDrafts"]) {
+          if (!request.result.objectStoreNames.contains(name))
+            request.result.createObjectStore(name, { keyPath: "key" });
+        }
       };
       request.onsuccess = () => {
         const db = request.result;
@@ -162,10 +164,14 @@ export async function clearDocumentCache() {
   memoryRecoveries.clear();
   try {
     const db = await open();
-    const tx = db.transaction(["snapshots", "recoveries"], "readwrite");
+    const tx = db.transaction(
+      ["snapshots", "recoveries", "sourceDrafts"],
+      "readwrite",
+    );
     const done = completed(tx);
     tx.objectStore("snapshots").clear();
     tx.objectStore("recoveries").clear();
+    tx.objectStore("sourceDrafts").clear();
     await done;
   } catch {
     /* Logout must complete even when browser storage is unavailable. */
@@ -291,4 +297,61 @@ export async function openDocumentRecovery(
     return chain;
   };
   return { recovered, save, snapshot };
+}
+
+// Source drafts are pending author work, never disposable snapshot cache entries.
+// Each editor writes its own record so concurrent tabs cannot overwrite a draft.
+export type SourceDraft = {
+  key: string;
+  documentKey: string;
+  source: string;
+  baseSource: string;
+  sequence: number;
+  expectedHash: string;
+  touched: number;
+};
+
+export async function readSourceDrafts(documentKey: string) {
+  const generation = epoch;
+  if (!currentKey(documentKey)) return [];
+  const db = await open();
+  const rows = (await result(
+    db.transaction("sourceDrafts").objectStore("sourceDrafts").getAll(),
+  )) as SourceDraft[];
+  if (generation !== epoch || !currentKey(documentKey)) return [];
+  return rows
+    .filter((row) => row.documentKey === documentKey)
+    .sort((a, b) => b.touched - a.touched);
+}
+
+// Bind queued writes to the editor's session. Signing out invalidates even writes
+// that have not started yet, including when the same member signs back in.
+export function createSourceDraftWriter(documentKey: string) {
+  const generation = epoch;
+  return async (draft: Omit<SourceDraft, "documentKey">) => {
+    const db = await open();
+    if (generation !== epoch || !currentKey(documentKey))
+      throw new Error("Sign in again before saving this draft.");
+    const tx = db.transaction("sourceDrafts", "readwrite");
+    const done = completed(tx);
+    tx.objectStore("sourceDrafts").put({ ...draft, documentKey });
+    await done;
+  };
+}
+
+export async function removeSourceDraft(documentKey: string, key: string) {
+  const generation = epoch;
+  const db = await open();
+  if (generation !== epoch || !currentKey(documentKey)) return;
+  const tx = db.transaction("sourceDrafts", "readwrite");
+  const done = completed(tx);
+  const store = tx.objectStore("sourceDrafts");
+  const request = store.get(key);
+  request.onsuccess = () => {
+    if (
+      (request.result as SourceDraft | undefined)?.documentKey === documentKey
+    )
+      store.delete(key);
+  };
+  await done;
 }

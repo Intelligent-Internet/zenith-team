@@ -356,14 +356,8 @@ function CanvasWorkspace(scope: CanvasScope) {
           threadId,
           reviewOnly:
             !!threadId ||
-            item.versionPolicy === "accepted" ||
             (item.versionPolicy === "pinned" && !!item.version?.wikiPageId),
-          versionId:
-            item.version?.id ??
-            item.pinnedVersionId ??
-            latest.current?.artifacts.find((row) => row.id === item.artifactId)
-              ?.acceptedVersionId ??
-            undefined,
+          versionId: item.version?.id ?? item.pinnedVersionId ?? undefined,
         });
     },
     [onCommentsOpenChange],

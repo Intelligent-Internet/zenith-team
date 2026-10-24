@@ -1,3 +1,5 @@
+import { InlineDocument } from "@/shared/inline-ui/inline-document";
+import { ChatSourcePreviews } from "./chat-source-preview";
 import { ChatAttachmentIcon } from "@/shared/chat/chat-attachment-preview";
 import { attachmentFromInput } from "@/shared/chat/attachment-preview";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
@@ -163,10 +165,27 @@ const chatMarkdownClassName = [
 const ChatMessageMarkdown = memo(function ChatMessageMarkdown({
   children,
   isStreaming = false,
+  intelligent = false,
+  sourceBudget,
 }: {
   children: string;
   isStreaming?: boolean;
+  intelligent?: boolean;
+  sourceBudget?: number;
 }) {
+  if (intelligent)
+    return (
+      <InlineDocument
+        source={children}
+        maxSourceBytes={sourceBudget}
+        streaming={isStreaming}
+        renderMarkdown={(text) => (
+          <ChatMessageMarkdown isStreaming={isStreaming}>
+            {text}
+          </ChatMessageMarkdown>
+        )}
+      />
+    );
   return (
     <Streamdown
       className={chatMarkdownClassName}
@@ -591,7 +610,10 @@ function ChatMessageBubbleComponent({
             <ChatThinkingIndicator agentId={thinkingAvatarId} />
           ) : hasText ? (
             <>
-              <ChatMessageMarkdown isStreaming={Boolean(message.isStreaming)}>
+              <ChatMessageMarkdown
+                intelligent
+                isStreaming={Boolean(message.isStreaming)}
+              >
                 {displayText}
               </ChatMessageMarkdown>
               {plainModeRecommendation ? (
@@ -1030,6 +1052,8 @@ function ChatOrderedMessageContent({
     activityById,
     hiddenActivityIds,
   );
+  // All text segments in this response share one UTF-8 UI source budget.
+  let remainingBytes = 262144;
   return (
     <div className="flex w-full min-w-0 max-w-full flex-col items-start gap-2">
       {renderItems.map((item) => {
@@ -1056,9 +1080,15 @@ function ChatOrderedMessageContent({
             block.text,
             generatedImages,
           );
+          const sourceBudget = Math.max(0, remainingBytes);
+          remainingBytes -= new TextEncoder().encode(text).length;
           return text.trim() ? (
             <div className="w-full" key={block.id}>
-              <ChatMessageMarkdown isStreaming={isStreaming}>
+              <ChatMessageMarkdown
+                intelligent
+                isStreaming={isStreaming}
+                sourceBudget={sourceBudget}
+              >
                 {text}
               </ChatMessageMarkdown>
             </div>
@@ -1131,29 +1161,40 @@ function ChatRuntimeActivityItems({
   subagentNamesByThreadId: SubagentNamesByThreadId;
 }) {
   const renderItems = groupRuntimeActivitiesForDisplay(activities);
-  return renderItems.map((item) => {
-    if (item.type === "group") {
-      return (
-        <ChatRuntimeActivityStack
-          activities={item.activities}
-          activeActivityId={activeActivityId}
-          allowWorkingState={allowWorkingState}
-          key={item.id}
-          runFailed={runFailed}
-          subagentNamesByThreadId={subagentNamesByThreadId}
-        />
-      );
-    }
-    return (
-      <ChatRuntimeActivityRow
-        activity={item.activity}
-        allowWorkingState={allowWorkingState}
-        isLatestActivity={item.activity.id === activeActivityId}
-        key={item.id}
-        subagentNamesByThreadId={subagentNamesByThreadId}
+  return (
+    <>
+      {renderItems.map((item) => {
+        if (item.type === "group") {
+          return (
+            <ChatRuntimeActivityStack
+              activities={item.activities}
+              activeActivityId={activeActivityId}
+              allowWorkingState={allowWorkingState}
+              key={item.id}
+              runFailed={runFailed}
+              subagentNamesByThreadId={subagentNamesByThreadId}
+            />
+          );
+        }
+        return (
+          <ChatRuntimeActivityRow
+            activity={item.activity}
+            allowWorkingState={allowWorkingState}
+            isLatestActivity={item.activity.id === activeActivityId}
+            key={item.id}
+            subagentNamesByThreadId={subagentNamesByThreadId}
+          />
+        );
+      })}
+      <ChatSourcePreviews
+        outputs={activities
+          .filter(
+            (activity) => activity.toolName === "page_source_preview_start",
+          )
+          .map((activity) => activity.output)}
       />
-    );
-  });
+    </>
+  );
 }
 
 function ChatRuntimeActivityStack({

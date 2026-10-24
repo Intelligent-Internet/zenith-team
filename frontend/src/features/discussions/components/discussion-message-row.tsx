@@ -350,6 +350,7 @@ export const DiscussionMessageRow = memo(function DiscussionMessageRow({
             <DiscussionMessageBody
               body={message.body}
               members={detail.members}
+              agent={author.type === "agent"}
             />
             <ChatLinkPreviews text={message.body?.markdown ?? ""} />
             <DiscussionAttachments files={message.attachments} />

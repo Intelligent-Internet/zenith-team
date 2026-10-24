@@ -54,19 +54,20 @@ func RegisterOutputInTx(
 			ctx,
 			q,
 			nativeOutputRegistration{
-				input:   in,
-				project: source.ProjectID,
-				board:   board.ID,
-				page:    presentation.PageID,
+				input:    in,
+				project:  source.ProjectID,
+				board:    board.ID,
+				snapshot: presentation.PageVersionID,
 			},
 		)
 	}
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	}
-	// Include archived registrations: replaying an Output must not undo a user's archive.
-	_, err = q.GetCanvasRegisteredOutput(ctx, generated.GetCanvasRegisteredOutputParams{
-		CompanyID: in.CompanyID, ProjectID: source.ProjectID, OutputID: nullable(&in.OutputID),
+	// A delivery receipt makes registration idempotent without confusing a saved
+	// snapshot with its placement. Re-delivery never manufactures another identity.
+	_, err = q.GetCanvasReceipt(ctx, generated.GetCanvasReceiptParams{
+		ProjectID: source.ProjectID, ActorUserID: in.ActorUserID, RequestKey: in.OutputID,
 	})
 	if err == nil {
 		return nil, nil
@@ -74,57 +75,32 @@ func RegisterOutputInTx(
 	if !errors.Is(err, pgx.ErrNoRows) {
 		return nil, err
 	}
-	var artifact generated.ProjectArtifact
-	fresh := true
-	if fresh {
-		count, err := q.CountCanvasArtifacts(ctx, source.ProjectID)
-		if err != nil {
-			return nil, err
-		}
-		if count >= 2000 {
-			return nil, ErrLimit
-		}
-		artifact, err = q.CreateCanvasArtifact(
-			ctx,
-			generated.CreateCanvasArtifactParams{
-				CompanyID:       in.CompanyID,
-				ProjectID:       source.ProjectID,
-				Title:           source.Title,
-				CreatedByUserID: in.ActorUserID,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	number, err := q.AllocateCanvasVersion(ctx, artifact.ID)
-	if err != nil {
-		return nil, err
-	}
-	version, err := q.CreateCanvasVersion(ctx, generated.CreateCanvasVersionParams{
-		CompanyID: in.CompanyID, ProjectID: source.ProjectID, ArtifactID: artifact.ID, Number: number,
-		SourceType: "output", OutputID: nullable(&in.OutputID), CreatedByUserID: in.ActorUserID,
+	snapshots, err := q.ListDeliverySnapshots(ctx, generated.ListDeliverySnapshotsParams{
+		CompanyID: in.CompanyID, OutputID: in.OutputID,
 	})
 	if err != nil {
 		return nil, err
 	}
-	var items []uuid.UUID
-	if fresh {
-		items, err = q.PlaceCanvasOutputArtifact(
-			ctx,
-			generated.PlaceCanvasOutputArtifactParams{
-				CompanyID:   in.CompanyID,
-				ProjectID:   source.ProjectID,
-				CanvasID:    board.ID,
-				ArtifactID:  artifact.ID,
-				VersionID:   version.ID,
-				ActorUserID: in.ActorUserID,
-			},
-		)
-		if err != nil {
-			return nil, err
-		}
+	if len(snapshots) != 1 {
+		return nil, ErrInvalid
+	}
+	version := snapshots[0]
+	artifact, err := q.LockArtifactIdentity(ctx, generated.LockArtifactIdentityParams{
+		CompanyID: in.CompanyID, ID: version.ArtifactID,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// An archived identity stays archived when a delivery is replayed.
+	if artifact.ArchivedAt.Valid {
+		return nil, nil
+	}
+	items, err := q.PlaceCanvasOutputArtifact(ctx, generated.PlaceCanvasOutputArtifactParams{
+		CompanyID: in.CompanyID, ProjectID: source.ProjectID, CanvasID: board.ID,
+		ArtifactID: artifact.ID, VersionID: version.ID, ActorUserID: in.ActorUserID,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// A board full of manually duplicated cards must not block saving an Output.
@@ -168,8 +144,8 @@ func RegisterOutputInTx(
 }
 
 type nativeOutputRegistration struct {
-	input                OutputRegistrationInput
-	project, board, page uuid.UUID
+	input                    OutputRegistrationInput
+	project, board, snapshot uuid.UUID
 }
 
 func registerNativeOutput(
@@ -177,12 +153,11 @@ func registerNativeOutput(
 	q *generated.Queries,
 	in nativeOutputRegistration,
 ) (*events.Event, error) {
-	version, err := q.GetProjectPageVersion(
+	version, err := q.GetArtifactSnapshot(
 		ctx,
-		generated.GetProjectPageVersionParams{
+		generated.GetArtifactSnapshotParams{
 			CompanyID: in.input.CompanyID,
-			ProjectID: in.project,
-			ID:        in.page,
+			ID:        in.snapshot,
 		},
 	)
 	if err != nil {

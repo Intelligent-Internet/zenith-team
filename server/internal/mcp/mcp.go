@@ -61,7 +61,10 @@ func Run(ctx context.Context, getenv func(string) string) error {
 		toolExplicitlyAllowed(allowedTools, "wiki_list") ||
 		toolExplicitlyAllowed(allowedTools, "wiki_read") ||
 		toolExplicitlyAllowed(allowedTools, "wiki_write")
-	pagesEnabled := toolExplicitlyAllowed(allowedTools, "project_read") ||
+	pagesEnabled := toolExplicitlyAllowed(allowedTools, "page_source_preview_start") ||
+		toolExplicitlyAllowed(allowedTools, "page_source_preview_read") ||
+		toolExplicitlyAllowed(allowedTools, "page_source_preview_patch") ||
+		toolExplicitlyAllowed(allowedTools, "project_read") ||
 		toolExplicitlyAllowed(allowedTools, "source_read") ||
 		toolExplicitlyAllowed(allowedTools, "page_preview") ||
 		toolExplicitlyAllowed(allowedTools, "page_create") ||

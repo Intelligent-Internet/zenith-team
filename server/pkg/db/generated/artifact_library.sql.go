@@ -12,12 +12,23 @@ import (
 )
 
 const getArtifactForMessage = `-- name: GetArtifactForMessage :one
-SELECT output.id
-FROM outputs output
-JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
- AND access.user_id=$1::uuid AND access.access_level>=3
-WHERE output.company_id=$2::uuid AND output.id=$3::uuid
-FOR SHARE OF output
+WITH delivery_reference AS (
+ SELECT output.id FROM outputs output
+  JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+   AND access.user_id=$1::uuid AND access.access_level>=3
+  WHERE output.company_id=$2::uuid AND output.id=$3::uuid
+  FOR SHARE OF output
+), artifact_reference AS (
+ SELECT artifact.id FROM artifacts artifact
+  JOIN artifact_access access ON access.company_id=artifact.company_id AND access.artifact_id=artifact.id
+   AND access.user_id=$1::uuid AND access.access_level>=3
+  WHERE artifact.company_id=$2::uuid AND artifact.id=$3::uuid
+   AND artifact.archived_at IS NULL
+  FOR SHARE OF artifact
+)
+SELECT id FROM delivery_reference
+UNION ALL
+SELECT id FROM artifact_reference
 `
 
 type GetArtifactForMessageParams struct {
@@ -117,8 +128,8 @@ const listRunChannelArtifacts = `-- name: ListRunChannelArtifacts :many
 WITH artifact_references AS (
     SELECT link.company_id, link.message_id, link.output_id
     FROM discussion_artifacts link
-    WHERE link.company_id=$2::uuid
-      AND link.message_id=ANY($3::uuid[])
+    WHERE link.company_id=$1::uuid
+      AND link.message_id=ANY($2::uuid[])
     UNION
     SELECT message.company_id, message.id AS message_id, output.id AS output_id
     FROM conversation_items message
@@ -126,8 +137,8 @@ WITH artifact_references AS (
       AND run.invocation_id=message.invocation_id
       AND run.id::text=message.metadata->>'runId'
     JOIN outputs output ON output.company_id=run.company_id AND output.run_id=run.id
-    WHERE message.company_id=$2::uuid
-      AND message.id=ANY($3::uuid[])
+    WHERE message.company_id=$1::uuid
+      AND message.id=ANY($2::uuid[])
       AND message.type='agent_text' AND message.run_id IS NULL
 )
 SELECT reference.message_id, output.id
@@ -135,15 +146,24 @@ FROM artifact_references reference
 JOIN conversation_items message ON message.company_id=reference.company_id AND message.id=reference.message_id
 JOIN outputs output ON output.company_id=reference.company_id AND output.id=reference.output_id
 JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
- AND access.user_id=$1::uuid
+ AND access.user_id=$3::uuid
 WHERE message.deleted_at IS NULL
-ORDER BY reference.message_id, output.created_at, output.id
+UNION ALL
+SELECT link.message_id, artifact.id
+FROM discussion_artifacts link
+JOIN conversation_items message ON message.company_id=link.company_id AND message.id=link.message_id
+JOIN artifacts artifact ON artifact.company_id=link.company_id AND artifact.id=link.artifact_id
+JOIN artifact_access access ON access.company_id=artifact.company_id AND access.artifact_id=artifact.id
+ AND access.user_id=$3::uuid
+WHERE link.company_id=$1::uuid AND link.message_id=ANY($2::uuid[])
+ AND message.deleted_at IS NULL AND artifact.archived_at IS NULL
+ORDER BY message_id, id
 `
 
 type ListRunChannelArtifactsParams struct {
-	ActorUserID uuid.UUID   `json:"actor_user_id"`
 	CompanyID   uuid.UUID   `json:"company_id"`
 	MessageIds  []uuid.UUID `json:"message_ids"`
+	ActorUserID uuid.UUID   `json:"actor_user_id"`
 }
 
 type ListRunChannelArtifactsRow struct {
@@ -156,7 +176,7 @@ type ListRunChannelArtifactsRow struct {
 // access and nothing else narrows it: the person who tagged the Agent
 // answers for what it shares, as for the chat files it freezes.
 func (q *Queries) ListRunChannelArtifacts(ctx context.Context, arg ListRunChannelArtifactsParams) ([]ListRunChannelArtifactsRow, error) {
-	rows, err := q.db.Query(ctx, listRunChannelArtifacts, arg.ActorUserID, arg.CompanyID, arg.MessageIds)
+	rows, err := q.db.Query(ctx, listRunChannelArtifacts, arg.CompanyID, arg.MessageIds, arg.ActorUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -177,10 +197,10 @@ func (q *Queries) ListRunChannelArtifacts(ctx context.Context, arg ListRunChanne
 
 const listRunChannelWhiteboards = `-- name: ListRunChannelWhiteboards :many
 SELECT output.id, output.title
-FROM outputs output
-JOIN output_conversation_grants shared ON shared.company_id=output.company_id AND shared.output_id=output.id
+FROM artifacts output
+JOIN artifact_conversation_grants shared ON shared.company_id=output.company_id AND shared.artifact_id=output.id
  AND shared.conversation_id=$1::uuid
-JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+JOIN artifact_access access ON access.company_id=output.company_id AND access.artifact_id=output.id
  AND access.user_id=$2::uuid
 WHERE output.company_id=$3::uuid AND output.type='whiteboard'
 ORDER BY output.created_at DESC, output.id DESC
@@ -222,8 +242,8 @@ func (q *Queries) ListRunChannelWhiteboards(ctx context.Context, arg ListRunChan
 
 const listRunConversationWhiteboards = `-- name: ListRunConversationWhiteboards :many
 SELECT output.id, output.title
-FROM outputs output
-JOIN output_access access ON access.company_id=output.company_id AND access.output_id=output.id
+FROM artifacts output
+JOIN artifact_access access ON access.company_id=output.company_id AND access.artifact_id=output.id
  AND access.user_id=$1::uuid
 WHERE output.company_id=$2::uuid
   AND output.conversation_id=$3::uuid AND output.type='whiteboard'

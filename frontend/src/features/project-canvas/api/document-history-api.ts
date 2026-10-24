@@ -13,8 +13,7 @@ type Schema = components["schemas"];
 export type HistoryScope = Exclude<DocumentScope, { wikiPageId: string }>;
 type Target = { scope: HistoryScope; versionId: string };
 export type HistoryEntry = Schema["DocumentHistoryEntry"];
-const path = (target: Target) =>
-  `${blockDocumentPath(target.scope, target.versionId)}/history`;
+const path = (target: Target) => `${blockDocumentPath(target.scope)}/history`;
 const tag = (target: Target) => ({
   type: "CanvasHistory" as const,
   id: path(target),
@@ -70,7 +69,7 @@ const api = zenithTeamApi.injectEndpoints({
           () =>
             apiClient.post<Schema["DocumentHistoryState"]>(
               `${path(target)}/${target.sequence}/restore`,
-              { expectedSequence: target.expectedSequence },
+              { expectedSequence: target.expectedSequence, schemaVersion: 2 },
             ),
           "The document changed. Refresh history before restoring.",
         ),

@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"maps"
 	"net/url"
 	"reflect"
 	"regexp"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/reearth/ygo/crdt"
@@ -40,19 +43,47 @@ type BlockMark struct {
 // AssignBlockIDs assigns database-reserved identities, including when cloning
 // a checkpoint into another independently editable document.
 func AssignBlockIDs(node *BlockNode, next func() string) {
-	if node.Type != "doc" && !inlineBlockNode(node.Type) {
-		if node.Attrs == nil {
-			node.Attrs = map[string]any{}
+	remapped := make(map[string]string)
+	var assign func(*BlockNode)
+	assign = func(current *BlockNode) {
+		if current.Type != "doc" && !inlineBlockNode(current.Type) {
+			old, _ := current.Attrs["blockId"].(string)
+			id := next()
+			current.Attrs = maps.Clone(current.Attrs)
+			if current.Attrs == nil {
+				current.Attrs = map[string]any{}
+			}
+			current.Attrs["blockId"] = id
+			if old != "" && id != "" {
+				if _, exists := remapped[old]; !exists {
+					remapped[old] = id
+				}
+			}
 		}
-		node.Attrs["blockId"] = next()
+		for i := range current.Content {
+			assign(&current.Content[i])
+		}
 	}
-	for i := range node.Content {
-		AssignBlockIDs(&node.Content[i], next)
+	assign(node)
+	var rewrite func(*BlockNode)
+	rewrite = func(current *BlockNode) {
+		for i, mark := range current.Marks {
+			href, _ := mark.Attrs["href"].(string)
+			old, local := strings.CutPrefix(href, "#block-")
+			if mark.Type == "link" && local && remapped[old] != "" {
+				current.Marks[i].Attrs = maps.Clone(mark.Attrs)
+				current.Marks[i].Attrs["href"] = "#block-" + remapped[old]
+			}
+		}
+		for i := range current.Content {
+			rewrite(&current.Content[i])
+		}
 	}
+	rewrite(node)
 }
 
 func inlineBlockNode(nodeType string) bool {
-	return slices.Contains([]string{"text", "hardBreak", "wikiPageLink", "wikiArtifactRef"}, nodeType)
+	return slices.Contains([]string{"text", "hardBreak", "wikiPageLink", "wikiArtifactRef", "uiValue"}, nodeType)
 }
 
 func BlockIDs(root BlockNode) []uuid.UUID {
@@ -760,7 +791,8 @@ func mergeBlocks(saved, update []byte, structural *bool) (state []byte, root Blo
 		return nil, root, "", err
 	}
 	markdown = BlocksMarkdown(root)
-	if len(markdown) > 262144 {
+	// Markdown block separators are not part of the normalized body limit.
+	if utf8.RuneCountInString(strings.TrimSpace(markdown)) > 262144 {
 		return nil, root, "", ErrPageBodyTooLarge
 	}
 	state = doc.EncodeStateAsUpdate()
@@ -793,7 +825,10 @@ func validateBlockTree(root BlockNode, checkIDs bool) error {
 	if root.Type != "doc" || len(root.Content) == 0 {
 		return ErrPageInvalidInput
 	}
-	return validateBlockSubtree(root, "", checkIDs)
+	if err := validateBlockSubtree(root, "", checkIDs); err != nil {
+		return err
+	}
+	return ValidateUIDocument(root)
 }
 
 func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) error {
@@ -802,11 +837,45 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 	var walk func(BlockNode, string, int) error
 	walk = func(n BlockNode, parent string, depth int) error {
 		count++
+		if err := validateUITaskFilter(n); err != nil {
+			return uiErrorAt(err, "attrs", "filter")
+		}
+		if (n.Type == "uiCarouselItem" && parent != "uiCarousel") ||
+			(n.Type == "uiGridItem" && parent != "uiGrid") ||
+			(n.Type == "uiFlowItem" && parent != "uiFlow") {
+			return uiErrorAt(ErrPageInvalidInput, "type")
+		}
+		if n.Type == "uiCarousel" {
+			for _, child := range n.Content {
+				if child.Type != "uiCarouselItem" {
+					return uiErrorAt(ErrPageInvalidInput, "content")
+				}
+			}
+		}
+		if n.Type == "uiGrid" || n.Type == "uiFlow" {
+			columns := intAttr(n.Attrs["columns"], 2)
+			for _, child := range n.Content {
+				if (child.Type == "uiGridItem" || child.Type == "uiFlowItem") &&
+					intAttr(child.Attrs["span"], 1) > columns {
+					return uiErrorAt(ErrPageInvalidInput, "content")
+				}
+			}
+		}
+		_, reactive := uiComponent(n.Type)
+		if reactive {
+			if err := ValidateUINode(n); err != nil {
+				path, _ := validateUINode(n, true)
+				return uiErrorAt(err, path...)
+			}
+		}
 		if count > 10000 || depth > 32 {
 			return ErrPageBodyTooLarge
 		}
-		if (n.Type == "doc" && parent != "") || (n.Type != "text" && n.Text != "") {
-			return ErrPageInvalidInput
+		if n.Type == "doc" && parent != "" {
+			return uiErrorAt(ErrPageInvalidInput, "type")
+		}
+		if n.Type != "text" && n.Text != "" {
+			return uiErrorAt(ErrPageInvalidInput, "text")
 		}
 		if slices.Contains(
 			[]string{
@@ -830,7 +899,7 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 			n.Type,
 		) &&
 			len(n.Content) > 0 {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "content")
 		}
 		if slices.Contains(
 			[]string{
@@ -851,20 +920,20 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 			n.Type,
 		) &&
 			len(n.Content) == 0 {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "content")
 		}
 		if n.Type == "toggle" &&
 			(len(n.Content) != 2 || n.Content[0].Type != "toggleSummary" || n.Content[1].Type != "toggleContent") {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "content")
 		}
 		if n.Type == "columns" && (len(n.Content) < 2 || len(n.Content) > 4) {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "content")
 		}
 		if n.Type == "column" && parent != "columns" || parent == "columns" && n.Type != "column" {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "type")
 		}
 		if n.Type == "toggleSummary" && parent != "toggle" || n.Type == "toggleContent" && parent != "toggle" {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "type")
 		}
 		if slices.Contains([]string{"tableRow", "tableCell", "tableHeader", "listItem", "taskItem"}, n.Type) {
 			valid := n.Type == "tableRow" && parent == "table" ||
@@ -872,36 +941,36 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 				n.Type == "listItem" && (parent == "bulletList" || parent == "orderedList") ||
 				n.Type == "taskItem" && parent == "taskList"
 			if !valid {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "type")
 			}
 		}
 		if (n.Type == "listItem" || n.Type == "taskItem") && n.Content[0].Type != "paragraph" {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "content", "0", "type")
 		}
 		if align, ok := n.Attrs["textAlign"]; ok && align != nil &&
 			!slices.Contains([]string{"left", "right", "center", "justify"}, fmt.Sprint(align)) {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "attrs", "textAlign")
 		}
 		textParent := slices.Contains(
-			[]string{"paragraph", "heading", "codeBlock", "mermaid", "toggleSummary"},
+			[]string{"paragraph", "heading", "codeBlock", "mermaid", "toggleSummary", "uiDocument"},
 			parent,
 		)
 		if inlineBlockNode(n.Type) {
 			if !textParent {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "type")
 			}
-			if (n.Type == "wikiPageLink" || n.Type == "wikiArtifactRef") &&
+			if (n.Type == "wikiPageLink" || n.Type == "wikiArtifactRef" || n.Type == "uiValue") &&
 				(parent == "codeBlock" || parent == "mermaid") {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "type")
 			}
 		} else if n.Type != "doc" {
 			if textParent {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "type")
 			}
 			id, ok := n.Attrs["blockId"].(string)
 			parsed, err := uuid.Parse(id)
 			if checkIDs && (!ok || err != nil || parsed == uuid.Nil || seen[id]) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "blockId")
 			}
 			seen[id] = true
 		}
@@ -944,24 +1013,26 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 			"wikiPageLink",
 			"wikiArtifactRef":
 		default:
-			return ErrPageInvalidInput
+			if !reactive {
+				return uiErrorAt(ErrPageInvalidInput, "type")
+			}
 		}
 		if parent == "table" && n.Type != "tableRow" {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "type")
 		}
 		if parent == "tableRow" && n.Type != "tableCell" && n.Type != "tableHeader" {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "type")
 		}
 		if (parent == "bulletList" || parent == "orderedList") && n.Type != "listItem" {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "type")
 		}
 		if parent == "taskList" && n.Type != "taskItem" {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "type")
 		}
 		if n.Type == "heading" {
 			level := fmt.Sprint(n.Attrs["level"])
 			if !slices.Contains([]string{"1", "2", "3", "4", "5", "6"}, level) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "level")
 			}
 		}
 		if n.Type == "table" && len(n.Content) > 1000 {
@@ -977,20 +1048,30 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 			}
 		}
 		if n.Type == "tableCell" || n.Type == "tableHeader" {
-			for key, limit := range map[string]int{"colspan": 200, "rowspan": 1000} {
-				if value := n.Attrs[key]; value != nil && !boundedBlockNumber(value, 1, limit) {
-					return ErrPageInvalidInput
+			for _, constraint := range []struct {
+				key   string
+				limit int
+			}{{"colspan", 200}, {"rowspan", 1000}} {
+				key := constraint.key
+				if value := n.Attrs[key]; value != nil &&
+					!boundedBlockNumber(value, 1, constraint.limit) {
+					return uiErrorAt(ErrPageInvalidInput, "attrs", key)
 				}
 			}
 			if value := n.Attrs["colwidth"]; value != nil {
 				raw, err := json.Marshal(value)
 				var widths []int
 				if err != nil || json.Unmarshal(raw, &widths) != nil || len(widths) > 200 {
-					return ErrPageInvalidInput
+					return uiErrorAt(ErrPageInvalidInput, "attrs", "colwidth")
 				}
-				for _, width := range widths {
+				for index, width := range widths {
 					if width < 0 || width > 10000 {
-						return ErrPageInvalidInput
+						return uiErrorAt(
+							ErrPageInvalidInput,
+							"attrs",
+							"colwidth",
+							strconv.Itoa(index),
+						)
 					}
 				}
 			}
@@ -998,16 +1079,19 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 		if n.Type == "image" {
 			src, _ := n.Attrs["src"].(string)
 			if !safeBlockURL(src, true) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "src")
 			}
 		}
 		if slices.Contains([]string{"fileBlock", "audioBlock", "videoBlock"}, n.Type) {
 			src, _ := n.Attrs["src"].(string)
 			if src != "" && !safeBlockURL(src, true) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "src")
 			}
 		}
-		for key := range n.Attrs {
+		for _, key := range slices.Sorted(maps.Keys(n.Attrs)) {
+			if reactive {
+				continue // ValidateUINode owns the closed reactive property set.
+			}
 			if !slices.Contains(
 				[]string{
 					"blockId",
@@ -1050,49 +1134,49 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 				},
 				key,
 			) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", key)
 			}
 		}
 		if n.Type == "wikiPageLink" || n.Type == "wikiArtifactRef" {
 			id, _ := n.Attrs["id"].(string)
 			parsed, err := uuid.Parse(id)
 			if err != nil || parsed == uuid.Nil {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "id")
 			}
 			if n.Type == "wikiArtifactRef" && n.Attrs["ordinal"] != nil &&
 				!boundedBlockNumber(n.Attrs["ordinal"], 0, 99) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "ordinal")
 			}
 			if label, ok := n.Attrs["label"]; ok && label != nil {
 				if _, ok := label.(string); !ok {
-					return ErrPageInvalidInput
+					return uiErrorAt(ErrPageInvalidInput, "attrs", "label")
 				}
 			}
 		}
 		if value := n.Attrs["agentProtected"]; value != nil {
 			if _, ok := value.(bool); !ok {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "agentProtected")
 			}
 		}
 		// Captured projections are server materializations, never authored state.
 		for _, key := range []string{"capturedTasks", "capturedOutputs", "capturedWorkflow", "capturedAt", "capturedNeedsRefresh"} {
 			if n.Attrs[key] != nil {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", key)
 			}
 		}
 		if value := n.Attrs["workflowKey"]; value != nil && value != "" {
 			key, ok := value.(string)
 			if !ok || len(key) > 39 || !workflowBlockKey.MatchString(key) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "workflowKey")
 			}
 		}
 		if value := n.Attrs["taskId"]; value != nil && value != "" {
 			id, ok := value.(string)
 			if !ok {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "taskId")
 			}
 			if _, err := uuid.Parse(id); err != nil {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "taskId")
 			}
 		}
 		if value := n.Attrs["display"]; value != nil &&
@@ -1100,51 +1184,64 @@ func validateBlockSubtree(root BlockNode, parentType string, checkIDs bool) erro
 				[]string{"link", "card", "section", "expanded", "list", "table", "board", "gallery"},
 				fmt.Sprint(value),
 			) {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "attrs", "display")
 		}
 		if n.Type == "artifactReference" && n.Attrs["format"] != nil &&
-			!slices.Contains([]string{"pinned", "accepted", "live"}, fmt.Sprint(n.Attrs["format"])) {
-			return ErrPageInvalidInput
+			!slices.Contains([]string{"pinned", "live"}, fmt.Sprint(n.Attrs["format"])) {
+			return uiErrorAt(ErrPageInvalidInput, "attrs", "format")
 		}
-		if value := n.Attrs["filter"]; value != nil &&
+		// Task collections use validateUITaskFilter above, including bounded
+		// expressions. Other native filters retain their static vocabulary.
+		if value := n.Attrs["filter"]; n.Type != "taskCollection" && value != nil &&
 			!slices.Contains([]string{"all", "active", "review", "done", "new"}, fmt.Sprint(value)) {
-			return ErrPageInvalidInput
+			return uiErrorAt(ErrPageInvalidInput, "attrs", "filter")
 		}
 		if value := n.Attrs["caption"]; value != nil {
 			text, ok := value.(string)
 			if !ok || len(text) > 2000 {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "caption")
 			}
 		}
 		if value := n.Attrs["sourceVersionIds"]; value != nil {
 			raw, err := json.Marshal(value)
 			var ids []string
 			if err != nil || json.Unmarshal(raw, &ids) != nil || len(ids) > 16 {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "attrs", "sourceVersionIds")
 			}
-			for _, id := range ids {
+			for index, id := range ids {
 				if _, err = uuid.Parse(id); err != nil {
-					return ErrPageInvalidInput
+					return uiErrorAt(
+						ErrPageInvalidInput,
+						"attrs",
+						"sourceVersionIds",
+						strconv.Itoa(index),
+					)
 				}
 			}
 		}
-		for _, mark := range n.Marks {
+		for index, mark := range n.Marks {
 			if !slices.Contains(
 				[]string{"bold", "italic", "strike", "underline", "code", "link", "highlight"},
 				mark.Type,
 			) {
-				return ErrPageInvalidInput
+				return uiErrorAt(ErrPageInvalidInput, "marks", strconv.Itoa(index), "type")
 			}
 			if mark.Type == "link" {
 				href, _ := mark.Attrs["href"].(string)
 				if !safeBlockURL(href, false) {
-					return ErrPageInvalidInput
+					return uiErrorAt(
+						ErrPageInvalidInput,
+						"marks",
+						strconv.Itoa(index),
+						"attrs",
+						"href",
+					)
 				}
 			}
 		}
-		for _, child := range n.Content {
+		for index, child := range n.Content {
 			if err := walk(child, n.Type, depth+1); err != nil {
-				return err
+				return uiErrorAt(err, "content", strconv.Itoa(index))
 			}
 		}
 		return nil
@@ -1173,6 +1270,8 @@ func BlocksMarkdown(n BlockNode) string {
 	}
 	value := content.String()
 	switch n.Type {
+	case "uiDocument":
+		return InlineSource(n) + "\n"
 	case "wikiPageLink":
 		label, _ := n.Attrs["label"].(string)
 		label = strings.Join(strings.Fields(label), " ")

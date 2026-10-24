@@ -1,0 +1,23 @@
+{@body const [level,setLevel]=DIL.useState(40);}
+<box gap={3}>
+  <label>Level: {level}</label>
+  <slider min={0} max={100} value={level} onChange={setLevel}/>
+  <AppBlock title="Level visualization" language="html" bind={{value:level,setValue:setLevel}}>
+    <div style="padding:16px;border-radius:12px;background:#eef2f7;font-family:system-ui">
+      <div style="height:16px;background:#d1d5db;border-radius:8px;overflow:hidden">
+        <div id="meter" style="width:40%;height:100%;background:#4f46e5"></div>
+      </div>
+      <div id="caption" style="margin-top:8px">Illustrative level: 40</div>
+    </div>
+    <script>
+      globalThis.__effect?.(() => {
+        const raw = globalThis.__bindings?.value;
+        const level = Math.max(0,Math.min(100,Number(raw ?? 40)));
+        const meter=document.getElementById('meter');
+        const caption=document.getElementById('caption');
+        if(meter) meter.style.width=level+'%';
+        if(caption) caption.textContent='Illustrative level: '+level;
+      });
+    </script>
+  </AppBlock>
+</box>

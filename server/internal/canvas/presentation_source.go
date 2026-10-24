@@ -70,7 +70,7 @@ func (s *DefaultPresentationService) ReadPageSource(
 		if err != nil {
 			return lookup(err)
 		}
-		if !page.ProjectID.Valid && !page.SourceOutputID.Valid {
+		if page.ArtifactType == "wiki" {
 			return ErrForbidden
 		}
 		revision, err := q.GetCanvasWikiRevision(

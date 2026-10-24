@@ -85,7 +85,7 @@ FROM company_wiki_pages p
 LEFT JOIN wiki_canvas_drafts d ON d.company_id=p.company_id AND d.page_id=p.id
 LEFT JOIN wiki_collections display_collection ON display_collection.company_id=p.company_id
  AND display_collection.id=CASE WHEN p.current_revision_id IS NULL THEN d.collection_id ELSE p.collection_id END
-LEFT JOIN wiki_revisions r ON r.id = p.current_revision_id
+LEFT JOIN document_snapshots r ON r.id = p.current_revision_id
 LEFT JOIN agents author_agent ON author_agent.company_id = p.company_id AND author_agent.id = r.author_agent_id
 JOIN company_members actor ON actor.company_id = p.company_id
   AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
@@ -169,26 +169,45 @@ WHERE (p.current_revision_id IS NOT NULL OR actor.role=ANY(sqlc.arg(publisher_ro
 -- wiki_links insert takes on its target, so two pages that link to each other
 -- can publish at once without deadlocking. No Wiki write changes a page key.
 SELECT id, status, version FROM wiki_pages WHERE company_id = sqlc.arg(company_id)::uuid
-  AND id = sqlc.arg(page_id)::uuid AND source_output_id IS NULL AND project_id IS NULL
+  AND id = sqlc.arg(page_id)::uuid AND artifact_type='wiki'
 FOR NO KEY UPDATE;
 
 -- name: GetEditableWikiPage :one
 -- GetWikiPageForUpdate's visibility without the row lock, for readers that
 -- must not queue behind an autosave.
 SELECT id, status, version FROM wiki_pages WHERE company_id = sqlc.arg(company_id)::uuid
-  AND id = sqlc.arg(page_id)::uuid AND source_output_id IS NULL AND project_id IS NULL;
+  AND id = sqlc.arg(page_id)::uuid AND artifact_type='wiki';
 
 -- name: CreateWikiPage :one
-INSERT INTO wiki_pages (id, company_id, collection_id, slug, title, summary, created_by_user_id)
-SELECT seed.id, $1, $2, 'page-' || seed.id::text, $3, $4, $5
-FROM (SELECT gen_random_uuid() AS id) seed RETURNING id;
+WITH artifact AS (
+ INSERT INTO artifacts(company_id,project_id,type,owner_user_id,title,created_by_user_id,task_id,source_run_id)
+ VALUES(sqlc.arg(company_id)::uuid,sqlc.narg(project_id)::uuid,sqlc.arg(type)::text,
+        sqlc.narg(owner_user_id)::uuid,sqlc.arg(title)::text,sqlc.arg(created_by_user_id)::uuid,
+        sqlc.narg(task_id)::uuid,sqlc.narg(source_run_id)::uuid)
+ RETURNING id
+)
+INSERT INTO wiki_pages (id, company_id, collection_id, slug, title, summary, created_by_user_id, project_id, artifact_type)
+SELECT artifact.id,sqlc.arg(company_id)::uuid,sqlc.narg(collection_id)::uuid,'page-' || artifact.id::text,
+       sqlc.arg(title)::text,sqlc.arg(summary)::text,sqlc.arg(created_by_user_id)::uuid,sqlc.narg(project_id)::uuid,sqlc.arg(type)::text
+FROM artifact RETURNING id;
 
 -- name: CreateWikiRevision :one
-INSERT INTO wiki_revisions (company_id, page_id, number, title, body, summary,
-  collection_id, author_user_id)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *;
+WITH identity AS (SELECT gen_random_uuid() AS id), snapshot AS (
+ INSERT INTO artifact_snapshots(id,company_id,project_id,artifact_id,number,source_type,wiki_page_id,wiki_revision_id,created_by_user_id,title,theme,source_sequence,schema_version)
+ SELECT identity.id,artifact.company_id,artifact.project_id,artifact.id,sqlc.arg(number)::bigint,'wiki',artifact.id,identity.id,
+        sqlc.arg(author_user_id)::uuid,sqlc.arg(title)::text,page.theme,COALESCE(draft.head_seq,0),COALESCE(draft.schema_version,1)
+ FROM identity CROSS JOIN artifacts artifact JOIN wiki_pages page ON page.id=artifact.id
+ LEFT JOIN wiki_canvas_drafts draft ON draft.page_id=page.id
+ WHERE artifact.company_id=sqlc.arg(company_id)::uuid AND artifact.id=sqlc.arg(page_id)::uuid
+ RETURNING id
+)
+INSERT INTO document_snapshots (id,company_id,page_id,number,title,body,summary,collection_id,author_user_id)
+SELECT snapshot.id,sqlc.arg(company_id)::uuid,sqlc.arg(page_id)::uuid,sqlc.arg(number)::bigint,
+       sqlc.arg(title)::text,sqlc.arg(body)::text,sqlc.arg(summary)::text,sqlc.narg(collection_id)::uuid,sqlc.arg(author_user_id)::uuid
+FROM snapshot RETURNING *;
 
 -- name: SetWikiPageCurrentRevision :one
+WITH updated_page AS (
 UPDATE wiki_pages SET title = sqlc.arg(title)::text, summary = sqlc.arg(summary)::text,
   collection_id = sqlc.narg(collection_id)::uuid,
   current_revision_id = sqlc.arg(revision_id)::uuid,
@@ -196,30 +215,38 @@ UPDATE wiki_pages SET title = sqlc.arg(title)::text, summary = sqlc.arg(summary)
       || setweight(to_tsvector('simple', r.summary), 'B')
       || setweight(to_tsvector('simple', regexp_replace(r.body,
         '\[\[(?:artifact:)?[0-9a-fA-F-]{36}(?:#[0-9]{1,2})?(?:\|([^]]*))?\]\]', '\1', 'g')), 'C')
-    FROM wiki_revisions r
+    FROM document_snapshots r
     WHERE r.company_id = wiki_pages.company_id AND r.page_id = wiki_pages.id
       AND r.id = sqlc.arg(revision_id)::uuid),
-  version = version + 1, next_revision_number = GREATEST(next_revision_number,(SELECT number+1 FROM wiki_revisions WHERE id=sqlc.arg(revision_id)::uuid)), updated_at = clock_timestamp()
+  version = version + 1, updated_at = clock_timestamp()
 WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(page_id)::uuid
-  AND version = sqlc.arg(expected_version)::bigint AND status = 'active'
-RETURNING id;
+  AND version = sqlc.arg(expected_version)::bigint AND status = 'active' RETURNING id,title,archived_at,updated_at
+)
+UPDATE artifacts SET next_number=GREATEST(next_number,(SELECT number+1 FROM document_snapshots WHERE id=sqlc.arg(revision_id)::uuid)),title=updated_page.title,archived_at=updated_page.archived_at,updated_at=updated_page.updated_at
+FROM updated_page WHERE artifacts.id=updated_page.id RETURNING artifacts.id;
 
 -- name: SetWikiPageArchived :one
+WITH updated_page AS (
 UPDATE wiki_pages SET status = 'archived', archived_at = clock_timestamp(),
   version = version + 1, updated_at = clock_timestamp()
 WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(page_id)::uuid
-  AND version = sqlc.arg(expected_version)::bigint AND status = 'active'
-RETURNING id;
+  AND version = sqlc.arg(expected_version)::bigint AND status = 'active' RETURNING id,title,archived_at,updated_at
+)
+UPDATE artifacts SET title=updated_page.title,archived_at=updated_page.archived_at,updated_at=updated_page.updated_at
+FROM updated_page WHERE artifacts.id=updated_page.id RETURNING artifacts.id;
 
 -- name: SetWikiPageRestored :one
+WITH updated_page AS (
 UPDATE wiki_pages SET status = 'active', archived_at = NULL,
   version = version + 1, updated_at = clock_timestamp()
 WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(page_id)::uuid
-  AND version = sqlc.arg(expected_version)::bigint AND status = 'archived'
-RETURNING id;
+  AND version = sqlc.arg(expected_version)::bigint AND status = 'archived' RETURNING id,title,archived_at,updated_at
+)
+UPDATE artifacts SET title=updated_page.title,archived_at=updated_page.archived_at,updated_at=updated_page.updated_at
+FROM updated_page WHERE artifacts.id=updated_page.id RETURNING artifacts.id;
 
 -- name: ListWikiRevisionsForMember :many
-SELECT r.* FROM wiki_revisions r
+SELECT r.* FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
@@ -228,20 +255,20 @@ ORDER BY r.number DESC
 LIMIT sqlc.arg(page_limit)::int OFFSET sqlc.arg(page_offset)::int;
 
 -- name: CountWikiRevisionsForMember :one
-SELECT count(*) FROM wiki_revisions r
+SELECT count(*) FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id=r.company_id AND p.id=r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
 WHERE r.published_at IS NOT NULL AND r.company_id = sqlc.arg(company_id)::uuid AND r.page_id = sqlc.arg(page_id)::uuid;
 
 -- name: GetWikiCurrentRevision :one
-SELECT r.* FROM wiki_revisions r
+SELECT r.* FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
   AND p.current_revision_id = r.id
 WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.id = sqlc.arg(page_id)::uuid;
 
 -- name: GetWikiRevisionForMember :one
-SELECT r.* FROM wiki_revisions r
+SELECT r.* FROM document_snapshots r
 JOIN company_wiki_pages p ON p.company_id = r.company_id AND p.id = r.page_id
 JOIN company_members actor ON actor.company_id = r.company_id
   AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
@@ -363,11 +390,12 @@ UPDATE wiki_canvas_drafts SET title=$3,summary=$4,collection_id=$5,
 WHERE company_id=$1 AND page_id=$2 AND head_seq=$6 RETURNING *;
 
 -- name: SetWikiRevisionPublished :exec
-UPDATE wiki_revisions SET published_at=COALESCE(published_at,clock_timestamp())
+UPDATE document_snapshots SET published_at=COALESCE(published_at,clock_timestamp())
 WHERE company_id=$1 AND page_id=$2 AND id=$3;
 
 -- name: RestoreWikiBlockDraft :one
 UPDATE wiki_canvas_drafts SET state=$3,content=$4,markdown=$5,title=$6,summary=$7,collection_id=$8,
+ schema_version=GREATEST(schema_version,sqlc.arg(schema_version)::integer),
  head_seq=head_seq+1,structure_seq=head_seq+1,updated_at=clock_timestamp(),restored_revision_id=sqlc.narg(restored_revision_id)::uuid
 WHERE company_id=$1 AND page_id=$2 AND head_seq=$9 RETURNING *;
 

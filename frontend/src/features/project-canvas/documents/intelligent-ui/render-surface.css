@@ -1,0 +1,18 @@
+/* ProseMirror owns these two intermediary DOM elements. Flatten them only
+   inside authored layouts so the shared React layouts see the same children
+   in the editor and in read-only documents. */
+.ui-layout > [data-node-view-content-react],
+.ui-layout > [data-node-view-content-react] > .react-renderer {
+  display: contents;
+}
+
+/* Carousel slides need boxes: target the node view, not either editor wrapper. */
+.ui-carousel
+  > [data-node-view-content-react]
+  > .react-renderer
+  > [data-node-view-wrapper],
+.ui-carousel > :not([data-node-view-content-react]) {
+  flex: 0 0 100%;
+  min-width: 0;
+  scroll-snap-align: start;
+}

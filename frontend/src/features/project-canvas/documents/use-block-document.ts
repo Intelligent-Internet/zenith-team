@@ -13,6 +13,7 @@ export function useBlockDocument(
   versionId: string,
   readOnly: boolean,
 ) {
+  const documentId = "pageId" in scope ? scope.pageId : versionId;
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
   const navigate = useNavigate();
@@ -20,13 +21,14 @@ export function useBlockDocument(
   const [status, setStatus] = useState(initialDocumentStatus);
   const [reloadKey, setReloadKey] = useState(0);
   const pageId = useRef("");
+  const getSequence = useRef<() => number>(() => -1);
   const flush = useRef<() => Promise<boolean>>(async () => false);
   const discard = useRef<() => Promise<boolean>>(async () => true);
   useEffect(() => {
     const returnLocation = `${location.pathname}${location.search}${location.hash}`;
     const session = createDocumentSession({
       scope,
-      versionId,
+      versionId: documentId,
       isReadOnly: () => readOnlyRef.current,
       onUnsavedClose: () =>
         toast.error(
@@ -40,6 +42,7 @@ export function useBlockDocument(
           },
         ),
     });
+    getSequence.current = () => session.sequence;
     flush.current = session.flush;
     discard.current = session.discard;
     const unsubscribe = session.subscribe((next) => {
@@ -50,11 +53,12 @@ export function useBlockDocument(
       unsubscribe();
       session.close();
     };
-  }, [documentScopeKey(scope), versionId, reloadKey, readOnly]);
+  }, [documentScopeKey(scope), documentId, reloadKey, readOnly]);
   return {
     ...status,
     error: status.error || (!status.saved ? status.recoveryError : ""),
     pageId,
+    getSequence,
     flush,
     reload: () => {
       void discard.current().then((ok) => {

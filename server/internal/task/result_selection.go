@@ -111,7 +111,7 @@ type taskResultMutation struct {
 	Pending *[]events.Event
 }
 
-func changeTaskResultsInTx(
+func (s *DefaultTaskService) changeTaskResultsInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	p auth.UserPrincipal,
@@ -256,7 +256,7 @@ func changeTaskResultsInTx(
 		allowed := false
 		for _, suggestion := range suggestions {
 			if suggestion.ID == decision.ChangeID && suggestion.PageID == decision.PageID &&
-				suggestion.ProjectID == decision.ProjectID {
+				suggestion.ProjectID.Valid && suggestion.ProjectID.UUID == decision.ProjectID {
 				allowed = true
 				break
 			}
@@ -264,6 +264,7 @@ func changeTaskResultsInTx(
 		if !allowed {
 			return ErrInvalidInput
 		}
+		decision.Authoring = s.authoring
 		_, pending, err := canvas.ReviewPageChangeInTx(ctx, q, p, decision)
 		if errors.Is(err, canvas.ErrConflict) {
 			return ErrConflict

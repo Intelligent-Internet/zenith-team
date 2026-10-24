@@ -40,6 +40,11 @@ A campaign can instead occupy the Overview when it is the Project's whole goal.
 Lead with the outcome and next decision; reference detailed evidence and real
 work. Do not update a Page for routine tool chatter.
 
+For versioned mixed Markdown/component source, load `SKILL.md` from
+`zenith-intelligent-ui`. `page_read` also returns a lossless `source` projection
+and `languageVersion`; source is accepted by Page creation and insert/update
+operations as an alternative to native content.
+
 Call `page_create` with a title and either `markdown` for ordinary prose or
 `content` for native blocks. Optional `theme` selects `default`, `editorial` or
 `compact`. Markdown imports cleanly into normal blocks; use native content for
@@ -108,8 +113,8 @@ Artifact and use an `artifactReference`; use ordinary links for external context
 
 Use `format: live` and `display: card` or `expanded` to connect an evolving native
 Page. This keeps a campaign or research reference current as other Tasks add
-work. Use `format: pinned` for exact evidence, or `accepted` to explicitly follow
-an accepted version. Read exact evidence with `source_read` before citing it.
+work. Use `format: pinned` for an exact snapshot. References never advance with
+Task approval. Read exact evidence with `source_read` before citing it.
 Whole-Page source reads include the first eight blocks, up to 64 KiB; pass a known
 `blockId` to read its section. File/output sources return metadata, so do not
 claim to have read their contents from that response alone.
@@ -273,3 +278,9 @@ playbooks for inputs and deliverables. Images and media support `display: card`
 accurate `alt` text. These views change presentation, never execution or access.
 Choose deliberately; do not put every block in its most prominent view. Keep the
 Overview narrative focused and avoid duplicating its automatic work/results lists.
+
+Document-thread Runs can read and propose edits only for their addressed Page,
+including a standalone Page. Standalone document Runs have no Project scope:
+use `page_read` and `page_edit`, not `project_read`. Comments and proposals belong
+to the Page independently of any imported delivery. Review remains approve,
+reject or revise; approved text updates merge through the shared CRDT engine.

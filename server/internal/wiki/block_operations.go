@@ -4,19 +4,22 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"reflect"
 
 	"github.com/reearth/ygo/crdt"
 )
 
 // BlockOperation changes an addressed subtree, preserving every unrelated CRDT item.
 type BlockOperation struct {
-	Type         string     `json:"type"                   binding:"required,oneof=insert update remove move"`
-	BlockID      string     `json:"blockId,omitempty"`
-	ParentID     string     `json:"parentId,omitempty"`
-	AfterID      string     `json:"afterId,omitempty"`
-	BeforeID     string     `json:"beforeId,omitempty"`
-	ExpectedHash string     `json:"expectedHash,omitempty"`
-	Content      *BlockNode `json:"content,omitempty"`
+	Source          *string    `json:"source,omitempty"`
+	LanguageVersion int        `json:"languageVersion,omitempty"`
+	Type            string     `json:"type"                      binding:"required,oneof=insert update remove move"`
+	BlockID         string     `json:"blockId,omitempty"`
+	ParentID        string     `json:"parentId,omitempty"`
+	AfterID         string     `json:"afterId,omitempty"`
+	BeforeID        string     `json:"beforeId,omitempty"`
+	ExpectedHash    string     `json:"expectedHash,omitempty"`
+	Content         *BlockNode `json:"content,omitempty"`
 }
 
 func BlockHash(node BlockNode) string {
@@ -99,6 +102,11 @@ func ApplyBlockOperations(saved []byte, operations []BlockOperation) ([]byte, Bl
 		return nil
 	}
 	for _, operation := range operations {
+		// Target-only edits do not consume a destination. Retained authoring
+		// metadata must not make an unrelated anchor deletion block them.
+		if operation.Type == "update" || operation.Type == "remove" {
+			operation.ParentID, operation.AfterID, operation.BeforeID = "", "", ""
+		}
 		if operation.BeforeID != "" && operation.AfterID != "" {
 			return nil, BlockNode{}, ErrPageInvalidInput
 		}
@@ -150,12 +158,21 @@ func ApplyBlockOperations(saved []byte, operations []BlockOperation) ([]byte, Bl
 				operation.Content.Attrs["blockId"] != operation.BlockID {
 				return nil, BlockNode{}, ErrPageInvalidInput
 			}
+			updateText := prepareBlockTextUpdate(target.element, operation.Content.Content)
 			doc.Transact(func(tx *crdt.Transaction) {
 				for key := range target.element.GetAttributeValues() {
-					target.element.DeleteAttribute(tx, key)
+					if _, exists := operation.Content.Attrs[key]; !exists {
+						target.element.DeleteAttribute(tx, key)
+					}
 				}
 				for key, value := range operation.Content.Attrs {
-					target.element.SetAttributeValue(tx, key, value)
+					if !reflect.DeepEqual(target.element.GetAttributeValues()[key], value) {
+						target.element.SetAttributeValue(tx, key, value)
+					}
+				}
+				if updateText != nil {
+					updateText(tx)
+					return
 				}
 				target.element.Delete(tx, 0, target.element.Len())
 				appendBlockNodes(tx, &target.element.YXmlFragment, 0, operation.Content.Content)

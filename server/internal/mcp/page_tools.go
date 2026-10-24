@@ -103,4 +103,63 @@ func registerPageTools(server *mcpsdk.Server, service tools.PageToolService, all
 			},
 		)
 	}
+	if toolExplicitlyAllowed(allowed, "page_source_preview_start") {
+		mcpsdk.AddTool(
+			server,
+			&mcpsdk.Tool{
+				Name:        "page_source_preview_start",
+				Title:       "Start a source preview",
+				Description: "Start a bounded temporary source generation for an existing Page under this live Run. Load zenith-intelligent-ui. This never creates a proposal or changes shared content. Reuse draftKey for retries.",
+				Annotations: &mcpsdk.ToolAnnotations{
+					ReadOnlyHint:   false,
+					IdempotentHint: true,
+					OpenWorldHint:  &closed,
+				},
+			},
+			func(ctx context.Context, _ *mcpsdk.CallToolRequest, in tools.PageSourcePreviewStartInput) (*mcpsdk.CallToolResult, tools.PageSourcePreviewResult, error) {
+				result, err := service.StartSourcePreview(ctx, in)
+				return nil, result, err
+			},
+		)
+	}
+
+	if toolExplicitlyAllowed(allowed, "page_source_preview_read") {
+		mcpsdk.AddTool(
+			server,
+			&mcpsdk.Tool{
+				Name:        "page_source_preview_read",
+				Title:       "Read a source preview",
+				Description: "Read current source, revision, expiry and compiler diagnostics for reconnect or conflict recovery. Requires the same live Run and destination Page.",
+				Annotations: &mcpsdk.ToolAnnotations{
+					ReadOnlyHint:   true,
+					IdempotentHint: true,
+					OpenWorldHint:  &closed,
+				},
+			},
+			func(ctx context.Context, _ *mcpsdk.CallToolRequest, in tools.PageSourcePreviewReadInput) (*mcpsdk.CallToolResult, tools.PageSourcePreviewResult, error) {
+				result, err := service.ReadSourcePreview(ctx, in)
+				return nil, result, err
+			},
+		)
+	}
+
+	if toolExplicitlyAllowed(allowed, "page_source_preview_patch") {
+		mcpsdk.AddTool(
+			server,
+			&mcpsdk.Tool{
+				Name:        "page_source_preview_patch",
+				Title:       "Patch a source preview",
+				Description: "Replace a bounded UTF-8 byte range or discard the generation. Supply its acknowledged revision. Complete validated constructs appear in preview; incomplete constructs produce diagnostics. No source is applied to the shared Page. Submit final source through ordinary page_edit review.",
+				Annotations: &mcpsdk.ToolAnnotations{
+					ReadOnlyHint:   false,
+					IdempotentHint: true,
+					OpenWorldHint:  &closed,
+				},
+			},
+			func(ctx context.Context, _ *mcpsdk.CallToolRequest, in tools.PageSourcePreviewPatchInput) (*mcpsdk.CallToolResult, tools.PageSourcePreviewResult, error) {
+				result, err := service.PatchSourcePreview(ctx, in)
+				return nil, result, err
+			},
+		)
+	}
 }

@@ -127,7 +127,7 @@ func testTaskResultApplication(t *testing.T, atomic, proposalOnly, reviewer bool
 			t,
 			ctx,
 			pool,
-			`UPDATE project_presentations SET output_id=$2 WHERE id=$1`,
+			`INSERT INTO delivery_snapshots(company_id,snapshot_id,output_id,ordinal) SELECT company_id,id,$2,0 FROM project_presentations WHERE id=$1`,
 			capture.ID,
 			output,
 		)

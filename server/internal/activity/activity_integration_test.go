@@ -113,7 +113,7 @@ func TestDaemonWakeupsStayOutOfTheFeed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, action := range []string{"runtime.work_available", "runtime.pending_work", "runtime.capabilities_changed", "connector.policy_changed", "conversation.channel_agents_changed", "conversation.discussion_resync", "wiki.run_reads_changed", "schedule.changed", "calendar.changed", "canvas.changed", "canvas.document_changed", "whiteboard.changed"} {
+	for _, action := range []string{"runtime.work_available", "runtime.pending_work", "runtime.capabilities_changed", "connector.policy_changed", "conversation.channel_agents_changed", "conversation.discussion_resync", "wiki.run_reads_changed", "schedule.changed", "calendar.changed", "canvas.changed", "canvas.document_changed", "canvas.page_preview_changed", "whiteboard.changed"} {
 		if err := record(ctx, bus, queries, events.Event{
 			EntityType: "runtime", Name: action, CompanyID: fixture.CompanyA,
 			ConversationID: fixture.ConversationA, RunID: fixture.RunA, Actor: events.SystemActor(),

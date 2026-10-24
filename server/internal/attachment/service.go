@@ -315,9 +315,10 @@ func (s *DefaultAttachmentService) Download(ctx context.Context, input DownloadI
 
 // DownloadResolved opens bytes after a caller such as the Deliverable domain
 // has resolved access to this exact Attachment. It intentionally does not
-// repeat generic message/uploader authorization. Output items require the
-// caller to have resolved artifact access or identify the run authorizer whose
-// current artifact grants must be checked before opening storage.
+// repeat generic message/uploader authorization. The caller resolves authority
+// over an exact resource (a delivery,
+// Artifact snapshot, Board or public capture), or identifies the Run authorizer
+// whose current delivery grants must be checked before opening storage.
 func (s *DefaultAttachmentService) DownloadResolved(
 	ctx context.Context,
 	input ResolvedDownloadInput,
@@ -325,7 +326,7 @@ func (s *DefaultAttachmentService) DownloadResolved(
 	if !validServiceCall(ctx, s) || !util.ValidUUID(input.ID) || !util.ValidUUID(input.CompanyID) {
 		return DownloadResult{}, ErrNotFound
 	}
-	if !input.OutputAccessResolved {
+	if !input.ResourceAccessResolved {
 		inaccessible, err := s.store.Queries().HasInaccessibleOutputAttachment(ctx,
 			generated.HasInaccessibleOutputAttachmentParams{
 				AttachmentID: input.ID,

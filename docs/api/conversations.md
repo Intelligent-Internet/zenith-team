@@ -1304,3 +1304,40 @@ mentions and followed-thread replies. Mentions delivers mentions and followed
 threads. Muted retains those Inbox entries but emits no notification hint.
 The sender never receives their own notification. Desktop delivery is suppressed
 when the corresponding channel is visible in the focused app window.
+
+
+## Inline Intelligent UI
+
+`POST /api/v1/companies/{companyId}/chat-ui-preview` is a member-only,
+non-persisting source preview endpoint. Chat renders locally; this endpoint remains
+available for compiler clients. Input:
+`{ "source": "...", "languageVersion": 1 }` (256 KiB maximum source).
+The response is the shared `SourcePreview` contract with validated complete or
+partial content and diagnostics. The route reads no product data and does not
+create a Page. Live sources independently require current viewer authorization.
+Assistant messages render recognized inline component markup directly. Markdown
+fences and code spans always remain literal code. The browser parses the same
+source grammar used by Page compilation; chat rendering does not call the preview
+endpoint. Complete children remain visible while a container streams, and local
+controls remain usable. Host actions, effects and application scripts wait until
+the message is complete. Display details expose recovery diagnostics and source;
+authorized chat hosts offer an explicit Agent repair request.
+
+Chat, Task conversations and Page Agent replies share this renderer. Page
+`/generate` writing actions compile Markdown and version-1 inline component source
+into native Page suggestions; human acceptance applies them. Invalid or incomplete
+component source is not staged. Restricted Page Runs receive the compiled
+`zenith-intelligent-ui` guide directly, without acquiring additional tools.
+Local controls can change viewer state; sending a follow-up requires an authorized
+chat host and is unavailable in Page comment replies. Only allowlisted functions
+and authored pure helpers can be called, including `Math.sin` and `Math.cos`.
+
+
+The shared parser validates native prop names, direct-child structures and hook
+placement against the renderer schema. AppBlock raw HTML/CSS/JS runs only in an
+opaque-origin iframe with local JSON/callback bindings; it has no GenUI authority.
+Read-only, capture and streaming views disable application scripts. Cite,
+FileCite, CodeCite, FileNavList and reference-backed Link resolve existing Zenith
+artifact UUIDs through the existing authorized resolver. Media search, maps,
+external entity/reference providers and advanced presentation differences are
+explicitly deferred in `docs/intelligent-ui/renderer-contract.md`.

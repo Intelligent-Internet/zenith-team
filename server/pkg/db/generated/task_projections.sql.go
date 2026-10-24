@@ -435,24 +435,36 @@ WHERE tasks.company_id = $5::uuid
   )
   AND (
       NOT $15::boolean
-      OR tasks.priority = ANY($16::text[])
+      OR NOT tasks.status = ANY($16::text[])
   )
   AND (
       NOT $17::boolean
-      OR tasks.assignee_user_id = $18::uuid
+      OR tasks.priority = ANY($18::text[])
   )
   AND (
       NOT $19::boolean
-      OR tasks.executed_by_agent_id = $20::uuid
-      OR (tasks.id = $21::uuid
-          AND task_run_agents.agent_id = $20::uuid)
+      OR tasks.assignee_user_id = $20::uuid
   )
   AND (
-      NOT $22::boolean
-      OR $23::boolean =
+      NOT $21::boolean
+      OR tasks.executed_by_agent_id = $22::uuid
+      OR (tasks.id = $23::uuid
+          AND task_run_agents.agent_id = $22::uuid)
+  )
+  AND (
+      NOT $24::boolean
+      OR $25::boolean =
           (dependency_counts.unresolved_count = 0)
   )
+  AND (
+      NOT $26::boolean
+      OR tasks.number < $27::bigint
+  )
 ORDER BY tasks.number DESC
+LIMIT CASE
+    WHEN $28::boolean THEN $29::bigint + 1
+    ELSE NULL
+END
 `
 
 type ListTaskProjectionsForActiveMemberParams struct {
@@ -470,6 +482,8 @@ type ListTaskProjectionsForActiveMemberParams struct {
 	TaskID                    uuid.UUID     `json:"task_id"`
 	HasStatuses               bool          `json:"has_statuses"`
 	Statuses                  []string      `json:"statuses"`
+	HasExcludedStatuses       bool          `json:"has_excluded_statuses"`
+	ExcludedStatuses          []string      `json:"excluded_statuses"`
 	HasPriorities             bool          `json:"has_priorities"`
 	Priorities                []string      `json:"priorities"`
 	HasAssignee               bool          `json:"has_assignee"`
@@ -479,6 +493,10 @@ type ListTaskProjectionsForActiveMemberParams struct {
 	AssistedTaskID            uuid.NullUUID `json:"assisted_task_id"`
 	HasDependenciesResolved   bool          `json:"has_dependencies_resolved"`
 	DependenciesResolved      bool          `json:"dependencies_resolved"`
+	HasBeforeNumber           bool          `json:"has_before_number"`
+	BeforeNumber              int64         `json:"before_number"`
+	HasLimit                  bool          `json:"has_limit"`
+	RowLimit                  int64         `json:"row_limit"`
 }
 
 type ListTaskProjectionsForActiveMemberRow struct {
@@ -562,6 +580,8 @@ func (q *Queries) ListTaskProjectionsForActiveMember(ctx context.Context, arg Li
 		arg.TaskID,
 		arg.HasStatuses,
 		arg.Statuses,
+		arg.HasExcludedStatuses,
+		arg.ExcludedStatuses,
 		arg.HasPriorities,
 		arg.Priorities,
 		arg.HasAssignee,
@@ -571,6 +591,10 @@ func (q *Queries) ListTaskProjectionsForActiveMember(ctx context.Context, arg Li
 		arg.AssistedTaskID,
 		arg.HasDependenciesResolved,
 		arg.DependenciesResolved,
+		arg.HasBeforeNumber,
+		arg.BeforeNumber,
+		arg.HasLimit,
+		arg.RowLimit,
 	)
 	if err != nil {
 		return nil, err

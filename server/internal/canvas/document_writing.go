@@ -11,6 +11,7 @@ import (
 	"unicode"
 	"unicode/utf16"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
@@ -49,6 +50,9 @@ func DocumentAgentPromptInTx(
 	if err = json.Unmarshal(draft.Content, &root); err != nil {
 		return "", nil, err
 	}
+	if err = redactUnavailableReferences(ctx, q, in.Principal, document.ProjectID.UUID, &root); err != nil {
+		return "", nil, err
+	}
 	contextText := []rune(wiki.BlocksMarkdown(root))
 	if len(contextText) > 32000 {
 		contextText = contextText[:32000]
@@ -58,6 +62,13 @@ func DocumentAgentPromptInTx(
 		document.PageID,
 		document.Anchor,
 	)
+	if in.RevisionChangeID != uuid.Nil {
+		revision, err := pageRevisionPrompt(ctx, q, in, document)
+		if err != nil {
+			return "", nil, err
+		}
+		instruction += revision
+	}
 	var snapshot *DocumentWritingSnapshot
 	if target := in.WritingTarget; target != nil {
 		block := wiki.FindBlock(root, target.BlockID)
@@ -80,7 +91,7 @@ func DocumentAgentPromptInTx(
 		snapshot = &DocumentWritingSnapshot{Target: *target, Content: draft.Content, Sequence: draft.HeadSeq}
 		selected := string(utf16.Decode(units[target.From:target.To]))
 		instruction = fmt.Sprintf(
-			"Return ONLY the requested replacement or insertion as Markdown. No preamble, explanation, outer Markdown fence, or claims about editing. Do not call tools or edit files. The application will stage your response for explicit human acceptance.\nTarget block:\n%s\nSelected text (empty means insert at the cursor):\n%s\nText before cursor/selection:\n%s\nText after cursor/selection:\n%s",
+			"Return ONLY the requested replacement or insertion as Markdown, with inline Intelligent UI components when the request benefits from interaction. Follow the built-in zenith-intelligent-ui grammar; write components directly, never in a Markdown fence. No preamble, explanation, or claims about editing. Do not call tools or edit files. The application will stage your response for explicit human acceptance.\nTarget block:\n%s\nSelected text (empty means insert at the cursor):\n%s\nText before cursor/selection:\n%s\nText after cursor/selection:\n%s",
 			text,
 			selected,
 			string(utf16.Decode(units[:target.From])),
@@ -150,7 +161,7 @@ func writingParent(root wiki.BlockNode, id string) *wiki.BlockNode {
 	return nil
 }
 
-func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, response string) wiki.BlockNode {
+func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, response string) (wiki.BlockNode, error) {
 	block := wiki.FindBlock(base, target.BlockID)
 	size := len(utf16.Encode([]rune(target.Text)))
 	prefix := writingInlineSlice(block.Content, 0, target.From)
@@ -159,9 +170,12 @@ func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, respo
 		replacement := *block
 		replacement.Attrs = maps.Clone(block.Attrs)
 		replacement.Content = slices.Concat(prefix, []wiki.BlockNode{{Type: "text", Text: response}}, suffix)
-		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}
+		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}, nil
 	}
-	result := wiki.BlocksFromMarkdown(response)
+	result, err := wiki.CompileSource(response, 1)
+	if err != nil {
+		return wiki.BlockNode{}, err
+	}
 	if len(result.Content) == 1 && result.Content[0].Type == "paragraph" {
 		// Markdown consumes boundary whitespace; inline replacements need it to
 		// separate generated text from the untouched neighboring text.
@@ -193,7 +207,7 @@ func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, respo
 			}
 		}
 		replacement.Content = slices.Concat(prefix, result.Content[0].Content, suffix)
-		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}
+		return wiki.BlockNode{Type: "doc", Content: []wiki.BlockNode{replacement}}, nil
 	}
 	if len(prefix) > 0 {
 		before := *block
@@ -205,7 +219,7 @@ func writingReplacement(base wiki.BlockNode, target DocumentWritingTarget, respo
 		after.Attrs, after.Content = maps.Clone(block.Attrs), suffix
 		result.Content = append(result.Content, after)
 	}
-	return result
+	return result, nil
 }
 
 func writingResponse(body string) string {
@@ -278,7 +292,8 @@ func writingOperations(
 
 // Staging stores operations against the captured content, never the current
 // document. Existing suggestion fingerprints/hash checks handle intervening edits.
-func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, body string) (string, error) {
+func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, in DocumentAgentCompletion) (string, error) {
+	run, body := in.Run, in.Body
 	request, err := q.GetDocumentWritingRequest(
 		ctx,
 		db.GetDocumentWritingRequestParams{CompanyID: run.CompanyID, RunID: run.ID},
@@ -299,6 +314,7 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, bo
 	_, err = q.GetProjectPageChangeReceipt(
 		ctx,
 		db.GetProjectPageChangeReceiptParams{
+			PageID:      nullable(&request.PageID),
 			CompanyID:   run.CompanyID,
 			ProjectID:   document.ProjectID.UUID,
 			ActorUserID: run.ExecutionAuthorizedByUserID.UUID,
@@ -319,11 +335,25 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, bo
 	if err = json.Unmarshal(request.Target, &target); err != nil {
 		return "", err
 	}
+	draft, err := wiki.BlockDraftInTx(ctx, q, run.CompanyID, request.PageID)
+	if err != nil {
+		return "", err
+	}
+	if in.Authoring.Check(int(draft.SchemaVersion), base) != nil {
+		// Keep the terminal Run and queue moving, with an explicit staging notice.
+		return "The writing suggestion was not staged because Intelligent UI authoring is temporarily disabled.", nil
+	}
 	response := writingResponse(body)
 	if strings.TrimSpace(response) == "" || len(response) > 100000 {
 		return "The response could not be staged. Ask for a shorter replacement.", nil
 	}
-	replacement := writingReplacement(base, target, response)
+	replacement, err := writingReplacement(base, target, response)
+	if err != nil {
+		return writingSourceFailure(err), nil
+	}
+	if in.Authoring.Check(int(draft.SchemaVersion), replacement) != nil {
+		return "The writing suggestion was not staged because Intelligent UI authoring is temporarily disabled.", nil
+	}
 	if len(replacement.Content) > 32 || wiki.ValidateBlockImport(replacement) != nil {
 		return "The response could not be staged. Ask for a shorter, simpler replacement.", nil
 	}
@@ -343,18 +373,53 @@ func stageDocumentWritingInTx(ctx context.Context, q *db.Queries, run db.Run, bo
 	if len(operations) > 32 {
 		return "The response could not be staged. Ask for a shorter, simpler replacement.", nil
 	}
-	state, err := wiki.EncodeBlocks(base)
-	if err != nil {
-		return "", err
+	state := draft.State
+	if request.Sequence != draft.HeadSeq {
+		prior, err := wiki.ReadDocumentHistoryInTx(
+			ctx,
+			q,
+			wiki.HistoryPoint{CompanyID: run.CompanyID, PageID: request.PageID, Sequence: request.Sequence},
+		)
+		if err != nil {
+			return "", err
+		}
+		state = prior.State
 	}
 	if _, _, err = wiki.ApplyBlockOperations(state, operations); err != nil {
 		return "The response does not fit this location. Select a paragraph and try again.", nil
 	}
 	_, err = insertPageProposal(ctx, q, pageProposal{
-		CompanyID: run.CompanyID, ProjectID: document.ProjectID.UUID, PageID: request.PageID,
-		RunID: run.ID, ActorUserID: run.ExecutionAuthorizedByUserID.UUID,
-		RequestKey: request.RequestKey, RequestHash: request.RunID.String(), Operations: operations,
-		BeforeContent: request.BeforeContent, Sequence: request.Sequence, Summary: "Suggested writing",
+		CompanyID:     run.CompanyID,
+		ProjectID:     document.ProjectID.UUID,
+		PageID:        request.PageID,
+		RunID:         run.ID,
+		ActorUserID:   run.ExecutionAuthorizedByUserID.UUID,
+		RequestKey:    request.RequestKey,
+		RequestHash:   request.RunID.String(),
+		Operations:    operations,
+		BeforeContent: request.BeforeContent,
+		BeforeState:   state,
+		Sequence:      request.Sequence,
+		Summary:       "Suggested writing",
 	})
 	return "", err
+}
+
+// writingSourceFailure posts the parser's exact reason in the thread, so a
+// follow-up "repair it" request gives the Agent the construct to fix.
+func writingSourceFailure(err error) string {
+	const generic = "The response could not be staged because its component source is invalid or incomplete. Ask the Agent to repair it and try again."
+	var diagnostic *wiki.SourceDiagnostic
+	if !errors.As(err, &diagnostic) || strings.TrimSpace(diagnostic.Repair) == "" {
+		return generic
+	}
+	reason := strings.TrimSpace(diagnostic.Repair)
+	if runes := []rune(reason); len(runes) > 300 {
+		reason = string(runes[:300]) + "…"
+	}
+	return fmt.Sprintf(
+		"The response could not be staged because its component source is invalid (%s): %s Ask the Agent to repair it and try again.",
+		diagnostic.Code,
+		reason,
+	)
 }

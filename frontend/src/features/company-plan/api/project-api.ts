@@ -131,9 +131,9 @@ export const projectApi = zenithTeamApi.injectEndpoints({
       ],
     }),
     getProject: builder.query<Project, { companyId: string; id: string }>({
-      queryFn: ({ companyId, id }) =>
+      queryFn: ({ companyId, id }, { signal }) =>
         executeZenithTeamQuery(
-          () => apiClient.get<Project>(projectPath(companyId, id)),
+          () => apiClient.get<Project>(projectPath(companyId, id), { signal }),
           "Project could not be loaded.",
         ),
       providesTags: (_r, _e, { companyId, id }) => [

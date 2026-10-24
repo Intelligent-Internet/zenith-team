@@ -663,6 +663,12 @@ var runWriteActivity = map[string]struct {
 	"POST /api/v1/companies/:companyId/runs/:runId/agent-pages/:pageId": {
 		noActivity: "Project page work raises only the canvas change hints, never Activity",
 	},
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-pages/:pageId/source-previews": {
+		noActivity: "transient source previews change no canonical Page or proposal; their retained generation records the acting Run",
+	},
+	"POST /api/v1/companies/:companyId/runs/:runId/agent-pages/:pageId/source-previews/:generationId": {
+		noActivity: "transient preview patches change only the Run-owned generation and raise no Activity",
+	},
 	"POST /api/v1/companies/:companyId/runs/:runId/agent-pages/:pageId/presentations": {
 		noActivity: "Project page work raises only the canvas change hints, never Activity",
 	},

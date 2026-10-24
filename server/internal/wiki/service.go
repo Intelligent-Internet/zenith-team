@@ -192,15 +192,20 @@ type WikiService interface {
 var _ WikiService = (*DefaultWikiService)(nil)
 
 type DefaultWikiService struct {
-	store *db.Store
-	bus   *events.Bus
+	store     *db.Store
+	bus       *events.Bus
+	authoring UIAuthoringPolicy
 }
 
-func NewWikiService(store *db.Store, bus *events.Bus) (*DefaultWikiService, error) {
+func NewWikiService(store *db.Store, bus *events.Bus, policy ...UIAuthoringPolicy) (*DefaultWikiService, error) {
 	if store == nil || bus == nil {
 		return nil, errors.New("Wiki store and event bus are required")
 	}
-	return &DefaultWikiService{store: store, bus: bus}, nil
+	service := &DefaultWikiService{store: store, bus: bus}
+	if len(policy) > 0 {
+		service.authoring = policy[0]
+	}
+	return service, nil
 }
 
 func collectionResponse(row generated.WikiCollection) CollectionResponse {
@@ -233,7 +238,7 @@ func pageResponse(row generated.GetWikiPageForMemberRow) PageResponse {
 	return response
 }
 
-func revisionResponse(row generated.WikiRevision) RevisionResponse {
+func revisionResponse(row generated.DocumentSnapshot) RevisionResponse {
 	return RevisionResponse{
 		ID:            row.ID,
 		PageID:        row.PageID,
@@ -678,6 +683,7 @@ func createDraftInTx(
 	id, err := q.CreateWikiPage(
 		ctx,
 		generated.CreateWikiPageParams{
+			Type:            "wiki",
 			CompanyID:       principal.CompanyID,
 			CollectionID:    nullableUUID(collectionID),
 			Title:           title,
@@ -688,38 +694,7 @@ func createDraftInTx(
 	if err != nil {
 		return uuid.Nil, mapWriteError(err)
 	}
-	root := BlocksFromMarkdown(body)
-	if err = AllocateBlockTreeInTx(ctx, q, principal.CompanyID, id, &root); err != nil {
-		return uuid.Nil, err
-	}
-	state, err := EncodeBlocks(root)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	if _, err = q.CreateCanvasDraft(
-		ctx,
-		generated.CreateCanvasDraftParams{
-			CompanyID: principal.CompanyID,
-			PageID:    id,
-			State:     state,
-			Markdown:  body,
-		},
-	); err != nil {
-		return uuid.Nil, err
-	}
-	content, err := json.Marshal(root)
-	if err != nil {
-		return uuid.Nil, err
-	}
-	if _, err = q.UpgradeWikiDraft(
-		ctx,
-		generated.UpgradeWikiDraftParams{
-			CompanyID: principal.CompanyID,
-			PageID:    id,
-			State:     state,
-			Content:   content,
-		},
-	); err != nil {
+	if _, err = createBlockDraftInTx(ctx, q, principal.CompanyID, id, body); err != nil {
 		return uuid.Nil, err
 	}
 	return id, nil

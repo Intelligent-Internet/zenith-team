@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestWikiSchemaKeepsCollectionsPagesRevisionsAndLinksInsideCompany(t *testing.T) {
@@ -31,13 +32,8 @@ func TestWikiSchemaKeepsCollectionsPagesRevisionsAndLinksInsideCompany(t *testin
 			t.Fatal(err)
 		}
 	}
-	if _, err := pool.Exec(
-		ctx,
-		`INSERT INTO wiki_pages(company_id,collection_id,slug,title,created_by_user_id) VALUES($1,$2,'wrong','Wrong',$3)`,
-		fixture.CompanyA,
-		collectionB,
-		fixture.UserA,
-	); err == nil {
+	if _, err := generated.New(pool).
+		CreateWikiPage(ctx, generated.CreateWikiPageParams{CompanyID: fixture.CompanyA, Type: "wiki", CollectionID: uuid.NullUUID{UUID: collectionB, Valid: true}, Title: "Wrong", CreatedByUserID: fixture.UserA}); err == nil {
 		t.Fatal("cross-company collection accepted")
 	}
 	for _, item := range []struct {
@@ -49,22 +45,21 @@ func TestWikiSchemaKeepsCollectionsPagesRevisionsAndLinksInsideCompany(t *testin
 		{fixture.CompanyA, collectionA, fixture.UserA, &pageA},
 		{fixture.CompanyB, collectionB, fixture.UserB, &pageB},
 	} {
-		if err := pool.QueryRow(ctx, `INSERT INTO wiki_pages(company_id,collection_id,slug,title,created_by_user_id) VALUES($1,$2,'welcome','Welcome',$3) RETURNING id`, item.companyID, item.collectionID, item.userID).
-			Scan(item.out); err != nil {
+		id, err := generated.New(pool).
+			CreateWikiPage(ctx, generated.CreateWikiPageParams{CompanyID: item.companyID, Type: "wiki", CollectionID: uuid.NullUUID{UUID: item.collectionID, Valid: true}, Title: "Welcome", CreatedByUserID: item.userID})
+		if err != nil {
 			t.Fatal(err)
 		}
+		*item.out = id
 	}
-	if err := pool.QueryRow(ctx, `INSERT INTO wiki_revisions(company_id,page_id,number,title,body,author_user_id) VALUES($1,$2,1,'Welcome','Hello',$3) RETURNING id`, fixture.CompanyA, pageA, fixture.UserA).
-		Scan(&revisionA); err != nil {
+	revision, err := generated.New(pool).
+		CreateWikiRevision(ctx, generated.CreateWikiRevisionParams{CompanyID: fixture.CompanyA, PageID: pageA, Number: 1, Title: "Welcome", Body: "Hello", AuthorUserID: fixture.UserA})
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := pool.Exec(
-		ctx,
-		`INSERT INTO wiki_revisions(company_id,page_id,number,title,body,author_user_id) VALUES($1,$2,1,'Wrong','Wrong',$3)`,
-		fixture.CompanyA,
-		pageB,
-		fixture.UserA,
-	); err == nil {
+	revisionA = revision.ID
+	if _, err := generated.New(pool).
+		CreateWikiRevision(ctx, generated.CreateWikiRevisionParams{CompanyID: fixture.CompanyA, PageID: pageB, Number: 1, Title: "Wrong", Body: "Wrong", AuthorUserID: fixture.UserA}); err == nil {
 		t.Fatal("cross-company revision accepted")
 	}
 	if _, err := pool.Exec(
@@ -111,15 +106,19 @@ func TestRunWikiReadsKeepTheirShapeAndGoWithTheirPageAndRun(t *testing.T) {
 		{f.CompanyA, f.UserA, &pageA},
 		{f.CompanyB, f.UserB, &pageB},
 	} {
-		if err := pool.QueryRow(ctx, `INSERT INTO wiki_pages(company_id,slug,title,created_by_user_id) VALUES($1,'handbook','Handbook',$2) RETURNING id`, item.companyID, item.userID).
-			Scan(item.out); err != nil {
+		id, err := generated.New(pool).
+			CreateWikiPage(ctx, generated.CreateWikiPageParams{CompanyID: item.companyID, Type: "wiki", Title: "Handbook", CreatedByUserID: item.userID})
+		if err != nil {
 			t.Fatal(err)
 		}
+		*item.out = id
 	}
-	if err := pool.QueryRow(ctx, `INSERT INTO wiki_revisions(company_id,page_id,number,title,body,author_user_id) VALUES($1,$2,1,'Handbook','Text',$3) RETURNING id`, f.CompanyA, pageA, f.UserA).
-		Scan(&revisionA); err != nil {
+	revision, err := generated.New(pool).
+		CreateWikiRevision(ctx, generated.CreateWikiRevisionParams{CompanyID: f.CompanyA, PageID: pageA, Number: 1, Title: "Handbook", Body: "Text", AuthorUserID: f.UserA})
+	if err != nil {
 		t.Fatal(err)
 	}
+	revisionA = revision.ID
 	const read = `INSERT INTO run_wiki_reads(company_id,run_id,agent_id,kind,page_id,revision_id,revision_number) VALUES($1,$2,$3,'read',$4,$5,1)`
 	for _, tc := range []struct {
 		name, code, sql string
@@ -138,6 +137,7 @@ func TestRunWikiReadsKeepTheirShapeAndGoWithTheirPageAndRun(t *testing.T) {
 			func(t *testing.T) { dbtest.AssertStatementRejected(t, ctx, pool, tc.code, tc.sql, tc.args...) },
 		)
 	}
+
 	dbtest.MustExec(
 		t,
 		ctx,
@@ -159,7 +159,7 @@ func TestRunWikiReadsKeepTheirShapeAndGoWithTheirPageAndRun(t *testing.T) {
 		return count
 	}
 	dbtest.MustExec(t, ctx, pool, read, f.CompanyA, f.RunA, f.AgentA, pageA, revisionA)
-	dbtest.MustExec(t, ctx, pool, `DELETE FROM wiki_pages WHERE id=$1`, pageA)
+	dbtest.MustExec(t, ctx, pool, `DELETE FROM artifacts WHERE id=$1`, pageA)
 	if got := evidence("page_id", pageA); got != 0 {
 		t.Fatalf("%d reads outlived their page", got)
 	}

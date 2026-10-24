@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"slices"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
@@ -323,17 +325,17 @@ func registerRealtimeRouting(bus *events.Bus, b realtime.Broadcaster, hints whit
 			}
 			return errors.Join(errs...)
 		}),
-		bus.Subscribe(execution.TopicArtifact, func(_ context.Context, e events.Event) error {
+		bus.Subscribe(artifactdomain.Topic, func(_ context.Context, e events.Event) error {
 			var recipients []uuid.UUID
 			switch e.Name {
-			case execution.EventArtifactAccessChanged:
-				change, err := events.PayloadOf[execution.ArtifactAccessChanged](e)
+			case artifactdomain.EventAccessChanged:
+				change, err := events.PayloadOf[artifactdomain.AccessChanged](e)
 				if err != nil {
 					return err
 				}
 				recipients = change.RecipientUserIDs
-			case execution.EventArtifactChanged:
-				change, err := events.PayloadOf[execution.ArtifactChanged](e)
+			case artifactdomain.EventChanged:
+				change, err := events.PayloadOf[artifactdomain.Changed](e)
 				if err != nil {
 					return err
 				}

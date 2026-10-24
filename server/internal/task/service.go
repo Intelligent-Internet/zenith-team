@@ -20,6 +20,7 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
@@ -65,6 +66,7 @@ type TaskService interface {
 var _ TaskService = (*DefaultTaskService)(nil)
 
 type DefaultTaskService struct {
+	authoring      wiki.UIAuthoringPolicy
 	store          *db.Store
 	bus            *events.Bus
 	inboxPresenter inbox.Presenter
@@ -76,6 +78,7 @@ func NewTaskService(
 	store *db.Store,
 	bus *events.Bus,
 	inboxPresenter inbox.Presenter,
+	policy ...wiki.UIAuthoringPolicy,
 ) (*DefaultTaskService, error) {
 	if store == nil {
 		return nil, errors.New("Task database store is required")
@@ -83,10 +86,14 @@ func NewTaskService(
 	if bus == nil {
 		return nil, errors.New("Task event bus is required")
 	}
-	return &DefaultTaskService{
+	service := &DefaultTaskService{
 		store: store,
 		bus:   bus, inboxPresenter: inboxPresenter,
-	}, nil
+	}
+	if len(policy) > 0 {
+		service.authoring = policy[0]
+	}
+	return service, nil
 }
 
 // Create owns one complete authorization/transaction boundary: Task and
@@ -617,7 +624,7 @@ func (s *DefaultTaskService) Update(
 			if normalized.Assignee != nil || normalized.ExecutedBy != nil {
 				return ErrInvalidInput
 			}
-			if err := changeTaskResultsInTx(
+			if err := s.changeTaskResultsInTx(
 				ctx,
 				tx,
 				principal,

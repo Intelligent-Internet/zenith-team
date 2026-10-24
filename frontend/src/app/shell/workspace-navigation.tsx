@@ -10,6 +10,7 @@ import {
   FolderOpen,
   MessagesSquare,
   BookOpen,
+  FileText,
   Users,
   Chart2,
   type IconComponent,
@@ -27,7 +28,7 @@ import { workspaceSidebarPages } from "./workspace-sidebar-pages";
 
 type PrimaryDestination = {
   icon: IconComponent;
-  id: "chat" | "projects" | "agents" | "wiki" | "team" | "analytics";
+  id: "chat" | "projects" | "agents" | "wiki" | "team" | "analytics" | "pages";
   label: string;
   to: string;
 };
@@ -36,6 +37,7 @@ const primaryDestinations: PrimaryDestination[] = [
   { icon: MessagesSquare, id: "chat", label: "Chat", to: "/app" },
   { icon: FolderOpen, id: "projects", label: "Projects", to: "/projects" },
   { icon: Bot, id: "agents", label: "Agents", to: "/agents" },
+  { icon: FileText, id: "pages", label: "Pages", to: "/pages" },
   { icon: BookOpen, id: "wiki", label: "Wiki", to: "/wiki" },
   { icon: Users, id: "team", label: "Team", to: "/team" },
   { icon: Chart2, id: "analytics", label: "Analytics", to: "/analytics" },
@@ -59,6 +61,10 @@ function isPrimaryDestinationActive(
       isProjectFilesPath(pathname)
     );
 
+  if (destination.id === "pages")
+    return (
+      pathname === "/pages" || /^\/companies\/[^/]+\/pages\//.test(pathname)
+    );
   if (destination.id === "analytics") return pathname === "/analytics";
   if (destination.id === "wiki")
     return pathname === "/wiki" || pathname.startsWith("/wiki/");

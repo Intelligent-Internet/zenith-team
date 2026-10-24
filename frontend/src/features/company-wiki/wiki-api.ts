@@ -77,9 +77,12 @@ export const wikiApi = zenithTeamApi.injectEndpoints({
       WikiPageDetail,
       { companyId: string; pageId: string }
     >({
-      queryFn: ({ companyId, pageId }) =>
+      queryFn: ({ companyId, pageId }, { signal }) =>
         executeZenithTeamQuery(
-          () => apiClient.get<WikiPageDetail>(pagePath(companyId, pageId)),
+          () =>
+            apiClient.get<WikiPageDetail>(pagePath(companyId, pageId), {
+              signal,
+            }),
           "Page could not be loaded.",
         ),
       providesTags: (_result, _error, { companyId, pageId }) => [
@@ -373,7 +376,12 @@ export const wikiApi = zenithTeamApi.injectEndpoints({
           () =>
             apiClient.post<WikiDocument>(
               `${pagePath(companyId, pageId)}/restore-revision`,
-              { revisionId, expectedRevision, expectedSequence },
+              {
+                revisionId,
+                expectedRevision,
+                expectedSequence,
+                schemaVersion: 2,
+              },
             ),
           "Revision could not be restored.",
         ),

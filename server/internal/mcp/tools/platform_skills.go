@@ -19,9 +19,11 @@ import (
 // its SKILL.md; the description is pinned here because the daemon's prompts
 // and the app quote it, and search_skills matches queries against it.
 const (
-	zenithPlatformSkillKey         = "zenith-platform"
-	zenithPlatformSkillName        = "Zenith platform"
-	zenithPlatformSkillDescription = "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on."
+	zenithIntelligentUISkillKey         = "zenith-intelligent-ui"
+	zenithIntelligentUISkillDescription = "Author clear, beautiful, interactive inline responses using the supported component grammar, state, visualizations, grounded references, and host actions."
+	zenithPlatformSkillKey              = "zenith-platform"
+	zenithPlatformSkillName             = "Zenith platform"
+	zenithPlatformSkillDescription      = "Use for Zenith Team platform actions inside a Run that the system prompt does not fully cover: the zen CLI, your Task and its dependencies, the Conversation, Project Pages and overview contributions, presenting result files, founder Questions, Task failure, the Company and its Agents, and Mail drafts. Not for the product code you are working on."
 	// The Workflow playbooks ship as a second platform skill. A Task launched
 	// from the Workflows page names its playbook in the description; the Run
 	// loads <workflow-key>/playbook.md from it. Its files, name and
@@ -42,7 +44,7 @@ const ZenithPlatformSkillKey = zenithPlatformSkillKey
 // reservedPlatformSkillKeys is the static floor of reserved keys. A Run's
 // Skill snapshot can never take one, whether or not that skill is linked into
 // this binary or verified at start.
-var reservedPlatformSkillKeys = []string{zenithPlatformSkillKey, zenithWorkflowsSkillKey}
+var reservedPlatformSkillKeys = []string{zenithPlatformSkillKey, zenithIntelligentUISkillKey, zenithWorkflowsSkillKey}
 
 // platformSkill names one release-owned procedure zenith-team-mcp serves.
 // Keys are reserved: a custom Skill can never shadow one.
@@ -65,6 +67,12 @@ var compiledPlatformSkills = []platformSkill{
 	{
 		Key: zenithPlatformSkillKey, Name: zenithPlatformSkillName,
 		Description: zenithPlatformSkillDescription, Files: compiledSkillFiles("builtin/zenith-platform"),
+	},
+	{
+		Key:         zenithIntelligentUISkillKey,
+		Name:        "Zenith Intelligent UI",
+		Description: zenithIntelligentUISkillDescription,
+		Files:       compiledSkillFiles("builtin/zenith-intelligent-ui"),
 	},
 }
 
@@ -123,11 +131,48 @@ func PlatformSkills(bundles []PlatformBundle) ([]PlatformSkillSummary, error) {
 
 // platformSkillFiles is release-owned and compiled into zenith-team-mcp so Task
 // Runs can load security-critical platform procedures without a Run-scoped
-// Skill snapshot or a network dependency. The pattern names zenith-platform
-// alone, so a stray directory under builtin/ can never join the skills.
+// Skill snapshot or a network dependency. Only explicitly named skill
+// directories can join the compiled catalog.
 //
-//go:embed all:builtin/zenith-platform
+//go:embed all:builtin/zenith-platform all:builtin/zenith-intelligent-ui
 var platformSkillFiles embed.FS
+
+// IntelligentUIInstructions supplies the same release-owned guide to Runs that
+// cannot call skill tools, including Page writing and restricted document Runs.
+// Reading this compiled content grants no tool or product authority.
+func IntelligentUIInstructions() string {
+	content, err := platformSkillFiles.ReadFile("builtin/zenith-intelligent-ui/SKILL.md")
+	if err != nil {
+		panic(err) // the file is required by the compile-time embed above
+	}
+	return string(content)
+}
+
+// IntelligentUICore is the always-inlined part of the guide: the authoring
+// judgment, where it renders, and a quick start. SKILL.md marks it with
+// <!-- core --> … <!-- /core -->, so the full skill stays the single source.
+func IntelligentUICore() string {
+	content := IntelligentUIInstructions()
+	var core strings.Builder
+	for {
+		start := strings.Index(content, "<!-- core -->")
+		if start < 0 {
+			break
+		}
+		content = content[start+len("<!-- core -->"):]
+		end := strings.Index(content, "<!-- /core -->")
+		if end < 0 {
+			panic("SKILL.md has an unterminated core section")
+		}
+		core.WriteString(strings.TrimSpace(content[:end]))
+		core.WriteString("\n\n")
+		content = content[end+len("<!-- /core -->"):]
+	}
+	if core.Len() == 0 {
+		panic("SKILL.md marks no core section")
+	}
+	return strings.TrimSpace(core.String())
+}
 
 func compiledSkillFiles(root string) fs.FS {
 	files, err := fs.Sub(platformSkillFiles, root)

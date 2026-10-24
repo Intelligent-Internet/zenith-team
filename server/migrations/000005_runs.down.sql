@@ -4,6 +4,7 @@ DROP VIEW IF EXISTS deliverable_inbox_access;
 DROP VIEW IF EXISTS output_access;
 DROP FUNCTION IF EXISTS reject_discussion_run CASCADE;
 DROP FUNCTION IF EXISTS run_permission_held CASCADE;
+DROP TABLE IF EXISTS delivery_snapshots CASCADE;
 DROP TABLE IF EXISTS run_wiki_writes CASCADE;
 DROP TABLE IF EXISTS output_documents CASCADE;
 DROP TABLE IF EXISTS output_review_operations CASCADE;

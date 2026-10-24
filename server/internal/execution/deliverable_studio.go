@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
@@ -135,7 +137,7 @@ func (s *DefaultDeliverableService) AttachStudioCanvas(
 	})
 	if err == nil && pending != nil {
 		s.bus.Publish(ctx, Topic, *pending)
-		s.bus.Publish(ctx, TopicArtifact, artifactChanged)
+		s.bus.Publish(ctx, artifactdomain.Topic, artifactChanged)
 	}
 	return result, err
 }

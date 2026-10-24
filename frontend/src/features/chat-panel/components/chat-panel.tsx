@@ -1,3 +1,5 @@
+import { InlineChatProviders } from "@/features/common/components/inline-artifact-reference";
+import { useInlineEntityAction } from "@/features/common/hooks/use-inline-entity-action";
 import { createPortal } from "react-dom";
 import { useOpenArtifactSource } from "@/features/run-deliverables/hooks/use-open-artifact-source";
 import { skipToken } from "@reduxjs/toolkit/query";
@@ -964,560 +966,587 @@ export function ChatPanel({
     continuing: isInputContinuing,
   });
 
+  const openInlineEntity = useInlineEntityAction(studioCompanyId);
   return (
-    <ChatAvatarPresence>
-      <ChatPanelContainer
-        floating={!isWorkspaceLayout}
-        className={cx(
-          !isWorkspaceLayout && chatPanelBaseClassName,
-          isWorkspaceLayout
-            ? "workspace-conversation-surface relative h-full min-h-0 w-full overflow-hidden rounded-3xl border border-white/10 bg-[#0B1A2B] shadow-[0_24px_80px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)]"
-            : isWideLayout
-              ? chatPanelExpandedClassName
-              : chatPanelDockedClassName,
-        )}
-        style={{
-          transform: "translate3d(0, 0, 0)",
-          zIndex: !isWorkspaceLayout ? 61 : undefined,
-        }}
-        contentRef={panelScrollBoundaryRef}
-        contentClassName="workspace-conversation-content conversation-chat artifacts-layout pointer-events-auto h-full w-full flex-row overflow-hidden rounded-3xl text-white"
-        role="region"
-        aria-label="Conversation chat"
-      >
-        <div
+    <InlineChatProviders
+      readOnly={readOnly}
+      companyId={studioCompanyId}
+      value={
+        conversationId && !readOnly && !isComposerBlockedByDiscoveryChoice
+          ? {
+              conversationId,
+              openEntity: openInlineEntity,
+              submit: (text) => handleComposerSendMessage({ text, files: [] }),
+              prepareDraft: (text) =>
+                onDraftMessageChange(
+                  draftMessage ? `${draftMessage}\n\n${text}` : text,
+                ),
+            }
+          : null
+      }
+    >
+      <ChatAvatarPresence>
+        <ChatPanelContainer
+          floating={!isWorkspaceLayout}
           className={cx(
-            "relative flex h-full min-w-0 flex-col overflow-hidden",
-            artifactContext && "artifacts-chat-column",
-            "flex-1",
+            !isWorkspaceLayout && chatPanelBaseClassName,
+            isWorkspaceLayout
+              ? "workspace-conversation-surface relative h-full min-h-0 w-full overflow-hidden rounded-3xl border border-white/10 bg-[#0B1A2B] shadow-[0_24px_80px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.06)]"
+              : isWideLayout
+                ? chatPanelExpandedClassName
+                : chatPanelDockedClassName,
           )}
-          data-artifacts-open={sidePanelVisible || undefined}
+          style={{
+            transform: "translate3d(0, 0, 0)",
+            zIndex: !isWorkspaceLayout ? 61 : undefined,
+          }}
+          contentRef={panelScrollBoundaryRef}
+          contentClassName="workspace-conversation-content conversation-chat artifacts-layout pointer-events-auto h-full w-full flex-row overflow-hidden rounded-3xl text-white"
+          role="region"
+          aria-label="Conversation chat"
         >
-          {conversationTab && !isWorkspaceLayout ? (
-            <ChatConversationTabs
-              currentTab={conversationTab}
-              isWideLayout={isWideLayout}
-              teams={teams}
-              onClosePanel={handleClosePanel}
-            />
-          ) : null}
-
-          {isWorkspaceLayout && workspaceContext ? (
-            <WorkspaceChatHeader
-              context={workspaceContext}
-              avatarState={avatarState}
-              activeTeam={activeTeam}
-              conversationTab={conversationTab}
-              onReviewTask={hasPendingRequests ? undefined : onReviewTask}
-              taskActivity={{
-                canRespond: viewerMayRespond,
-                hasPendingApproval,
-                hasPendingQuestion,
-                running: runQueue.currentRun?.status === "running",
-              }}
-              onApprovePlan={
-                structuredActionsEnabled ? onApproveCompanyDashboard : undefined
-              }
-              headerActions={headerActions}
-              onToggleArtifacts={
-                artifactContext
-                  ? () => {
-                      if (artifactsVisible) closeArtifacts();
-                      else {
-                        setSelectedFile(null);
-                        artifactsPanel.open();
-                        requestAnimationFrame(() =>
-                          artifactsAsideRef.current
-                            ?.querySelector<HTMLButtonElement>("button")
-                            ?.focus(),
-                        );
-                      }
-                    }
-                  : undefined
-              }
-              artifactsOpen={artifactsVisible}
-              artifactCount={artifacts.count}
-              artifactsHasMore={artifacts.hasMore}
-              artifactsPanelId={
-                artifactContext
-                  ? `conversation-artifacts-${artifactContext.conversationId}`
-                  : undefined
-              }
-              artifactsButtonRef={artifactsToggleRef}
-            />
-          ) : (
-            <ChatPanelHeader
-              activeTeam={activeTeam}
-              avatarState={avatarState}
-              conversationTab={conversationTab}
-              followPointer={isWorkspaceLayout}
-              headerActions={
-                artifactContext ? (
-                  <>
-                    {headerActions}
-                    <ConversationArtifactsToggle
-                      ref={artifactsToggleRef}
-                      count={artifacts.count}
-                      hasMore={artifacts.hasMore}
-                      open={artifactsVisible}
-                      panelId={`conversation-artifacts-${artifactContext.conversationId}`}
-                      onToggle={() => {
-                        if (artifactsVisible) {
-                          closeArtifacts();
-                          return;
-                        }
-                        setSelectedFile(null);
-                        artifactsPanel.open();
-                        requestAnimationFrame(() =>
-                          artifactsAsideRef.current
-                            ?.querySelector<HTMLButtonElement>("button")
-                            ?.focus(),
-                        );
-                      }}
-                    />
-                  </>
-                ) : (
-                  headerActions
-                )
-              }
-              isExpanded={isWideLayout}
-              isWideLayout={isWideLayout}
-              onApproveCompanyDashboard={
-                structuredActionsEnabled ? onApproveCompanyDashboard : undefined
-              }
-              onClose={handleClosePanel}
-              onReviewTask={onReviewTask}
-              onToggleExpanded={handleToggleExpanded}
-              reserveMobileNavigatorSpace={isWorkspaceLayout}
-              showWindowControls={!isWorkspaceLayout}
-            />
-          )}
-
-          <ChatConnectionRecoveryNotice
-            isExpanded={isWideLayout}
-            notice={connectionRecoveryNotice}
-          />
-
-          <ChatConversation
-            artifacts={artifactContext ? artifacts : undefined}
-            onArtifactSelect={selectArtifact}
-            emptyState={
-              conversationTab?.kind === "direct" &&
-              conversationTab.agentId &&
-              connectionStatus === "connected" &&
-              !hasOlderMessages &&
-              !historyLoadError &&
-              !focusedHistory &&
-              !runQueue.currentRun &&
-              !hasPendingRequests &&
-              !readOnly ? (
-                <ChatAgentWelcome
-                  agentId={conversationTab.agentId}
-                  name={workspaceContext?.agentName ?? conversationTab.title}
-                  role={activeTeam.agentRole}
-                />
-              ) : undefined
-            }
-            conversationDecorators={resolvedConversationDecorators}
-            conversationSlot={conversationSlot}
-            conversationSlotClassName={conversationSlotClassName}
-            conversationTimelineItems={conversationTimelineItems}
-            focusedMessageId={focusedHistory?.targetSeq}
-            hasStreamingMessage={hasStreamingMessage || showRunThinking}
-            hasOlderMessages={hasOlderMessages}
-            historyLoadError={historyLoadError}
-            isExpanded={isWideLayout}
-            isLoadingOlderMessages={isLoadingOlderMessages}
-            messageScrollRef={messageScrollRef}
-            messages={visibleMessages}
-            turnActivity={turnActivity}
-            readOnly={readOnly || !structuredActionsEnabled}
-            scrollToBottomRequestKey={scrollToBottomRequestKey}
-            showUserIdentity={conversationTab?.kind === "task"}
-            showRunThinking={showRunThinking}
-            thinkingAgentId={conversationTab?.agentId ?? activeTeam.agentId}
-            onDiscoveryOtherOptionSelectionChange={
-              handleDiscoveryOtherOptionSelectionChange
-            }
-            onDiscoveryPlanHandoff={handleDiscoveryPlanHandoffRequest}
-            onDiscoveryOptionSubmit={handleDiscoveryOptionSubmit}
-            onGeneratedFileSelect={handleGeneratedFileSelect}
-            onUploadedFileSelect={handleUploadedFileSelect}
-            onLoadOlderMessages={onLoadOlderMessages}
-            onRenderCompanyPlanOverview={renderCompanyPlanOverview}
-            submittedDiscoveryPlanMessageIds={disabledDiscoveryPlanMessageIds}
-          />
-
-          {composerAccessory ? (
-            <div
-              className={cx(
-                "workspace-chat-composer-accessory mb-3 min-w-0 shrink-0",
-                isWideLayout
-                  ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
-                  : "mx-4 w-[calc(100%-32px)]",
-              )}
-            >
-              {composerAccessory}
-            </div>
-          ) : null}
-
-          {researchHoldsChat ? (
-            <div
-              aria-live="polite"
-              className={cx(
-                "workspace-chat-connection-notice workspace-chat-research-notice mt-3 flex shrink-0 items-start gap-2 rounded-2xl border px-3 py-2 text-xs leading-5",
-                isWideLayout
-                  ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
-                  : "mx-4",
-              )}
-              data-tone="checking"
-              role="status"
-            >
-              <span
-                aria-hidden="true"
-                className="workspace-chat-connection-notice__dot mt-[7px] size-1.5 shrink-0 animate-pulse rounded-full"
+          <div
+            className={cx(
+              "relative flex h-full min-w-0 flex-col overflow-hidden",
+              artifactContext && "artifacts-chat-column",
+              "flex-1",
+            )}
+            data-artifacts-open={sidePanelVisible || undefined}
+          >
+            {conversationTab && !isWorkspaceLayout ? (
+              <ChatConversationTabs
+                currentTab={conversationTab}
+                isWideLayout={isWideLayout}
+                teams={teams}
+                onClosePanel={handleClosePanel}
               />
-              <span className="min-w-0 flex-1">
-                <strong className="block font-black leading-5">
-                  {researchAgentName} is researching your company
-                </strong>
-                <span className="block opacity-80">
-                  Messages you send here run when the research finishes.
-                </span>
-              </span>
-              {researchNewChatHref ? (
-                <Link
-                  className="shrink-0 self-center font-semibold underline underline-offset-2"
-                  to={researchNewChatHref}
-                >
-                  Start a new chat
-                </Link>
-              ) : null}
-            </div>
-          ) : null}
+            ) : null}
 
-          {surface === "conversation" ? (
-            <ChatRunQueue
-              availability={runQueue.availability}
-              deletingItemIds={runQueue.deletingItemIds}
-              error={runQueue.error}
+            {isWorkspaceLayout && workspaceContext ? (
+              <WorkspaceChatHeader
+                context={workspaceContext}
+                avatarState={avatarState}
+                activeTeam={activeTeam}
+                conversationTab={conversationTab}
+                onReviewTask={hasPendingRequests ? undefined : onReviewTask}
+                taskActivity={{
+                  canRespond: viewerMayRespond,
+                  hasPendingApproval,
+                  hasPendingQuestion,
+                  running: runQueue.currentRun?.status === "running",
+                }}
+                onApprovePlan={
+                  structuredActionsEnabled
+                    ? onApproveCompanyDashboard
+                    : undefined
+                }
+                headerActions={headerActions}
+                onToggleArtifacts={
+                  artifactContext
+                    ? () => {
+                        if (artifactsVisible) closeArtifacts();
+                        else {
+                          setSelectedFile(null);
+                          artifactsPanel.open();
+                          requestAnimationFrame(() =>
+                            artifactsAsideRef.current
+                              ?.querySelector<HTMLButtonElement>("button")
+                              ?.focus(),
+                          );
+                        }
+                      }
+                    : undefined
+                }
+                artifactsOpen={artifactsVisible}
+                artifactCount={artifacts.count}
+                artifactsHasMore={artifacts.hasMore}
+                artifactsPanelId={
+                  artifactContext
+                    ? `conversation-artifacts-${artifactContext.conversationId}`
+                    : undefined
+                }
+                artifactsButtonRef={artifactsToggleRef}
+              />
+            ) : (
+              <ChatPanelHeader
+                activeTeam={activeTeam}
+                avatarState={avatarState}
+                conversationTab={conversationTab}
+                followPointer={isWorkspaceLayout}
+                headerActions={
+                  artifactContext ? (
+                    <>
+                      {headerActions}
+                      <ConversationArtifactsToggle
+                        ref={artifactsToggleRef}
+                        count={artifacts.count}
+                        hasMore={artifacts.hasMore}
+                        open={artifactsVisible}
+                        panelId={`conversation-artifacts-${artifactContext.conversationId}`}
+                        onToggle={() => {
+                          if (artifactsVisible) {
+                            closeArtifacts();
+                            return;
+                          }
+                          setSelectedFile(null);
+                          artifactsPanel.open();
+                          requestAnimationFrame(() =>
+                            artifactsAsideRef.current
+                              ?.querySelector<HTMLButtonElement>("button")
+                              ?.focus(),
+                          );
+                        }}
+                      />
+                    </>
+                  ) : (
+                    headerActions
+                  )
+                }
+                isExpanded={isWideLayout}
+                isWideLayout={isWideLayout}
+                onApproveCompanyDashboard={
+                  structuredActionsEnabled
+                    ? onApproveCompanyDashboard
+                    : undefined
+                }
+                onClose={handleClosePanel}
+                onReviewTask={onReviewTask}
+                onToggleExpanded={handleToggleExpanded}
+                reserveMobileNavigatorSpace={isWorkspaceLayout}
+                showWindowControls={!isWorkspaceLayout}
+              />
+            )}
+
+            <ChatConnectionRecoveryNotice
               isExpanded={isWideLayout}
-              isReordering={runQueue.isReordering}
-              items={runQueue.items}
-              onRefresh={runQueue.refresh}
-              onRemove={runQueue.remove}
-              onReorder={runQueue.reorder}
+              notice={connectionRecoveryNotice}
             />
-          ) : null}
 
-          {initializationBlocked ? (
-            <div
-              className={cx(
-                "workspace-chat-composer-accessory min-w-0 shrink-0 rounded-xl bg-[var(--workspace-panel-raised-bg)] px-4 py-3 text-[var(--workspace-native-text)]",
-                isWorkspaceLayout ? "my-4" : "mb-[38px]",
-                isWideLayout
-                  ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
-                  : "mx-4 w-[calc(100%-32px)]",
-              )}
-              role="status"
-              aria-atomic="true"
-            >
-              <p className="m-0 text-sm font-medium leading-5">
-                {initialization?.statusText}
-              </p>
-              <p className="m-0 mt-1 text-[13px] leading-5 text-[var(--workspace-native-text-muted)]">
-                You can message here once the company research starts. Other
-                chats and tasks are available.
-              </p>
-            </div>
-          ) : (
-            <ChatComposer
-              context={
-                artifactsPanel.feedback && !readOnly ? (
-                  <div className="artifacts-feedback flex items-center gap-[10px] flex-none box-border h-[60px] min-w-0 m-[0_12px] p-[10px_0] [border-bottom:1px_solid_var(--workspace-divider,_#dedbd2)] text-[var(--workspace-native-text,_#30352f)]">
-                    <PencilLine size={18} aria-hidden />
-                    <div className="flex flex-1 flex-col gap-[2px] min-w-0">
-                      <span className="text-workspace-muted text-[length:11px] leading-[16px]">
-                        Request changes
-                      </span>
-                      <span
-                        className="overflow-hidden text-ellipsis whitespace-nowrap text-[length:13px] font-[500] leading-[20px]"
-                        title={artifactsPanel.feedback.title}
-                      >
-                        {artifactsPanel.feedback.title}
-                      </span>
-                    </div>
-                    <button
-                      className="artifacts-icon-button"
-                      type="button"
-                      aria-label="Cancel change request"
-                      title="Cancel change request"
-                      onClick={(event) => {
-                        artifactsPanel.clearFeedback();
-                        event.currentTarget.form
-                          ?.querySelector("textarea")
-                          ?.focus();
-                      }}
-                    >
-                      <X size={14} aria-hidden />
-                    </button>
-                  </div>
-                ) : undefined
-              }
-              artifactContext={
-                conversationTab?.kind === "direct" && studioCompanyId
-                  ? {
-                      companyId: studioCompanyId,
-                      draftKey: conversationTab.id,
-                      conversationId: conversationId ?? undefined,
-                      agentId: conversationTab.agentId ?? undefined,
-                    }
-                  : undefined
-              }
-              key={conversationTab?.id ?? conversationId ?? selectedTeam}
-              sessionKey={conversationTab?.id ?? conversationId ?? selectedTeam}
-              ariaLabel={
-                artifactsPanel.feedback && !readOnly
-                  ? `Request change to ${artifactsPanel.feedback.title}`
-                  : composerAriaLabel
-              }
-              disabled={readOnly || isComposerBlockedByDiscoveryChoice}
-              readOnly={readOnly}
-              onCreateWhiteboard={
-                canCreateWhiteboard ? createWhiteboard : undefined
-              }
-              sendBlocked={modelSettingsSaving}
-              modelControls={
-                surface === "conversation" &&
-                !readOnly &&
-                studioCompanyId &&
-                conversationId &&
-                (conversationTab?.kind === "direct" ||
-                  conversationTab?.kind === "task") ? (
-                  <ChatModelSettings
-                    key={conversationId}
-                    companyId={studioCompanyId}
-                    conversationId={conversationId}
-                    onSavingChange={setModelSettingsSaving}
-                  />
-                ) : undefined
-              }
-              draftMessage={draftMessage}
-              focusRequestKey={focusRequestKey + artifactsPanel.focusRequestKey}
-              isExpanded={isWideLayout}
-              currentRun={runQueue.currentRun}
-              queueAvailability={runQueue.availability}
-              isQueueFull={runQueue.items.length >= runQueue.limit}
-              queueLimit={runQueue.limit}
-              isStopping={runQueue.isStopping}
-              minimal={isWorkspaceLayout}
-              suggestions={
-                isWorkspaceLayout &&
+            <ChatConversation
+              artifacts={artifactContext ? artifacts : undefined}
+              onArtifactSelect={selectArtifact}
+              emptyState={
                 conversationTab?.kind === "direct" &&
-                selectedTeam === CEO_CHAT_TEAM_ID &&
+                conversationTab.agentId &&
                 connectionStatus === "connected" &&
-                visibleMessages.length === 0 &&
                 !hasOlderMessages &&
                 !historyLoadError &&
                 !focusedHistory &&
                 !runQueue.currentRun &&
-                runQueue.items.length === 0
-                  ? ceoMessageSuggestions
-                  : undefined
+                !hasPendingRequests &&
+                !readOnly ? (
+                  <ChatAgentWelcome
+                    agentId={conversationTab.agentId}
+                    name={workspaceContext?.agentName ?? conversationTab.title}
+                    role={activeTeam.agentRole}
+                  />
+                ) : undefined
               }
-              onDraftMessageChange={onDraftMessageChange}
-              onFocus={onComposerFocus}
-              onSendMessage={handleComposerSendMessage}
-              prepareMessage={prepareComposerMessage}
-              onStop={
-                canStopRun
-                  ? () =>
-                      runQueue.stop().catch(() => {
-                        toast.error("The current run could not be stopped.");
-                      })
-                  : undefined
+              conversationDecorators={resolvedConversationDecorators}
+              conversationSlot={conversationSlot}
+              conversationSlotClassName={conversationSlotClassName}
+              conversationTimelineItems={conversationTimelineItems}
+              focusedMessageId={focusedHistory?.targetSeq}
+              hasStreamingMessage={hasStreamingMessage || showRunThinking}
+              hasOlderMessages={hasOlderMessages}
+              historyLoadError={historyLoadError}
+              isExpanded={isWideLayout}
+              isLoadingOlderMessages={isLoadingOlderMessages}
+              messageScrollRef={messageScrollRef}
+              messages={visibleMessages}
+              turnActivity={turnActivity}
+              readOnly={readOnly || !structuredActionsEnabled}
+              scrollToBottomRequestKey={scrollToBottomRequestKey}
+              showUserIdentity={conversationTab?.kind === "task"}
+              showRunThinking={showRunThinking}
+              thinkingAgentId={conversationTab?.agentId ?? activeTeam.agentId}
+              onDiscoveryOtherOptionSelectionChange={
+                handleDiscoveryOtherOptionSelectionChange
               }
-              placeholder={
-                readOnly
-                  ? readOnlyPlaceholder
-                  : isComposerBlockedByDiscoveryChoice
-                    ? "Choose an option above to continue"
-                    : hasPendingDiscoveryOtherChoice
-                      ? "Type another answer..."
-                      : artifactsPanel.feedback
-                        ? "What would you like to change?"
-                        : composerPlaceholder
-              }
+              onDiscoveryPlanHandoff={handleDiscoveryPlanHandoffRequest}
+              onDiscoveryOptionSubmit={handleDiscoveryOptionSubmit}
+              onGeneratedFileSelect={handleGeneratedFileSelect}
+              onUploadedFileSelect={handleUploadedFileSelect}
+              onLoadOlderMessages={onLoadOlderMessages}
+              onRenderCompanyPlanOverview={renderCompanyPlanOverview}
+              submittedDiscoveryPlanMessageIds={disabledDiscoveryPlanMessageIds}
             />
-          )}
 
-          <p
-            className={cx(
-              "pointer-events-none absolute bottom-[17px] left-1/2 m-0 -translate-x-1/2 whitespace-nowrap text-[12px] font-normal leading-none text-white/35",
-              isWorkspaceLayout && "workspace-chat-tagline",
-            )}
-          >
-            Zenith Team Agents can learn through conversations
-          </p>
-        </div>
+            {composerAccessory ? (
+              <div
+                className={cx(
+                  "workspace-chat-composer-accessory mb-3 min-w-0 shrink-0",
+                  isWideLayout
+                    ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
+                    : "mx-4 w-[calc(100%-32px)]",
+                )}
+              >
+                {composerAccessory}
+              </div>
+            ) : null}
 
-        {artifactContext && (
-          <div
-            id={`conversation-artifacts-${artifactContext.conversationId}`}
-            className="artifacts-aside"
-            data-viewer={Boolean(
-              selectedFile || selectedArtifact || mailSelection,
-            )}
-            data-resizing={artifactsResize.resizing || undefined}
-            style={{ flexBasis: artifactsResize.width }}
-            hidden={!sidePanelVisible}
-            ref={artifactsAsideRef}
-            onKeyDown={handleArtifactsKeyDown}
-          >
-            <div
-              className="artifacts-resize-handle"
-              aria-controls={`conversation-artifacts-${artifactContext.conversationId}`}
-              {...artifactsResize.separatorProps}
-            />
-            <div
-              className="artifacts-list-container"
-              hidden={Boolean(
-                selectedFile || selectedArtifact || mailSelection,
-              )}
-            >
-              <ConversationArtifactsPanel
-                key={artifactsPanel.key}
-                companyId={artifactContext.companyId}
-                artifacts={
-                  artifactNavigation.reviewOnly
+            {researchHoldsChat ? (
+              <div
+                aria-live="polite"
+                className={cx(
+                  "workspace-chat-connection-notice workspace-chat-research-notice mt-3 flex shrink-0 items-start gap-2 rounded-2xl border px-3 py-2 text-xs leading-5",
+                  isWideLayout
+                    ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
+                    : "mx-4",
+                )}
+                data-tone="checking"
+                role="status"
+              >
+                <span
+                  aria-hidden="true"
+                  className="workspace-chat-connection-notice__dot mt-[7px] size-1.5 shrink-0 animate-pulse rounded-full"
+                />
+                <span className="min-w-0 flex-1">
+                  <strong className="block font-black leading-5">
+                    {researchAgentName} is researching your company
+                  </strong>
+                  <span className="block opacity-80">
+                    Messages you send here run when the research finishes.
+                  </span>
+                </span>
+                {researchNewChatHref ? (
+                  <Link
+                    className="shrink-0 self-center font-semibold underline underline-offset-2"
+                    to={researchNewChatHref}
+                  >
+                    Start a new chat
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
+
+            {surface === "conversation" ? (
+              <ChatRunQueue
+                availability={runQueue.availability}
+                deletingItemIds={runQueue.deletingItemIds}
+                error={runQueue.error}
+                isExpanded={isWideLayout}
+                isReordering={runQueue.isReordering}
+                items={runQueue.items}
+                onRefresh={runQueue.refresh}
+                onRemove={runQueue.remove}
+                onReorder={runQueue.reorder}
+              />
+            ) : null}
+
+            {initializationBlocked ? (
+              <div
+                className={cx(
+                  "workspace-chat-composer-accessory min-w-0 shrink-0 rounded-xl bg-[var(--workspace-panel-raised-bg)] px-4 py-3 text-[var(--workspace-native-text)]",
+                  isWorkspaceLayout ? "my-4" : "mb-[38px]",
+                  isWideLayout
+                    ? "mx-auto w-[calc(100%-48px)] max-w-[832px]"
+                    : "mx-4 w-[calc(100%-32px)]",
+                )}
+                role="status"
+                aria-atomic="true"
+              >
+                <p className="m-0 text-sm font-medium leading-5">
+                  {initialization?.statusText}
+                </p>
+                <p className="m-0 mt-1 text-[13px] leading-5 text-[var(--workspace-native-text-muted)]">
+                  You can message here once the company research starts. Other
+                  chats and tasks are available.
+                </p>
+              </div>
+            ) : (
+              <ChatComposer
+                context={
+                  artifactsPanel.feedback && !readOnly ? (
+                    <div className="artifacts-feedback flex items-center gap-[10px] flex-none box-border h-[60px] min-w-0 m-[0_12px] p-[10px_0] [border-bottom:1px_solid_var(--workspace-divider,_#dedbd2)] text-[var(--workspace-native-text,_#30352f)]">
+                      <PencilLine size={18} aria-hidden />
+                      <div className="flex flex-1 flex-col gap-[2px] min-w-0">
+                        <span className="text-workspace-muted text-[length:11px] leading-[16px]">
+                          Request changes
+                        </span>
+                        <span
+                          className="overflow-hidden text-ellipsis whitespace-nowrap text-[length:13px] font-[500] leading-[20px]"
+                          title={artifactsPanel.feedback.title}
+                        >
+                          {artifactsPanel.feedback.title}
+                        </span>
+                      </div>
+                      <button
+                        className="artifacts-icon-button"
+                        type="button"
+                        aria-label="Cancel change request"
+                        title="Cancel change request"
+                        onClick={(event) => {
+                          artifactsPanel.clearFeedback();
+                          event.currentTarget.form
+                            ?.querySelector("textarea")
+                            ?.focus();
+                        }}
+                      >
+                        <X size={14} aria-hidden />
+                      </button>
+                    </div>
+                  ) : undefined
+                }
+                artifactContext={
+                  conversationTab?.kind === "direct" && studioCompanyId
                     ? {
-                        ...artifacts,
-                        items: artifactNavigation.pending,
-                        count: artifactNavigation.pending.length,
+                        companyId: studioCompanyId,
+                        draftKey: conversationTab.id,
+                        conversationId: conversationId ?? undefined,
+                        agentId: conversationTab.agentId ?? undefined,
                       }
-                    : artifacts
+                    : undefined
                 }
-                reviewOnly={artifactNavigation.reviewOnly}
-                linkedArtifactLoading={
-                  artifactNavigation.loading ||
-                  Boolean(
-                    artifactsPanel.selection &&
-                    !selectedArtifact &&
-                    selectedResult.isFetching,
-                  )
+                key={conversationTab?.id ?? conversationId ?? selectedTeam}
+                sessionKey={
+                  conversationTab?.id ?? conversationId ?? selectedTeam
                 }
-                linkedArtifactUnavailable={
-                  artifactNavigation.unavailable || selectedResult.isError
+                ariaLabel={
+                  artifactsPanel.feedback && !readOnly
+                    ? `Request change to ${artifactsPanel.feedback.title}`
+                    : composerAriaLabel
                 }
-                onRetryLinkedArtifact={
-                  artifactNavigation.target
-                    ? artifactNavigation.retry
-                    : () => void selectedResult.refetch()
-                }
-                onShowAll={() => {
-                  artifactNavigation.clear();
-                  artifactsPanel.back();
-                }}
-                onClose={closeArtifacts}
-                onSelect={selectArtifact}
+                disabled={readOnly || isComposerBlockedByDiscoveryChoice}
+                readOnly={readOnly}
                 onCreateWhiteboard={
                   canCreateWhiteboard ? createWhiteboard : undefined
                 }
+                sendBlocked={modelSettingsSaving}
+                modelControls={
+                  surface === "conversation" &&
+                  !readOnly &&
+                  studioCompanyId &&
+                  conversationId &&
+                  (conversationTab?.kind === "direct" ||
+                    conversationTab?.kind === "task") ? (
+                    <ChatModelSettings
+                      key={conversationId}
+                      companyId={studioCompanyId}
+                      conversationId={conversationId}
+                      onSavingChange={setModelSettingsSaving}
+                    />
+                  ) : undefined
+                }
+                draftMessage={draftMessage}
+                focusRequestKey={
+                  focusRequestKey + artifactsPanel.focusRequestKey
+                }
+                isExpanded={isWideLayout}
+                currentRun={runQueue.currentRun}
+                queueAvailability={runQueue.availability}
+                isQueueFull={runQueue.items.length >= runQueue.limit}
+                queueLimit={runQueue.limit}
+                isStopping={runQueue.isStopping}
+                minimal={isWorkspaceLayout}
+                suggestions={
+                  isWorkspaceLayout &&
+                  conversationTab?.kind === "direct" &&
+                  selectedTeam === CEO_CHAT_TEAM_ID &&
+                  connectionStatus === "connected" &&
+                  visibleMessages.length === 0 &&
+                  !hasOlderMessages &&
+                  !historyLoadError &&
+                  !focusedHistory &&
+                  !runQueue.currentRun &&
+                  runQueue.items.length === 0
+                    ? ceoMessageSuggestions
+                    : undefined
+                }
+                onDraftMessageChange={onDraftMessageChange}
+                onFocus={onComposerFocus}
+                onSendMessage={handleComposerSendMessage}
+                prepareMessage={prepareComposerMessage}
+                onStop={
+                  canStopRun
+                    ? () =>
+                        runQueue.stop().catch(() => {
+                          toast.error("The current run could not be stopped.");
+                        })
+                    : undefined
+                }
+                placeholder={
+                  readOnly
+                    ? readOnlyPlaceholder
+                    : isComposerBlockedByDiscoveryChoice
+                      ? "Choose an option above to continue"
+                      : hasPendingDiscoveryOtherChoice
+                        ? "Type another answer..."
+                        : artifactsPanel.feedback
+                          ? "What would you like to change?"
+                          : composerPlaceholder
+                }
               />
+            )}
+
+            <p
+              className={cx(
+                "pointer-events-none absolute bottom-[17px] left-1/2 m-0 -translate-x-1/2 whitespace-nowrap text-[12px] font-normal leading-none text-white/35",
+                isWorkspaceLayout && "workspace-chat-tagline",
+              )}
+            >
+              Zenith Team Agents can learn through conversations
+            </p>
+          </div>
+
+          {artifactContext && (
+            <div
+              id={`conversation-artifacts-${artifactContext.conversationId}`}
+              className="artifacts-aside"
+              data-viewer={Boolean(
+                selectedFile || selectedArtifact || mailSelection,
+              )}
+              data-resizing={artifactsResize.resizing || undefined}
+              style={{ flexBasis: artifactsResize.width }}
+              hidden={!sidePanelVisible}
+              ref={artifactsAsideRef}
+              onKeyDown={handleArtifactsKeyDown}
+            >
+              <div
+                className="artifacts-resize-handle"
+                aria-controls={`conversation-artifacts-${artifactContext.conversationId}`}
+                {...artifactsResize.separatorProps}
+              />
+              <div
+                className="artifacts-list-container"
+                hidden={Boolean(
+                  selectedFile || selectedArtifact || mailSelection,
+                )}
+              >
+                <ConversationArtifactsPanel
+                  key={artifactsPanel.key}
+                  companyId={artifactContext.companyId}
+                  artifacts={
+                    artifactNavigation.reviewOnly
+                      ? {
+                          ...artifacts,
+                          items: artifactNavigation.pending,
+                          count: artifactNavigation.pending.length,
+                        }
+                      : artifacts
+                  }
+                  reviewOnly={artifactNavigation.reviewOnly}
+                  linkedArtifactLoading={
+                    artifactNavigation.loading ||
+                    Boolean(
+                      artifactsPanel.selection &&
+                      !selectedArtifact &&
+                      selectedResult.isFetching,
+                    )
+                  }
+                  linkedArtifactUnavailable={
+                    artifactNavigation.unavailable || selectedResult.isError
+                  }
+                  onRetryLinkedArtifact={
+                    artifactNavigation.target
+                      ? artifactNavigation.retry
+                      : () => void selectedResult.refetch()
+                  }
+                  onShowAll={() => {
+                    artifactNavigation.clear();
+                    artifactsPanel.back();
+                  }}
+                  onClose={closeArtifacts}
+                  onSelect={selectArtifact}
+                  onCreateWhiteboard={
+                    canCreateWhiteboard ? createWhiteboard : undefined
+                  }
+                />
+              </div>
+              {selectedFile ? (
+                <ChatFileViewer
+                  key={chatFileDescription(selectedFile).id}
+                  source={selectedFile}
+                  onClose={closeArtifacts}
+                />
+              ) : sidePanelVisible && mailSelection && conversationId ? (
+                <AgentMailDraftPanel
+                  key={`${artifactContext.companyId}:${conversationId}:${mailSelection.groupId}`}
+                  companyId={artifactContext.companyId}
+                  conversationId={conversationId}
+                  group={agentMail.group}
+                  loading={agentMail.loading}
+                  error={agentMail.error}
+                  readOnly={readOnly || !agentMailActionsEnabled}
+                  onClose={closeArtifacts}
+                  onRetry={agentMail.refresh}
+                  onDirtyChange={setHasUnsavedMail}
+                />
+              ) : artifactsVisible &&
+                selectedArtifact &&
+                studioOpen &&
+                conversationId &&
+                studioCompanyId ? (
+                <StudioModePanel
+                  key={`${studioCompanyId}:${conversationId}:${studioRuntimeId}:${studioAgentId}`}
+                  companyId={studioCompanyId}
+                  conversationId={conversationId}
+                  runtimeId={studioRuntimeId ?? ""}
+                  agentId={studioAgentId ?? ""}
+                  onClose={() => setStudioOpen(false)}
+                />
+              ) : artifactsVisible && selectedArtifact ? (
+                <ConversationArtifactViewer
+                  artifact={selectedArtifact}
+                  companyId={artifactContext.companyId}
+                  initialFileId={
+                    artifactNavigation.target?.artifactId ===
+                    selectedArtifact.artifact.id
+                      ? artifactNavigation.target.fileId
+                      : undefined
+                  }
+                  onBack={backToArtifacts}
+                  onClose={closeArtifacts}
+                  onOpenStudio={
+                    conversationId && studioCompanyId && !readOnly
+                      ? () => setStudioOpen(true)
+                      : undefined
+                  }
+                  onFeedback={
+                    readOnly || isComposerBlockedByDiscoveryChoice
+                      ? undefined
+                      : artifactsPanel.giveFeedback
+                  }
+                />
+              ) : null}
             </div>
-            {selectedFile ? (
+          )}
+
+          {selectedFile && !artifactContext ? (
+            <div
+              className="artifacts-aside"
+              data-viewer="true"
+              style={{ flexBasis: artifactsResize.width }}
+              ref={artifactsAsideRef}
+              onKeyDown={handleArtifactsKeyDown}
+            >
+              <div
+                className="artifacts-resize-handle"
+                {...artifactsResize.separatorProps}
+              />
               <ChatFileViewer
                 key={chatFileDescription(selectedFile).id}
                 source={selectedFile}
                 onClose={closeArtifacts}
               />
-            ) : sidePanelVisible && mailSelection && conversationId ? (
-              <AgentMailDraftPanel
-                key={`${artifactContext.companyId}:${conversationId}:${mailSelection.groupId}`}
-                companyId={artifactContext.companyId}
-                conversationId={conversationId}
-                group={agentMail.group}
-                loading={agentMail.loading}
-                error={agentMail.error}
-                readOnly={readOnly || !agentMailActionsEnabled}
-                onClose={closeArtifacts}
-                onRetry={agentMail.refresh}
-                onDirtyChange={setHasUnsavedMail}
-              />
-            ) : artifactsVisible &&
-              selectedArtifact &&
-              studioOpen &&
-              conversationId &&
-              studioCompanyId ? (
-              <StudioModePanel
-                key={`${studioCompanyId}:${conversationId}:${studioRuntimeId}:${studioAgentId}`}
-                companyId={studioCompanyId}
-                conversationId={conversationId}
-                runtimeId={studioRuntimeId ?? ""}
-                agentId={studioAgentId ?? ""}
-                onClose={() => setStudioOpen(false)}
-              />
-            ) : artifactsVisible && selectedArtifact ? (
-              <ConversationArtifactViewer
-                artifact={selectedArtifact}
-                companyId={artifactContext.companyId}
-                initialFileId={
-                  artifactNavigation.target?.artifactId ===
-                  selectedArtifact.artifact.id
-                    ? artifactNavigation.target.fileId
-                    : undefined
-                }
-                onBack={backToArtifacts}
-                onClose={closeArtifacts}
-                onOpenStudio={
-                  conversationId && studioCompanyId && !readOnly
-                    ? () => setStudioOpen(true)
-                    : undefined
-                }
-                onFeedback={
-                  readOnly || isComposerBlockedByDiscoveryChoice
-                    ? undefined
-                    : artifactsPanel.giveFeedback
-                }
-              />
-            ) : null}
-          </div>
-        )}
-
-        {selectedFile && !artifactContext ? (
-          <div
-            className="artifacts-aside"
-            data-viewer="true"
-            style={{ flexBasis: artifactsResize.width }}
-            ref={artifactsAsideRef}
-            onKeyDown={handleArtifactsKeyDown}
-          >
-            <div
-              className="artifacts-resize-handle"
-              {...artifactsResize.separatorProps}
-            />
-            <ChatFileViewer
-              key={chatFileDescription(selectedFile).id}
-              source={selectedFile}
-              onClose={closeArtifacts}
-            />
-          </div>
+            </div>
+          ) : null}
+        </ChatPanelContainer>
+        {pendingProductSummary ? (
+          <ChatProductSummaryDialog
+            image={pendingProductImage}
+            open={Boolean(pendingDiscoveryPlanHandoff)}
+            summary={pendingProductSummary}
+            onConfirm={handleConfirmDiscoveryPlanHandoff}
+            onEdit={handleEditDiscoveryPlanHandoff}
+          />
         ) : null}
-      </ChatPanelContainer>
-      {pendingProductSummary ? (
-        <ChatProductSummaryDialog
-          image={pendingProductImage}
-          open={Boolean(pendingDiscoveryPlanHandoff)}
-          summary={pendingProductSummary}
-          onConfirm={handleConfirmDiscoveryPlanHandoff}
-          onEdit={handleEditDiscoveryPlanHandoff}
+        <ChatAgentPlanDialog
+          agentPlan={reviewingAgentPlan}
+          onClose={handleCloseAgentPlan}
         />
-      ) : null}
-      <ChatAgentPlanDialog
-        agentPlan={reviewingAgentPlan}
-        onClose={handleCloseAgentPlan}
-      />
-    </ChatAvatarPresence>
+      </ChatAvatarPresence>
+    </InlineChatProviders>
   );
 }
 

@@ -1,0 +1,606 @@
+{
+  "yjsVersion": "13.6.31",
+  "original": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "uiScope",
+        "attrs": {
+          "blockId": "00000000-0000-4000-8000-000000000020",
+          "name": "scenario",
+          "initial": {
+            "quantity": 2,
+            "text": "Chào 🌱",
+            "selected": "a",
+            "enabled": true
+          }
+        },
+        "content": [
+          {
+            "type": "paragraph",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000001"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Chào 🌱 team"
+              }
+            ]
+          },
+          {
+            "type": "uiStack",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000003",
+              "direction": "vertical",
+              "gap": "normal"
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000002"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Stack"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiGrid",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000005",
+              "columns": 2
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000004"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Grid"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiConditional",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000007",
+              "when": {
+                "op": "literal",
+                "value": true
+              }
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000006"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Visible"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiRepeat",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000009",
+              "items": {
+                "op": "literal",
+                "value": [
+                  {
+                    "id": "one",
+                    "amount": 2
+                  }
+                ]
+              },
+              "keyField": "id"
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000008"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Repeated"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiButton",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000010",
+              "label": "Reset",
+              "action": {
+                "type": "setState",
+                "name": "quantity",
+                "value": {
+                  "op": "literal",
+                  "value": 2
+                }
+              }
+            }
+          },
+          {
+            "type": "uiTextInput",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000011",
+              "label": "Name",
+              "bind": "text"
+            }
+          },
+          {
+            "type": "uiNumberInput",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000012",
+              "label": "Quantity",
+              "bind": "quantity"
+            }
+          },
+          {
+            "type": "uiSelect",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000013",
+              "label": "Choice",
+              "bind": "selected",
+              "options": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "type": "uiCheckbox",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000014",
+              "label": "Enabled",
+              "bind": "enabled"
+            }
+          },
+          {
+            "type": "uiSlider",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000015",
+              "label": "Amount",
+              "bind": "quantity",
+              "min": 0,
+              "max": 10,
+              "step": 1
+            }
+          },
+          {
+            "type": "paragraph",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000016"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Value: ",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "selected "
+              },
+              {
+                "type": "uiValue",
+                "attrs": {
+                  "value": {
+                    "op": "state",
+                    "name": "quantity"
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "text": " unités",
+                "marks": [
+                  {
+                    "type": "italic"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " 🌱"
+              }
+            ]
+          },
+          {
+            "type": "uiMetric",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000017",
+              "label": "Total",
+              "value": {
+                "op": "literal",
+                "value": 2.5
+              }
+            }
+          },
+          {
+            "type": "uiChart",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000018",
+              "label": "Progress",
+              "variant": "line",
+              "data": {
+                "op": "literal",
+                "value": [
+                  {
+                    "day": 1,
+                    "count": 2
+                  }
+                ]
+              },
+              "x": "day",
+              "y": "count"
+            }
+          },
+          {
+            "type": "uiDataTable",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000019",
+              "label": "Rows",
+              "data": {
+                "op": "literal",
+                "value": [
+                  {
+                    "name": "One"
+                  }
+                ]
+              },
+              "columns": [
+                {
+                  "key": "name",
+                  "label": "Name",
+                  "type": "string"
+                }
+              ],
+              "pageSize": 10
+            }
+          }
+        ]
+      },
+      {
+        "type": "uiDocument",
+        "attrs": {
+          "blockId": "00000000-0000-4000-8000-000000000021",
+          "catalogVersion": 1
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "<box><text>Inline source 🌱</text></box>"
+          }
+        ]
+      }
+    ]
+  },
+  "expected": {
+    "type": "doc",
+    "content": [
+      {
+        "type": "uiScope",
+        "attrs": {
+          "blockId": "00000000-0000-4000-8000-000000000020",
+          "name": "scenario",
+          "initial": {
+            "quantity": 2,
+            "text": "Chào 🌱",
+            "selected": "a",
+            "enabled": true
+          }
+        },
+        "content": [
+          {
+            "type": "paragraph",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000001"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Chào 🌱 creative team"
+              }
+            ]
+          },
+          {
+            "type": "uiStack",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000003",
+              "direction": "vertical",
+              "gap": "normal"
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000002"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Stack"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiGrid",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000005",
+              "columns": 2
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000004"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Grid"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiConditional",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000007",
+              "when": {
+                "op": "literal",
+                "value": true
+              }
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000006"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Visible"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiRepeat",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000009",
+              "items": {
+                "op": "literal",
+                "value": [
+                  {
+                    "id": "one",
+                    "amount": 2
+                  }
+                ]
+              },
+              "keyField": "id"
+            },
+            "content": [
+              {
+                "type": "paragraph",
+                "attrs": {
+                  "blockId": "00000000-0000-4000-8000-000000000008"
+                },
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "Repeated"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "uiButton",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000010",
+              "label": "Reset",
+              "action": {
+                "type": "setState",
+                "name": "quantity",
+                "value": {
+                  "op": "literal",
+                  "value": 2
+                }
+              }
+            }
+          },
+          {
+            "type": "uiTextInput",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000011",
+              "label": "Name",
+              "bind": "text"
+            }
+          },
+          {
+            "type": "uiNumberInput",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000012",
+              "label": "Quantity",
+              "bind": "quantity"
+            }
+          },
+          {
+            "type": "uiSelect",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000013",
+              "label": "Choice",
+              "bind": "selected",
+              "options": [
+                "a",
+                "b"
+              ]
+            }
+          },
+          {
+            "type": "uiCheckbox",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000014",
+              "label": "Enabled",
+              "bind": "enabled"
+            }
+          },
+          {
+            "type": "uiSlider",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000015",
+              "label": "Amount",
+              "bind": "quantity",
+              "min": 0,
+              "max": 10,
+              "step": 1
+            }
+          },
+          {
+            "type": "paragraph",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000016"
+            },
+            "content": [
+              {
+                "type": "text",
+                "text": "Value: ",
+                "marks": [
+                  {
+                    "type": "bold"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": "selected "
+              },
+              {
+                "type": "uiValue",
+                "attrs": {
+                  "value": {
+                    "op": "state",
+                    "name": "quantity"
+                  }
+                }
+              },
+              {
+                "type": "text",
+                "text": " unités",
+                "marks": [
+                  {
+                    "type": "italic"
+                  }
+                ]
+              },
+              {
+                "type": "text",
+                "text": " 🌱"
+              }
+            ]
+          },
+          {
+            "type": "uiMetric",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000017",
+              "label": "Reviewed total",
+              "value": {
+                "op": "literal",
+                "value": 2.5
+              }
+            }
+          },
+          {
+            "type": "uiChart",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000018",
+              "label": "Progress",
+              "variant": "line",
+              "data": {
+                "op": "literal",
+                "value": [
+                  {
+                    "day": 1,
+                    "count": 2
+                  }
+                ]
+              },
+              "x": "day",
+              "y": "count"
+            }
+          },
+          {
+            "type": "uiDataTable",
+            "attrs": {
+              "blockId": "00000000-0000-4000-8000-000000000019",
+              "label": "Rows",
+              "data": {
+                "op": "literal",
+                "value": [
+                  {
+                    "name": "One"
+                  }
+                ]
+              },
+              "columns": [
+                {
+                  "key": "name",
+                  "label": "Name",
+                  "type": "string"
+                }
+              ],
+              "pageSize": 10
+            }
+          }
+        ]
+      },
+      {
+        "type": "uiDocument",
+        "attrs": {
+          "blockId": "00000000-0000-4000-8000-000000000021",
+          "catalogVersion": 1
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "<box><text>Inline source 🌱</text></box>"
+          }
+        ]
+      }
+    ]
+  },
+  "base": "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",
+  "updateA": "AQHIAQDEZApkCwljcmVhdGl2ZSAA",
+  "updateB": "AQGsAgCoZIQBAXcOUmV2aWV3ZWQgdG90YWwBZAGEAQE="
+}

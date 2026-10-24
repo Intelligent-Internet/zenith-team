@@ -1,4 +1,4 @@
-import { canvasPath, type CanvasScope } from "../api/canvas-scope";
+import { type CanvasScope } from "../api/canvas-scope";
 
 export type WikiDocumentScope = { companyId: string; wikiPageId: string };
 export type OutputDocumentScope = {
@@ -6,19 +6,26 @@ export type OutputDocumentScope = {
   outputId: string;
   outputItemId: string;
 };
+export type PageDocumentScope = { companyId: string; pageId: string };
 export type DocumentScope =
-  CanvasScope | WikiDocumentScope | OutputDocumentScope;
+  | CanvasScope
+  | WikiDocumentScope
+  | PageDocumentScope
+  | { companyId: string; conversationId: string };
 
 export function documentScopeKey(scope: DocumentScope) {
-  return `${scope.companyId}:${"projectId" in scope ? scope.projectId : "outputId" in scope ? `output:${scope.outputId}:${scope.outputItemId}` : `wiki:${scope.wikiPageId}`}`;
+  if ("pageId" in scope) return `${scope.companyId}:page:${scope.pageId}`;
+  if ("conversationId" in scope)
+    return `${scope.companyId}:chat:${scope.conversationId}`;
+  return `${scope.companyId}:${"projectId" in scope ? scope.projectId : `wiki:${scope.wikiPageId}`}`;
 }
 
-export function blockDocumentPath(scope: DocumentScope, versionId: string) {
-  if ("outputId" in scope)
-    return `/companies/${encodeURIComponent(scope.companyId)}/artifacts/${encodeURIComponent(scope.outputId)}/review/items/${encodeURIComponent(scope.outputItemId)}/document`;
-  return "projectId" in scope
-    ? `${canvasPath(scope)}/versions/${encodeURIComponent(versionId)}/document`
-    : `/companies/${encodeURIComponent(scope.companyId)}/wiki/pages/${encodeURIComponent(scope.wikiPageId)}/document`;
+export function blockDocumentPath(scope: DocumentScope) {
+  if ("pageId" in scope)
+    return `/companies/${encodeURIComponent(scope.companyId)}/pages/${encodeURIComponent(scope.pageId)}/document`;
+  if ("wikiPageId" in scope)
+    return `/companies/${encodeURIComponent(scope.companyId)}/wiki/pages/${encodeURIComponent(scope.wikiPageId)}/document`;
+  throw new Error("An editable document requires its Page identity.");
 }
 
 // Keep aligned with the Wiki write boundary's ValidateStandaloneBlocks restriction.

@@ -240,7 +240,41 @@ func TestPresentationRetainsSourcesAndRechecksAccess(t *testing.T) {
 	if _, err = pool.Exec(ctx, `DELETE FROM outputs WHERE id=$1`, private); err == nil {
 		t.Fatal("retained evidence was deleted")
 	}
+	published, err := s.PublishPresentation(
+		ctx,
+		p,
+		f.ProjectA,
+		saved.ID,
+		PublicationInput{RequestKey: uuid.New(), ConfirmPublicExposure: true},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	publicHTML, err := s.PublicPresentationHTML(ctx, *published.PublicToken)
+	if err != nil {
+		t.Fatal(err)
+	}
 	dbtest.MustExec(t, ctx, pool, `DELETE FROM output_grants WHERE output_id=$1 AND user_id=$2`, private, f.UserA)
+	retainedPublicHTML, err := s.PublicPresentationHTML(ctx, *published.PublicToken)
+	if err != nil || retainedPublicHTML != publicHTML {
+		t.Fatalf("public capture resolved revoked sources: %v", err)
+	}
+	if err := s.RevokePublication(ctx, p, f.ProjectA, saved.ID, *published.ID); err != nil {
+		t.Fatalf("source loss prevented revocation: %v", err)
+	}
+	if _, err := s.PublishPresentation(
+		ctx,
+		p,
+		f.ProjectA,
+		saved.ID,
+		PublicationInput{RequestKey: uuid.New(), ConfirmPublicExposure: true},
+	); !errors.Is(
+		err,
+		ErrForbidden,
+	) {
+		t.Fatalf("publication after source revocation: %v", err)
+	}
+
 	redacted, err := s.Presentation(ctx, p, f.ProjectA, saved.ID)
 	if err != nil || redacted.CanExport || strings.Contains(string(redacted.Content), "Restricted evidence") {
 		t.Fatalf("redacted presentation = %+v, %v", redacted, err)
@@ -274,7 +308,7 @@ func TestPresentationRetainsSourcesAndRechecksAccess(t *testing.T) {
 		f.ProjectA,
 		Command{
 			RequestKey:       uuid.New(),
-			Type:             "add_version",
+			Type:             "checkpoint",
 			ArtifactID:       &artifact.ID,
 			VersionID:        &page.ID,
 			WikiPageID:       artifact.LatestVersion.WikiPageID,
@@ -401,8 +435,7 @@ func TestOverviewAgentAuthorityAndHumanEdits(t *testing.T) {
 		p,
 		f.ProjectA,
 		overview.VersionID,
-		peer.EncodeStateAsUpdate(),
-		draft.Sequence,
+		DocumentSyncInput{Update: peer.EncodeStateAsUpdate(), BaseSequence: draft.Sequence},
 	)
 	if err != nil || !strings.Contains(human.Markdown, "chosen by a person") ||
 		!strings.Contains(human.Markdown, "Agent result") {

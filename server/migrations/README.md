@@ -24,14 +24,15 @@ reference rows, written right after their table: the `model_prices` rates in
 | `000003_work` | Projects and their grants and files, tasks, approvals, questions, schedules and calendars |
 | `000004_conversations` | Conversations, channels, messages and their state, discussion integrity checks, huddles and notes |
 | `000005_runs` | Runs, run tokens and usage, outputs, deliverables, assets, attachments and reviews |
-| `000006_content` | Wiki, boards, canvases and documents |
+| `000006_content` | Wiki, boards, canvases, documents, Artifact access, previews and captures |
 | `000007_mail_and_social` | Company mailboxes and social publishing |
 | `000008_activity` | The activity feed, the Inbox, analytics budgets and model prices, crash reports |
 
 A foreign key points back to a table created earlier whenever it can. When a
 table links to one in a later file, that file adds the link with `ALTER TABLE`
 right after creating its own tables, under the heading "Links to these tables
-from tables created earlier".
+from tables created earlier". The `conversation_readers` view is defined in
+`000006_content`, after Artifact access and Page review tables exist.
 
 Each down file drops what its up file created, newest first, so children always
 go before the tables they reference. Rolling the whole ladder back leaves an
@@ -44,12 +45,13 @@ start the server.
 
 ## Adding a migration
 
-Append a new pair after the latest file, `NNNNNN_name.up.sql` and
-`NNNNNN_name.down.sql`, numbered one higher. Never edit a migration that is
-already on `main`. Prefer additive tables, columns, indexes and constraints
-that keep existing rows valid; when existing rows must change shape, the
-migration does it and its down file reverses it. Then regenerate sqlc with
-`make go-sqlc`; `make go-sqlc-check` fails CI on drift.
+For this greenfield implementation, edit the owning domain baseline directly.
+Define each table in its final form, with its constraints and indexes; no
+backfills, historical repair steps or compatibility aliases are needed. Add a
+new numbered up/down pair only when a change cannot fit the domain baseline.
+Keep down files in reverse table order and put cross-domain foreign keys in
+the file that creates the later target. Regenerate sqlc with `make go-sqlc`;
+`make go-sqlc-check` detects drift.
 
 `migrations/embed_test.go` keeps the set honest: versions are contiguous and
 paired, the baseline is schema only, every down file drops its tables newest

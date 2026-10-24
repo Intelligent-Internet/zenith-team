@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/mcp/tools"
 	"github.com/Intelligent-Internet/zenith-team/server/pkg/agent"
 )
 
@@ -39,6 +40,9 @@ var zenithTeamMCPToolCatalog = []string{
 	"page_create",
 	"page_read",
 	"page_edit",
+	"page_source_preview_start",
+	"page_source_preview_read",
+	"page_source_preview_patch",
 	"search_skills",
 	"social_publish",
 	"social_read",
@@ -145,7 +149,14 @@ func zenithTeamMCPToolsForRun(doc RunContext) []string {
 		if doc.ExecutionProfile.DocumentWriting {
 			return nil
 		}
-		return []string{"page_read", "page_edit", "source_read"}
+		return []string{
+			"page_read",
+			"page_edit",
+			"source_read",
+			"page_source_preview_start",
+			"page_source_preview_read",
+			"page_source_preview_patch",
+		}
 	}
 	if isScheduledRun(doc) || isCompanyInitializationRun(doc) {
 		return nil
@@ -166,6 +177,9 @@ func zenithTeamMCPToolsForRun(doc RunContext) []string {
 		allowed["page_create"] = struct{}{}
 		allowed["page_read"] = struct{}{}
 		allowed["page_edit"] = struct{}{}
+		allowed["page_source_preview_start"] = struct{}{}
+		allowed["page_source_preview_read"] = struct{}{}
+		allowed["page_source_preview_patch"] = struct{}{}
 		allowed["load_skill_reference"] = struct{}{}
 		allowed["mark_task_failed"] = struct{}{}
 		allowed["finalize_task_results"] = struct{}{}
@@ -199,12 +213,10 @@ func zenithTeamMCPToolsForRun(doc RunContext) []string {
 		allowed["social_publish"] = struct{}{}
 	}
 	removeDisabledZenithTeamTools(allowed, doc.Agent.Capabilities.DisabledBuiltIns)
-	// Page authoring and Studio both need their compiled guides independently
-	// of optional coordination actions or custom Skill snapshots.
-	if doc.ExecutionProfile.Task != nil || studioEnabledForRun(doc) || len(doc.Agent.SkillRefs) != 0 {
-		allowed["search_skills"] = struct{}{}
-		allowed["load_skill_reference"] = struct{}{}
-	}
+	// Ordinary chat can author inline Intelligent UI without a Page or Studio.
+	// Its compiled guide must be discoverable even without a custom Skill snapshot.
+	allowed["search_skills"] = struct{}{}
+	allowed["load_skill_reference"] = struct{}{}
 	tools := make([]string, 0, len(allowed))
 	for _, tool := range zenithTeamMCPToolCatalog {
 		if _, ok := allowed[tool]; ok {
@@ -319,16 +331,25 @@ func buildRunSystemPromptWithCLI(
 	builder.WriteString(
 		"\n\nZenith Team platform execution policy (takes precedence over editable Agent instructions):",
 	)
+	if !slices.Contains(zenithTeamMCPToolsForRun(doc), "load_skill_reference") {
+		builder.WriteString(intelligentUIPolicy(false))
+		builder.WriteString("\n\nBuilt-in zenith-intelligent-ui skill (required authoring guide; the Run restrictions below still apply):\n")
+		builder.WriteString(tools.IntelligentUIInstructions())
+		builder.WriteString("\n\nRun restrictions:")
+	}
 	if isDocumentRun(doc) {
 		builder.WriteString(" Work only with the supplied document and thread context. " +
 			"Native file, command, web, app and memory tools are unavailable. Do not create Tasks or publish outputs.")
 		if doc.ExecutionProfile.DocumentWriting {
-			builder.WriteString(" Return only the requested replacement text. No tools are available. " +
+			builder.WriteString(" Return only the requested replacement as Markdown with inline Intelligent UI components when useful. No tools are available. " +
 				"The application stages your response for human acceptance; it does not apply changes automatically.")
 		} else {
-			builder.WriteString(" Use page_read, page_edit and source_read only. " +
-				"Page edits are restricted to the originating Page and require human acceptance. " +
-				"Answer questions in your final response, which is posted in the document thread.")
+			builder.WriteString(
+				" Use page_read, page_edit, source_read and the page_source_preview tools only. Temporary previews never apply edits. " +
+					"For interactive content use source with languageVersion 1, following the built-in zenith-intelligent-ui guide above. " +
+					"Page edits are restricted to the originating Page and require human acceptance. " +
+					"Answer questions in your final response, which is posted in the document thread.",
+			)
 		}
 		return builder.String()
 	}
@@ -352,6 +373,11 @@ func buildRunSystemPromptWithCLI(
 	appendCompanyReferences(&builder, doc.CompanyReferences, memory.CompanyReferenceRoot)
 	appendProjectDocuments(&builder, doc)
 	appendWikiInstructions(&builder, zenithTeamMCPToolsForRun(doc))
+	if slices.Contains(zenithTeamMCPToolsForRun(doc), "load_skill_reference") {
+		builder.WriteString(intelligentUIPolicy(true))
+		builder.WriteString("\n\nzenith-intelligent-ui core:\n")
+		builder.WriteString(tools.IntelligentUICore())
+	}
 	appendWhiteboardInstructions(&builder, doc, zenithTeamMCPToolsForRun(doc))
 	appendPageInstructions(
 		&builder,
@@ -683,6 +709,27 @@ func appendPresentOutputPolicy(builder *strings.Builder, inPlace, available bool
 	)
 }
 
+// intelligentUIPolicy makes the built-in authoring guide mandatory for every
+// Agent and separates rendered responses from stored or external content,
+// which has no Intelligent UI renderer.
+func intelligentUIPolicy(loadable bool) string {
+	read := "The built-in zenith-intelligent-ui skill below is required: follow it for every response a person reads."
+	if loadable {
+		read = "The core of the built-in zenith-intelligent-ui skill is below and applies to every response a person reads, " +
+			"including short answers. Before writing any Intelligent UI component in this Run, call load_skill_reference with skillKey " +
+			"zenith-intelligent-ui and path SKILL.md for the full grammar, and follow it."
+	}
+	return "\n\nIntelligent UI (required platform policy):\n- " + read + "\n" +
+		"- Rendered with Intelligent UI (follow the skill): your final answer and messages in direct chats, Task conversations, " +
+		"scheduled-run conversations, channel and group threads, Page document threads, and Page source edits or writing suggestions. " +
+		"Write component source directly in the response with ordinary Markdown around it, never inside a Markdown fence. " +
+		"Controls never grant write authority.\n" +
+		"- Stored or external content has no Intelligent UI renderer: write it as plain Markdown or the destination's own format, " +
+		"with no components. This covers files you write or present, Wiki pages, memory, Task titles and descriptions, " +
+		"questions to approvers, emails, social posts, calendar events, commit messages and every other tool argument. " +
+		"Wiki, mail, calendar and question tools reject component source."
+}
+
 // appendConversationParticipants tells the agent how a shared chat works:
 // messages carry their authors, the message to answer arrives last in the
 // prompt, history is reference material, and zen reads what the prompt left
@@ -698,7 +745,9 @@ func appendConversationParticipants(builder *strings.Builder, doc RunContext, cl
 			"- Use the supplied bounded channel history. Do not infer access to personal chats or other channels. " +
 			"If essential context is absent, ask the caller for it.\n" +
 			"- Your answer goes to everyone in this chat. Zenith Team shows you the Projects and Tasks that the person who asked can see. " +
-			"Share only what the request needs; the person who asked is responsible for what you share here.\n")
+			"Share only what the request needs; the person who asked is responsible for what you share here.\n" +
+			"- Intelligent UI components in your answer render for every member, each with their own local state. " +
+			"A channel has no chat-send path: do not use FollowUp or GenUI.issueNewTurn.\n")
 		return
 	}
 	if isScheduledRun(doc) || !cliCommandAdmitted(cli, runConversationMessagesUse) {

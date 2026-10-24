@@ -1,3 +1,6 @@
+import { RetainedArtifactViewer } from "@/features/project-canvas/previews/artifact-file-viewer";
+import { ArtifactSharing } from "@/features/project-canvas/documents/artifact-sharing";
+import { useLiveArtifactAccessQuery } from "@/features/project-canvas/api/artifact-access-api";
 import { useGetWorkspaceTaskQuery } from "@/shared/api/task-api";
 import { DeliveryFreshness } from "../components/delivery-freshness";
 import { artifactSourceHref } from "../model/artifact-source-href";
@@ -10,6 +13,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { outputDocumentLocation } from "@/features/project-canvas/documents/output-document-location";
 import {
   Link,
+  Navigate,
   useLocation,
   useNavigate,
   useParams,
@@ -48,6 +52,55 @@ const BoardArtifact = lazy(
 
 export function SharedArtifactPage() {
   const { companyId = "", artifactId = "" } = useParams();
+  const access = useLiveArtifactAccessQuery(
+    { companyId, artifactId },
+    {
+      skip: !companyId || !artifactId || artifactId === "unowned",
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+    },
+  );
+  const work = access.isError ? undefined : access.currentData;
+  if (access.isLoading)
+    return (
+      <p role="status" className="p-6">
+        Opening Artifact…
+      </p>
+    );
+  if (work?.type === "page")
+    return (
+      <Navigate
+        to={`/app/companies/${encodeURIComponent(companyId)}/pages/${encodeURIComponent(artifactId)}`}
+        replace
+      />
+    );
+  if (work?.type === "whiteboard")
+    return (
+      <main className="artifact-share-page artifact-share-page--whiteboard">
+        <header className="flex items-center justify-between gap-3 border-b border-border px-6 py-3">
+          <Link to="/app">Back to workspace</Link>
+        </header>
+        <Suspense fallback={<p role="status">Opening whiteboard…</p>}>
+          <BoardArtifact
+            companyId={companyId}
+            artifactId={artifactId}
+            title={work.title}
+            layout="page"
+          />
+        </Suspense>
+      </main>
+    );
+  if (work && ["file", "media", "app"].includes(work.type))
+    return (
+      <main className="artifact-share-page flex min-h-0 flex-col">
+        <header className="flex items-center justify-between gap-3 border-b border-border px-6 py-3">
+          <Link to="/app">Back to workspace</Link>
+          <h1 className="min-w-0 truncate font-medium">{work.title}</h1>
+          <ArtifactSharing scope={{ companyId, artifactId }} noun="Artifact" />
+        </header>
+        <RetainedArtifactViewer scope={{ companyId, artifactId }} />
+      </main>
+    );
   return <SharedArtifactPageContent key={`${companyId}/${artifactId}`} />;
 }
 

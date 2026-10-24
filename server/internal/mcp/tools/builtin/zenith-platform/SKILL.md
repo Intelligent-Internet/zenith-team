@@ -103,3 +103,6 @@ a Run with exit code `3`.
 6. If the Task cannot be completed for a genuine business reason,
    `zen task fail --reason` with concise evidence and end the Run.
    Missing setup or a pending approval is not a failure.
+
+For Intelligent UI source authoring, search for `zenith-intelligent-ui` and load its
+`SKILL.md`. It defines the supported grammar, components and guarded edit workflow.

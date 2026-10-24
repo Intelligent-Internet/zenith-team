@@ -53,7 +53,7 @@ SELECT matches.id, matches.title, matches.summary, matches.updated_at, matches.t
   ts_headline('simple', revision.body, matches.query,
     'StartSel="", StopSel="", MaxFragments=2, MaxWords=28, MinWords=12, FragmentDelimiter=" ... "')::text AS snippet
 FROM matches
-JOIN wiki_revisions revision ON revision.id = matches.current_revision_id
+JOIN document_snapshots revision ON revision.id = matches.current_revision_id
 LEFT JOIN wiki_collections collection ON collection.company_id = sqlc.arg(company_id)::uuid
   AND collection.id = matches.collection_id
 ORDER BY matches.rank DESC, matches.updated_at DESC, matches.id DESC;
@@ -87,7 +87,7 @@ WHERE p.company_id = sqlc.arg(company_id)::uuid AND p.status = 'active'
 SELECT p.id, p.title, p.summary, p.updated_at,
   revision.number AS revision_number, collection.name AS collection_name
 FROM company_wiki_pages p
-JOIN wiki_revisions revision ON revision.id = p.current_revision_id
+JOIN document_snapshots revision ON revision.id = p.current_revision_id
 JOIN company_members actor ON actor.company_id = p.company_id
   AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
 LEFT JOIN wiki_collections collection ON collection.company_id = p.company_id
@@ -111,7 +111,7 @@ SELECT p.id, p.title, p.summary, p.updated_at,
   char_length(revision.body)::int AS total_chars,
   substr(revision.body, sqlc.arg(char_offset)::int + 1, sqlc.arg(char_limit)::int)::text AS content
 FROM company_wiki_pages p
-JOIN wiki_revisions revision ON revision.id = p.current_revision_id
+JOIN document_snapshots revision ON revision.id = p.current_revision_id
 JOIN company_members actor ON actor.company_id = p.company_id
   AND actor.user_id = sqlc.arg(actor_user_id)::uuid AND actor.status = 'active'
 LEFT JOIN wiki_collections collection ON collection.company_id = p.company_id
@@ -177,7 +177,7 @@ SELECT w.id, w.kind, w.query, w.result_count, w.page_id, w.revision_id, w.revisi
   page.status AS page_status, current_revision.number AS page_current_revision
 FROM run_wiki_reads w
 LEFT JOIN company_wiki_pages page ON page.company_id = w.company_id AND page.id = w.page_id
-LEFT JOIN wiki_revisions current_revision ON current_revision.id = page.current_revision_id
+LEFT JOIN document_snapshots current_revision ON current_revision.id = page.current_revision_id
 WHERE w.company_id = sqlc.arg(company_id)::uuid AND w.run_id = sqlc.arg(run_id)::uuid
 ORDER BY w.created_at, w.id
 LIMIT 200;

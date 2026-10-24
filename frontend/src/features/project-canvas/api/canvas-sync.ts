@@ -75,8 +75,8 @@ export function watchDocumentChanges(
     if (
       event.type === "canvas.document_changed" &&
       ((options.getPageId() && event.payload.pageId === options.getPageId()) ||
-        ("projectId" in scope && event.payload.projectId === scope.projectId) ||
-        ("outputId" in scope && event.payload.outputId === scope.outputId)) &&
+        ("projectId" in scope &&
+          event.payload.projectId === scope.projectId)) &&
       typeof event.payload.pageId === "string" &&
       typeof event.payload.sequence === "number"
     ) {

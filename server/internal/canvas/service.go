@@ -41,10 +41,15 @@ type CanvasService interface {
 var _ CanvasService = (*DefaultCanvasService)(nil)
 
 type DefaultCanvasService struct {
+	authoring           wiki.UIAuthoringPolicy
 	store               *db.Store
 	bus                 *events.Bus
 	attachments         attachment.AttachmentService
 	invokeDocumentAgent DocumentAgentInvoker
+}
+
+func WithCanvasUIAuthoringPolicy(policy wiki.UIAuthoringPolicy) Option {
+	return func(s *DefaultCanvasService) { s.authoring = policy }
 }
 
 func NewCanvasService(
@@ -128,6 +133,12 @@ func lookup(err error) error {
 }
 
 func mapWrite(err error) error {
+	// Source diagnostics carry repair spans needed by authoring clients.
+	var diagnostic *wiki.SourceDiagnostic
+	if errors.As(err, &diagnostic) {
+		return err
+	}
+
 	switch {
 	case errors.Is(err, pgx.ErrNoRows), errors.Is(err, wiki.ErrPageNotFound):
 		return ErrNotFound
@@ -136,7 +147,7 @@ func mapWrite(err error) error {
 	case errors.Is(err, wiki.ErrPageConflict):
 		return ErrConflict
 	case errors.Is(err, wiki.ErrPageInvalidInput), errors.Is(err, wiki.ErrPageArchived):
-		return ErrInvalid
+		return fmt.Errorf("%w: %w", ErrInvalid, err)
 	case errors.Is(err, wiki.ErrPageBodyTooLarge):
 		return ErrLimit
 	}
@@ -154,7 +165,7 @@ func mapWrite(err error) error {
 }
 
 func nullable(id *uuid.UUID) uuid.NullUUID {
-	if id == nil {
+	if id == nil || *id == uuid.Nil {
 		return uuid.NullUUID{}
 	}
 	return uuid.NullUUID{UUID: *id, Valid: true}
@@ -328,120 +339,127 @@ func (s *DefaultCanvasService) Mutate(
 	var result Result
 	var pending *events.Event
 	var agentEvents []events.Event
-	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		access, err := authorize(ctx, q, p, project, false)
-		if err != nil {
-			return err
-		}
-		permission := auth.ProjectPermissionTasksWrite
-		if (input.Type == "add_artifact" || input.Type == "add_version") && input.AttachmentID != nil {
-			permission = auth.ProjectPermissionFilesManage
-		}
-		if !access.Can(permission) {
-			return auth.ErrProjectPermissionRequired
-		}
-		// Existing execution conversations precede canvas and thread locks, as
-		// they do when a completed Run posts its reply.
-		if input.ThreadID != nil && len(input.AgentIDs) > 0 {
-			if _, err = q.LockDocumentAgentConversations(
+	for range 3 {
+		result, pending, agentEvents = Result{}, nil, nil
+		err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
+			access, err := authorize(ctx, q, p, project, false)
+			if err != nil {
+				return err
+			}
+			permission := auth.ProjectPermissionTasksWrite
+			if (input.Type == "add_artifact" || input.Type == "add_version") && input.AttachmentID != nil {
+				permission = auth.ProjectPermissionFilesManage
+			}
+			if !access.Can(permission) {
+				return auth.ErrProjectPermissionRequired
+			}
+			// Existing execution conversations precede canvas and thread locks, as
+			// they do when a completed Run posts its reply.
+			conversations, err := lockCommentAgentConversations(
 				ctx,
-				generated.LockDocumentAgentConversationsParams{
-					CompanyID:        p.CompanyID,
-					DocumentThreadID: nullable(input.ThreadID),
-					CreatedByUserID:  nullable(&p.UserID),
-					AgentIds:         input.AgentIDs,
+				q,
+				commentAgentRequest{Principal: p, Command: input},
+			)
+			if err != nil {
+				return err
+			}
+			board, err := q.EnsureProjectCanvas(
+				ctx,
+				generated.EnsureProjectCanvasParams{CompanyID: p.CompanyID, ProjectID: project},
+			)
+			if err != nil {
+				return err
+			}
+			receipt, err := q.GetCanvasReceipt(
+				ctx,
+				generated.GetCanvasReceiptParams{
+					ProjectID:   project,
+					ActorUserID: p.UserID,
+					RequestKey:  input.RequestKey,
+				},
+			)
+			if err == nil {
+				if string(receipt.RequestHash) != string(hash[:]) {
+					return ErrConflict
+				}
+				return json.Unmarshal(receipt.Result, &result)
+			}
+			if !errors.Is(err, pgx.ErrNoRows) {
+				return err
+			}
+			changes := Changes{
+				Items:            []uuid.UUID{},
+				Artifacts:        []uuid.UUID{},
+				Edges:            []uuid.UUID{},
+				Removed:          []uuid.UUID{},
+				ReviewVersionIDs: []uuid.UUID{},
+			}
+			result.ID, err = s.apply(
+				ctx,
+				q,
+				mutation{
+					Principal: p,
+					ProjectID: project,
+					CanvasID:  board.ID,
+					Access:    access,
+					Input:     input,
+					Changes:   &changes,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			if err := conversations.check(ctx, q); err != nil {
+				return err
+			}
+			if err = s.invokeCommentAgents(
+				ctx,
+				q,
+				&agentEvents,
+				commentAgentRequest{Principal: p, ThreadID: result.ID, Command: input},
+			); err != nil {
+				return err
+			}
+			result.Sequence, err = q.AdvanceCanvasHead(
+				ctx,
+				generated.AdvanceCanvasHeadParams{CompanyID: p.CompanyID, ProjectID: project},
+			)
+			if err != nil {
+				return err
+			}
+			changeBytes, err := json.Marshal(changes)
+			if err != nil {
+				return err
+			}
+			resultBytes, err := json.Marshal(result)
+			if err != nil {
+				return err
+			}
+			if err = q.InsertCanvasReceipt(
+				ctx,
+				generated.InsertCanvasReceiptParams{
+					CompanyID:   p.CompanyID,
+					ProjectID:   project,
+					Seq:         result.Sequence,
+					ActorUserID: p.UserID,
+					RequestKey:  input.RequestKey,
+					RequestHash: hash[:],
+					Changes:     changeBytes,
+					Result:      resultBytes,
 				},
 			); err != nil {
 				return err
 			}
-		}
-		board, err := q.EnsureProjectCanvas(
-			ctx,
-			generated.EnsureProjectCanvasParams{CompanyID: p.CompanyID, ProjectID: project},
-		)
-		if err != nil {
+			pending, err = changeEvent(ctx, q, p, project, result.Sequence, uuid.Nil)
 			return err
+		})
+		if !errors.Is(err, errDocumentAgentConversationChanged) {
+			break
 		}
-		receipt, err := q.GetCanvasReceipt(
-			ctx,
-			generated.GetCanvasReceiptParams{
-				ProjectID:   project,
-				ActorUserID: p.UserID,
-				RequestKey:  input.RequestKey,
-			},
-		)
-		if err == nil {
-			if string(receipt.RequestHash) != string(hash[:]) {
-				return ErrConflict
-			}
-			return json.Unmarshal(receipt.Result, &result)
-		}
-		if !errors.Is(err, pgx.ErrNoRows) {
-			return err
-		}
-		changes := Changes{
-			Items:            []uuid.UUID{},
-			Artifacts:        []uuid.UUID{},
-			Edges:            []uuid.UUID{},
-			Removed:          []uuid.UUID{},
-			ReviewVersionIDs: []uuid.UUID{},
-		}
-		result.ID, err = s.apply(
-			ctx,
-			q,
-			mutation{
-				Principal: p,
-				ProjectID: project,
-				CanvasID:  board.ID,
-				Access:    access,
-				Input:     input,
-				Changes:   &changes,
-			},
-		)
-		if err != nil {
-			return err
-		}
-		if err = s.invokeCommentAgents(
-			ctx,
-			q,
-			&agentEvents,
-			commentAgentRequest{Principal: p, ThreadID: result.ID, Command: input},
-		); err != nil {
-			return err
-		}
-		result.Sequence, err = q.AdvanceCanvasHead(
-			ctx,
-			generated.AdvanceCanvasHeadParams{CompanyID: p.CompanyID, ProjectID: project},
-		)
-		if err != nil {
-			return err
-		}
-		changeBytes, err := json.Marshal(changes)
-		if err != nil {
-			return err
-		}
-		resultBytes, err := json.Marshal(result)
-		if err != nil {
-			return err
-		}
-		if err = q.InsertCanvasReceipt(
-			ctx,
-			generated.InsertCanvasReceiptParams{
-				CompanyID:   p.CompanyID,
-				ProjectID:   project,
-				Seq:         result.Sequence,
-				ActorUserID: p.UserID,
-				RequestKey:  input.RequestKey,
-				RequestHash: hash[:],
-				Changes:     changeBytes,
-				Result:      resultBytes,
-			},
-		); err != nil {
-			return err
-		}
-		pending, err = changeEvent(ctx, q, p, project, result.Sequence, uuid.Nil)
-		return err
-	})
+	}
+	if errors.Is(err, errDocumentAgentConversationChanged) {
+		err = ErrConflict
+	}
 	if err != nil {
 		return Result{}, mapWrite(err)
 	}

@@ -104,15 +104,24 @@ type AgentWriteService interface {
 var _ AgentWriteService = (*DefaultAgentWriteService)(nil)
 
 type DefaultAgentWriteService struct {
-	store *db.Store
-	bus   *events.Bus
+	authoring UIAuthoringPolicy
+	store     *db.Store
+	bus       *events.Bus
 }
 
-func NewAgentWriteService(store *db.Store, bus *events.Bus) (*DefaultAgentWriteService, error) {
+func NewAgentWriteService(
+	store *db.Store,
+	bus *events.Bus,
+	policy ...UIAuthoringPolicy,
+) (*DefaultAgentWriteService, error) {
 	if store == nil || bus == nil {
 		return nil, errors.New("Wiki agent write store and event bus are required")
 	}
-	return &DefaultAgentWriteService{store: store, bus: bus}, nil
+	service := &DefaultAgentWriteService{store: store, bus: bus}
+	if len(policy) > 0 {
+		service.authoring = policy[0]
+	}
+	return service, nil
 }
 
 // agentWriteTarget is a page the research owns, or creates in this call.
@@ -254,7 +263,7 @@ func resolveWikiKeys(markdown string, known map[string]agentWriteTarget) (string
 // state would discard a person's concurrent save). What the batch holds is its
 // own page rows and the research-write lock, never the Company or anyone
 // else's page.
-func replaceDraftInTx(
+func (s *DefaultAgentWriteService) replaceDraftInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	companyID, pageID uuid.UUID,
@@ -265,6 +274,9 @@ func replaceDraftInTx(
 ) (int64, error) {
 	draft, err := BlockDraftInTx(ctx, q, companyID, pageID)
 	if err != nil {
+		return 0, err
+	}
+	if err := s.authoring.Check(int(draft.SchemaVersion), BlockNode{}); err != nil {
 		return 0, err
 	}
 	root := BlocksFromMarkdown(markdown)
@@ -293,7 +305,8 @@ func replaceDraftInTx(
 		return 0, err
 	}
 	saved, err := q.RestoreWikiBlockDraft(ctx, generated.RestoreWikiBlockDraftParams{
-		CompanyID: companyID, PageID: pageID, State: state, Content: content,
+		SchemaVersion: int32(UIDocumentSchema(root)),
+		CompanyID:     companyID, PageID: pageID, State: state, Content: content,
 		Markdown: strings.TrimRight(body, "\n"), Title: title, Summary: summary,
 		CollectionID: nullableUUID(collectionID), HeadSeq: draft.HeadSeq,
 	})
@@ -313,7 +326,7 @@ func replaceDraftInTx(
 
 // savePageInTx replaces a page's content, publishes it as the Agent's revision
 // on behalf of the member, and returns the draft sequence the publish left.
-func savePageInTx(
+func (s *DefaultAgentWriteService) savePageInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	principal auth.UserPrincipal,
@@ -332,7 +345,7 @@ func savePageInTx(
 	if err != nil {
 		return PageResponse{}, false, 0, fmt.Errorf("lock Wiki page: %w", err)
 	}
-	sequence, err := replaceDraftInTx(
+	sequence, err := s.replaceDraftInTx(
 		ctx,
 		q,
 		principal.CompanyID,
@@ -381,7 +394,7 @@ func (s *DefaultAgentWriteService) Write(
 	var pending []events.Event
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
 		response, pending = AgentWriteResponse{Pages: []AgentWriteResult{}, Warnings: []string{}}, nil
-		return writeInTx(ctx, q, principal, runID, input, &response, &pending)
+		return s.writeInTx(ctx, q, principal, runID, input, &response, &pending)
 	})
 	if err != nil {
 		return AgentWriteResponse{}, err
@@ -392,7 +405,7 @@ func (s *DefaultAgentWriteService) Write(
 	return response, nil
 }
 
-func writeInTx(
+func (s *DefaultAgentWriteService) writeInTx(
 	ctx context.Context,
 	q *generated.Queries,
 	principal auth.UserPrincipal,
@@ -532,7 +545,7 @@ func writeInTx(
 				missingKey,
 			))
 		}
-		page, firstPublication, draftSeq, err := savePageInTx(
+		page, firstPublication, draftSeq, err := s.savePageInTx(
 			ctx,
 			q,
 			principal,

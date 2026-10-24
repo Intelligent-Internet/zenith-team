@@ -144,6 +144,16 @@ const ProjectsPage = lazy(() =>
     default: module.ProjectsPage,
   })),
 );
+const PageLibrary = lazy(() =>
+  import("@/features/project-canvas/documents/page-library").then((module) => ({
+    default: module.PageLibrary,
+  })),
+);
+const PageWorkspace = lazy(() =>
+  import("@/features/project-canvas/documents/page-library").then((module) => ({
+    default: module.PageWorkspace,
+  })),
+);
 const WikiPage = lazy(() =>
   import("@/features/company-wiki/wiki-page").then((module) => ({
     default: module.WikiPage,
@@ -504,14 +514,14 @@ function AppShellRoute({ session }: { session: SessionSnapshot }) {
   }
 
   if (nextRoute !== "/app") {
-    const isArtifactRoute =
-      /^\/companies\/[0-9a-f-]{36}\/artifacts\/(?:[0-9a-f-]{36}|unowned)$/i.test(
+    const isSharedWorkRoute =
+      /^\/companies\/[0-9a-f-]{36}\/(?:artifacts|pages)\/(?:[0-9a-f-]{36}|unowned)$/i.test(
         location.pathname,
       );
     return (
       <AuthenticationRedirect
         to={nextRoute}
-        returnPath={isArtifactRoute ? requestedPath : undefined}
+        returnPath={isSharedWorkRoute ? requestedPath : undefined}
       />
     );
   }
@@ -869,6 +879,11 @@ function AppRoutes() {
           <Route path="team" element={<TeamPage />} />
           <Route path="tasks" element={<CompanyPlanPage />} />
           <Route path="projects" element={<ProjectsPage />} />
+          <Route path="pages" element={<PageLibrary />} />
+          <Route
+            path="companies/:companyId/pages/:pageId"
+            element={<PageWorkspace />}
+          />
           <Route path="wiki" element={<WikiPage />} />
           <Route path="wiki/pages/:pageId" element={<WikiPage />} />
           <Route

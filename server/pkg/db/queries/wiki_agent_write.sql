@@ -42,7 +42,7 @@ WHERE company_id = sqlc.arg(company_id)::uuid AND page_id = sqlc.arg(page_id)::u
 
 -- name: SetWikiRevisionAuthorAgent :exec
 -- Names the Agent that wrote a revision on behalf of its author_user_id.
-UPDATE wiki_revisions SET author_agent_id = sqlc.arg(agent_id)::uuid
+UPDATE document_snapshots SET author_agent_id = sqlc.arg(agent_id)::uuid
 WHERE company_id = sqlc.arg(company_id)::uuid AND id = sqlc.arg(revision_id)::uuid;
 
 -- name: LockWikiResearchWrites :exec

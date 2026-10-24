@@ -322,6 +322,69 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "previewProjectPageSource",
+        "summary": "Read or compile a guarded selected-block source draft without saving",
+        "description": "Compilation may reserve database identities for new descendants. It does not change the canonical document. Existing descendant IDs must belong to the selected subtree and retain their types; the selected root type and ID remain unchanged.",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PageSourcePreviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized source or compiled preview. Compilation errors appear in diagnostics and omit content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageSourcePreview"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "changes": {
@@ -582,6 +645,68 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "previewProjectScenario",
+        "summary": "Preview a Page at an acknowledged sequence using selected scenario inputs",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/ProjectPresentation"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PresentationScenarioInput"
+              }
+            }
+          }
+        }
       }
     },
     "pagePresentations": {
@@ -811,7 +936,7 @@
           "projects"
         ],
         "operationId": "exportProjectPresentation",
-        "summary": "Download the immutable Markdown export with current source access",
+        "summary": "Download an immutable Markdown or standalone HTML export with current source access",
         "parameters": [
           {
             "$ref": "./_common.yaml#/parameters/companyId"
@@ -833,6 +958,19 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "markdown",
+                "html"
+              ],
+              "default": "markdown"
+            }
           }
         ],
         "responses": {
@@ -840,6 +978,11 @@
             "description": "Authorized committed state.",
             "content": {
               "text/markdown": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "text/html": {
                 "schema": {
                   "type": "string"
                 }
@@ -1318,6 +1461,1514 @@
           }
         }
       }
+    },
+    "agentSourcePreviews": {
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "createPagePreviewForRun",
+        "summary": "Start a transient source preview under live Run authority",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transient preview state; no canonical Page changes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PagePreviewGeneration"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PagePreviewCreateInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "agentSourcePreview": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "readPagePreviewForRun",
+        "summary": "Resume an unexpired source preview under live Run authority",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "generationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transient preview state; no canonical Page changes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PagePreviewGeneration"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "patchPagePreviewForRun",
+        "summary": "Apply a bounded source preview patch without changing the Page",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "runId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "generationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transient preview state; no canonical Page changes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PagePreviewGeneration"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PagePreviewPatchInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "sourcePreviews": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "listPagePreviews",
+        "summary": "Read authorized transient source previews",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "runId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "$ref": "#/schemas/PagePreviewSummary"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "sourcePreview": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "readPagePreview",
+        "summary": "Read one authorized transient source preview",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "generationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PagePreviewGeneration"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "presentationPublication": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "getPresentationPublication",
+        "summary": "Read capture publication status (results.publish required)",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "presentationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current immutable publication receipt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PresentationPublication"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "publishPresentation",
+        "summary": "Explicitly publish an immutable HTML capture (results.publish required)",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "presentationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PresentationPublicationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current immutable publication receipt.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PresentationPublication"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "presentationPublicationRevoke": {
+      "delete": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "revokePresentationPublication",
+        "summary": "Revoke the exact public capture URL (results.publish required)",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "projectId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "presentationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "publicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Publication revoked or already inactive."
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "publicCapture": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "publicPresentation",
+        "summary": "Read only the explicitly published immutable HTML capture",
+        "security": [],
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Static HTML; no private source reads. No-store; revocation blocks subsequent reads.",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "readPageDocument",
+        "summary": "Read the authorized working document",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after_seq",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "state_vector",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "projection",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "block_id",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "preview",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized document result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./canvas.yaml#/schemas/CanvasDocument"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "syncPageDocument",
+        "summary": "Merge edits after rechecking Editor permission",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./canvas.yaml#/schemas/CanvasDocumentUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized document result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./canvas.yaml#/schemas/CanvasDocument"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_ids": {
+      "post": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "reservePageBlockIds",
+        "summary": "Reserve identities for new blocks",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "count"
+                ],
+                "properties": {
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 256
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized document result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./canvas.yaml#/schemas/CanvasBlockIDs"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_checkpoint": {
+      "post": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "checkpointPageDocument",
+        "summary": "Save an immutable review version",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "sequence"
+                ],
+                "properties": {
+                  "sequence": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized document result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id"
+                  ],
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_presence": {
+      "put": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "updatePageDocumentPresence",
+        "summary": "Share ephemeral cursors after checking document access",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./canvas.yaml#/schemas/CanvasPresenceInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Current document sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./canvas.yaml#/schemas/CanvasPresenceList"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_history_list": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "pageDocumentHistoryList",
+        "summary": "List shared document history",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "actor_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "before_sequence",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved document history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./document-history.yaml#/schemas/DocumentHistory"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_history_state": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "pageDocumentHistoryState",
+        "summary": "State shared document history",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sequence",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved document history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./document-history.yaml#/schemas/DocumentHistoryState"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_history_restore": {
+      "post": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "pageDocumentHistoryRestore",
+        "summary": "Restore shared document history",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sequence",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./document-history.yaml#/schemas/DocumentHistoryRestore"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved document history",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./document-history.yaml#/schemas/DocumentHistoryState"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_history_name": {
+      "put": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "pageDocumentHistoryName",
+        "summary": "Name shared document history",
+        "parameters": [
+          {
+            "name": "companyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "sequence",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./document-history.yaml#/schemas/DocumentHistoryName"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Checkpoint name saved"
+          },
+          "default": {
+            "description": "Request could not be completed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_review": {
+      "get": {
+        "operationId": "pageReview",
+        "tags": [
+          "Pages"
+        ],
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Live Page discussions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./canvas.yaml#/schemas/CanvasThreadList"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get the Page review state"
+      },
+      "post": {
+        "operationId": "mutatePageReview",
+        "tags": [
+          "Pages"
+        ],
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "./canvas.yaml#/schemas/CanvasCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved comment operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./canvas.yaml#/schemas/CanvasResult"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Update the Page review state"
+      }
+    },
+    "document_changes": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "listPageChanges",
+        "summary": "Read pending and recent contributions to this Page",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "History cursor returned by the previous response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageChangeFeed"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_change": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "getPageChange",
+        "summary": "Read before and after content for a Page contribution",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageChangeDetail"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "reviewPageChange",
+        "summary": "Apply reject or undo a contribution to this Page",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "changeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageEditResult"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/PageChangeReviewInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_sourcePreviews": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "directListPagePreviews",
+        "summary": "Read authorized transient source previews",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "runId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "maxItems": 8,
+                  "items": {
+                    "$ref": "#/schemas/PagePreviewSummary"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "document_sourcePreview": {
+      "get": {
+        "tags": [
+          "projects"
+        ],
+        "operationId": "directReadPagePreview",
+        "summary": "Read one authorized transient source preview",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "generationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized committed state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PagePreviewGeneration"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "schemas": {
@@ -1518,6 +3169,18 @@
         "beforeId": {
           "type": "string",
           "description": "Optional sibling insertion/move anchor, mutually exclusive with afterId."
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 262144,
+          "description": "Versioned Zenith Markdown/component source, mutually exclusive with content and markdown. Updates preserve descendant identities using Native nodes."
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ],
+          "description": "Required with source; omit otherwise."
         }
       }
     },
@@ -1535,7 +3198,8 @@
         },
         "sequence": {
           "type": "integer",
-          "format": "int64"
+          "format": "int64",
+          "description": "Base revision returned by page_read. Operation hashes must match this revision. Concurrent content edits are compared during per-block review; theme changes require the current revision."
         },
         "summary": {
           "type": "string",
@@ -1621,7 +3285,7 @@
         "sequence",
         "createdAt",
         "runId",
-        "outputId",
+        "deliveryIds",
         "pageId",
         "theme"
       ],
@@ -1648,13 +3312,6 @@
           ],
           "format": "uuid"
         },
-        "outputId": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
         "pageId": {
           "type": "string",
           "format": "uuid"
@@ -1671,6 +3328,13 @@
           "type": "string",
           "format": "uuid",
           "description": "The exact proposal captured or awaiting acceptance; absent for shared content."
+        },
+        "deliveryIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
         }
       }
     },
@@ -1682,7 +3346,7 @@
         "sequence",
         "createdAt",
         "runId",
-        "outputId",
+        "deliveryIds",
         "content",
         "documents",
         "fingerprint",
@@ -1710,13 +3374,6 @@
           "format": "date-time"
         },
         "runId": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "format": "uuid"
-        },
-        "outputId": {
           "type": [
             "string",
             "null"
@@ -1772,6 +3429,20 @@
           },
           "uniqueItems": true,
           "description": "Suggestion indexes pending in this immutable capture. Later rejection or resolution does not remove an index; Task completion requires their application unless assigned proposal-only. Empty for shared-content captures."
+        },
+        "evaluations": {
+          "type": "object",
+          "description": "Immutable reactive evaluations keyed by page for the primary document, or the retained document key. Omitted for native-only captures and when source access prevents disclosing complete evidence. Captures retain explicitly selected inputs, falling back to authored defaults for omitted inputs.",
+          "additionalProperties": {
+            "$ref": "#/schemas/IntelligentCapture"
+          }
+        },
+        "deliveryIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
         }
       }
     },
@@ -1800,6 +3471,9 @@
           "type": "string",
           "format": "uuid",
           "description": "The exact proposal captured or awaiting acceptance; absent for shared content."
+        },
+        "selected": {
+          "$ref": "#/schemas/PresentationSelections"
         }
       },
       "additionalProperties": false
@@ -2046,6 +3720,18 @@
             "editorial",
             "compact"
           ]
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 262144,
+          "description": "Versioned Zenith Markdown/component source, mutually exclusive with content and markdown. Updates preserve descendant identities using Native nodes."
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ],
+          "description": "Required with source; omit otherwise."
         }
       },
       "allOf": [
@@ -2059,6 +3745,12 @@
             {
               "required": [
                 "markdown"
+              ]
+            },
+            {
+              "required": [
+                "source",
+                "languageVersion"
               ]
             }
           ]
@@ -2175,6 +3867,16 @@
         },
         "pendingCreation": {
           "type": "boolean"
+        },
+        "source": {
+          "type": "string",
+          "description": "Lossless Native source with existing block identities."
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
         }
       }
     },
@@ -2301,7 +4003,8 @@
         "fingerprint": {
           "type": "string",
           "minLength": 64,
-          "maxLength": 64
+          "maxLength": 64,
+          "description": "Fingerprint of the fetched review. Apply selections consisting entirely of stored text CRDT updates merge into the latest Page even when this differs; structural selections and other actions require a match."
         },
         "action": {
           "type": "string",
@@ -2336,7 +4039,8 @@
         "blockId",
         "status",
         "group",
-        "competingChangeIds"
+        "competingChangeIds",
+        "currentHash"
       ],
       "properties": {
         "index": {
@@ -2357,7 +4061,8 @@
             "applied",
             "rejected",
             "undone",
-            "superseded"
+            "superseded",
+            "resolved"
           ]
         },
         "before": {
@@ -2378,6 +4083,17 @@
             "type": "string",
             "format": "uuid"
           }
+        },
+        "currentHash": {
+          "type": "string"
+        },
+        "current": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "crdtUpdate": {
+          "type": "string",
+          "format": "byte",
+          "description": "Immutable text-only Yjs update for an isolated local review preview. Never apply to the live document before acceptance."
         }
       }
     },
@@ -2422,6 +4138,619 @@
         "createdAt": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    },
+    "IntelligentSourceSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "version",
+        "observedAt"
+      ],
+      "properties": {
+        "value": {},
+        "version": {
+          "type": "string"
+        },
+        "observedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "coverage": {
+          "$ref": "#/schemas/IntelligentSourceCoverage",
+          "description": "Result coverage at observation time. Absent for older captures whose coverage was not recorded."
+        }
+      }
+    },
+    "IntelligentCapturedSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopePath",
+        "name",
+        "descriptor",
+        "snapshot"
+      ],
+      "properties": {
+        "scopePath": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "descriptor": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "snapshot": {
+          "$ref": "#/schemas/IntelligentSourceSnapshot"
+        }
+      }
+    },
+    "IntelligentCapturedScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "path",
+        "selected",
+        "computed"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "selected": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "computed": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "IntelligentCapture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "languageVersion",
+        "catalogVersion",
+        "definitionHash",
+        "definition",
+        "content",
+        "scopes",
+        "sources",
+        "values"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "integer",
+          "enum": [
+            2
+          ]
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "catalogVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "definitionHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "definition": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "content": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/IntelligentCapturedScope"
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/IntelligentCapturedSource"
+          }
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "PresentationSelections": {
+      "type": "object",
+      "maxProperties": 257,
+      "description": "Selected scalar inputs keyed by retained document key (page for the primary document), then exact scope path from the evaluation manifest, then locally declared state name. Missing inputs use authored defaults. Unknown paths, names or incompatible scalar types are rejected.",
+      "additionalProperties": {
+        "type": "object",
+        "maxProperties": 10000,
+        "additionalProperties": {
+          "type": "object",
+          "maxProperties": 64,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "PresentationScenarioInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence"
+      ],
+      "properties": {
+        "sequence": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0
+        },
+        "selected": {
+          "$ref": "#/schemas/PresentationSelections"
+        }
+      }
+    },
+    "IntelligentSourceCoverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rowCount",
+        "limit",
+        "complete"
+      ],
+      "properties": {
+        "rowCount": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000
+        },
+        "complete": {
+          "type": "boolean",
+          "description": "True only when the retained rows include every matching source row at observation time. False means calculations describe a bounded sample, not a complete aggregate."
+        }
+      }
+    },
+    "PageSourcePreviewInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blockId"
+      ],
+      "description": "Omit source to read a selected block. To compile a draft, supply source, languageVersion, expectedSequence and expectedHash from the read. This operation never saves content.",
+      "properties": {
+        "blockId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source": {
+          "type": "string",
+          "maxLength": 262144
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "expectedSequence": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0
+        },
+        "expectedHash": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        }
+      }
+    },
+    "PageSourceDiagnostic": {
+      "type": "object",
+      "required": [
+        "code",
+        "severity",
+        "start",
+        "end",
+        "repair"
+      ],
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warning",
+            "info"
+          ]
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "UTF-8 byte offset."
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Exclusive UTF-8 byte offset."
+        },
+        "repair": {
+          "type": "string"
+        },
+        "blockId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "operationIndex": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "PageSourcePreview": {
+      "type": "object",
+      "required": [
+        "blockId",
+        "source",
+        "languageVersion",
+        "schemaVersion",
+        "sequence",
+        "expectedHash",
+        "diagnostics"
+      ],
+      "properties": {
+        "blockId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "source": {
+          "type": "string"
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "schemaVersion": {
+          "type": "integer",
+          "enum": [
+            1,
+            2
+          ]
+        },
+        "sequence": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0
+        },
+        "expectedHash": {
+          "type": "string",
+          "minLength": 64,
+          "maxLength": 64
+        },
+        "content": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageSourceDiagnostic"
+          }
+        }
+      }
+    },
+    "PagePreviewCreateInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestKey",
+        "protocolVersion",
+        "languageVersion"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "protocolVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        }
+      }
+    },
+    "PagePreviewPatchInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestKey",
+        "protocolVersion",
+        "languageVersion",
+        "expectedRevision"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "protocolVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "expectedRevision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 0,
+          "maximum": 4096
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 262144,
+          "description": "UTF-8 byte offset."
+        },
+        "deleteBytes": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 262144
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 65536,
+          "description": "Replacement text; additionally limited to 65536 UTF-8 bytes."
+        },
+        "discard": {
+          "type": "boolean"
+        }
+      }
+    },
+    "SourcePreview": {
+      "type": "object",
+      "required": [
+        "complete",
+        "acceptedBytes",
+        "diagnostics"
+      ],
+      "properties": {
+        "content": {
+          "$ref": "./canvas.yaml#/schemas/CanvasBlock"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "acceptedBytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageSourceDiagnostic"
+          }
+        }
+      }
+    },
+    "PagePreviewGeneration": {
+      "type": "object",
+      "required": [
+        "id",
+        "pageId",
+        "runId",
+        "conversationId",
+        "protocolVersion",
+        "languageVersion",
+        "revision",
+        "source",
+        "discarded",
+        "expiresAt",
+        "preview"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "runId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "protocolVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "languageVersion": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "source": {
+          "type": "string"
+        },
+        "discarded": {
+          "type": "boolean"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "preview": {
+          "$ref": "#/schemas/SourcePreview"
+        }
+      }
+    },
+    "PagePreviewSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "pageId",
+        "runId",
+        "conversationId",
+        "revision",
+        "discarded",
+        "expiresAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "pageId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "runId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "conversationId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "discarded": {
+          "type": "boolean"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "PresentationPublication": {
+      "type": "object",
+      "required": [
+        "id",
+        "publicToken",
+        "createdAt",
+        "revoked",
+        "canPublish"
+      ],
+      "properties": {
+        "id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "publicToken": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "createdAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "revoked": {
+          "type": "boolean"
+        },
+        "canPublish": {
+          "type": "boolean"
+        }
+      }
+    },
+    "PresentationPublicationInput": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "requestKey",
+        "confirmPublicExposure"
+      ],
+      "properties": {
+        "requestKey": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "confirmPublicExposure": {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
         }
       }
     }

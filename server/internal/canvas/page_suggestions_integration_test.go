@@ -3,6 +3,7 @@
 package canvas
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"strings"
@@ -28,7 +29,27 @@ func TestPageSuggestionsCompetingReviewAndReplay(t *testing.T) {
 	f := dbtest.SeedFixture(t, ctx, pool)
 	store, _ := db.NewStore(pool)
 	bus, _ := events.NewBus(events.BusOptions{})
-	s := NewPageService(store, bus)
+	revisionCalls := 0
+	s := NewPageService(
+		store,
+		bus,
+		WithPageDocumentAgentInvoker(
+			func(ctx context.Context, q *generated.Queries, _ *[]events.Event, in DocumentAgentInput) error {
+				revisionCalls++
+				if in.AgentID != f.AgentA || in.RevisionChangeID == uuid.Nil {
+					t.Fatalf("revision invocation = %+v", in)
+				}
+				_, err := q.GetDocumentThreadForInvocation(
+					ctx,
+					generated.GetDocumentThreadForInvocationParams{
+						CompanyID: f.CompanyA,
+						ID:        in.ThreadID,
+					},
+				)
+				return err
+			},
+		),
+	)
 	p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
 	dbtest.MustExec(
 		t,
@@ -86,15 +107,60 @@ func TestPageSuggestionsCompetingReviewAndReplay(t *testing.T) {
 		return result
 	}
 	first := propose("Price: $19")
+	// Another Page editor receives shared content, not this caller's proposals.
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO company_members(company_id,user_id,role,status) VALUES($1,$2,'owner','active')`,
+		f.CompanyA,
+		f.UserB,
+	)
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`INSERT INTO project_grants(company_id,project_id,user_id,permission) VALUES($1,$2,$3,'project.read'),($1,$2,$3,'project.tasks.write')`,
+		f.CompanyA,
+		f.ProjectA,
+		f.UserB,
+	)
+	otherViewer := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserB, Role: auth.CompanyRoleOwner}
+	otherFeed, otherErr := s.PageChanges(ctx, otherViewer, f.ProjectA, page.PageID, "")
+	if otherErr != nil || len(otherFeed.Pending) != 0 {
+		t.Fatalf("private feed = %+v, %v", otherFeed, otherErr)
+	}
+	if _, otherErr = s.PageChangeDetail(
+		ctx,
+		otherViewer,
+		f.ProjectA,
+		page.PageID,
+		first.ID,
+	); !errors.Is(
+		otherErr,
+		ErrNotFound,
+	) {
+		t.Fatalf("private detail error = %v, want not found", otherErr)
+	}
 	preview, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, first.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
-	second := propose("Price: $29")
-	stale := PageChangeReviewInput{RequestKey: uuid.New(), Action: "apply", Fingerprint: preview.Fingerprint}
-	if _, err = s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, first.ID, stale); !errors.Is(err, ErrConflict) {
-		t.Fatalf("stale bulk acceptance = %v, want conflict", err)
+	if _, otherErr = s.ReviewPageChange(
+		ctx,
+		otherViewer,
+		f.ProjectA,
+		page.PageID,
+		first.ID,
+		PageChangeReviewInput{RequestKey: uuid.New(), Action: "apply", Fingerprint: preview.Fingerprint},
+	); !errors.Is(
+		otherErr,
+		ErrNotFound,
+	) {
+		t.Fatalf("private acceptance error = %v, want not found", otherErr)
 	}
+	second := propose("Price: $29")
+	staleFingerprint := preview.Fingerprint
 	preview, err = s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, first.ID)
 	if err != nil {
 		t.Fatal(err)
@@ -102,15 +168,7 @@ func TestPageSuggestionsCompetingReviewAndReplay(t *testing.T) {
 	if len(preview.Suggestions) != 1 || len(preview.Suggestions[0].CompetingChangeIDs) != 1 {
 		t.Fatalf("suggestions = %+v", preview.Suggestions)
 	}
-	in := PageChangeReviewInput{RequestKey: uuid.New(), Action: "apply", Fingerprint: preview.Fingerprint}
-	if _, err = s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, first.ID, in); !errors.Is(err, ErrConflict) {
-		t.Fatalf("competing bulk acceptance = %v, want conflict", err)
-	}
-	unchanged, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
-	if err != nil || unchanged.Sequence != read.Sequence {
-		t.Fatalf("proposal altered live document: %+v, %v", unchanged, err)
-	}
-	in.Indexes = []int{0}
+	in := PageChangeReviewInput{RequestKey: uuid.New(), Action: "apply", Fingerprint: staleFingerprint}
 	applied, err := s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, first.ID, in)
 	if err != nil {
 		t.Fatal(err)
@@ -187,26 +245,8 @@ func TestPageSuggestionsCompetingReviewAndReplay(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if other.Suggestions[0].Status != "needs_update" || other.Status == "rejected" {
+	if other.Suggestions[0].Status != "pending" || other.Status == "rejected" {
 		t.Fatalf("competing alternative = %+v", other)
-	}
-	if _, err = s.ReviewPageChange(
-		ctx,
-		p,
-		f.ProjectA,
-		page.PageID,
-		second.ID,
-		PageChangeReviewInput{
-			RequestKey:  uuid.New(),
-			Action:      "apply",
-			Fingerprint: other.Fingerprint,
-			Indexes:     []int{0},
-		},
-	); !errors.Is(
-		err,
-		ErrConflict,
-	) {
-		t.Fatalf("stale explicit acceptance = %v", err)
 	}
 	if _, err = s.ReviewPageChange(
 		ctx,
@@ -222,6 +262,9 @@ func TestPageSuggestionsCompetingReviewAndReplay(t *testing.T) {
 		},
 	); err != nil {
 		t.Fatal(err)
+	}
+	if revisionCalls != 1 {
+		t.Fatalf("revision invocations = %d", revisionCalls)
 	}
 	other, err = s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, second.ID)
 	if err != nil || len(other.Reviews) != 1 ||
@@ -281,7 +324,7 @@ func TestPageDeliveryReusesArtifactIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	var before int
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM project_artifacts WHERE project_id=$1`, f.ProjectA).
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM artifacts WHERE project_id=$1`, f.ProjectA).
 		Scan(&before); err != nil {
 		t.Fatal(err)
 	}
@@ -314,7 +357,7 @@ func TestPageDeliveryReusesArtifactIdentity(t *testing.T) {
 			t,
 			ctx,
 			pool,
-			`UPDATE project_presentations SET output_id=$2 WHERE id=$1`,
+			`INSERT INTO delivery_snapshots(company_id,snapshot_id,output_id,ordinal) SELECT company_id,id,$2,0 FROM project_presentations WHERE id=$1`,
 			capture.ID,
 			output,
 		)
@@ -330,7 +373,7 @@ func TestPageDeliveryReusesArtifactIdentity(t *testing.T) {
 		}
 	}
 	var after int
-	if err = pool.QueryRow(ctx, `SELECT count(*) FROM project_artifacts WHERE project_id=$1`, f.ProjectA).
+	if err = pool.QueryRow(ctx, `SELECT count(*) FROM artifacts WHERE project_id=$1`, f.ProjectA).
 		Scan(&after); err != nil {
 		t.Fatal(err)
 	}
@@ -811,5 +854,703 @@ func TestPageSuggestionInsertBelowHeading(t *testing.T) {
 	}
 	if string(current.Content) != string(read.Content) {
 		t.Fatal("proposal changed the shared document before review")
+	}
+}
+
+func TestIndependentPassagesApproveWithoutMerge(t *testing.T) {
+	pool, _ := dbtest.StartPostgres(t)
+	ctx := t.Context()
+	if err := db.MigrateUp(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	f := dbtest.SeedFixture(t, ctx, pool)
+	store, _ := db.NewStore(pool)
+	bus, _ := events.NewBus(events.BusOptions{})
+	s := NewPageService(store, bus)
+	p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status='running',execution_authorized_by_user_id=$2,task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$3) WHERE id=$1`,
+		f.RunA,
+		f.UserA,
+		f.TaskA,
+	)
+	page, err := s.CreatePage(
+		ctx,
+		p,
+		f.ProjectA,
+		PageCreateInput{
+			RequestKey: uuid.New(),
+			Title:      "Passage review",
+			Markdown:   "Old start. Middle. Old end.",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	read, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var root wiki.BlockNode
+	if err = json.Unmarshal(read.Content, &root); err != nil {
+		t.Fatal(err)
+	}
+	block := root.Content[0]
+	var changes []uuid.UUID
+	blockID, ok := block.Attrs["blockId"].(string)
+	if !ok {
+		t.Fatal("paragraph block ID is not a string")
+	}
+	for _, text := range []string{"New start. Middle. Old end.", "Old start. Middle. New end."} {
+		proposed := block
+		proposed.Content = []wiki.BlockNode{{Type: "text", Text: text}}
+		change, err := s.EditPageForRun(
+			ctx,
+			p,
+			f.RunA,
+			page.PageID,
+			PageEditInput{
+				RequestKey: uuid.New(),
+				Sequence:   read.Sequence,
+				Summary:    text,
+				Operations: []wiki.BlockOperation{
+					{
+						Type:         "update",
+						BlockID:      blockID,
+						ExpectedHash: wiki.BlockHash(block),
+						Content:      &proposed,
+					},
+				},
+			},
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		changes = append(changes, change.ID)
+	}
+	stale, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, changes[1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, id := range changes {
+		detail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if detail.Suggestions[0].Status != "pending" {
+			t.Fatalf("suggestion = %+v", detail.Suggestions[0])
+		}
+		if i == 1 {
+			if wiki.BlocksMarkdown(*detail.Suggestions[0].After) != "New start. Middle. New end.\n\n" {
+				t.Fatalf("preview = %+v", detail.Suggestions[0])
+			}
+			if detail.Fingerprint == stale.Fingerprint {
+				t.Fatal("concurrent text edit did not change the preview fingerprint")
+			}
+			detail.Fingerprint = stale.Fingerprint
+		}
+		input := PageChangeReviewInput{RequestKey: uuid.New(), Fingerprint: detail.Fingerprint, Action: "apply"}
+		result, err := s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, id, input)
+		if err != nil || result.Status != "applied" {
+			t.Fatalf("approval = %+v, %v", result, err)
+		}
+		replay, err := s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, id, input)
+		if err != nil || replay != result {
+			t.Fatalf("replay = %+v, %v", replay, err)
+		}
+	}
+	saved, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil || !strings.Contains(string(saved.Content), "New start. Middle. New end.") {
+		t.Fatalf("saved = %+v, %v", saved, err)
+	}
+	detail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, changes[0])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = s.ReviewPageChange(
+		ctx,
+		p,
+		f.ProjectA,
+		page.PageID,
+		changes[0],
+		PageChangeReviewInput{RequestKey: uuid.New(), Fingerprint: detail.Fingerprint, Action: "undo"},
+	); !errors.Is(err, ErrConflict) {
+		t.Fatalf("undo overwrote subsequent edits: %v", err)
+	}
+	saved, err = s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil || !strings.Contains(string(saved.Content), "New start. Middle. New end.") {
+		t.Fatalf("undo erased other approval: %+v, %v", saved, err)
+	}
+}
+
+func TestPageRevisionRollsBackAndReplays(t *testing.T) {
+	pool, _ := dbtest.StartPostgres(t)
+	ctx := t.Context()
+	if err := db.MigrateUp(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	f := dbtest.SeedFixture(t, ctx, pool)
+	store, _ := db.NewStore(pool)
+	bus, _ := events.NewBus(events.BusOptions{})
+	failed := true
+	calls := 0
+	s := NewPageService(
+		store,
+		bus,
+		WithPageDocumentAgentInvoker(
+			func(ctx context.Context, q *generated.Queries, _ *[]events.Event, in DocumentAgentInput) error {
+				calls++
+				if failed {
+					return ErrForbidden
+				}
+				thread, err := q.GetDocumentThreadForInvocation(
+					ctx,
+					generated.GetDocumentThreadForInvocationParams{
+						CompanyID: f.CompanyA,
+						ID:        in.ThreadID,
+					},
+				)
+				if err != nil {
+					return err
+				}
+				if !thread.PageID.Valid || in.AgentID != f.AgentA || in.RevisionChangeID == uuid.Nil {
+					t.Fatalf("invocation = %+v, thread = %+v", in, thread)
+				}
+				return nil
+			},
+		),
+	)
+	p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status='running',execution_authorized_by_user_id=$2,task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$3) WHERE id=$1`,
+		f.RunA,
+		f.UserA,
+		f.TaskA,
+	)
+	page, err := s.CreatePage(
+		ctx,
+		p,
+		f.ProjectA,
+		PageCreateInput{RequestKey: uuid.New(), Title: "Revision", Markdown: "Original"},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	read, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var root wiki.BlockNode
+	if err = json.Unmarshal(read.Content, &root); err != nil {
+		t.Fatal(err)
+	}
+	block := root.Content[0]
+	blockID, ok := block.Attrs["blockId"].(string)
+	if !ok {
+		t.Fatal("missing block ID")
+	}
+	block.Content = []wiki.BlockNode{{Type: "text", Text: "Proposed"}}
+	change, err := s.EditPageForRun(
+		ctx,
+		p,
+		f.RunA,
+		page.PageID,
+		PageEditInput{
+			RequestKey: uuid.New(),
+			Sequence:   read.Sequence,
+			Summary:    "Proposed wording",
+			Operations: []wiki.BlockOperation{
+				{
+					Type:         "update",
+					BlockID:      blockID,
+					ExpectedHash: wiki.BlockHash(root.Content[0]),
+					Content:      &block,
+				},
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	detail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, change.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	in := PageChangeReviewInput{
+		RequestKey:  uuid.New(),
+		Fingerprint: detail.Fingerprint,
+		Action:      "request_changes",
+		Indexes:     []int{0},
+		Feedback:    "Make the wording clearer.",
+	}
+	if _, err = s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, change.ID, in); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("failed launch = %v", err)
+	}
+	after, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, change.ID)
+	if err != nil || after.Fingerprint != detail.Fingerprint || len(after.Reviews) != 0 {
+		t.Fatalf("failed launch changed proposal: %+v, %v", after, err)
+	}
+	threads, err := s.PageThreads(ctx, p, f.ProjectA, page.PageID)
+	if err != nil || len(threads) != 0 {
+		t.Fatalf("failed launch left a comment: %+v, %v", threads, err)
+	}
+	failed = false
+	result, err := s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, change.ID, in)
+	if err != nil || result.Status != "needs_update" {
+		t.Fatalf("revise = %+v, %v", result, err)
+	}
+	replay, err := s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, change.ID, in)
+	if err != nil || replay != result || calls != 2 {
+		t.Fatalf("replay = %+v, %v, calls=%d", replay, err, calls)
+	}
+	threads, err = s.PageThreads(ctx, p, f.ProjectA, page.PageID)
+	if err != nil || len(threads) != 1 {
+		t.Fatalf("revision threads = %+v, %v", threads, err)
+	}
+}
+
+func TestReviewIndependentBlockLeavesCompetingBlockPending(t *testing.T) {
+	for _, action := range []string{"apply", "reject"} {
+		t.Run(action, func(t *testing.T) {
+			pool, _ := dbtest.StartPostgres(t)
+			ctx := t.Context()
+			if err := db.MigrateUp(ctx, pool); err != nil {
+				t.Fatal(err)
+			}
+			f := dbtest.SeedFixture(t, ctx, pool)
+			store, _ := db.NewStore(pool)
+			bus, _ := events.NewBus(events.BusOptions{})
+			s := NewPageService(store, bus)
+			p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
+			dbtest.MustExec(
+				t,
+				ctx,
+				pool,
+				`UPDATE runs SET status='running',execution_authorized_by_user_id=$2,task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$3) WHERE id=$1`,
+				f.RunA,
+				f.UserA,
+				f.TaskA,
+			)
+			page, err := s.CreatePage(
+				ctx,
+				p,
+				f.ProjectA,
+				PageCreateInput{
+					RequestKey: uuid.New(),
+					Title:      "Independent edits",
+					Markdown:   "First original\n\nSecond original",
+				},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			read, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var root wiki.BlockNode
+			if err = json.Unmarshal(read.Content, &root); err != nil {
+				t.Fatal(err)
+			}
+			var ops []wiki.BlockOperation
+			for i, target := range root.Content {
+				id := target.Attrs["blockId"].(string)
+				target.Content = []wiki.BlockNode{
+					{Type: "text", Text: []string{"First proposed", "Second proposed"}[i]},
+				}
+				ops = append(
+					ops,
+					wiki.BlockOperation{
+						Type:         "update",
+						BlockID:      id,
+						ExpectedHash: read.BlockHashes[id],
+						AfterID: func() string {
+							if i > 0 {
+								return root.Content[i-1].Attrs["blockId"].(string)
+							}
+							return ""
+						}(),
+						Content: &target,
+					},
+				)
+			}
+			change, err := s.EditPageForRun(
+				ctx,
+				p,
+				f.RunA,
+				page.PageID,
+				PageEditInput{
+					RequestKey: uuid.New(),
+					Sequence:   read.Sequence,
+					Summary:    "Two independent edits",
+					Operations: ops,
+				},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			alternative := root.Content[0]
+			alternative.Content = []wiki.BlockNode{{Type: "text", Text: "Competing first block"}}
+			peer, err := s.EditPageForRun(
+				ctx,
+				p,
+				f.RunA,
+				page.PageID,
+				PageEditInput{
+					RequestKey: uuid.New(),
+					Sequence:   read.Sequence,
+					Summary:    "Competing first block",
+					Operations: []wiki.BlockOperation{
+						{
+							Type:         "update",
+							BlockID:      root.Content[0].Attrs["blockId"].(string),
+							ExpectedHash: wiki.BlockHash(root.Content[0]),
+							Content:      &alternative,
+						},
+					},
+				},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			detail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, change.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(detail.Suggestions[0].CompetingChangeIDs) != 1 ||
+				len(detail.Suggestions[1].CompetingChangeIDs) != 0 ||
+				len(detail.Suggestions[1].Group) != 1 {
+				t.Fatalf("incorrect block conflicts/groups: %+v", detail.Suggestions)
+			}
+			_, err = s.ReviewPageChange(
+				ctx,
+				p,
+				f.ProjectA,
+				page.PageID,
+				change.ID,
+				PageChangeReviewInput{
+					RequestKey:  uuid.New(),
+					Fingerprint: detail.Fingerprint,
+					Action:      action,
+					Indexes:     detail.Suggestions[1].Group,
+				},
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			detail, err = s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, change.ID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if detail.Suggestions[0].Status != "pending" ||
+				len(detail.Suggestions[0].CompetingChangeIDs) != 1 {
+				t.Fatalf("untouched first block = %+v", detail.Suggestions[0])
+			}
+			want := "applied"
+			if action == "reject" {
+				want = "rejected"
+			}
+			if detail.Suggestions[1].Status != want {
+				t.Fatalf("second block = %s, want %s", detail.Suggestions[1].Status, want)
+			}
+			peerDetail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, peer.ID)
+			if err != nil || peerDetail.Suggestions[0].Status != "pending" ||
+				len(peerDetail.Suggestions[0].CompetingChangeIDs) != 1 {
+				t.Fatalf("peer changed: %+v, %v", peerDetail, err)
+			}
+			saved, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(string(saved.Content), "First original") ||
+				strings.Contains(string(saved.Content), "First proposed") {
+				t.Fatalf("review changed first block: %s", saved.Content)
+			}
+			if got := strings.Contains(
+				string(saved.Content),
+				"Second proposed",
+			); got != (action == "apply") {
+				t.Fatalf("second block content after %s: %s", action, saved.Content)
+			}
+		})
+	}
+}
+
+func TestProposalUsesReadRevisionForCRDTReview(t *testing.T) {
+	pool, _ := dbtest.StartPostgres(t)
+	ctx := t.Context()
+	if err := db.MigrateUp(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	f := dbtest.SeedFixture(t, ctx, pool)
+	store, _ := db.NewStore(pool)
+	bus, _ := events.NewBus(events.BusOptions{})
+	s := NewPageService(store, bus)
+	p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status='running',execution_authorized_by_user_id=$2,task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$3) WHERE id=$1`,
+		f.RunA,
+		f.UserA,
+		f.TaskA,
+	)
+	page, err := s.CreatePage(
+		ctx,
+		p,
+		f.ProjectA,
+		PageCreateInput{
+			RequestKey: uuid.New(),
+			Title:      "Offline proposal",
+			Markdown:   "Original first\n\nOriginal second",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	base, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var root wiki.BlockNode
+	if err = json.Unmarshal(base.Content, &root); err != nil {
+		t.Fatal(err)
+	}
+	update := func(index int, text string) wiki.BlockOperation {
+		block := root.Content[index]
+		block.Content = []wiki.BlockNode{{Type: "text", Text: text}}
+		return wiki.BlockOperation{
+			Type:         "update",
+			BlockID:      block.Attrs["blockId"].(string),
+			ExpectedHash: wiki.BlockHash(root.Content[index]),
+			Content:      &block,
+		}
+	}
+	propose := func(ops []wiki.BlockOperation) PageEditResult {
+		t.Helper()
+		change, e := s.EditPageForRun(
+			ctx,
+			p,
+			f.RunA,
+			page.PageID,
+			PageEditInput{
+				RequestKey: uuid.New(),
+				Sequence:   base.Sequence,
+				Summary:    "Proposal",
+				Operations: ops,
+			},
+		)
+		if e != nil {
+			t.Fatal(e)
+		}
+		return change
+	}
+	decide := func(id uuid.UUID, action string, indexes []int) {
+		t.Helper()
+		detail, e := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, id)
+		if e != nil {
+			t.Fatal(e)
+		}
+		if _, e = s.ReviewPageChange(
+			ctx,
+			p,
+			f.ProjectA,
+			page.PageID,
+			id,
+			PageChangeReviewInput{
+				RequestKey:  uuid.New(),
+				Fingerprint: detail.Fingerprint,
+				Action:      action,
+				Indexes:     indexes,
+			},
+		); e != nil {
+			t.Fatal(e)
+		}
+	}
+	// Another accepted edit lands after the agent's read, before submission.
+	current := propose([]wiki.BlockOperation{update(0, "Current first")})
+	decide(current.ID, "apply", []int{0})
+	addition := wiki.BlockNode{Type: "paragraph", Content: []wiki.BlockNode{{Type: "text", Text: "New stanza"}}}
+	change := propose(
+		[]wiki.BlockOperation{
+			update(0, "Proposed first"),
+			update(1, "Proposed second"),
+			{Type: "insert", AfterID: root.Content[1].Attrs["blockId"].(string), Content: &addition},
+		},
+	)
+	detail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, change.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, want := range []string{"pending", "pending", "pending"} {
+		if detail.Suggestions[i].Status != want || len(detail.Suggestions[i].Group) != 1 {
+			t.Fatalf("block %d = %+v, want independently %s", i, detail.Suggestions[i], want)
+		}
+	}
+	if wiki.BlockHash(*detail.Suggestions[0].Before) != wiki.BlockHash(root.Content[0]) ||
+		detail.Suggestions[0].Current.Content[0].Text != "Current first" {
+		t.Fatalf("review lost original base or current content: %+v", detail.Suggestions[0])
+	}
+	preview := detail.Suggestions[0].After
+	decide(change.ID, "apply", []int{0, 1, 2})
+	saved, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var merged wiki.BlockNode
+	if err = json.Unmarshal(saved.Content, &merged); err != nil {
+		t.Fatal(err)
+	}
+	if wiki.BlockHash(merged.Content[0]) != wiki.BlockHash(*preview) {
+		t.Fatalf("approved overlap differs from preview: %+v vs %+v", merged.Content[0], preview)
+	}
+	for _, text := range []string{"Proposed second", "New stanza"} {
+		if !strings.Contains(string(saved.Content), text) {
+			t.Fatalf("saved content missing %q: %s", text, saved.Content)
+		}
+	}
+	// Hashes must belong to the supplied base; an invented future base is invalid.
+	bad := update(0, "Invalid")
+	bad.ExpectedHash = strings.Repeat("0", 64)
+	for _, input := range []PageEditInput{
+		{RequestKey: uuid.New(), Sequence: base.Sequence, Summary: "Wrong hash", Operations: []wiki.BlockOperation{bad}},
+		{RequestKey: uuid.New(), Sequence: saved.Sequence + 1, Summary: "Future", Operations: []wiki.BlockOperation{update(1, "Invalid")}},
+	} {
+		if _, err := s.EditPageForRun(ctx, p, f.RunA, page.PageID, input); !errors.Is(err, ErrConflict) {
+			t.Fatalf("invalid base accepted: %v", err)
+		}
+	}
+}
+
+func TestAcceptMixedLinkedGroupPreservesReflectedWork(t *testing.T) {
+	pool, _ := dbtest.StartPostgres(t)
+	ctx := t.Context()
+	if err := db.MigrateUp(ctx, pool); err != nil {
+		t.Fatal(err)
+	}
+	f := dbtest.SeedFixture(t, ctx, pool)
+	store, _ := db.NewStore(pool)
+	bus, _ := events.NewBus(events.BusOptions{})
+	s := NewPageService(store, bus)
+	p := auth.UserPrincipal{CompanyID: f.CompanyA, UserID: f.UserA, Role: auth.CompanyRoleOwner}
+	dbtest.MustExec(
+		t,
+		ctx,
+		pool,
+		`UPDATE runs SET status='running',execution_authorized_by_user_id=$2,task_execution_generation=(SELECT execution_generation FROM tasks WHERE id=$3) WHERE id=$1`,
+		f.RunA,
+		f.UserA,
+		f.TaskA,
+	)
+	page, err := s.CreatePage(
+		ctx,
+		p,
+		f.ProjectA,
+		PageCreateInput{
+			RequestKey: uuid.New(),
+			Title:      "Mixed review",
+			Markdown:   "> Original\n\nOther paragraph",
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	base, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var root wiki.BlockNode
+	if err = json.Unmarshal(base.Content, &root); err != nil {
+		t.Fatal(err)
+	}
+	parent := root.Content[0]
+	updated := parent
+	child := parent.Content[0]
+	child.Content = []wiki.BlockNode{{Type: "text", Text: "Already accepted text"}}
+	updated.Content = []wiki.BlockNode{child}
+	op := wiki.BlockOperation{
+		Type:         "update",
+		BlockID:      parent.Attrs["blockId"].(string),
+		ExpectedHash: wiki.BlockHash(parent),
+		Content:      &updated,
+	}
+	propose := func(ops []wiki.BlockOperation) PageEditResult {
+		t.Helper()
+		change, e := s.EditPageForRun(
+			ctx,
+			p,
+			f.RunA,
+			page.PageID,
+			PageEditInput{
+				RequestKey: uuid.New(),
+				Sequence:   base.Sequence,
+				Summary:    "Linked proposal",
+				Operations: ops,
+			},
+		)
+		if e != nil {
+			t.Fatal(e)
+		}
+		return change
+	}
+	accept := func(id uuid.UUID, action string) (PageEditResult, PageChangeReviewInput) {
+		t.Helper()
+		detail, e := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, id)
+		if e != nil {
+			t.Fatal(e)
+		}
+		input := PageChangeReviewInput{RequestKey: uuid.New(), Fingerprint: detail.Fingerprint, Action: action}
+		result, e := s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, id, input)
+		if e != nil {
+			t.Fatal(e)
+		}
+		return result, input
+	}
+	first := propose([]wiki.BlockOperation{op})
+	accepted, _ := accept(first.ID, "apply")
+	addition := wiki.BlockNode{
+		Type:    "paragraph",
+		Content: []wiki.BlockNode{{Type: "text", Text: "New linked paragraph"}},
+	}
+	mixed := propose([]wiki.BlockOperation{op, {Type: "insert", ParentID: op.BlockID, Content: &addition}})
+	detail, err := s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, mixed.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if detail.Suggestions[0].Status != "already_reflected" || detail.Suggestions[1].Status != "pending" ||
+		len(detail.Suggestions[0].Group) != 2 {
+		t.Fatalf("mixed review = %+v", detail.Suggestions)
+	}
+	result, input := accept(mixed.ID, "apply")
+	if result.Status != "resolved" || result.Sequence != accepted.Sequence+1 {
+		t.Fatalf("mixed result = %+v", result)
+	}
+	replay, err := s.ReviewPageChange(ctx, p, f.ProjectA, page.PageID, mixed.ID, input)
+	if err != nil || replay != result {
+		t.Fatalf("replay = %+v, %v", replay, err)
+	}
+	detail, err = s.PageChangeDetail(ctx, p, f.ProjectA, page.PageID, mixed.ID)
+	if err != nil || detail.Suggestions[0].Status != "resolved" || detail.Suggestions[1].Status != "applied" {
+		t.Fatalf("decisions = %+v, %v", detail.Suggestions, err)
+	}
+	accept(mixed.ID, "undo")
+	saved, err := s.ReadPageForRun(ctx, p, f.RunA, page.PageID)
+	if err != nil || !strings.Contains(string(saved.Content), "Already accepted text") ||
+		strings.Contains(string(saved.Content), "New linked paragraph") {
+		t.Fatalf("undo changed reflected work: %s, %v", saved.Content, err)
+	}
+	// An all-reflected acceptance settles review without a document write.
+	reflected := propose([]wiki.BlockOperation{op})
+	resolved, _ := accept(reflected.ID, "apply")
+	if resolved.Status != "resolved" || resolved.Sequence != saved.Sequence {
+		t.Fatalf("reflected acceptance wrote content: %+v", resolved)
 	}
 }

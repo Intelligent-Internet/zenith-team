@@ -21,6 +21,7 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/schedule"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 )
 
 const maxTaskBodyBytes = 512 << 10
@@ -135,7 +136,8 @@ type startTaskExecutionRequest struct {
 }
 
 type taskPageResponse struct {
-	Items []task.Response `json:"items"`
+	Items      []task.Response `json:"items"`
+	NextCursor *int64          `json:"nextCursor,omitempty"`
 }
 
 type taskWorkspaceResponse struct {
@@ -399,7 +401,7 @@ func (h *Handler) listTasks(c *gin.Context) {
 	if page.Tasks == nil {
 		page.Tasks = []task.Response{}
 	}
-	c.JSON(http.StatusOK, taskPageResponse{Items: page.Tasks})
+	c.JSON(http.StatusOK, taskPageResponse{Items: page.Tasks, NextCursor: page.NextCursor})
 }
 
 func (h *Handler) getTask(c *gin.Context) {
@@ -608,6 +610,7 @@ func parseTaskListOptions(c *gin.Context) (task.ListOptions, error) {
 	}
 	allowed := map[string]bool{
 		"status": true, "priority": true,
+		"exclude_status": true, "limit": true, "before_number": true,
 		"assignee_id": true, "executed_by_agent_id": true,
 		"dependencies_resolved": true, "project_id": true,
 	}
@@ -633,6 +636,33 @@ func parseTaskListOptions(c *gin.Context) (task.ListOptions, error) {
 			}
 			options.Statuses[index] = task.Status(part)
 		}
+	}
+	if values, exists := query["exclude_status"]; exists {
+		parts := strings.Split(values[0], ",")
+		options.ExcludedStatuses = make([]task.Status, len(parts))
+		for index, part := range parts {
+			if part == "" {
+				return task.ListOptions{}, task.ErrInvalidInput
+			}
+			options.ExcludedStatuses[index] = task.Status(part)
+		}
+	}
+	if values, exists := query["limit"]; exists {
+		limit, err := strconv.ParseInt(values[0], 10, 32)
+		if err != nil || limit <= 0 || limit > 1000 {
+			return task.ListOptions{}, task.ErrInvalidInput
+		}
+		options.Limit = int32(limit)
+	}
+	if values, exists := query["before_number"]; exists {
+		before, err := strconv.ParseInt(values[0], 10, 64)
+		if err != nil || before <= 0 {
+			return task.ListOptions{}, task.ErrInvalidInput
+		}
+		options.BeforeNumber = before
+	}
+	if options.BeforeNumber > 0 && options.Limit == 0 {
+		return task.ListOptions{}, task.ErrInvalidInput
 	}
 	if values, exists := query["priority"]; exists {
 		parts := strings.Split(values[0], ",")
@@ -704,6 +734,12 @@ func parseTaskWorkspaceOptions(rawQuery string) (task.WorkspaceOptions, error) {
 }
 
 var taskErrorMappings = []errorMapping{
+	{
+		wiki.ErrUIAuthoringDisabled,
+		http.StatusServiceUnavailable,
+		"Intelligent UI authoring is temporarily disabled",
+		"intelligent_ui_authoring_disabled",
+	},
 	{
 		task.ErrResultSelectionRequired,
 		http.StatusConflict,

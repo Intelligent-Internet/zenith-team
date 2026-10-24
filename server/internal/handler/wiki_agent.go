@@ -175,6 +175,14 @@ func (h *Handler) writeWikiPagesForRun(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
+	for _, page := range request.Pages {
+		if rejectInlineUI(c,
+			storedText{"Wiki page " + page.Key + " markdown", page.Markdown},
+			storedText{"Wiki page " + page.Key + " summary", page.Summary},
+		) {
+			return
+		}
+	}
 	result, err := h.WikiAgentWriteService.Write(c.Request.Context(), principal, runID, request.domainInput())
 	if err != nil {
 		writeWikiError(c, err)

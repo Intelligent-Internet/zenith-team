@@ -62,7 +62,7 @@ func (s *DefaultCanvasService) outputDocumentBody(
 			return lookup(err)
 		}
 		_, err = q.GetCanvasImportedDocument(ctx, generated.GetCanvasImportedDocumentParams{
-			CompanyID: p.CompanyID, ArtifactID: *c.ArtifactID, OutputItemID: *c.OutputItemID,
+			CompanyID: p.CompanyID, OutputItemID: *c.OutputItemID,
 		})
 		imported = err == nil
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -103,10 +103,10 @@ func (s *DefaultCanvasService) readOutputMarkdown(
 		return "", ErrInvalid
 	}
 	file, err := s.attachments.DownloadResolved(ctx, attachment.ResolvedDownloadInput{
-		CompanyID:            p.CompanyID,
-		ID:                   source.AttachmentID,
-		RequestedByUserID:    p.UserID,
-		OutputAccessResolved: true,
+		CompanyID:              p.CompanyID,
+		ID:                     source.AttachmentID,
+		RequestedByUserID:      p.UserID,
+		ResourceAccessResolved: true,
 	})
 	if err != nil {
 		return "", err
@@ -137,7 +137,7 @@ func importOutputDocumentInTx(
 	if err != nil {
 		return uuid.Nil, uuid.Nil, lookup(err)
 	}
-	if _, err = authorizeOutputDocument(ctx, q, p, source.OutputID, true); err != nil {
+	if err = authorizeOutputDocument(ctx, q, p, source.OutputID, true); err != nil {
 		return uuid.Nil, uuid.Nil, lookup(err)
 	}
 	existing, e := q.GetOutputDocument(
@@ -149,6 +149,9 @@ func importOutputDocumentInTx(
 		},
 	)
 	if e == nil {
+		if _, err := authorizeArtifactContent(ctx, q, p, existing.PageID, false); err != nil {
+			return uuid.Nil, uuid.Nil, err
+		}
 		return existing.PageID, existing.CurrentRevisionID, nil
 	}
 	if !errors.Is(e, pgx.ErrNoRows) {
@@ -181,7 +184,7 @@ func (s *DefaultCanvasService) OpenOutputDocument(
 	var source generated.GetOutputDocumentSourceRow
 	var page uuid.UUID
 	err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := authorizeOutputDocument(ctx, q, p, output, true); err != nil {
+		if err := authorizeOutputDocument(ctx, q, p, output, true); err != nil {
 			return err
 		}
 		existing, err := q.GetOutputDocument(
@@ -189,6 +192,9 @@ func (s *DefaultCanvasService) OpenOutputDocument(
 			generated.GetOutputDocumentParams{CompanyID: p.CompanyID, OutputID: output, OutputItemID: item},
 		)
 		if err == nil {
+			if _, err := authorizeArtifactContent(ctx, q, p, existing.PageID, false); err != nil {
+				return err
+			}
 			page = existing.PageID
 			return nil
 		}
@@ -213,7 +219,7 @@ func (s *DefaultCanvasService) OpenOutputDocument(
 		return uuid.Nil, err
 	}
 	err = s.store.WithinTx(ctx, pgx.TxOptions{}, func(q *generated.Queries) error {
-		if _, err := authorizeOutputDocument(ctx, q, p, output, true); err != nil {
+		if err := authorizeOutputDocument(ctx, q, p, output, true); err != nil {
 			return err
 		}
 		existing, e := q.GetOutputDocument(
@@ -221,6 +227,9 @@ func (s *DefaultCanvasService) OpenOutputDocument(
 			generated.GetOutputDocumentParams{CompanyID: p.CompanyID, OutputID: output, OutputItemID: item},
 		)
 		if e == nil {
+			if _, err := authorizeArtifactContent(ctx, q, p, existing.PageID, false); err != nil {
+				return err
+			}
 			page = existing.PageID
 			return nil
 		}
@@ -258,16 +267,16 @@ func authorizeOutputDocument(
 	p auth.UserPrincipal,
 	output uuid.UUID,
 	write bool,
-) (bool, error) {
+) error {
 	access, err := auth.OutputDocumentAccessInTx(ctx, q, p, output)
 	if err != nil {
-		return false, err
+		return err
 	}
 	if !access.Read {
-		return false, ErrNotFound
+		return ErrNotFound
 	}
 	if write && !access.Edit {
-		return false, ErrForbidden
+		return ErrForbidden
 	}
-	return access.Edit, nil
+	return nil
 }

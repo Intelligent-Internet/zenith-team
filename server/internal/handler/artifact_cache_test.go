@@ -48,7 +48,7 @@ func TestArtifactDownloadRevalidatesBeforeUsingCache(t *testing.T) {
 				}
 				attachments := &attachmentServiceStub{
 					downloadResolved: func(_ context.Context, input attachment.ResolvedDownloadInput) (attachment.DownloadResult, error) {
-						if !resolved || !input.OutputAccessResolved ||
+						if !resolved || !input.ResourceAccessResolved ||
 							input.ID != attachmentID ||
 							input.CompanyID != companyID {
 							t.Fatal("file was read without resolved authority")

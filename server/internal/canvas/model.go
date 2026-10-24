@@ -190,15 +190,16 @@ type History struct {
 	Decisions []Decision `json:"decisions"`
 }
 type Document struct {
-	SchemaVersion     int             `json:"schemaVersion"`
-	Content           json.RawMessage `json:"content,omitempty"`
-	PageID            uuid.UUID       `json:"pageId"`
-	Sequence          int64           `json:"sequence"`
-	StructureSequence int64           `json:"structureSequence"`
-	StateVector       []byte          `json:"stateVector,omitempty"`
-	State             []byte          `json:"state"`
-	Markdown          string          `json:"markdown"`
-	CanEdit           bool            `json:"canEdit"`
+	IntelligentUIAuthoringEnabled bool            `json:"intelligentUIAuthoringEnabled"`
+	SchemaVersion                 int             `json:"schemaVersion"`
+	Content                       json.RawMessage `json:"content,omitempty"`
+	PageID                        uuid.UUID       `json:"pageId"`
+	Sequence                      int64           `json:"sequence"`
+	StructureSequence             int64           `json:"structureSequence"`
+	StateVector                   []byte          `json:"stateVector,omitempty"`
+	State                         []byte          `json:"state"`
+	Markdown                      string          `json:"markdown"`
+	CanEdit                       bool            `json:"canEdit"`
 }
 
 type TimelineEntry struct {

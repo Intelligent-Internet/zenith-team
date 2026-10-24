@@ -33,6 +33,7 @@ export function ArtifactPickerThumbnail({
   const TypeIcon = {
     app: Globe,
     text: FileText,
+    page: FileText,
     media: Image,
     file: PackageCheck,
     whiteboard: LayoutDashboard,

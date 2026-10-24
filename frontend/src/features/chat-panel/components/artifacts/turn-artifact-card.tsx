@@ -140,6 +140,7 @@ const fileIcons = {
   audio: Music,
   video: Video,
   text: FileText,
+  page: FileText,
   file: File,
   whiteboard: LayoutDashboard,
 };

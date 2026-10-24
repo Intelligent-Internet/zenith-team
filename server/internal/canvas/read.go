@@ -107,14 +107,10 @@ func (s *DefaultCanvasService) Snapshot(
 			return err
 		}
 		access := map[uuid.UUID]bool{}
-		accepted := map[uuid.UUID]uuid.UUID{}
 		artifactAccess := map[uuid.UUID]bool{}
 		for _, row := range accessRows {
 			access[row.ID] = true
 			artifactAccess[row.ArtifactID] = true
-			if row.AcceptedVersionID.Valid {
-				accepted[row.ArtifactID] = row.AcceptedVersionID.UUID
-			}
 		}
 		for id := range artifactAccess {
 			result.ArtifactIDs = append(result.ArtifactIDs, id)
@@ -173,9 +169,6 @@ func (s *DefaultCanvasService) Snapshot(
 			if item.ArtifactID != nil {
 				exists := artifactAccess[*item.ArtifactID]
 				v := item.PinnedVersionID
-				if item.VersionPolicy == "accepted" {
-					v = pointer(accepted[*item.ArtifactID])
-				}
 				ok = exists && v != nil && access[*v]
 			}
 			if !ok {
@@ -194,9 +187,6 @@ func (s *DefaultCanvasService) Snapshot(
 				continue
 			}
 			id := item.PinnedVersionID
-			if item.VersionPolicy == "accepted" {
-				id = pointer(accepted[*item.ArtifactID])
-			}
 			if id != nil {
 				ids = append(ids, *id)
 			}
@@ -225,9 +215,6 @@ func (s *DefaultCanvasService) Snapshot(
 			for i := range result.Items {
 				item := &result.Items[i]
 				id := item.PinnedVersionID
-				if item.VersionPolicy == "accepted" && item.ArtifactID != nil {
-					id = pointer(accepted[*item.ArtifactID])
-				}
 				if id != nil {
 					item.Version = byID[*id]
 				}

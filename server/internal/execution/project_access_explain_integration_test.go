@@ -153,11 +153,18 @@ func TestProjectAccessListsProbeReadersPerRow(t *testing.T) {
 	wikiPage, wikiRevision := dbtest.NewUUID(t), dbtest.NewUUID(t)
 	dbtest.WithinSeedTx(t, ctx, pool, func(tx pgx.Tx) {
 		dbtest.MustExecTx(t, ctx, tx, `
-			INSERT INTO wiki_pages (id, company_id, slug, title, current_revision_id, created_by_user_id)
-			VALUES ($1, $2, 'explain', 'Explain', $3, $4)`, wikiPage, fixture.CompanyA, wikiRevision, fixture.UserA)
+			WITH artifact AS (
+                INSERT INTO artifacts(id,company_id,type,title,created_by_user_id)
+                VALUES($1,$2,'wiki','Explain',$4) RETURNING id
+            )
+            INSERT INTO wiki_pages (id, artifact_type, company_id, slug, title, current_revision_id, created_by_user_id)
+            SELECT id,'wiki',$2,'explain','Explain',$3,$4 FROM artifact`, wikiPage, fixture.CompanyA, wikiRevision, fixture.UserA)
 		dbtest.MustExecTx(t, ctx, tx, `
-			INSERT INTO wiki_revisions (id, company_id, page_id, number, title, body, author_user_id)
-			VALUES ($1, $2, $3, 1, 'Explain', 'Body', $4)`, wikiRevision, fixture.CompanyA, wikiPage, fixture.UserA)
+			WITH snapshot AS (
+                INSERT INTO artifact_snapshots(id,company_id,artifact_id,number,source_type,wiki_page_id,wiki_revision_id,created_by_user_id,title)
+                VALUES($1,$2,$3,1,'wiki',$3,$1,$4,'Explain') RETURNING id
+            ) INSERT INTO document_snapshots (id, company_id, page_id, number, title, body, author_user_id)
+            SELECT id,$2,$3,1,'Explain','Body',$4 FROM snapshot`, wikiRevision, fixture.CompanyA, wikiPage, fixture.UserA)
 		dbtest.MustExecTx(t, ctx, tx, `
 			INSERT INTO run_wiki_reads (company_id, run_id, agent_id, kind, page_id, revision_id, revision_number, title)
 			SELECT runs.company_id, runs.id, runs.agent_id, 'read', $2, $3, 1, 'Explain'

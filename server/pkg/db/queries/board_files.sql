@@ -25,7 +25,7 @@ AND NOT EXISTS(SELECT 1 FROM asset_versions v WHERE v.company_id=a.company_id AN
 -- again (copy/paste between Boards). The copy keeps its preview and dimensions.
 -- name: GetReadableBoardFileSource :one
 SELECT f.* FROM board_files f
-JOIN output_access access ON access.company_id=f.company_id AND access.output_id=f.board_id AND access.user_id=sqlc.arg(user_id)
+JOIN artifact_access access ON access.company_id=f.company_id AND access.artifact_id=f.board_id AND access.user_id=sqlc.arg(user_id)
 JOIN attachment_access readable ON readable.company_id=f.company_id AND readable.attachment_id=f.attachment_id
  AND readable.user_id=sqlc.arg(user_id)
 JOIN attachments a ON a.company_id=f.company_id AND a.id=f.attachment_id AND a.status='ready'

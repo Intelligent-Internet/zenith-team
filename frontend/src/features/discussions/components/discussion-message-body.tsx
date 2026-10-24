@@ -1,4 +1,7 @@
+import { useMemo } from "react";
 import { Streamdown, defaultRehypePlugins } from "streamdown";
+import { InlineDocument } from "@/shared/inline-ui/inline-document";
+import { parseInlineUI } from "@/shared/inline-ui/parser";
 import { MemberProfileTrigger } from "@/shared/chat/member-profile";
 import type {
   DiscussionDetail,
@@ -9,10 +12,35 @@ import { discussionMentionHighlightPlugin } from "../model/discussion-mentions";
 export function DiscussionMessageBody({
   body,
   members = [],
+  agent = false,
 }: {
   body: DiscussionMessage["body"];
   members?: DiscussionDetail["members"];
+  /** Agent replies may carry Intelligent UI; people's messages stay Markdown. */
+  agent?: boolean;
 }) {
+  const source = body?.markdown ?? "";
+  const interactive = useMemo(
+    () =>
+      agent &&
+      parseInlineUI(source, { recover: true }).nodes.some(
+        (node) => node.type !== "text",
+      ),
+    [agent, source],
+  );
+  if (interactive && body)
+    return (
+      <InlineDocument
+        source={source}
+        renderMarkdown={(text) => (
+          // Prose between components keeps the channel's Markdown styling.
+          <DiscussionMessageBody
+            body={{ ...body, markdown: text, references: [] }}
+            members={members}
+          />
+        )}
+      />
+    );
   return (
     <Streamdown
       key={JSON.stringify(body?.references)}

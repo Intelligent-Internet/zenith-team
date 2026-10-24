@@ -17,6 +17,7 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/inbox"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
@@ -46,6 +47,7 @@ func FinalizeRunConversationInTx(
 	taskMessageRuns TaskMessageRunPreparer,
 	run generated.Run,
 	finalOutput string,
+	policy ...wiki.UIAuthoringPolicy,
 ) (QueuePromotion, error) {
 	if run.InvocationID.Valid {
 		return finalizeChannelInvocation(ctx, q, pending, run)
@@ -53,11 +55,15 @@ func FinalizeRunConversationInTx(
 	if q == nil || pending == nil || taskMessageRuns == nil {
 		return QueuePromotion{}, ErrInvalidInput
 	}
+	var authoring wiki.UIAuthoringPolicy
+	if len(policy) > 0 {
+		authoring = policy[0]
+	}
 	if err := canvas.CompleteDocumentAgentInTx(
 		ctx,
 		q,
 		pending,
-		canvas.DocumentAgentCompletion{Run: run, Body: finalOutput},
+		canvas.DocumentAgentCompletion{Run: run, Body: finalOutput, Authoring: authoring},
 	); err != nil {
 		return QueuePromotion{}, err
 	}
@@ -691,36 +697,50 @@ func resolveRunQueuePromotionTarget(
 		return resolvedConversationTarget{}, nil, ErrConflict
 	}
 	if resolved.DocumentThreadID != nil {
-		for _, permission := range []auth.ProjectPermission{auth.ProjectPermissionRead, auth.ProjectPermissionTasksWrite, auth.ProjectPermissionTasksExecute} {
-			allowed, err := auth.HoldsProjectPermission(
-				ctx,
-				q,
-				item.CompanyID,
-				*resolved.ProjectID,
-				item.InitiatedByUserID,
-				permission,
-			)
-			if err != nil {
-				return resolvedConversationTarget{}, nil, err
-			}
-			if !allowed {
-				return resolvedConversationTarget{}, nil, ErrConflict
+		if resolved.ProjectID != nil {
+			for _, permission := range []auth.ProjectPermission{auth.ProjectPermissionRead, auth.ProjectPermissionTasksWrite, auth.ProjectPermissionTasksExecute} {
+				allowed, err := auth.HoldsProjectPermission(
+					ctx,
+					q,
+					item.CompanyID,
+					*resolved.ProjectID,
+					item.InitiatedByUserID,
+					permission,
+				)
+				if err != nil {
+					return resolvedConversationTarget{}, nil, err
+				}
+				if !allowed {
+					return resolvedConversationTarget{}, nil, ErrConflict
+				}
 			}
 		}
-		if _, err := q.GetDocumentAgentContext(
+		document, err := q.GetDocumentAgentContext(
 			ctx,
 			generated.GetDocumentAgentContextParams{
 				CompanyID:      item.CompanyID,
 				ConversationID: item.ConversationID,
 			},
-		); errors.Is(
-			err,
-			pgx.ErrNoRows,
-		) {
+		)
+		if errors.Is(err, pgx.ErrNoRows) {
 			return resolvedConversationTarget{}, nil, ErrConflict
-		} else if err != nil {
+		}
+		if err != nil {
 			return resolvedConversationTarget{}, nil, err
 		}
+		access, err := auth.LockArtifactAccess(
+			ctx,
+			q,
+			auth.UserPrincipal{CompanyID: item.CompanyID, UserID: item.InitiatedByUserID},
+			document.PageID,
+		)
+		if err != nil {
+			return resolvedConversationTarget{}, nil, err
+		}
+		if !access.Edit {
+			return resolvedConversationTarget{}, nil, ErrConflict
+		}
+
 	}
 	var taskRow *generated.Task
 	if resolved.TaskID != nil {

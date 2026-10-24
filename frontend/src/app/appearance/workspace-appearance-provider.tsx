@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from "react";
 import { useTheme } from "next-themes";
+import { InlineThemeContext } from "@/shared/inline-ui/reference-context";
 
 import {
   clearActiveAppearance,
@@ -140,6 +141,13 @@ function ScopedWorkspaceAppearance({
   const palette = useMemo(
     () => resolveWorkspacePalette(preferences, colorMode),
     [preferences, colorMode],
+  );
+  const inlinePalettes = useMemo(
+    () => ({
+      light: resolveWorkspacePalette(preferences, "light"),
+      dark: resolveWorkspacePalette(preferences, "dark"),
+    }),
+    [preferences],
   );
   useDocumentPalette(palette, preferences.themeId, colorMode);
 
@@ -304,7 +312,9 @@ function ScopedWorkspaceAppearance({
 
   return (
     <WorkspaceAppearanceContext.Provider value={context}>
-      {children}
+      <InlineThemeContext.Provider value={inlinePalettes}>
+        {children}
+      </InlineThemeContext.Provider>
     </WorkspaceAppearanceContext.Provider>
   );
 }

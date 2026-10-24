@@ -146,9 +146,10 @@ func (q *Queries) GetConversationForArtifactList(ctx context.Context, arg GetCon
 }
 
 const getTaskResultOutputSuggestions = `-- name: GetTaskResultOutputSuggestions :many
-SELECT c.id,c.project_id,c.page_id FROM project_presentations p
+SELECT DISTINCT c.id,c.project_id,c.page_id FROM project_presentations p
+JOIN delivery_snapshots delivery ON delivery.company_id=p.company_id AND delivery.snapshot_id=p.id
 JOIN project_page_changes c ON c.company_id=p.company_id AND c.id=p.change_id
-WHERE p.company_id=$1 AND p.output_id=ANY($2::uuid[])
+WHERE p.company_id=$1 AND delivery.output_id=ANY($2::uuid[])
 ORDER BY c.project_id,c.page_id,c.id
 `
 
@@ -158,9 +159,9 @@ type GetTaskResultOutputSuggestionsParams struct {
 }
 
 type GetTaskResultOutputSuggestionsRow struct {
-	ID        uuid.UUID `json:"id"`
-	ProjectID uuid.UUID `json:"project_id"`
-	PageID    uuid.UUID `json:"page_id"`
+	ID        uuid.UUID     `json:"id"`
+	ProjectID uuid.NullUUID `json:"project_id"`
+	PageID    uuid.UUID     `json:"page_id"`
 }
 
 func (q *Queries) GetTaskResultOutputSuggestions(ctx context.Context, arg GetTaskResultOutputSuggestionsParams) ([]GetTaskResultOutputSuggestionsRow, error) {
@@ -355,6 +356,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
 ), candidate AS (
     (SELECT output.id FROM outputs AS output
      WHERE output.company_id = $3::uuid
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=$1::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND output.owner_user_id = $1::uuid
        AND ($5::text='' OR
             ($5::text='owned' AND output.owner_user_id=$1::uuid) OR
@@ -377,6 +383,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
        ON source_conversation.company_id = output.company_id
       AND source_conversation.id = output.conversation_id
      WHERE output.company_id = $3::uuid
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=$1::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND output.visibility = 'company'
        AND (output.project_id IS NULL
             OR (SELECT 1 FROM project_access AS reader
@@ -399,6 +410,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
        ON output.company_id = grant_row.company_id AND output.id = grant_row.output_id
      WHERE grant_row.company_id = $3::uuid
        AND grant_row.user_id = $1::uuid
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=$1::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND ($5::text='' OR
             ($5::text='owned' AND output.owner_user_id=$1::uuid) OR
             ($5::text='shared' AND output.owner_user_id IS DISTINCT FROM $1::uuid))
@@ -418,6 +434,11 @@ LEFT JOIN conversations source ON source.company_id=output.company_id
      WHERE participant.company_id = $3::uuid
        AND participant.user_id = $1::uuid
        AND participant.status = 'active'
+       AND NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=$1::uuid
+         WHERE delivery.company_id=output.company_id AND delivery.output_id=output.id)
        AND ($5::text='' OR
             ($5::text='owned' AND output.owner_user_id=$1::uuid) OR
             ($5::text='shared' AND output.owner_user_id IS DISTINCT FROM $1::uuid))
@@ -537,34 +558,39 @@ LEFT JOIN runs
  AND runs.company_id = outputs.company_id
 LEFT JOIN runtimes ON runtimes.id = runs.runtime_id
 WHERE outputs.company_id = $1::uuid
+ AND ($2::uuid<>'00000000-0000-0000-0000-000000000000'::uuid OR NOT EXISTS(SELECT 1 FROM delivery_snapshots delivery
+         JOIN artifact_snapshots snapshot ON snapshot.company_id=delivery.company_id AND snapshot.id=delivery.snapshot_id
+         JOIN artifacts work ON work.company_id=snapshot.company_id AND work.id=snapshot.artifact_id AND work.archived_at IS NULL AND NOT work.pending_creation
+         JOIN artifact_access access ON access.company_id=work.company_id AND access.artifact_id=work.id AND access.user_id=$3::uuid
+         WHERE delivery.company_id=outputs.company_id AND delivery.output_id=outputs.id))
   AND ($2::uuid = '00000000-0000-0000-0000-000000000000'::uuid
        OR runs.id = $2::uuid)
   AND (
-      outputs.conversation_id = $3::uuid
+      outputs.conversation_id = $4::uuid
       OR EXISTS (
           SELECT 1 FROM channel_invocations AS invocation
           WHERE invocation.id = runs.invocation_id
             AND invocation.company_id = outputs.company_id
-            AND invocation.channel_id = $3::uuid
+            AND invocation.channel_id = $4::uuid
       )
       OR EXISTS (
           SELECT 1 FROM output_conversation_grants AS grant_row
           WHERE grant_row.company_id = outputs.company_id
             AND grant_row.output_id = outputs.id
-            AND grant_row.conversation_id = $3::uuid
+            AND grant_row.conversation_id = $4::uuid
       )
       OR EXISTS (
           SELECT 1 FROM discussion_artifacts AS link
           JOIN conversation_items AS message
             ON message.company_id = link.company_id AND message.id = link.message_id
           WHERE link.company_id = outputs.company_id AND link.output_id = outputs.id
-            AND message.conversation_id = $3::uuid
+            AND message.conversation_id = $4::uuid
             AND message.run_id IS NULL AND message.deleted_at IS NULL
       )
   )
   AND EXISTS (SELECT 1 FROM output_access AS access
       WHERE access.company_id = outputs.company_id AND access.output_id = outputs.id
-        AND access.user_id = $4::uuid)
+        AND access.user_id = $3::uuid)
   AND ($5::timestamptz IS NULL
        OR (outputs.created_at, outputs.id) < ($5::timestamptz, $6::uuid))
 ORDER BY outputs.created_at DESC, outputs.id DESC
@@ -574,8 +600,8 @@ LIMIT $7::integer
 type ListConversationArtifactsParams struct {
 	CompanyID       uuid.UUID          `json:"company_id"`
 	RunID           uuid.UUID          `json:"run_id"`
-	ConversationID  uuid.UUID          `json:"conversation_id"`
 	ActorUserID     uuid.UUID          `json:"actor_user_id"`
+	ConversationID  uuid.UUID          `json:"conversation_id"`
 	BeforeCreatedAt pgtype.Timestamptz `json:"before_created_at"`
 	BeforeID        uuid.UUID          `json:"before_id"`
 	RowLimit        int32              `json:"row_limit"`
@@ -593,8 +619,8 @@ func (q *Queries) ListConversationArtifacts(ctx context.Context, arg ListConvers
 	rows, err := q.db.Query(ctx, listConversationArtifacts,
 		arg.CompanyID,
 		arg.RunID,
-		arg.ConversationID,
 		arg.ActorUserID,
+		arg.ConversationID,
 		arg.BeforeCreatedAt,
 		arg.BeforeID,
 		arg.RowLimit,
@@ -1100,7 +1126,8 @@ const taskHasUnappliedResultSuggestions = `-- name: TaskHasUnappliedResultSugges
 SELECT EXISTS (
  SELECT 1 FROM tasks t
  JOIN outputs o ON o.company_id=t.company_id AND o.task_id=t.id AND o.task_execution_generation=t.execution_generation
- JOIN project_presentations capture ON capture.company_id=o.company_id AND capture.output_id=o.id
+ JOIN delivery_snapshots delivery ON delivery.company_id=o.company_id AND delivery.output_id=o.id
+ JOIN project_presentations capture ON capture.company_id=delivery.company_id AND capture.id=delivery.snapshot_id
  JOIN project_page_changes change ON change.company_id=capture.company_id AND change.id=capture.change_id
  WHERE t.company_id=$1 AND t.id=$2 AND NOT t.result_proposal_only
  AND (NOT EXISTS(SELECT 1 FROM task_result_sets rs WHERE rs.task_id=t.id AND rs.execution_generation=t.execution_generation)

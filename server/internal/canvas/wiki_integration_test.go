@@ -16,6 +16,7 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/testutil/dbtest"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
+	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
@@ -112,8 +113,7 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 		p,
 		f.ProjectA,
 		linked.ID,
-		update,
-		draft.Sequence,
+		DocumentSyncInput{Update: update, BaseSequence: draft.Sequence},
 	); !errors.Is(
 		err,
 		ErrForbidden,
@@ -220,10 +220,29 @@ func TestCanvasWikiReferencesReadPublicationOnly(t *testing.T) {
 			t.Fatalf("project_read bypassed Wiki read policy: %q", result.LatestVersion.Excerpt)
 		}
 	}
-	var privateRevision uuid.UUID
-	if err = pool.QueryRow(ctx, `INSERT INTO wiki_revisions(company_id,page_id,number,title,body,summary,author_user_id) VALUES($1,$2,99,'Private checkpoint','Never published','',$3) RETURNING id`, f.CompanyA, page.ID, f.UserA).
-		Scan(&privateRevision); err != nil {
+	private, err := generated.New(pool).
+		CreateWikiRevision(ctx, generated.CreateWikiRevisionParams{CompanyID: f.CompanyA, PageID: page.ID, Number: 99, Title: "Private checkpoint", Body: "Never published", AuthorUserID: f.UserA})
+	if err != nil {
 		t.Fatal(err)
+	}
+	privateRevision := private.ID
+	hits, err := s.Search(ctx, p, f.ProjectA, "Published guidance")
+	if err != nil || len(hits) != 1 {
+		t.Fatalf("private checkpoint hid published Wiki search result: %+v, %v", hits, err)
+	}
+
+	history, err := s.History(ctx, p, f.ProjectA, page.ID)
+	if err != nil || len(history.Versions) != 1 || history.Versions[0].ID != linked.ID {
+		t.Fatalf("Wiki placement history exposed unpublished snapshots: %+v, %v", history, err)
+	}
+	scene, err := s.Snapshot(ctx, p, f.ProjectA, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, result := range scene.Artifacts {
+		if result.ID == page.ID && result.LatestVersion.ID != linked.ID {
+			t.Fatalf("Wiki placement followed unpublished snapshot: %+v", result)
+		}
 	}
 	_, err = s.Mutate(
 		ctx,

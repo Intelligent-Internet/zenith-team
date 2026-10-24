@@ -32,10 +32,11 @@ type RunTerminalObservation struct {
 }
 
 type Registry struct {
-	schedule     scheduleMetrics
-	registry     *prometheus.Registry
-	httpRequests *prometheus.CounterVec
-	httpDuration *prometheus.HistogramVec
+	intelligentUI intelligentUIMetrics
+	schedule      scheduleMetrics
+	registry      *prometheus.Registry
+	httpRequests  *prometheus.CounterVec
+	httpDuration  *prometheus.HistogramVec
 
 	runTokens   *prometheus.CounterVec
 	runTerminal *prometheus.CounterVec
@@ -102,10 +103,11 @@ func NewRegistry() *Registry {
 		mailboxRetentionDeleted,
 	)
 	return &Registry{
-		schedule:     newScheduleMetrics(registry),
-		registry:     registry,
-		httpRequests: httpRequests,
-		httpDuration: httpDuration,
+		intelligentUI: newIntelligentUIMetrics(registry),
+		schedule:      newScheduleMetrics(registry),
+		registry:      registry,
+		httpRequests:  httpRequests,
+		httpDuration:  httpDuration,
 
 		runTokens:   runTokens,
 		runTerminal: runTerminal,

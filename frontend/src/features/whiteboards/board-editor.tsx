@@ -1561,11 +1561,7 @@ function EditorSurface({
           <div className="wb-header-actions">
             <div ref={setPresenceTarget} className="wb-header-presence" />
             {snapshot.board.canShare ? (
-              <BoardShareButton
-                scope={scope}
-                title={snapshot.board.title}
-                compact={compact}
-              />
+              <BoardShareButton scope={scope} compact={compact} />
             ) : null}
             {actions}
           </div>

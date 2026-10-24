@@ -1,5 +1,4 @@
 -- Reverses 000004_conversations.up.sql.
-DROP VIEW IF EXISTS conversation_readers;
 DROP FUNCTION IF EXISTS advance_channel_execution_revision CASCADE;
 DROP FUNCTION IF EXISTS preserve_discussion_identity CASCADE;
 DROP FUNCTION IF EXISTS check_discussion_collaboration_shape CASCADE;

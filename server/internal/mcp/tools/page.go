@@ -9,19 +9,21 @@ import (
 type PageEditInput struct {
 	SupersedesID *string         `json:"supersedesId,omitempty" jsonschema:"Unresolved prior change-set ID this revision replaces. Read current shared content and propose only remaining changes; accepted suggestions are already shared."`
 	PageID       string          `json:"pageId"                 jsonschema:"Stable Page ID returned by project_read or page_create. The Project overview is edited using its overviewPageId."`
-	Sequence     int64           `json:"sequence"               jsonschema:"Acknowledged sequence from page_read. Read again after an applied edit for current block IDs, hashes and sequence."`
+	Sequence     int64           `json:"sequence"               jsonschema:"Base revision sequence from page_read. Keep this sequence and its block hashes together. Proposals are compared with the current page at review; concurrent edits do not require you to stop. Read again only to intentionally revise the base."`
 	Summary      string          `json:"summary"                jsonschema:"Short human-readable explanation of the contribution."`
 	Operations   []PageOperation `json:"operations,omitempty"   jsonschema:"At most 32 focused insert/update/remove/move operations. All changes become suggestions requiring human acceptance. If validation rejects an operation, correct the indicated structure and retry; no proposal was saved."`
 	Theme        *string         `json:"theme,omitempty"        jsonschema:"Optional Page theme: default, editorial or compact. Submit theme changes separately, without operations. Changes presentation only; preserve the current theme unless a new one helps the requested result."`
 }
 type PageOperation struct {
-	Type         string     `json:"type"                   jsonschema:"insert adds one subtree; update replaces a target subtree without changing its block type; remove deletes a subtree; move relocates an existing subtree."`
-	BlockID      string     `json:"blockId,omitempty"      jsonschema:"Existing target attrs.blockId from the destination read; required for update, remove and move. Omit for insert."`
-	ParentID     string     `json:"parentId,omitempty"     jsonschema:"Structural parent attrs.blockId for insert or move. Omit for document-level paragraphs and headings, including content under a section heading. Headings and paragraphs are not containers; never use their IDs as parentId. Choose a parent that accepts the block type, such as a list for listItem or table for tableRow."`
-	AfterID      string     `json:"afterId,omitempty"      jsonschema:"Place an inserted or moved subtree after this existing sibling in the destination parent. Mutually exclusive with beforeId; omit both to append."`
-	BeforeID     string     `json:"beforeId,omitempty"     jsonschema:"Place an inserted or moved subtree before this existing sibling in the destination parent. Mutually exclusive with afterId; omit both to append."`
-	ExpectedHash string     `json:"expectedHash,omitempty" jsonschema:"Exact target hash from the destination read, required except for insert."`
-	Content      *PageBlock `json:"content,omitempty"      jsonschema:"One native block subtree: type, attrs, content, text and marks. Inserts omit attrs.blockId throughout the entire subtree; the server allocates IDs. Updates retain the target's type and attrs.blockId equal to the operation's blockId, preserving all existing descendant IDs. Insert new descendant blocks with separate insert operations. Put reference fields in attrs: artifactReference uses versionId/artifactId/label, format live for a current native Page or pinned for exact evidence, and display link/card/section/expanded; taskReference uses taskId; taskCollection uses filter and display list/gallery/table/board; outputCollection uses filter and display list/gallery/table/expanded; workflowReference uses a real workflowKey and display link/card/expanded; images and media use display card/section/expanded. Reference evidence rather than duplicating it."`
+	Source          *string    `json:"source,omitempty"          jsonschema:"Versioned Zenith source for exactly one subtree; mutually exclusive with content. Updates preserve every block ID using the Native escape from page_read. Load zenith-intelligent-ui before authoring."`
+	LanguageVersion int        `json:"languageVersion,omitempty" jsonschema:"Required with source; currently 1."`
+	Type            string     `json:"type"                      jsonschema:"insert adds one subtree; update replaces a target subtree without changing its block type; remove deletes a subtree; move relocates an existing subtree."`
+	BlockID         string     `json:"blockId,omitempty"         jsonschema:"Existing target attrs.blockId from the destination read; required for update, remove and move. Omit for insert."`
+	ParentID        string     `json:"parentId,omitempty"        jsonschema:"Structural parent attrs.blockId for insert or move. Omit for document-level paragraphs and headings, including content under a section heading. Headings and paragraphs are not containers; never use their IDs as parentId. Choose a parent that accepts the block type, such as a list for listItem or table for tableRow."`
+	AfterID         string     `json:"afterId,omitempty"         jsonschema:"Place an inserted or moved subtree after this existing sibling in the destination parent. Mutually exclusive with beforeId; omit both to append."`
+	BeforeID        string     `json:"beforeId,omitempty"        jsonschema:"Place an inserted or moved subtree before this existing sibling in the destination parent. Mutually exclusive with afterId; omit both to append."`
+	ExpectedHash    string     `json:"expectedHash,omitempty"    jsonschema:"Exact target hash from the destination read, required except for insert."`
+	Content         *PageBlock `json:"content,omitempty"         jsonschema:"One native block subtree: type, attrs, content, text and marks. Inserts omit attrs.blockId throughout the entire subtree; the server allocates IDs. Updates retain the target's type and attrs.blockId equal to the operation's blockId, preserving all existing descendant IDs. Insert new descendant blocks with separate insert operations. Put reference fields in attrs: artifactReference uses versionId/artifactId/label, format live for a current native Page or pinned for exact evidence, and display link/card/section/expanded; taskReference uses taskId; taskCollection uses filter and display list/gallery/table/board; outputCollection uses filter and display list/gallery/table/expanded; workflowReference uses a real workflowKey and display link/card/expanded; images and media use display card/section/expanded. Reference evidence rather than duplicating it."`
 }
 
 // PageBlock makes the replacement subtree explicit in the tool schema. Child
@@ -48,10 +50,12 @@ type PagePreviewResult struct {
 }
 
 type PageCreateInput struct {
-	Title    string         `json:"title"              jsonschema:"Concise result title, such as Autumn campaign or Audience research."`
-	Content  map[string]any `json:"content,omitempty"  jsonschema:"Native document with type doc and content array. Blocks have type, optional attrs, content; text nodes have type text and text. Omit blockId on new blocks; the server allocates IDs. Use artifactReference, taskReference, taskCollection and workflowReference for real sources and work."`
-	Markdown *string        `json:"markdown,omitempty" jsonschema:"Ordinary Markdown for prose, headings, lists, tables and links. Supply either markdown or native content, never both. Use native blocks for live Task/Workflow references and rich layouts."`
-	Theme    *string        `json:"theme,omitempty"    jsonschema:"Optional curated theme: default, editorial or compact. Omit for the standard Page presentation."`
+	Source          *string        `json:"source,omitempty"          jsonschema:"Zenith Markdown/component source; mutually exclusive with markdown and content. Load zenith-intelligent-ui for the supported grammar."`
+	LanguageVersion int            `json:"languageVersion,omitempty" jsonschema:"Required with source; currently 1."`
+	Title           string         `json:"title"                     jsonschema:"Concise result title, such as Autumn campaign or Audience research."`
+	Content         map[string]any `json:"content,omitempty"         jsonschema:"Native document with type doc and content array. Blocks have type, optional attrs, content; text nodes have type text and text. Omit blockId on new blocks; the server allocates IDs. Use artifactReference, taskReference, taskCollection and workflowReference for real sources and work."`
+	Markdown        *string        `json:"markdown,omitempty"        jsonschema:"Ordinary Markdown for prose, headings, lists, tables and links. Supply either markdown or native content, never both. Use native blocks for live Task/Workflow references and rich layouts."`
+	Theme           *string        `json:"theme,omitempty"           jsonschema:"Optional curated theme: default, editorial or compact. Omit for the standard Page presentation."`
 }
 type PageReadInput struct {
 	ChangeID string `json:"changeId,omitempty" jsonschema:"For page_preview, the exact change-set ID to preview as a proposed result; omit to capture shared content."`
@@ -79,6 +83,9 @@ type pageAPI interface {
 	PostRunJSON(context.Context, string, string, any, any) error
 }
 type PageToolService interface {
+	StartSourcePreview(context.Context, PageSourcePreviewStartInput) (PageSourcePreviewResult, error)
+	ReadSourcePreview(context.Context, PageSourcePreviewReadInput) (PageSourcePreviewResult, error)
+	PatchSourcePreview(context.Context, PageSourcePreviewPatchInput) (PageSourcePreviewResult, error)
 	ReadProject(context.Context) (ProjectResult, error)
 	CreatePage(context.Context, PageCreateInput) (PageResult, error)
 	ReadPage(context.Context, PageReadInput) (PageResult, error)
@@ -140,6 +147,15 @@ func (s *DefaultPageToolService) ReadPage(ctx context.Context, in PageReadInput)
 func (s *DefaultPageToolService) EditPage(ctx context.Context, in PageEditInput) (PageEditResult, error) {
 	for index, op := range in.Operations {
 		if op.Type != "insert" && op.Type != "update" {
+			continue
+		}
+		if op.Source != nil {
+			if op.Content != nil || op.LanguageVersion != 1 {
+				return PageEditResult{}, fmt.Errorf(
+					"operations[%d] requires source with languageVersion 1 and no content",
+					index,
+				)
+			}
 			continue
 		}
 		if op.Content == nil || op.Content.Type == "" {

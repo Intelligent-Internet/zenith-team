@@ -11,7 +11,7 @@ WHERE o.company_id=sqlc.arg(company_id)::uuid AND o.id=sqlc.arg(output_id)::uuid
 SELECT jsonb_build_object('id',t.id,'versionId',COALESCE(t.document_revision_id,t.output_id),'pageId',t.page_id,'anchor',t.anchor,'status',t.status,'revision',t.version,'createdAt',t.created_at,
  'comments',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',c.id,'body',CASE WHEN c.deleted_at IS NULL THEN c.body ELSE '' END,'revision',c.version,'authorId',c.author_user_id,'authorAgentId',c.author_agent_id,'runId',c.agent_run_id,'authorName',COALESCE(a.name,u.display_name,'Former teammate'),'createdAt',c.created_at,'editedAt',c.edited_at,'deleted',c.deleted_at IS NOT NULL) ORDER BY c.created_at,c.id)
  FROM review_comments c LEFT JOIN users u ON u.id=c.author_user_id LEFT JOIN agents a ON a.id=c.author_agent_id WHERE c.thread_id=t.id),'[]'::jsonb)) AS payload
-FROM review_threads t WHERE t.company_id=$1 AND t.output_id=$2 ORDER BY t.created_at,t.id;
+FROM review_threads t WHERE t.company_id=$1 AND t.output_id=$2 AND (t.page_id IS NULL AND t.document_revision_id IS NULL OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=t.company_id AND access.artifact_id=COALESCE(t.page_id,(SELECT page_id FROM document_snapshots WHERE id=t.document_revision_id)) AND access.user_id=sqlc.arg(actor_user_id)::uuid)) ORDER BY t.created_at,t.id;
 
 -- name: CountOutputReviewThreads :one
 SELECT count(*) FROM review_threads WHERE company_id=$1 AND output_id=$2;
@@ -20,7 +20,7 @@ SELECT count(*) FROM review_threads WHERE company_id=$1 AND output_id=$2;
 INSERT INTO review_threads(company_id,output_id,anchor,created_by_user_id,page_id,document_revision_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING id;
 
 -- name: GetOutputReviewThread :one
-SELECT * FROM review_threads WHERE company_id=$1 AND output_id=$2 AND id=$3;
+SELECT t.* FROM review_threads t WHERE t.company_id=$1 AND t.output_id=$2 AND t.id=$3 AND (t.page_id IS NULL AND t.document_revision_id IS NULL OR EXISTS(SELECT 1 FROM artifact_access access WHERE access.company_id=t.company_id AND access.artifact_id=COALESCE(t.page_id,(SELECT page_id FROM document_snapshots WHERE id=t.document_revision_id)) AND access.user_id=sqlc.arg(actor_user_id)::uuid));
 
 -- name: CountOutputReviewComments :one
 SELECT count(*) FROM review_comments WHERE thread_id=$1;

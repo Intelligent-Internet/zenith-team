@@ -1,0 +1,564 @@
+{
+  "paths": {
+    "access": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "getLiveArtifactAccess",
+        "summary": "Read live Artifact ownership and sharing",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized saved state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/LiveArtifactAccess"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "changeLiveArtifactAccess",
+        "summary": "Change standalone Artifact access at an exact revision",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/schemas/LiveArtifactAccessChange"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authorized saved state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/LiveArtifactAccess"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pages": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "listReadablePages",
+        "summary": "List readable Pages independently of placements and deliveries",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorized saved state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/PageList"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "content": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "getRetainedArtifactContent",
+        "summary": "Read current retained content or an exact snapshot using live Artifact access",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "snapshotId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Saved content.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/schemas/RetainedArtifactContent"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "download": {
+      "get": {
+        "tags": [
+          "artifacts"
+        ],
+        "operationId": "downloadRetainedArtifactItem",
+        "summary": "Download one exact snapshot item using live Artifact access",
+        "parameters": [
+          {
+            "$ref": "./_common.yaml#/parameters/companyId"
+          },
+          {
+            "name": "artifactId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "snapshotId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "itemId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retained file bytes.",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Request could not be completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "./_common.yaml#/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemas": {
+    "LiveArtifactGrant": {
+      "type": "object",
+      "required": [
+        "userId",
+        "displayName",
+        "permission"
+      ],
+      "properties": {
+        "userId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "permission": {
+          "type": "string",
+          "enum": [
+            "view",
+            "edit",
+            "manage"
+          ]
+        }
+      }
+    },
+    "LiveArtifactAccess": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "ownership",
+        "visibility",
+        "canManage",
+        "revision",
+        "grants",
+        "type",
+        "conversationGrants",
+        "canEdit"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "ownership": {
+          "type": "string",
+          "enum": [
+            "person",
+            "project",
+            "company"
+          ]
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ownerUserId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "private",
+            "company"
+          ]
+        },
+        "canManage": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "grants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/LiveArtifactGrant"
+          }
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "page",
+            "wiki",
+            "whiteboard",
+            "file",
+            "media",
+            "app"
+          ]
+        },
+        "conversationGrants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "conversationId",
+              "title"
+            ],
+            "properties": {
+              "conversationId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "title": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "canEdit": {
+          "type": "boolean"
+        }
+      }
+    },
+    "LiveArtifactGrantChange": {
+      "type": "object",
+      "required": [
+        "userId",
+        "permission"
+      ],
+      "properties": {
+        "userId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "permission": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "view",
+            "edit",
+            "manage",
+            null
+          ]
+        }
+      }
+    },
+    "LiveArtifactAccessChange": {
+      "type": "object",
+      "required": [
+        "expectedRevision"
+      ],
+      "properties": {
+        "expectedRevision": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        },
+        "visibility": {
+          "type": "string",
+          "enum": [
+            "private",
+            "company"
+          ]
+        },
+        "grant": {
+          "$ref": "#/schemas/LiveArtifactGrantChange"
+        },
+        "revokeConversationId": {
+          "type": "string",
+          "format": "uuid"
+        }
+      }
+    },
+    "PageSummary": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "updatedAt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "title": {
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ownerUserId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "PageList": {
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/PageSummary"
+          }
+        }
+      }
+    },
+    "RetainedArtifactContent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "title",
+        "summary",
+        "artifactId",
+        "snapshotId",
+        "number",
+        "createdAt",
+        "payload",
+        "items"
+      ],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "artifactId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "snapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "number": {
+          "type": "integer"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/schemas/RetainedArtifactItem"
+          }
+        }
+      }
+    },
+    "RetainedArtifactItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "label",
+        "filename",
+        "contentType",
+        "id",
+        "assetVersionId",
+        "ordinal",
+        "sizeBytes"
+      ],
+      "properties": {
+        "role": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "filename": {
+          "type": "string"
+        },
+        "contentType": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "assetVersionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ordinal": {
+          "type": "integer"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    }
+  }
+}

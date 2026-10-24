@@ -97,23 +97,22 @@ func listConversationArtifactResults(
 	if err != nil {
 		return nil, nil, fmt.Errorf("list Conversation Artifacts: %w", err)
 	}
-	rows, next := pageArtifactRows(rows, params.RowLimit)
 	results, err := artifactRunResults(ctx, q, params.CompanyID, params.ActorUserID, rows)
-	return results, next, err
-}
-
-// pageArtifactRows trims the look-ahead row a list query fetched beyond the
-// page and returns the cursor that continues after the page's last row.
-func pageArtifactRows(
-	rows []dbgen.ListConversationArtifactsRow,
-	rowLimit int32,
-) ([]dbgen.ListConversationArtifactsRow, *Cursor) {
-	if len(rows) < int(rowLimit) {
-		return rows, nil
+	if err != nil {
+		return nil, nil, err
 	}
-	rows = rows[:len(rows)-1]
-	last := rows[len(rows)-1].Output
-	return rows, &Cursor{ID: last.ID, CreatedAt: last.CreatedAt.Time}
+	if params.RunID == uuid.Nil {
+		results, err = appendLiveArtifacts(ctx, q, results, dbgen.ListLiveArtifactsParams{
+			CompanyID: params.CompanyID, ActorUserID: params.ActorUserID,
+			ConversationID:  uuid.NullUUID{UUID: params.ConversationID, Valid: true},
+			BeforeCreatedAt: params.BeforeCreatedAt, BeforeID: params.BeforeID, RowLimit: params.RowLimit,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	results, next := pageArtifactResults(results, params.RowLimit-1)
+	return results, next, nil
 }
 
 // artifactRunResults projects Artifact rows the actor may open, with their

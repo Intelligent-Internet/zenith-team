@@ -100,8 +100,7 @@ function DocumentSnapshot({
               ? scope
               : {
                   companyId: scope.companyId,
-                  outputId: scope.outputId,
-                  outputItemId: version.outputItemId!,
+                  pageId: version.wikiPageId ?? version.artifactId,
                 }
           }
           content={result.data.content}

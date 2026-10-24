@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 
 	"github.com/jackc/pgx/v5"
@@ -173,7 +175,7 @@ func (s *DefaultPublicationService) SetSubdomain(
 		return Publication{}, ErrPublicationSubdomainTaken
 	}
 	if err == nil && changed.Name != "" {
-		s.bus.Publish(ctx, TopicArtifact, changed)
+		s.bus.Publish(ctx, artifactdomain.Topic, changed)
 	}
 	return result, err
 }

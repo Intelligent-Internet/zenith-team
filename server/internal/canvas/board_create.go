@@ -28,9 +28,9 @@ func CreateWhiteboardInTx(
 	if err != nil {
 		return uuid.Nil, err
 	}
-	id, err := q.CreateWhiteboardOutput(
+	id, err := q.CreateWhiteboardArtifact(
 		ctx,
-		generated.CreateWhiteboardOutputParams{
+		generated.CreateWhiteboardArtifactParams{
 			CompanyID:      p.CompanyID,
 			Title:          title,
 			ActorUserID:    uuid.NullUUID{UUID: p.UserID, Valid: true},
@@ -63,7 +63,7 @@ func (s *DefaultBoardService) Rename(
 		if err != nil {
 			return err
 		}
-		if err := q.RenameWhiteboardOutput(ctx, generated.RenameWhiteboardOutputParams{
+		if err := q.RenameWhiteboardArtifact(ctx, generated.RenameWhiteboardArtifactParams{
 			Title: title, CompanyID: p.CompanyID, ID: b.ID,
 		}); err != nil {
 			return err

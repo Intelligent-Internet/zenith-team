@@ -1,0 +1,3946 @@
+[
+  {
+    "name": "Scope",
+    "nodeType": "uiScope",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "name",
+      "initial",
+      "computed",
+      "sources"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "name": "scope",
+      "initial": {},
+      "computed": {},
+      "sources": {}
+    },
+    "propertyRules": [
+      {
+        "property": "name",
+        "type": "name",
+        "code": "scope.name",
+        "required": true
+      },
+      {
+        "property": "initial",
+        "type": "nameMap",
+        "code": "scope.initial",
+        "required": true,
+        "min": 0,
+        "max": 64,
+        "keyCode": "state.definition",
+        "entry": {
+          "property": "value",
+          "type": "scalar",
+          "code": "state.definition",
+          "required": true
+        }
+      },
+      {
+        "property": "computed",
+        "type": "nameMap",
+        "code": "scope.computed",
+        "required": false,
+        "min": 0,
+        "max": 64,
+        "keyCode": "state.definition",
+        "entry": {
+          "property": "value",
+          "type": "expression",
+          "code": "expression.type",
+          "required": true
+        }
+      },
+      {
+        "property": "sources",
+        "type": "nameMap",
+        "code": "scope.sources",
+        "required": false,
+        "min": 0,
+        "max": 16,
+        "keyCode": "source.name",
+        "entry": {
+          "property": "value",
+          "type": "object",
+          "code": "source.descriptor",
+          "required": true,
+          "itemCode": "source.property",
+          "fields": [
+            {
+              "property": "type",
+              "type": "enum",
+              "code": "source.type",
+              "required": true,
+              "values": [
+                "tasks"
+              ]
+            },
+            {
+              "property": "projectId",
+              "type": "uuid",
+              "code": "source.project",
+              "required": true
+            },
+            {
+              "property": "filter",
+              "type": "enum",
+              "code": "source.filter",
+              "required": false,
+              "values": [
+                "all",
+                "active",
+                "review",
+                "done"
+              ]
+            },
+            {
+              "property": "limit",
+              "type": "integer",
+              "code": "source.limit",
+              "required": false,
+              "min": 1,
+              "max": 1000
+            }
+          ]
+        }
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "initial": "Required object with at most 64 named scalar inputs. Values are null, boolean, finite number or string of at most 4096 UTF-8 bytes.",
+        "computed": "Optional object with at most 64 named expressions. Names must not duplicate initial inputs; dependencies must resolve without cycles.",
+        "sources": "Optional object with at most 16 named Task sources. Each descriptor permits only type=\"tasks\", nonzero projectId UUID, optional filter (all, active, review, done) and optional integer limit 1\u20131000. Authorization is checked independently of the descriptor."
+      },
+      "events": [
+        "Descendant input changes update only this viewer\u2019s scope instance."
+      ],
+      "accessibility": [
+        "Scope adds no mandatory visual border; preserve authored reading order and labels."
+      ],
+      "fallback": "Unavailable or revoked sources remain unavailable; do not silently substitute zero or an empty successful result.",
+      "capture": "Record selected scalar inputs, definitions, observations and evaluated values in the manifest; materialize children inside a Stack.",
+      "limits": [
+        "64 initial inputs, 64 computed values and 16 sources per scope."
+      ]
+    },
+    "constraints": [
+      {
+        "type": "disjointKeys",
+        "left": "initial",
+        "right": "computed",
+        "code": "state.duplicate",
+        "repair": "Give initial inputs and computed declarations distinct names.",
+        "strict": false,
+        "defaults": {}
+      }
+    ]
+  },
+  {
+    "name": "Stack",
+    "nodeType": "uiStack",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "direction",
+      "gap"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "direction": "vertical",
+      "gap": "normal"
+    },
+    "propertyRules": [
+      {
+        "property": "direction",
+        "type": "enum",
+        "code": "layout.direction",
+        "required": false,
+        "values": [
+          "vertical",
+          "horizontal"
+        ]
+      },
+      {
+        "property": "gap",
+        "type": "enum",
+        "code": "layout.gap",
+        "required": false,
+        "values": [
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Keep DOM reading order equal to authored child order."
+      ],
+      "fallback": "Render children in document order.",
+      "capture": "Retain layout and recursively freeze children.",
+      "limits": [
+        "Document limits: 10,000 nodes and depth 32."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Grid",
+    "nodeType": "uiGrid",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "columns",
+      "gap"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "columns": 2,
+      "gap": "normal"
+    },
+    "propertyRules": [
+      {
+        "property": "gap",
+        "type": "enum",
+        "code": "layout.gap",
+        "required": false,
+        "values": [
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "columns",
+        "type": "integer",
+        "code": "layout.columns",
+        "required": false,
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Collapse columns on narrow surfaces without changing reading order."
+      ],
+      "fallback": "Render children in document order.",
+      "capture": "Retain layout and recursively freeze children.",
+      "limits": [
+        "Use only the catalog columns and gap constraints."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Conditional",
+    "nodeType": "uiConditional",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "when"
+    ],
+    "expressions": [
+      "when"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "when": {
+        "op": "literal",
+        "value": true
+      }
+    },
+    "propertyRules": [],
+    "authoring": {
+      "constraints": {
+        "when": "Required expression resolving to a boolean; truthy coercion is not supported."
+      },
+      "events": [],
+      "accessibility": [
+        "Hidden descendants are not interactive; evaluation status must not steal focus."
+      ],
+      "fallback": "Show unavailable/loading status rather than treating evaluation failure as false.",
+      "capture": "Evaluate when once; omit false descendants and materialize true descendants in a Stack.",
+      "limits": [
+        "Expression and document budgets apply even when nested."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Repeat",
+    "nodeType": "uiRepeat",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "items",
+      "keyField"
+    ],
+    "expressions": [
+      "items"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "items": {
+        "op": "literal",
+        "value": []
+      },
+      "keyField": "id"
+    },
+    "propertyRules": [
+      {
+        "property": "keyField",
+        "type": "field",
+        "code": "repeat.key",
+        "required": false
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "items": "Required expression resolving to an array. Scalar items are their own keys; object items use keyField, default id. Keys must be non-null scalars and unique within this Repeat.",
+        "keyField": "Object key field defaults to id. Keep keys stable across sorting and refresh to preserve local instance state."
+      },
+      "events": [
+        "Descendant controls update their keyed viewer instance."
+      ],
+      "accessibility": [
+        "Preserve collection order and distinct control labels/IDs for rendered instances."
+      ],
+      "fallback": "Report missing or duplicate keys and unavailable collections; do not reuse another item\u2019s state.",
+      "capture": "Expand keyed instances once and materialize their evaluated children in a Stack; retain instance paths in the manifest.",
+      "limits": [
+        "At most 1000 items, 8 nested Repeat levels and a shared 10,000 rendered-node budget."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Button",
+    "nodeType": "uiButton",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "action"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Continue",
+      "action": {
+        "type": "copy",
+        "text": "Copied from this Page."
+      }
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "action",
+        "type": "variant",
+        "code": "action.object",
+        "required": true,
+        "discriminator": "type",
+        "variantCode": "action.type",
+        "variants": {
+          "setState": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "setState"
+                ]
+              },
+              {
+                "property": "name",
+                "type": "name",
+                "code": "action.state",
+                "required": true
+              },
+              {
+                "property": "value",
+                "type": "expression",
+                "code": "expression.type",
+                "required": true
+              }
+            ]
+          },
+          "copy": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "copy"
+                ]
+              },
+              {
+                "property": "text",
+                "type": "string",
+                "code": "action.text",
+                "required": true,
+                "min": 1,
+                "max": 4096
+              }
+            ]
+          },
+          "continue": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "continue"
+                ]
+              },
+              {
+                "property": "text",
+                "type": "string",
+                "code": "action.text",
+                "required": true,
+                "min": 1,
+                "max": 4096
+              }
+            ]
+          },
+          "navigate": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "navigate"
+                ]
+              },
+              {
+                "property": "href",
+                "type": "httpsURL",
+                "code": "action.href",
+                "required": true,
+                "max": 2048
+              }
+            ]
+          },
+          "openEntity": {
+            "property": "value",
+            "type": "variant",
+            "code": "action.object",
+            "required": true,
+            "discriminator": "entityType",
+            "variantCode": "action.entity",
+            "variants": {
+              "task": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "task"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  }
+                ]
+              },
+              "page": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "page"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  },
+                  {
+                    "property": "projectId",
+                    "type": "uuid",
+                    "code": "action.project",
+                    "required": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "action": "Closed action object: setState requires name and expression value; copy/continue require literal text of 1\u20134096 UTF-8 bytes; navigate requires safe HTTPS href up to 2048 bytes; openEntity requires entityType task/page and nonzero entityId UUID, with optional nonzero projectId for page. Unknown fields are rejected. Continue requires host review and normal authorization."
+      },
+      "events": [
+        "Activate the declared host action; setState changes viewer-local state only."
+      ],
+      "accessibility": [
+        "Use the label as the accessible button name; retain keyboard activation and visible focus."
+      ],
+      "fallback": "Disable unsupported host actions and actions in comparison/snapshot views; show action failures without claiming success.",
+      "capture": "Materialize the label and action-unavailable text; never execute an action during capture.",
+      "limits": [
+        "Only the five registered action types; no arbitrary script or mutation action."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "TextInput",
+    "nodeType": "uiTextInput",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "placeholder"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Text",
+      "bind": "value",
+      "placeholder": ""
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "placeholder",
+        "type": "string",
+        "code": "input.placeholder",
+        "required": false,
+        "min": 0,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must be a string of at most 4096 UTF-8 bytes."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "Bound text is limited to 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "NumberInput",
+    "nodeType": "uiNumberInput",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "min",
+      "max",
+      "step"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Number",
+      "bind": "value",
+      "min": -1.7976931348623157e+308,
+      "max": 1.7976931348623157e+308,
+      "step": 1
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "min",
+        "type": "number",
+        "code": "input.range",
+        "required": false
+      },
+      {
+        "property": "max",
+        "type": "number",
+        "code": "input.range",
+        "required": false
+      },
+      {
+        "property": "step",
+        "type": "positiveNumber",
+        "code": "input.range",
+        "required": false
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must be a finite number within the declared range.",
+        "min": "Optional finite lower bound.",
+        "max": "Optional finite upper bound; min must not exceed max.",
+        "step": "Optional finite positive increment."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "Only one declared scalar state binding per control."
+      ]
+    },
+    "constraints": [
+      {
+        "type": "numberOrder",
+        "left": "min",
+        "right": "max",
+        "code": "input.range",
+        "repair": "Set min less than or equal to max when both bounds are supplied.",
+        "strict": false,
+        "defaults": {}
+      }
+    ]
+  },
+  {
+    "name": "Select",
+    "nodeType": "uiSelect",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "options"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Select",
+      "bind": "value",
+      "options": [
+        ""
+      ]
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "options",
+        "type": "stringArray",
+        "code": "select.options",
+        "required": true,
+        "min": 1,
+        "max": 100,
+        "itemMaxBytes": 200,
+        "unique": true
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must equal one of the options.",
+        "options": "Required array of 1\u2013100 distinct strings, each at most 200 UTF-8 bytes."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "At most 100 options, each at most 200 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Checkbox",
+    "nodeType": "uiCheckbox",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Enabled",
+      "bind": "value"
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must be a boolean."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "Only one declared scalar state binding per control."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Slider",
+    "nodeType": "uiSlider",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "min",
+      "max",
+      "step"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Value",
+      "bind": "value",
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "min",
+        "type": "number",
+        "code": "input.range",
+        "required": false
+      },
+      {
+        "property": "max",
+        "type": "number",
+        "code": "input.range",
+        "required": false
+      },
+      {
+        "property": "step",
+        "type": "positiveNumber",
+        "code": "input.range",
+        "required": false
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must be a finite number within the declared range.",
+        "min": "Optional finite lower bound. Defaults to 0.",
+        "max": "Optional finite upper bound; min must not exceed max. Defaults to 100; the effective min must be strictly less than max.",
+        "step": "Optional finite positive increment."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "Only one declared scalar state binding per control."
+      ]
+    },
+    "constraints": [
+      {
+        "type": "numberOrder",
+        "left": "min",
+        "right": "max",
+        "code": "input.range",
+        "repair": "Set min strictly below max; omitted bounds default to 0 and 100.",
+        "strict": true,
+        "defaults": {
+          "min": 0,
+          "max": 100
+        }
+      }
+    ]
+  },
+  {
+    "name": "Value",
+    "nodeType": "uiValue",
+    "placement": "inline",
+    "children": false,
+    "properties": [
+      "value"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "value": {
+        "op": "literal",
+        "value": null
+      }
+    },
+    "propertyRules": [],
+    "authoring": {
+      "constraints": {
+        "value": "Required bounded expression. Use explicit formatting for nontrivial scalar display; evaluation errors are not values."
+      },
+      "events": [],
+      "accessibility": [
+        "Keep the value inline in its containing prose; status changes must not move focus."
+      ],
+      "fallback": "Render evaluation loading/unavailable status without inventing a value.",
+      "capture": "Replace the expression with its evaluated literal and retain evidence in the manifest.",
+      "limits": [
+        "Expression depth, steps, collection and output-byte budgets apply."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Metric",
+    "nodeType": "uiMetric",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "value"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Value",
+      "value": {
+        "op": "literal",
+        "value": null
+      }
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "value": "Required bounded expression; use explicit formatting for units and precision."
+      },
+      "events": [],
+      "accessibility": [
+        "Keep the visible label adjacent to the value."
+      ],
+      "fallback": "Render evaluation loading/unavailable status without inventing a value.",
+      "capture": "Replace the expression with its evaluated literal and retain the label and evidence.",
+      "limits": [
+        "Expression depth, steps, collection and output-byte budgets apply."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Chart",
+    "nodeType": "uiChart",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "variant",
+      "data",
+      "x",
+      "y"
+    ],
+    "expressions": [
+      "data"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Chart",
+      "variant": "bar",
+      "data": {
+        "op": "literal",
+        "value": []
+      },
+      "x": "x",
+      "y": "y"
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "variant",
+        "type": "enum",
+        "code": "chart.variant",
+        "required": true,
+        "values": [
+          "line",
+          "bar",
+          "scatter",
+          "pie"
+        ]
+      },
+      {
+        "property": "x",
+        "type": "field",
+        "code": "chart.column",
+        "required": true
+      },
+      {
+        "property": "y",
+        "type": "field",
+        "code": "chart.column",
+        "required": true
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "data": "Required expression resolving to at most 1000 objects. y must be a finite number; scatter x must be a finite number, while line/bar x accepts strings or finite numbers.",
+        "x": "Field used for horizontal values/categories; missing or incompatible values are unavailable.",
+        "y": "Field containing finite numeric values."
+      },
+      "events": [
+        "Chart inspection and its fallback table sorting/pagination are viewer-local."
+      ],
+      "accessibility": [
+        "Provide an accessible chart label, a text summary of the plotted range and extrema, and the accompanying typed data table; never rely only on color or hover."
+      ],
+      "fallback": "Always include a data table; show invalid or empty-data states explicitly.",
+      "capture": "Freeze evaluated rows as literals, preserve chart metadata and export tabular data.",
+      "limits": [
+        "At most 1000 rows; only line, bar and scatter variants."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "DataTable",
+    "nodeType": "uiDataTable",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "data",
+      "columns",
+      "pageSize"
+    ],
+    "expressions": [
+      "data"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Data",
+      "data": {
+        "op": "literal",
+        "value": []
+      },
+      "columns": [
+        {
+          "key": "value",
+          "label": "Value",
+          "type": "string"
+        }
+      ],
+      "pageSize": 20
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "pageSize",
+        "type": "integer",
+        "code": "table.pageSize",
+        "required": false,
+        "min": 1,
+        "max": 100
+      },
+      {
+        "property": "columns",
+        "type": "objectArray",
+        "code": "table.columns",
+        "itemCode": "table.column",
+        "required": true,
+        "min": 1,
+        "max": 20,
+        "uniqueBy": "key",
+        "fields": [
+          {
+            "property": "key",
+            "type": "field",
+            "code": "table.column",
+            "required": true
+          },
+          {
+            "property": "label",
+            "type": "string",
+            "code": "table.column",
+            "required": true,
+            "min": 1,
+            "max": 200
+          },
+          {
+            "property": "type",
+            "type": "enum",
+            "code": "table.column",
+            "required": true,
+            "values": [
+              "string",
+              "number",
+              "boolean",
+              "date"
+            ]
+          }
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "data": "Required expression resolving to an array of at most 1000 objects. Cells must match their declared column types; unavailable values are identified explicitly.",
+        "columns": "Required array of 1\u201320 objects, each containing exactly key, label and type. Keys are unique safe fields up to 128 UTF-8 bytes; labels are 1\u2013200 UTF-8 bytes; type is string, number, boolean or date."
+      },
+      "events": [
+        "Column sorting and pagination change only the current viewer\u2019s table view."
+      ],
+      "accessibility": [
+        "Use semantic table headers with sort state and labelled pagination controls; allow deliberate horizontal overflow."
+      ],
+      "fallback": "Show invalid, empty and unavailable data states; do not display mismatched cells as valid values.",
+      "capture": "Freeze evaluated rows and column metadata; export retained rows rather than refetching live data.",
+      "limits": [
+        "At most 1000 rows, 20 columns and 100 rows per page."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "TextArea",
+    "nodeType": "uiTextArea",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "placeholder",
+      "rows"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Text",
+      "bind": "value",
+      "placeholder": "",
+      "rows": 3
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "placeholder",
+        "type": "string",
+        "code": "input.placeholder",
+        "required": false,
+        "min": 0,
+        "max": 200
+      },
+      {
+        "property": "rows",
+        "type": "integer",
+        "code": "component.rows",
+        "required": false,
+        "min": 2,
+        "max": 12
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must be a string of at most 4096 UTF-8 bytes."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "Bound text is limited to 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "WritingBlock",
+    "nodeType": "uiWritingBlock",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "placeholder",
+      "rows"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Text",
+      "bind": "value",
+      "placeholder": "",
+      "rows": 8
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "placeholder",
+        "type": "string",
+        "code": "input.placeholder",
+        "required": false,
+        "min": 0,
+        "max": 200
+      },
+      {
+        "property": "rows",
+        "type": "integer",
+        "code": "component.rows",
+        "required": false,
+        "min": 2,
+        "max": 12
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must be a string of at most 4096 UTF-8 bytes."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "Bound text is limited to 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "DatePicker",
+    "nodeType": "uiDatePicker",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "placeholder",
+      "min",
+      "max"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Text",
+      "bind": "value",
+      "placeholder": "",
+      "min": "",
+      "max": ""
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "placeholder",
+        "type": "string",
+        "code": "input.placeholder",
+        "required": false,
+        "min": 0,
+        "max": 200
+      },
+      {
+        "property": "min",
+        "type": "string",
+        "code": "component.min",
+        "required": false,
+        "min": 0,
+        "max": 10
+      },
+      {
+        "property": "max",
+        "type": "string",
+        "code": "component.max",
+        "required": false,
+        "min": 0,
+        "max": 10
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must be a string of at most 4096 UTF-8 bytes."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "Bound text is limited to 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "RadioGroup",
+    "nodeType": "uiRadioGroup",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "options"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Select",
+      "bind": "value",
+      "options": [
+        ""
+      ]
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "options",
+        "type": "stringArray",
+        "code": "select.options",
+        "required": true,
+        "min": 1,
+        "max": 100,
+        "itemMaxBytes": 200,
+        "unique": true
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must equal one of the options.",
+        "options": "Required array of 1\u2013100 distinct strings, each at most 200 UTF-8 bytes."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "At most 100 options, each at most 200 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "SegmentedControl",
+    "nodeType": "uiSegmentedControl",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "bind",
+      "options"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Select",
+      "bind": "value",
+      "options": [
+        ""
+      ]
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "bind",
+        "type": "name",
+        "code": "binding.name",
+        "required": true
+      },
+      {
+        "property": "options",
+        "type": "stringArray",
+        "code": "select.options",
+        "required": true,
+        "min": 1,
+        "max": 100,
+        "itemMaxBytes": 200,
+        "unique": true
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "bind": "Required name of writable initial state in the nearest declaring Scope; computed values are not writable. The value must equal one of the options.",
+        "options": "Required array of 1\u2013100 distinct strings, each at most 200 UTF-8 bytes."
+      },
+      "events": [
+        "Input changes update bound viewer-local state; no product mutation is implied."
+      ],
+      "accessibility": [
+        "Use an explicit associated label, native keyboard behavior and visible focus."
+      ],
+      "fallback": "Enable viewer-local input only in live views or current validated interactive previews with an available scope. Disable inputs in stale previews, ordinary comparisons and immutable captures; retain an explicit unavailable state.",
+      "capture": "Materialize the label and selected scalar value as text; record the value in the manifest.",
+      "limits": [
+        "At most 100 options, each at most 200 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Box",
+    "nodeType": "uiBox",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "gap",
+      "padding",
+      "align",
+      "justify"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "gap": "normal",
+      "padding": "normal",
+      "align": "stretch",
+      "justify": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "gap",
+        "type": "enum",
+        "code": "component.gap",
+        "required": false,
+        "values": [
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "padding",
+        "type": "enum",
+        "code": "component.padding",
+        "required": false,
+        "values": [
+          "none",
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "stretch"
+        ]
+      },
+      {
+        "property": "justify",
+        "type": "enum",
+        "code": "component.justify",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "between"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Card",
+    "nodeType": "uiCard",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "gap",
+      "padding",
+      "align",
+      "justify"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "gap": "normal",
+      "padding": "normal",
+      "align": "stretch",
+      "justify": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "gap",
+        "type": "enum",
+        "code": "component.gap",
+        "required": false,
+        "values": [
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "padding",
+        "type": "enum",
+        "code": "component.padding",
+        "required": false,
+        "values": [
+          "none",
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "stretch"
+        ]
+      },
+      {
+        "property": "justify",
+        "type": "enum",
+        "code": "component.justify",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "between"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Row",
+    "nodeType": "uiRow",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "gap",
+      "padding",
+      "align",
+      "justify"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "gap": "normal",
+      "padding": "normal",
+      "align": "stretch",
+      "justify": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "gap",
+        "type": "enum",
+        "code": "component.gap",
+        "required": false,
+        "values": [
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "padding",
+        "type": "enum",
+        "code": "component.padding",
+        "required": false,
+        "values": [
+          "none",
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "stretch"
+        ]
+      },
+      {
+        "property": "justify",
+        "type": "enum",
+        "code": "component.justify",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "between"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Col",
+    "nodeType": "uiCol",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "gap",
+      "padding",
+      "align",
+      "justify"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "gap": "normal",
+      "padding": "normal",
+      "align": "stretch",
+      "justify": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "gap",
+        "type": "enum",
+        "code": "component.gap",
+        "required": false,
+        "values": [
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "padding",
+        "type": "enum",
+        "code": "component.padding",
+        "required": false,
+        "values": [
+          "none",
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "stretch"
+        ]
+      },
+      {
+        "property": "justify",
+        "type": "enum",
+        "code": "component.justify",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end",
+          "between"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Flow",
+    "nodeType": "uiFlow",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "columns",
+      "gap"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "columns": 2,
+      "gap": "normal"
+    },
+    "propertyRules": [
+      {
+        "property": "gap",
+        "type": "enum",
+        "code": "layout.gap",
+        "required": false,
+        "values": [
+          "compact",
+          "normal",
+          "spacious"
+        ]
+      },
+      {
+        "property": "columns",
+        "type": "integer",
+        "code": "layout.columns",
+        "required": false,
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Collapse columns on narrow surfaces without changing reading order."
+      ],
+      "fallback": "Render children in document order.",
+      "capture": "Retain layout and recursively freeze children.",
+      "limits": [
+        "Use only the catalog columns and gap constraints."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "GridItem",
+    "nodeType": "uiGridItem",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "span",
+      "rowSpan"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "span": 1,
+      "rowSpan": 1
+    },
+    "propertyRules": [
+      {
+        "property": "span",
+        "type": "integer",
+        "code": "component.span",
+        "required": false,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "property": "rowSpan",
+        "type": "integer",
+        "code": "component.rowSpan",
+        "required": false,
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "FlowItem",
+    "nodeType": "uiFlowItem",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "span",
+      "rowSpan"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "span": 1,
+      "rowSpan": 1
+    },
+    "propertyRules": [
+      {
+        "property": "span",
+        "type": "integer",
+        "code": "component.span",
+        "required": false,
+        "min": 1,
+        "max": 4
+      },
+      {
+        "property": "rowSpan",
+        "type": "integer",
+        "code": "component.rowSpan",
+        "required": false,
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Divider",
+    "nodeType": "uiDivider",
+    "placement": "block",
+    "children": false,
+    "properties": [],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {},
+    "propertyRules": [],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Spacer",
+    "nodeType": "uiSpacer",
+    "placement": "block",
+    "children": false,
+    "properties": [],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {},
+    "propertyRules": [],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Badge",
+    "nodeType": "uiBadge",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "value",
+      "tone",
+      "size",
+      "align"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "value": {
+        "op": "literal",
+        "value": "Badge"
+      },
+      "tone": "default",
+      "size": "normal",
+      "align": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "value",
+        "type": "expression",
+        "code": "component.value",
+        "required": true
+      },
+      {
+        "property": "tone",
+        "type": "enum",
+        "code": "component.tone",
+        "required": false,
+        "values": [
+          "default",
+          "muted",
+          "accent"
+        ]
+      },
+      {
+        "property": "size",
+        "type": "enum",
+        "code": "component.size",
+        "required": false,
+        "values": [
+          "small",
+          "normal",
+          "large"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Text",
+    "nodeType": "uiText",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "value",
+      "tone",
+      "size",
+      "align"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "value": {
+        "op": "literal",
+        "value": "Text"
+      },
+      "tone": "default",
+      "size": "normal",
+      "align": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "value",
+        "type": "expression",
+        "code": "component.value",
+        "required": true
+      },
+      {
+        "property": "tone",
+        "type": "enum",
+        "code": "component.tone",
+        "required": false,
+        "values": [
+          "default",
+          "muted",
+          "accent"
+        ]
+      },
+      {
+        "property": "size",
+        "type": "enum",
+        "code": "component.size",
+        "required": false,
+        "values": [
+          "small",
+          "normal",
+          "large"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Title",
+    "nodeType": "uiTitle",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "value",
+      "tone",
+      "size",
+      "align"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "value": {
+        "op": "literal",
+        "value": "Title"
+      },
+      "tone": "default",
+      "size": "normal",
+      "align": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "value",
+        "type": "expression",
+        "code": "component.value",
+        "required": true
+      },
+      {
+        "property": "tone",
+        "type": "enum",
+        "code": "component.tone",
+        "required": false,
+        "values": [
+          "default",
+          "muted",
+          "accent"
+        ]
+      },
+      {
+        "property": "size",
+        "type": "enum",
+        "code": "component.size",
+        "required": false,
+        "values": [
+          "small",
+          "normal",
+          "large"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Caption",
+    "nodeType": "uiCaption",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "value",
+      "tone",
+      "size",
+      "align"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "value": {
+        "op": "literal",
+        "value": "Caption"
+      },
+      "tone": "default",
+      "size": "normal",
+      "align": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "value",
+        "type": "expression",
+        "code": "component.value",
+        "required": true
+      },
+      {
+        "property": "tone",
+        "type": "enum",
+        "code": "component.tone",
+        "required": false,
+        "values": [
+          "default",
+          "muted",
+          "accent"
+        ]
+      },
+      {
+        "property": "size",
+        "type": "enum",
+        "code": "component.size",
+        "required": false,
+        "values": [
+          "small",
+          "normal",
+          "large"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Label",
+    "nodeType": "uiLabel",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "value",
+      "tone",
+      "size",
+      "align"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "value": {
+        "op": "literal",
+        "value": "Label"
+      },
+      "tone": "default",
+      "size": "normal",
+      "align": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "value",
+        "type": "expression",
+        "code": "component.value",
+        "required": true
+      },
+      {
+        "property": "tone",
+        "type": "enum",
+        "code": "component.tone",
+        "required": false,
+        "values": [
+          "default",
+          "muted",
+          "accent"
+        ]
+      },
+      {
+        "property": "size",
+        "type": "enum",
+        "code": "component.size",
+        "required": false,
+        "values": [
+          "small",
+          "normal",
+          "large"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Math",
+    "nodeType": "uiMath",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "value",
+      "tone",
+      "size",
+      "align"
+    ],
+    "expressions": [
+      "value"
+    ],
+    "version": 1,
+    "editorDefaults": {
+      "value": {
+        "op": "literal",
+        "value": "Math"
+      },
+      "tone": "default",
+      "size": "normal",
+      "align": "start"
+    },
+    "propertyRules": [
+      {
+        "property": "value",
+        "type": "expression",
+        "code": "component.value",
+        "required": true
+      },
+      {
+        "property": "tone",
+        "type": "enum",
+        "code": "component.tone",
+        "required": false,
+        "values": [
+          "default",
+          "muted",
+          "accent"
+        ]
+      },
+      {
+        "property": "size",
+        "type": "enum",
+        "code": "component.size",
+        "required": false,
+        "values": [
+          "small",
+          "normal",
+          "large"
+        ]
+      },
+      {
+        "property": "align",
+        "type": "enum",
+        "code": "component.align",
+        "required": false,
+        "values": [
+          "start",
+          "center",
+          "end"
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Icon",
+    "nodeType": "uiIcon",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "name",
+      "label"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "name": "check",
+      "label": "Complete"
+    },
+    "propertyRules": [
+      {
+        "property": "name",
+        "type": "enum",
+        "code": "component.name",
+        "required": false,
+        "values": [
+          "check",
+          "info",
+          "warning",
+          "calendar",
+          "arrow-right",
+          "copy",
+          "search",
+          "star"
+        ]
+      },
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Favicon",
+    "nodeType": "uiFavicon",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "src",
+      "label"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "src": "https://example.com/favicon.ico",
+      "label": "Site icon"
+    },
+    "propertyRules": [
+      {
+        "property": "src",
+        "type": "httpsURL",
+        "code": "component.src",
+        "required": true,
+        "max": 2048
+      },
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Carousel",
+    "nodeType": "uiCarousel",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "label"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Slides"
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "CarouselItem",
+    "nodeType": "uiCarouselItem",
+    "placement": "container",
+    "children": true,
+    "properties": [],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {},
+    "propertyRules": [],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Popover",
+    "nodeType": "uiPopover",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "label"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Details"
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Form",
+    "nodeType": "uiForm",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "label",
+      "action"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Continue",
+      "action": {
+        "type": "copy",
+        "text": "Copied from this Page."
+      }
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "action",
+        "type": "variant",
+        "code": "action.object",
+        "required": true,
+        "discriminator": "type",
+        "variantCode": "action.type",
+        "variants": {
+          "setState": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "setState"
+                ]
+              },
+              {
+                "property": "name",
+                "type": "name",
+                "code": "action.state",
+                "required": true
+              },
+              {
+                "property": "value",
+                "type": "expression",
+                "code": "expression.type",
+                "required": true
+              }
+            ]
+          },
+          "copy": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "copy"
+                ]
+              },
+              {
+                "property": "text",
+                "type": "string",
+                "code": "action.text",
+                "required": true,
+                "min": 1,
+                "max": 4096
+              }
+            ]
+          },
+          "continue": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "continue"
+                ]
+              },
+              {
+                "property": "text",
+                "type": "string",
+                "code": "action.text",
+                "required": true,
+                "min": 1,
+                "max": 4096
+              }
+            ]
+          },
+          "navigate": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "navigate"
+                ]
+              },
+              {
+                "property": "href",
+                "type": "httpsURL",
+                "code": "action.href",
+                "required": true,
+                "max": 2048
+              }
+            ]
+          },
+          "openEntity": {
+            "property": "value",
+            "type": "variant",
+            "code": "action.object",
+            "required": true,
+            "discriminator": "entityType",
+            "variantCode": "action.entity",
+            "variants": {
+              "task": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "task"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  }
+                ]
+              },
+              "page": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "page"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  },
+                  {
+                    "property": "projectId",
+                    "type": "uuid",
+                    "code": "action.project",
+                    "required": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "action": "Closed action object: setState requires name and expression value; copy/continue require literal text of 1\u20134096 UTF-8 bytes; navigate requires safe HTTPS href up to 2048 bytes; openEntity requires entityType task/page and nonzero entityId UUID, with optional nonzero projectId for page. Unknown fields are rejected. Continue requires host review and normal authorization."
+      },
+      "events": [
+        "Activate the declared host action; setState changes viewer-local state only."
+      ],
+      "accessibility": [
+        "Use the label as the accessible button name; retain keyboard activation and visible focus."
+      ],
+      "fallback": "Disable unsupported host actions and actions in comparison/snapshot views; show action failures without claiming success.",
+      "capture": "Materialize the label and action-unavailable text; never execute an action during capture.",
+      "limits": [
+        "Only the five registered action types; no arbitrary script or mutation action."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Pressable",
+    "nodeType": "uiPressable",
+    "placement": "container",
+    "children": true,
+    "properties": [
+      "label",
+      "action"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Continue",
+      "action": {
+        "type": "copy",
+        "text": "Copied from this Page."
+      }
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "action",
+        "type": "variant",
+        "code": "action.object",
+        "required": true,
+        "discriminator": "type",
+        "variantCode": "action.type",
+        "variants": {
+          "setState": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "setState"
+                ]
+              },
+              {
+                "property": "name",
+                "type": "name",
+                "code": "action.state",
+                "required": true
+              },
+              {
+                "property": "value",
+                "type": "expression",
+                "code": "expression.type",
+                "required": true
+              }
+            ]
+          },
+          "copy": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "copy"
+                ]
+              },
+              {
+                "property": "text",
+                "type": "string",
+                "code": "action.text",
+                "required": true,
+                "min": 1,
+                "max": 4096
+              }
+            ]
+          },
+          "continue": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "continue"
+                ]
+              },
+              {
+                "property": "text",
+                "type": "string",
+                "code": "action.text",
+                "required": true,
+                "min": 1,
+                "max": 4096
+              }
+            ]
+          },
+          "navigate": {
+            "property": "value",
+            "type": "object",
+            "code": "action.object",
+            "required": true,
+            "itemCode": "action.property",
+            "fields": [
+              {
+                "property": "type",
+                "type": "enum",
+                "code": "action.type",
+                "required": true,
+                "values": [
+                  "navigate"
+                ]
+              },
+              {
+                "property": "href",
+                "type": "httpsURL",
+                "code": "action.href",
+                "required": true,
+                "max": 2048
+              }
+            ]
+          },
+          "openEntity": {
+            "property": "value",
+            "type": "variant",
+            "code": "action.object",
+            "required": true,
+            "discriminator": "entityType",
+            "variantCode": "action.entity",
+            "variants": {
+              "task": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "task"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  }
+                ]
+              },
+              "page": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "page"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  },
+                  {
+                    "property": "projectId",
+                    "type": "uuid",
+                    "code": "action.project",
+                    "required": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "action": "Closed action object: setState requires name and expression value; copy/continue require literal text of 1\u20134096 UTF-8 bytes; navigate requires safe HTTPS href up to 2048 bytes; openEntity requires entityType task/page and nonzero entityId UUID, with optional nonzero projectId for page. Unknown fields are rejected. Continue requires host review and normal authorization."
+      },
+      "events": [
+        "Activate the declared host action; setState changes viewer-local state only."
+      ],
+      "accessibility": [
+        "Use the label as the accessible button name; retain keyboard activation and visible focus."
+      ],
+      "fallback": "Disable unsupported host actions and actions in comparison/snapshot views; show action failures without claiming success.",
+      "capture": "Materialize the label and action-unavailable text; never execute an action during capture.",
+      "limits": [
+        "Only the five registered action types; no arbitrary script or mutation action."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Link",
+    "nodeType": "uiLink",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "href"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Reference",
+      "href": "https://example.com"
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "href",
+        "type": "httpsURL",
+        "code": "component.href",
+        "required": true,
+        "max": 2048
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Citation",
+    "nodeType": "uiCitation",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "href"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Reference",
+      "href": "https://example.com"
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "href",
+        "type": "httpsURL",
+        "code": "component.href",
+        "required": true,
+        "max": 2048
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "FollowUp",
+    "nodeType": "uiFollowUp",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "text"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Continue",
+      "text": "Explain this further"
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "text",
+        "type": "string",
+        "code": "component.text",
+        "required": true,
+        "min": 1,
+        "max": 4096
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "CodeBlock",
+    "nodeType": "uiCodeBlock",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "code",
+      "language"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "code": "",
+      "language": "text"
+    },
+    "propertyRules": [
+      {
+        "property": "code",
+        "type": "string",
+        "code": "component.code",
+        "required": false,
+        "min": 0,
+        "max": 4096
+      },
+      {
+        "property": "language",
+        "type": "string",
+        "code": "component.language",
+        "required": false,
+        "min": 0,
+        "max": 40
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Video",
+    "nodeType": "uiVideo",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "src",
+      "label"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "src": "https://example.com/video.mp4",
+      "label": "Video"
+    },
+    "propertyRules": [
+      {
+        "property": "src",
+        "type": "httpsURL",
+        "code": "component.src",
+        "required": true,
+        "max": 2048
+      },
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "ImageGroup",
+    "nodeType": "uiImageGroup",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "images",
+      "label"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "images": [
+        {
+          "src": "https://example.com/image.png",
+          "alt": "Image"
+        }
+      ],
+      "label": "Images"
+    },
+    "propertyRules": [
+      {
+        "property": "images",
+        "type": "objectArray",
+        "code": "component.images",
+        "required": true,
+        "min": 1,
+        "max": 12,
+        "itemCode": "image.item",
+        "fields": [
+          {
+            "property": "src",
+            "type": "httpsURL",
+            "code": "component.src",
+            "required": true,
+            "max": 2048
+          },
+          {
+            "property": "alt",
+            "type": "string",
+            "code": "component.alt",
+            "required": true,
+            "min": 1,
+            "max": 200
+          }
+        ]
+      },
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Entity",
+    "nodeType": "uiEntity",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "action"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Continue",
+      "action": {
+        "type": "openEntity",
+        "entityType": "task",
+        "entityId": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "action",
+        "type": "variant",
+        "code": "action.object",
+        "required": true,
+        "discriminator": "type",
+        "variantCode": "action.type",
+        "variants": {
+          "openEntity": {
+            "property": "value",
+            "type": "variant",
+            "code": "action.object",
+            "required": true,
+            "discriminator": "entityType",
+            "variantCode": "action.entity",
+            "variants": {
+              "task": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "task"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  }
+                ]
+              },
+              "page": {
+                "property": "value",
+                "type": "object",
+                "code": "action.object",
+                "required": true,
+                "itemCode": "action.property",
+                "fields": [
+                  {
+                    "property": "type",
+                    "type": "enum",
+                    "code": "action.type",
+                    "required": true,
+                    "values": [
+                      "openEntity"
+                    ]
+                  },
+                  {
+                    "property": "entityType",
+                    "type": "enum",
+                    "code": "action.entity",
+                    "required": true,
+                    "values": [
+                      "page"
+                    ]
+                  },
+                  {
+                    "property": "entityId",
+                    "type": "uuid",
+                    "code": "action.entity",
+                    "required": true
+                  },
+                  {
+                    "property": "projectId",
+                    "type": "uuid",
+                    "code": "action.project",
+                    "required": false
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    ],
+    "authoring": {
+      "constraints": {
+        "action": "Closed action object: setState requires name and expression value; copy/continue require literal text of 1\u20134096 UTF-8 bytes; navigate requires safe HTTPS href up to 2048 bytes; openEntity requires entityType task/page and nonzero entityId UUID, with optional nonzero projectId for page. Unknown fields are rejected. Continue requires host review and normal authorization."
+      },
+      "events": [
+        "Activate the declared host action; setState changes viewer-local state only."
+      ],
+      "accessibility": [
+        "Use the label as the accessible button name; retain keyboard activation and visible focus."
+      ],
+      "fallback": "Disable unsupported host actions and actions in comparison/snapshot views; show action failures without claiming success.",
+      "capture": "Materialize the label and action-unavailable text; never execute an action during capture.",
+      "limits": [
+        "Only the five registered action types; no arbitrary script or mutation action."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "FileNavList",
+    "nodeType": "uiFileNavList",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "items"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Files",
+      "items": [
+        {
+          "label": "File",
+          "href": "https://example.com/file"
+        }
+      ]
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "items",
+        "type": "objectArray",
+        "code": "component.items",
+        "required": true,
+        "min": 1,
+        "max": 50,
+        "itemCode": "file.item",
+        "fields": [
+          {
+            "property": "label",
+            "type": "string",
+            "code": "component.label",
+            "required": true,
+            "min": 1,
+            "max": 200
+          },
+          {
+            "property": "href",
+            "type": "httpsURL",
+            "code": "component.href",
+            "required": true,
+            "max": 2048
+          }
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "Svg",
+    "nodeType": "uiSvg",
+    "placement": "block",
+    "children": false,
+    "properties": [
+      "label",
+      "width",
+      "height",
+      "shapes"
+    ],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {
+      "label": "Diagram",
+      "width": 400,
+      "height": 200,
+      "shapes": [
+        {
+          "type": "rect",
+          "x": 10,
+          "y": 10,
+          "width": 100,
+          "height": 50,
+          "fill": "none",
+          "stroke": "foreground"
+        }
+      ]
+    },
+    "propertyRules": [
+      {
+        "property": "label",
+        "type": "string",
+        "code": "component.label",
+        "required": true,
+        "min": 1,
+        "max": 200
+      },
+      {
+        "property": "width",
+        "type": "integer",
+        "code": "component.width",
+        "required": false,
+        "min": 1,
+        "max": 2000
+      },
+      {
+        "property": "height",
+        "type": "integer",
+        "code": "component.height",
+        "required": false,
+        "min": 1,
+        "max": 2000
+      },
+      {
+        "property": "shapes",
+        "type": "objectArray",
+        "code": "component.shapes",
+        "required": true,
+        "min": 1,
+        "max": 256,
+        "itemCode": "svg.shape",
+        "fields": [
+          {
+            "property": "type",
+            "type": "enum",
+            "code": "component.type",
+            "required": true,
+            "values": [
+              "rect",
+              "circle",
+              "line",
+              "path",
+              "text"
+            ]
+          },
+          {
+            "property": "text",
+            "type": "string",
+            "code": "component.text",
+            "required": false,
+            "min": 0,
+            "max": 1000
+          },
+          {
+            "property": "d",
+            "type": "string",
+            "code": "component.d",
+            "required": false,
+            "min": 0,
+            "max": 4096
+          },
+          {
+            "property": "fill",
+            "type": "enum",
+            "code": "component.fill",
+            "required": false,
+            "values": [
+              "none",
+              "foreground",
+              "accent",
+              "muted"
+            ]
+          },
+          {
+            "property": "stroke",
+            "type": "enum",
+            "code": "component.stroke",
+            "required": false,
+            "values": [
+              "none",
+              "foreground",
+              "accent",
+              "muted"
+            ]
+          },
+          {
+            "property": "x",
+            "type": "integer",
+            "code": "component.x",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          },
+          {
+            "property": "y",
+            "type": "integer",
+            "code": "component.y",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          },
+          {
+            "property": "xEnd",
+            "type": "integer",
+            "code": "component.xEnd",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          },
+          {
+            "property": "yEnd",
+            "type": "integer",
+            "code": "component.yEnd",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          },
+          {
+            "property": "width",
+            "type": "integer",
+            "code": "component.width",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          },
+          {
+            "property": "height",
+            "type": "integer",
+            "code": "component.height",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          },
+          {
+            "property": "radius",
+            "type": "integer",
+            "code": "component.radius",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          },
+          {
+            "property": "strokeWidth",
+            "type": "integer",
+            "code": "component.strokeWidth",
+            "required": false,
+            "min": 0,
+            "max": 2000
+          }
+        ]
+      }
+    ],
+    "authoring": {
+      "constraints": {},
+      "events": [],
+      "accessibility": [
+        "Preserve reading order, meaningful labels and native keyboard interaction."
+      ],
+      "fallback": "Retain readable text and children when interaction is unavailable.",
+      "capture": "Freeze evaluated values and selected inputs; preserve readable content with no active controls.",
+      "limits": [
+        "Document limits: 10,000 nodes, depth 32; text and local values at most 4096 UTF-8 bytes."
+      ]
+    },
+    "constraints": []
+  },
+  {
+    "name": "InlineDocument",
+    "nodeType": "uiDocument",
+    "placement": "container",
+    "children": true,
+    "properties": [],
+    "expressions": [],
+    "version": 1,
+    "editorDefaults": {},
+    "propertyRules": [],
+    "authoring": {
+      "constraints": {},
+      "events": [
+        "User callbacks may update local state. Host actions require a user interaction."
+      ],
+      "accessibility": [
+        "Use labels and native keyboard controls."
+      ],
+      "fallback": "Show a diagnostic and source disclosure.",
+      "capture": "Freeze collaborative source, selected inputs, authorized observations and renderer versions.",
+      "limits": [
+        "Source at most 256 KiB, nesting 32, bounded expression work."
+      ]
+    },
+    "constraints": []
+  }
+]

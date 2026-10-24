@@ -1,4 +1,8 @@
-import type { CanvasScope } from "../api/canvas-api";
+import { InlineArtifactReference } from "@/features/common/components/inline-artifact-reference";
+import type { DocumentAgentScope } from "../documents/use-document-agents";
+import { InlineDocument } from "@/shared/inline-ui/inline-document";
+import { PreviewContinuationContext } from "@/shared/chat/preview-continuation-context";
+import { useInlineEntityAction } from "@/features/common/hooks/use-inline-entity-action";
 import { useChatMentions } from "@/features/chat-panel/hooks/use-chat-mentions";
 import { ChatMentionSuggestions } from "@/features/chat-panel/components/chat-mention-suggestions";
 import {
@@ -124,7 +128,7 @@ export function CommentComposer({
     requestKey: string,
     agentIds?: string[],
   ) => Promise<void>;
-  agentScope?: CanvasScope;
+  agentScope?: DocumentAgentScope;
   placeholder: string;
   initialBody?: string;
   contextKey?: string;
@@ -299,7 +303,7 @@ export function ReviewThread({
   agentScope,
 }: {
   page?: boolean;
-  agentScope?: CanvasScope;
+  agentScope?: DocumentAgentScope;
   thread: ReviewThreadData;
   canEdit: boolean;
   currentUserId?: string;
@@ -312,6 +316,10 @@ export function ReviewThread({
   const [replying, setReplying] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [editId, setEditId] = useState("");
+  const openEntity = useInlineEntityAction(
+    agentScope?.companyId,
+    agentScope?.projectId,
+  );
   const showReplies = expanded || replying || !!editId;
   const comments = showReplies ? thread.comments : thread.comments.slice(0, 1);
   const replies = Math.max(0, thread.comments.length - 1);
@@ -439,6 +447,27 @@ export function ReviewThread({
                 setEditId("");
               }}
             />
+          ) : comment.authorAgentId && !comment.deleted ? (
+            <div
+              className="min-w-0 text-[13px] leading-[1.65] wrap-anywhere"
+              onClick={(event) => event.stopPropagation()}
+            >
+              {/* Page replies have local controls, with no inherited chat send authority. */}
+              <PreviewContinuationContext.Provider value={null}>
+                <InlineDocument
+                  renderReference={(name, props, interactive) => (
+                    <InlineArtifactReference
+                      companyId={agentScope?.companyId}
+                      name={name}
+                      props={props}
+                      interactive={interactive}
+                    />
+                  )}
+                  source={comment.body}
+                  openEntity={openEntity}
+                />
+              </PreviewContinuationContext.Provider>
+            </div>
           ) : (
             <button
               type="button"

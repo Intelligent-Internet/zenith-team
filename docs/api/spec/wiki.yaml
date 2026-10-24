@@ -535,16 +535,17 @@ schemas:
       collectionId: { type: [string, 'null'], format: uuid }
   WikiDocument:
     type: object
-    required: [pageId, sequence, structureSequence, schemaVersion, state, markdown, canEdit, title, summary, collectionId]
+    required: [pageId, sequence, structureSequence, schemaVersion, state, markdown, canEdit, intelligentUIAuthoringEnabled, title, summary, collectionId]
     properties:
       pageId: { type: string, format: uuid }
       sequence: { type: integer, format: int64 }
       structureSequence: { type: integer, format: int64 }
-      schemaVersion: { type: integer, const: 1 }
+      schemaVersion: { type: integer, enum: [1, 2] }
       state: { type: [string, 'null'], format: byte }
       stateVector: { type: string, format: byte }
       content: { $ref: './canvas.yaml#/schemas/CanvasBlock' }
       markdown: { type: string }
+      intelligentUIAuthoringEnabled: { type: boolean, description: "Deployment capability for reactive authoring. Does not grant editing permission." }
       canEdit: { type: boolean }
       title: { type: string }
       summary: { type: string }
@@ -556,7 +557,7 @@ schemas:
     properties:
       baseSequence: { type: integer, format: int64, minimum: 0 }
       update: { type: string, format: byte }
-      schemaVersion: { type: integer, const: 1 }
+      schemaVersion: { type: integer, enum: [1, 2] }
       stateVector: { type: string, format: byte }
   WikiBlockIDsRequest:
     type: object
@@ -617,6 +618,7 @@ schemas:
     type: object
     required: [expectedRevision, expectedSequence, revisionId]
     properties:
+      schemaVersion: { type: integer, enum: [1, 2], description: "Client document capability; omission means 1. Must support both the current draft and restored content." }
       expectedRevision: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
       expectedSequence: { type: integer, format: int64, minimum: 0, maximum: 9007199254740991 }
       revisionId: { type: string, format: uuid }

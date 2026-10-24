@@ -25,32 +25,32 @@ CREATE TABLE conversations (
     CONSTRAINT conversations_pkey PRIMARY KEY (id),
     CONSTRAINT conversations_company_id_id_key UNIQUE (company_id, id),
     CONSTRAINT conversations_channel_execution_shape CHECK ((kind = 'channel_agent') = (channel_id IS NOT NULL)),
-    CONSTRAINT conversations_discussion_revision_check CHECK ((kind <> ALL (ARRAY['human_direct', 'channel', 'huddle'])) OR ((version >= 1) AND (version <= '9007199254740991'::bigint))),
-    CONSTRAINT conversations_document_thread_check CHECK ((document_thread_id IS NULL) OR ((kind = 'direct') AND (project_id IS NOT NULL))),
-    CONSTRAINT conversations_general_shape_check CHECK ((NOT is_general) OR ((kind = 'channel') AND (title = 'general') AND (archived_at IS NULL))),
-    CONSTRAINT conversations_head_seq_check CHECK ((head_seq >= 0) AND (head_seq <= '9007199254740991'::bigint)),
+    CONSTRAINT conversations_discussion_revision_check CHECK ((kind <> ALL (ARRAY['human_direct', 'channel', 'huddle'])) OR version >= 1 AND version <= '9007199254740991'::bigint),
+    CONSTRAINT conversations_document_thread_check CHECK (document_thread_id IS NULL OR kind = 'direct'),
+    CONSTRAINT conversations_general_shape_check CHECK (NOT is_general OR kind = 'channel' AND title = 'general' AND archived_at IS NULL),
+    CONSTRAINT conversations_head_seq_check CHECK (head_seq >= 0 AND head_seq <= '9007199254740991'::bigint),
     CONSTRAINT conversations_kind_check CHECK (kind IN ('task', 'direct', 'schedule', 'human_direct', 'channel', 'channel_agent', 'huddle')),
-    CONSTRAINT conversations_request_key_kind_check CHECK ((request_key IS NULL) OR (kind IN ('direct', 'channel'))),
-    CONSTRAINT conversations_shape_check CHECK (((kind = 'task') AND (schedule_id IS NULL) AND (agent_id IS NULL) AND (created_by_user_id IS NULL)) OR ((kind = 'channel_agent') AND (channel_id IS NOT NULL) AND (task_id IS NULL) AND (schedule_id IS NULL) AND (agent_id IS NOT NULL) AND (created_by_user_id IS NOT NULL)) OR ((kind = 'direct') AND (task_id IS NULL) AND (schedule_id IS NULL) AND (created_by_user_id IS NOT NULL)) OR ((kind = 'schedule') AND (task_id IS NULL) AND (schedule_id IS NOT NULL) AND (agent_id IS NOT NULL) AND (created_by_user_id IS NOT NULL)) OR ((kind IN ('human_direct', 'channel', 'huddle')) AND (task_id IS NULL) AND (schedule_id IS NULL) AND (agent_id IS NULL) AND ((created_by_user_id IS NOT NULL) OR is_general) AND (pinned_at IS NULL) AND ((kind <> 'human_direct') OR ((archived_at IS NULL) AND (title IS NULL))) AND ((kind <> 'channel') OR ((request_key IS NOT NULL) AND (title IS NOT NULL) AND (title = btrim(title)) AND ((char_length(title) >= 1) AND (char_length(title) <= 100)) AND (octet_length(title) <= 400))) AND ((kind <> 'huddle') OR ((archived_at IS NULL) AND (title IS NULL) AND (request_key IS NULL))))),
-    CONSTRAINT conversations_task_project_check CHECK ((kind <> 'task') OR (project_id IS NOT NULL) OR ((task_id IS NULL) AND (created_at < '2026-10-21 00:00:00+00'::timestamptz))),
+    CONSTRAINT conversations_request_key_kind_check CHECK (request_key IS NULL OR (kind IN ('direct', 'channel'))),
+    CONSTRAINT conversations_shape_check CHECK (kind = 'task' AND schedule_id IS NULL AND agent_id IS NULL AND created_by_user_id IS NULL OR kind = 'channel_agent' AND channel_id IS NOT NULL AND task_id IS NULL AND schedule_id IS NULL AND agent_id IS NOT NULL AND created_by_user_id IS NOT NULL OR kind = 'direct' AND task_id IS NULL AND schedule_id IS NULL AND created_by_user_id IS NOT NULL OR kind = 'schedule' AND task_id IS NULL AND schedule_id IS NOT NULL AND agent_id IS NOT NULL AND created_by_user_id IS NOT NULL OR (kind IN ('human_direct', 'channel', 'huddle')) AND task_id IS NULL AND schedule_id IS NULL AND agent_id IS NULL AND (created_by_user_id IS NOT NULL OR is_general) AND pinned_at IS NULL AND (kind <> 'human_direct' OR archived_at IS NULL AND title IS NULL) AND (kind <> 'channel' OR request_key IS NOT NULL AND title IS NOT NULL AND title = btrim(title) AND char_length(title) >= 1 AND char_length(title) <= 100 AND octet_length(title) <= 400) AND (kind <> 'huddle' OR archived_at IS NULL AND title IS NULL AND request_key IS NULL)),
+    CONSTRAINT conversations_task_project_check CHECK (kind <> 'task' OR project_id IS NOT NULL OR task_id IS NULL AND created_at < '2026-10-21 00:00:00+00'::timestamptz),
     CONSTRAINT conversations_agent_fkey FOREIGN KEY (company_id, agent_id) REFERENCES agents(company_id, id) ON DELETE SET NULL (agent_id),
     CONSTRAINT conversations_channel_fkey FOREIGN KEY (company_id, channel_id) REFERENCES conversations(company_id, id) ON DELETE CASCADE,
     CONSTRAINT conversations_company_id_fkey FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE,
     CONSTRAINT conversations_schedule_id_fkey FOREIGN KEY (company_id, schedule_id) REFERENCES schedules(company_id, id) DEFERRABLE INITIALLY DEFERRED,
     CONSTRAINT conversations_task_id_fkey FOREIGN KEY (company_id, task_id) REFERENCES tasks(company_id, id) ON DELETE SET NULL (task_id) DEFERRABLE INITIALLY DEFERRED
 );
-CREATE UNIQUE INDEX conversations_active_direct_unique_idx ON conversations (company_id, created_by_user_id, agent_id) WHERE ((kind = 'direct') AND (archived_at IS NULL) AND (agent_id IS NOT NULL) AND (request_key IS NULL));
-CREATE UNIQUE INDEX conversations_channel_agent_unique ON conversations (channel_id, agent_id) WHERE (kind = 'channel_agent');
-CREATE INDEX conversations_direct_creator_list_idx ON conversations (company_id, created_by_user_id, updated_at DESC, id DESC) WHERE (kind = 'direct');
-CREATE INDEX conversations_discussion_list_idx ON conversations (company_id, kind, updated_at DESC, id DESC) WHERE (kind IN ('human_direct', 'channel'));
-CREATE UNIQUE INDEX conversations_document_agent_unique ON conversations (document_thread_id, agent_id, created_by_user_id) WHERE (document_thread_id IS NOT NULL);
-CREATE UNIQUE INDEX conversations_general_company_idx ON conversations (company_id) WHERE is_general;
-CREATE INDEX conversations_project_idx ON conversations (company_id, project_id) WHERE (project_id IS NOT NULL);
 CREATE UNIQUE INDEX conversations_request_key_unique_idx ON conversations (company_id, created_by_user_id, request_key) WHERE (request_key IS NOT NULL);
+CREATE INDEX conversations_task_list_idx ON conversations (company_id, updated_at DESC, id DESC) WHERE (kind = 'task');
+CREATE INDEX conversations_project_idx ON conversations (company_id, project_id) WHERE (project_id IS NOT NULL);
+CREATE INDEX conversations_discussion_list_idx ON conversations (company_id, kind, updated_at DESC, id DESC) WHERE (kind IN ('human_direct', 'channel'));
+CREATE UNIQUE INDEX conversations_general_company_idx ON conversations (company_id) WHERE is_general;
+CREATE UNIQUE INDEX conversations_channel_agent_unique ON conversations (channel_id, agent_id) WHERE (kind = 'channel_agent');
+CREATE UNIQUE INDEX conversations_task_unique_idx ON conversations (task_id) WHERE (task_id IS NOT NULL);
+CREATE UNIQUE INDEX conversations_document_agent_unique ON conversations (document_thread_id, agent_id, created_by_user_id) WHERE (document_thread_id IS NOT NULL);
 CREATE INDEX conversations_schedule_creator_list_idx ON conversations (company_id, created_by_user_id, updated_at DESC, id DESC) WHERE (kind = 'schedule');
 CREATE UNIQUE INDEX conversations_schedule_unique_idx ON conversations (schedule_id) WHERE (schedule_id IS NOT NULL);
-CREATE INDEX conversations_task_list_idx ON conversations (company_id, updated_at DESC, id DESC) WHERE (kind = 'task');
-CREATE UNIQUE INDEX conversations_task_unique_idx ON conversations (task_id) WHERE (task_id IS NOT NULL);
+CREATE INDEX conversations_direct_creator_list_idx ON conversations (company_id, created_by_user_id, updated_at DESC, id DESC) WHERE (kind = 'direct');
+CREATE UNIQUE INDEX conversations_active_direct_unique_idx ON conversations (company_id, created_by_user_id, agent_id) WHERE ((kind = 'direct') AND (archived_at IS NULL) AND (agent_id IS NOT NULL) AND (request_key IS NULL));
 
 CREATE TABLE conversation_user_states (
     company_id uuid NOT NULL,
@@ -475,9 +475,12 @@ CREATE TABLE discussion_artifacts (
     created_at timestamptz DEFAULT statement_timestamp() NOT NULL,
     company_id uuid NOT NULL,
     message_id uuid NOT NULL,
-    output_id uuid NOT NULL,
-    CONSTRAINT discussion_artifacts_pkey PRIMARY KEY (company_id, message_id, output_id),
-    CONSTRAINT discussion_artifacts_company_id_message_id_fkey FOREIGN KEY (company_id, message_id) REFERENCES conversation_items(company_id, id) ON DELETE CASCADE
+    output_id uuid,
+    artifact_id uuid,
+    CONSTRAINT discussion_artifacts_artifact_unique UNIQUE (company_id, message_id, artifact_id),
+    CONSTRAINT discussion_artifacts_output_unique UNIQUE (company_id, message_id, output_id),
+    CONSTRAINT discussion_artifacts_target_check CHECK (num_nonnulls(output_id, artifact_id) = 1),
+    CONSTRAINT discussion_artifacts_artifact_fkey FOREIGN KEY (company_id, artifact_id) REFERENCES artifacts(company_id, id) ON DELETE CASCADE
 );
 
 CREATE TABLE channel_invocations (
@@ -860,6 +863,8 @@ CREATE TABLE huddle_notes_actions (
 );
 
 -- Links to these tables from tables created earlier.
+ALTER TABLE artifacts ADD CONSTRAINT artifacts_conversation_fkey FOREIGN KEY (company_id, conversation_id) REFERENCES conversations(company_id, id) ON DELETE SET NULL (conversation_id);
+ALTER TABLE discussion_artifacts ADD CONSTRAINT discussion_artifacts_company_id_message_id_fkey FOREIGN KEY (company_id, message_id) REFERENCES conversation_items(company_id, id) ON DELETE CASCADE;
 ALTER TABLE companies ADD CONSTRAINT companies_proactive_mode_conversation_fkey FOREIGN KEY (id, proactive_mode_conversation_id) REFERENCES conversations(company_id, id) ON DELETE SET NULL (proactive_mode_conversation_id);
 ALTER TABLE company_initializations ADD CONSTRAINT company_initializations_company_id_conversation_id_fkey FOREIGN KEY (company_id, conversation_id) REFERENCES conversations(company_id, id) ON DELETE CASCADE;
 ALTER TABLE approvals ADD CONSTRAINT approvals_conversation_fkey FOREIGN KEY (company_id, conversation_id) REFERENCES conversations(company_id, id) ON DELETE CASCADE;
@@ -1155,97 +1160,6 @@ BEGIN
     END IF;
     RETURN NEW;
 END $$;
-
--- conversation_readers: who reads a chat, by kind. One row per chat and person.
---
--- attachment_access, conversation_readers and project_access_paths are UNION
--- ALL views whose arms Postgres plans on their own. A join clause from the
--- outer query is not pushed into the arms, so a plain JOIN or EXISTS against
--- one of them builds the caller's whole readable set first. A query that
--- checks a list of rows must reach them through a correlated lookup that names
--- both the row and the person, for example:
---   CROSS JOIN LATERAL (SELECT 1 FROM attachment_access AS access
---       WHERE access.company_id = link.company_id
---         AND access.attachment_id = link.attachment_id
---         AND access.user_id = @actor LIMIT 1) AS readable
--- (or a scalar subquery of the same shape). The lookup then uses each arm's
--- indexes. A check of one row with constant ids is fine either way.
-CREATE VIEW conversation_readers AS
--- Task chats follow their Project.
-SELECT conversation.company_id, conversation.id AS conversation_id, access.user_id
-FROM conversations AS conversation
-JOIN project_access AS access
-  ON access.company_id = conversation.company_id AND access.project_id = conversation.project_id
-WHERE conversation.kind = 'task'
-UNION ALL
--- Task chats whose Task was deleted before Task chats recorded their Project
--- have none; they stay readable by every active member (a known pocket, ADR
--- 0017). conversations_task_project_check admits a NULL Project only on such a
--- chat, and task_id IS NULL repeats that here so a live Task's chat never
--- falls into this arm.
-SELECT conversation.company_id, conversation.id, member.user_id
-FROM conversations AS conversation
-JOIN companies AS company
-  ON company.id = conversation.company_id AND company.deleting_at IS NULL
-JOIN company_members AS member
-  ON member.company_id = conversation.company_id AND member.status = 'active'
-JOIN users AS account
-  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
-WHERE conversation.kind = 'task' AND conversation.project_id IS NULL AND conversation.task_id IS NULL
-UNION ALL
--- Channels, human direct messages and Huddle chats follow their active
--- participants, as ListDiscussionAccess does.
-SELECT conversation.company_id, conversation.id, participant.user_id
-FROM conversations AS conversation
-JOIN companies AS company
-  ON company.id = conversation.company_id AND company.deleting_at IS NULL
-JOIN conversation_members AS participant
-  ON participant.company_id = conversation.company_id
- AND participant.conversation_id = conversation.id
- AND participant.status = 'active'
-JOIN company_members AS member
-  ON member.company_id = conversation.company_id
- AND member.user_id = participant.user_id
- AND member.status = 'active'
-JOIN users AS account
-  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
-WHERE conversation.kind IN ('channel', 'human_direct', 'huddle')
-UNION ALL
--- A channel Agent's execution chat is read by the callers of its live
--- invocations: the live-caller arm of LockHumanInputOriginConversation. The
--- member who created the channel Agent chat is deliberately not a reader
--- through that role alone (ADR 0017).
-SELECT conversation.company_id, conversation.id, member.user_id
-FROM conversations AS conversation
-JOIN companies AS company
-  ON company.id = conversation.company_id AND company.deleting_at IS NULL
-JOIN company_members AS member
-  ON member.company_id = conversation.company_id AND member.status = 'active'
-JOIN users AS account
-  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
-WHERE conversation.kind = 'channel_agent'
-  AND EXISTS (
-      SELECT 1
-      FROM channel_invocations AS invocation
-      WHERE invocation.company_id = conversation.company_id
-        AND invocation.conversation_id = conversation.id
-        AND invocation.caller_user_id = member.user_id
-        AND invocation.status IN ('active', 'waiting_input')
-  )
-UNION ALL
--- Direct and Schedule chats are their creator's alone.
-SELECT conversation.company_id, conversation.id, member.user_id
-FROM conversations AS conversation
-JOIN companies AS company
-  ON company.id = conversation.company_id AND company.deleting_at IS NULL
-JOIN company_members AS member
-  ON member.company_id = conversation.company_id
- AND member.user_id = conversation.created_by_user_id
- AND member.status = 'active'
-JOIN users AS account
-  ON account.id = member.user_id AND account.disabled_at IS NULL AND account.deleted_at IS NULL
-WHERE conversation.kind IN ('direct', 'schedule')
- AND (conversation.document_thread_id IS NULL OR EXISTS (SELECT 1 FROM project_access access WHERE access.company_id=conversation.company_id AND access.project_id=conversation.project_id AND access.user_id=member.user_id));
 
 CREATE TRIGGER channel_archive_generation BEFORE UPDATE OF archived_at ON conversations FOR EACH ROW EXECUTE FUNCTION advance_channel_execution_revision();
 CREATE TRIGGER discussion_identity BEFORE UPDATE ON conversations FOR EACH ROW EXECUTE FUNCTION preserve_discussion_identity();

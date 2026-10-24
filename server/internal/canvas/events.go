@@ -12,12 +12,13 @@ import (
 )
 
 const (
-	TopicBoard           = "whiteboard"
-	EventBoardChanged    = "whiteboard.changed"
-	EventBoardRenamed    = "whiteboard.renamed"
-	Topic                = "canvas"
-	EventChanged         = "canvas.changed"
-	EventDocumentChanged = "canvas.document_changed"
+	TopicBoard              = "whiteboard"
+	EventBoardChanged       = "whiteboard.changed"
+	EventBoardRenamed       = "whiteboard.renamed"
+	Topic                   = "canvas"
+	EventChanged            = "canvas.changed"
+	EventDocumentChanged    = "canvas.document_changed"
+	EventPagePreviewChanged = "canvas.page_preview_changed"
 )
 
 type Changed struct {
@@ -98,8 +99,59 @@ func stampBoardAudience(ctx context.Context, q *generated.Queries, event *events
 	}
 	change.RecipientUserIDs, err = q.ListBoardAudience(
 		ctx,
-		generated.ListBoardAudienceParams{CompanyID: event.CompanyID, OutputID: change.BoardID},
+		generated.ListBoardAudienceParams{CompanyID: event.CompanyID, ArtifactID: change.BoardID},
 	)
 	event.Payload = change
 	return err
+}
+
+// PagePreviewChanged is a refetch hint. Source text and compiled content remain
+// behind the member read endpoint's current Page and Conversation access checks.
+type PagePreviewChanged struct {
+	auth.ProjectFrame
+	ProjectID      *uuid.UUID `json:"projectId,omitempty"`
+	PageID         uuid.UUID  `json:"pageId"`
+	RunID          uuid.UUID  `json:"runId"`
+	ConversationID uuid.UUID  `json:"conversationId"`
+	GenerationID   uuid.UUID  `json:"generationId"`
+	Revision       int64      `json:"revision"`
+	Discarded      bool       `json:"discarded"`
+	ExpiresAt      time.Time  `json:"expiresAt"`
+}
+
+func pagePreviewChangeEvent(
+	ctx context.Context,
+	q *generated.Queries,
+	row generated.ProjectPageSourcePreview,
+) (*events.Event, error) {
+	readers, err := q.ListPageSourcePreviewReaders(
+		ctx,
+		generated.ListPageSourcePreviewReadersParams{CompanyID: row.CompanyID, ID: row.ID},
+	)
+	if err != nil {
+		return nil, err
+	}
+	run, err := q.GetRunInCompany(ctx, generated.GetRunInCompanyParams{CompanyID: row.CompanyID, ID: row.RunID})
+	if err != nil {
+		return nil, err
+	}
+	return &events.Event{
+		EntityType: Topic, Name: EventPagePreviewChanged, CompanyID: row.CompanyID,
+		RunID: row.RunID, ConversationID: row.ConversationID,
+		Actor:     events.RunActor(run.AgentID.String(), row.RunID.String(), row.CreatedByUserID.String()),
+		CreatedAt: time.Now().UTC(),
+		Payload: PagePreviewChanged{
+			ProjectFrame: auth.ProjectFrame{Audience: &auth.ProjectAudience{UserIDs: readers}},
+			ProjectID: outputSource(
+				row.ProjectID,
+			),
+			PageID:         row.PageID,
+			RunID:          row.RunID,
+			ConversationID: row.ConversationID,
+			GenerationID:   row.ID,
+			Revision:       row.Revision,
+			Discarded:      row.Discarded,
+			ExpiresAt:      row.ExpiresAt.Time,
+		},
+	}, nil
 }

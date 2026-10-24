@@ -15,23 +15,25 @@ provider instance a daemon registered in a company), provider = claude | codex.
 
 ## Whiteboards
 
-A Whiteboard is an Artifact (`outputs.type = 'whiteboard'`) that a member makes
-in a chat: `canvas.CreateWhiteboardInTx` (`board_create.go`) inserts the Output
+A Whiteboard is a typed Artifact (`artifacts.type = 'whiteboard'`) that a member makes
+in a chat: `canvas.CreateWhiteboardInTx` (`board_create.go`) inserts the Artifact
 and its Board under one ID inside the discussion send that shares it into the
 chat (`DiscussionService.Send` with `whiteboard`), or, in an Agent or Task chat
 that has no message to carry it, inside `ConversationService.CreateWhiteboard`
 (`conversation/whiteboard.go`). `BoardService.Rename` retitles it and tells
 every reader (`whiteboard.renamed`). Its title, owner, grants,
-chat sharing and public link are the Artifact's (`execution/artifact_sharing.go`),
-and `output_access` is the one access rule: read at level 1, edit at 2, share
-at 3. `internal/canvas/board*.go` owns the live scene: atomic scene commands,
+and chat sharing belong to `internal/artifact`. `artifact_access` supplies read, edit
+and manage grants; `auth.ArtifactAccess` applies ownership and lifecycle rules.
+Public Whiteboard publication still needs the immutable-snapshot cutover; the
+former Output public-link path does not publish independent Boards. `internal/canvas/board*.go` owns the live scene: atomic scene commands,
 fixed-schema note CRDTs, lazy payload hydration, bounded JSON/Markdown context
-and retention (`board_retention.go`), in `boards.sql` and `board_files.sql`. `board_access.go` authorizes every call against the
-Artifact (`boardScopeLock`; a write also locks the Output's row against a
+and retention (`board_retention.go`), in `boards.sql`, `board_files.sql` and
+the content baseline. `board_access.go` authorizes every call against the
+Artifact (`boardScopeLock`; a write also locks the Artifact's row against a
 sharing change) and owns the live Run/Task-generation fence (Run writes hold
 the Task and Run in share mode). A Run acts with its authorizing member's
-access. `board_public.go` reads a Board through its Artifact's unrevoked public
-token. `BoardScope` supplements the canonical member principal. Member routes
+access. `board_public.go` retains the public read boundary, but its query refuses
+independent Boards until snapshot publication is implemented. `BoardScope` supplements the canonical member principal. Member routes
 hang off `/artifacts/:artifactId/whiteboard`, Run-proven ones off
 `/runs/:runId/agent-artifacts/:artifactId/whiteboard`, and both reuse the same
 handlers and mutation services. Agents reach a Whiteboard through the Artifact
@@ -252,13 +254,25 @@ history for timeline notices; it never enters a Run's provider transcript.
 
 ## Collaborative documents and Project canvas
 
-`canvas/output_review.go` presents Task and standalone Outputs through the same
-Artifact/version/thread contract as Project review. Output-backed live documents
-use this review boundary even when opened from the Project canvas. All discussions use
-`review_threads`, `review_comments`, and their revision/event tables. Threads
-name either a Project artifact version or an Output, with an optional live
-page or immutable document revision. `output_review_operations` owns replay
-receipts for the Output mutation boundary; comments never start Runs.
+`artifacts` owns the stable identity and content type of Pages and Company Wiki
+Entries. The document payload uses that same ID. Wiki is an explicit Company
+knowledge type with its own publication rules, never inferred from a missing
+Project. `artifact_snapshots` and `document_snapshots` share one snapshot ID;
+Project placement does not create a version wrapper. Project reviews have their
+own Project foreign keys so deleting a Project preserves embedded Wiki Entries.
+Snapshot numbering belongs to the Artifact, while CRDT sequence/history remains
+independent. See ADR 0021 for the implemented boundary and remaining delivery and
+publication cutover.
+
+
+`canvas/output_review.go` presents Task and standalone deliveries through the
+snapshot review contract. Live Page comments use `canvas/page_review.go` and
+`/pages/:pageId/document/review`, independently of the import or delivery. Threads
+name exactly one Page, Project snapshot or delivery; live Page discussions never
+cascade with a source delivery. `page_review_operations` owns their replay receipts.
+Private suggestions and source previews also have direct Page-ID routes. Optional
+Project ownership is derived from the Page, while Agent transcripts and proposal
+feeds remain private to the member who requested them.
 
 The `internal/canvas` package has five independent service owners: `BoardService`
 and `BoardMediaService` (Company Whiteboards, above) and the three below. `CanvasService`
@@ -266,21 +280,89 @@ and `BoardMediaService` (Company Whiteboards, above) and the three below. `Canva
 `PageService` (`page_service.go`) owns authoring, metadata, Overview selection,
 contributions, document synchronization and Page discussions. `PresentationService`
 (`presentation_service.go`) owns capture previews, immutable presentations, exports,
-retained source reads and Run preparation. Handlers receive each service directly;
+retained source reads, explicit public capture publication and Run preparation.
+`presentation_publication.go` stores immutable HTML in
+`project_presentation_publications`. Person-only writes require current
+`results.publish` and Project read authority; publication also rechecks retained
+source access. Public token reads serve only frozen HTML, without live source
+queries. Revocation targets an exact publication; republishing rotates its token.
+Deleting Companies and archived Projects are unavailable publicly.
+Handlers receive each service directly;
 shared access checks and transaction participants remain package functions.
 
 `internal/wiki/blocks.go` owns schema-version-1 native document nodes, Markdown
 import/export, Yjs XML encoding/decoding, state-vector deltas, bounded validation
-and structural-change detection. `block_draft.go` performs the one-time, page-locked upgrade
-from Markdown `Y.Text`, preserving original bytes and text. PostgreSQL allocates
+and structural-change detection. `intelligent_source.go` compiles language-version-1
+Markdown/component source into these same nodes and produces a lossless Native
+source projection. `intelligent_preview.go` owns the bounded transient source
+patch/retry/discard contract. `canvas/page_preview.go` admits the owning live Run
+under the existing Company/member/Task/Conversation/Run/Page lock order and
+persists bounded preview generations in `project_page_source_previews`.
+Creation and patches are idempotent; reconnect reads recheck execution authority.
+Run-only HTTP endpoints under `agent-pages/:pageId/source-previews` expose creation,
+reconnect reads and revision-checked patches. The supervised `page-preview-retention`
+worker deletes at most 100 expired rows every 30 seconds with a five-second timeout.
+MCP's `page_source_preview_start/read/patch` tools use that transport through
+explicit Run-channel routes. Only Task Runs and non-writing document-thread Runs
+receive them; server admission still proves the destination Page and live Run.
+Member HTTP reads under `pages/:pageId/source-previews` require both Page/Project
+access and the originating `conversation_readers` grant. A Run-filtered list
+returns at most eight metadata rows; the selected generation is fetched separately.
+Members can read ended Run previews until expiry but cannot patch them.
+Creation, new patches and discard emit `canvas.page_preview_changed` after commit;
+exact retries emit nothing. The hint carries identities/revision/expiry only and
+routes to the explicit intersection of Project and Conversation readers, never a
+Company-wide audience. The Activity sink excludes these transport hints. The
+frontend consumes them through per-query refresh queues and authorized reads.
+Chat start-tool receipts locate temporary previews; the native comparison renderer
+provides inline and expanded views with isolated temporary keys. Selected Page
+discussions also discover their Runs’ generations through authorized metadata lists,
+without requiring a tool receipt. Other entry points
+and full browser/reconnect verification remain unfinished.
+`intelligent_expression.go` owns the bounded, deterministic
+JSON expression interpreter and dependency extraction for reactive evaluation
+and capture materialization. `intelligent_catalog.json` owns the 15 reactive primitives, property names,
+expression slots, editor defaults, scalar property constraints and bounded unique
+map/array and closed-object rules. Numeric bounds/positive increments, Select
+options, DataTable columns, Scope declarations, Task source descriptors and
+Button action variants use
+these generated rules, including property-value source diagnostics. Named maps
+validate identifier keys and scalar/expression/object entry rules; expression
+entries delegate to the existing language validator. Closed discriminated variants
+select action shapes (including Task/Page entity variants), and HTTPS URL rules
+retain the native URL validator. Source shorthand and native Button validation
+share this contract. Generation rejects any property without an executable rule
+or declared expression slot. Component constraints also generate numeric range
+ordering (including Slider defaults) and disjoint initial/computed names; source
+validation maps their diagnostics back to the relevant attribute value. Object-array rules declare nested required fields, item
+diagnostics and unique string keys; the generator validates their bounded shape. Each entry also
+carries complex-property authoring guidance, events, accessibility, fallback,
+capture and resource contracts, generated into Go, browser and skill metadata.
+Authoring guidance is allocated only by catalog reads, not per-node validation. `make intelligent-ui-generate` produces
+the Go catalog, browser registration metadata and agent reference;
+`make intelligent-ui-check` gates drift. `intelligent_catalog.go` enforces
+property values and permitted host intents; `intelligent_scope.go`
+validates lexical bindings and computed-state cycles. Their saved-document and
+renderer integration is still in progress. Page source creation and proposals pass through the existing
+identity allocation, authorization and review paths. The compiled
+`zenith-intelligent-ui` skill documents the supported authoring subset. Member source
+editing in `canvas/page_source.go` keeps the selected root identity, permits
+structural descendant edits with explicit retained IDs, reserves missing IDs
+through the existing PostgreSQL reservation query, and validates the replacement
+in the whole document without changing the saved CRDT. The client reconciles
+keyed children so insertion/removal retains untouched sibling anchors; applying
+requires the prepared document and saved sequence, then uses normal sync.
+`block_draft.go` initializes and locks native block drafts; no legacy Markdown
+state or draft-upgrade path is retained. PostgreSQL allocates
 block identities in `wiki_block_ids`; `wiki_canvas_drafts` holds the canonical
-collaboration snapshot and derived JSON/Markdown projections. Wiki revisions
-freeze block JSON alongside their derived Markdown body. The schema keeps
-shared draft metadata and records which Wiki revisions were published.
+collaboration state and derived JSON/Markdown projections. `document_snapshots`
+freeze block JSON alongside derived Markdown under their Artifact Snapshot ID.
+The shared draft metadata and explicit Wiki publication marker remain separate
+from Project Page ownership.
 
 The Wiki and Canvas entry points share the block editor and merge machinery.
-Company Wiki edits use only the Wiki document routes; Canvas references expose
-published Wiki content and open that same Wiki draft for authorized editing.
+Company Wiki edits use only the Wiki document routes. Canvas references expose
+published Wiki content; editing requires the separately authorized Wiki route.
 The Canvas publishing command and the whole-Markdown Wiki update path are removed.
 
 `internal/canvas/document.go` authorizes Project collaboration, reserves block-ID pools,
@@ -301,25 +383,33 @@ matches and block locations. Queries live in `canvas.sql`, `canvas_search.sql`
 and `wiki_blocks.sql`. The tables carry the latest-structural-sequence fence.
 
 `output_document.go` imports supported Markdown once per Output item into
-`output_documents`. Original uploaded Asset Versions remain immutable. The page
-belongs to the Output, independently of Project placements; the shared
-`document.go` engine resolves either entry point through `document_target.go`.
-Both use the same CRDT merge, block identity allocation, recovery contract,
-comment reconciliation and saved Wiki revisions. Output revisions can be
-exported as Markdown without replacing the original file. Collaboration hints
-carry transaction-captured readers, and cursor rooms use the canonical page ID.
-`auth/output_access.go` fences Company membership and Output grants. Standalone
-Output documents require an explicit Editor/Manager grant or ownership to write;
-visibility and conversation sharing grant reading and commenting only. A
-Project-owned Output instead requires its source Project's read/write rights.
-Project placement alone never grants editing. Sharing remains Manager-only.
-The schema holds the canonical ownership constraints and one discussion store. See
-ADR 0019 for the content, placement and permission boundaries.
+`output_documents`. Original uploaded Asset Versions remain immutable. The
+imported Page owns its live content through its same-ID Artifact; the source
+Output is provenance. Reopening an import checks the Page's Artifact access.
+Deleting the source clears the provenance pointer and retains the Page.
 
-`handler/canvas.go` exposes these human-only endpoints. Document cursor presence
-uses page-scoped ephemeral rooms in `realtime/canvas_presence.go`, with server
-resolved member identity. Content writes remain in PostgreSQL, not Redis or a
-browser ledger. The browser uses IndexedDB only for disposable accepted snapshots
+`handler/page_document.go` exposes Page-ID reads, CRDT saves, block-ID reservation,
+checkpoints and cursor presence. `handler/document_history.go` exposes history,
+restore and naming on that same Page identity. Output-based live-document routes
+and version-based writes/history are removed. Canvas version reads still resolve
+references pending the explicit Artifact/snapshot reference cutover.
+`auth/artifact_access.go` fences Company membership, Project access and Artifact
+grants. Project-owned work follows Project permissions; standalone Pages follow
+their owner and explicit Artifact grants. Output sharing does not grant live
+access. `internal/artifact` owns identity access and discovery, separate from
+Canvas placement, Page content and Run delivery domains. Its retained content
+surface saves file/media/app launch-configuration snapshots independently of
+delivery rows, reads current or exact content, and authorizes exact snapshot-item
+downloads. `delivery_snapshots` pins Run evidence while `artifact_snapshot_items`
+retains Asset Versions after a delivery is deleted. This domain boundary is
+the reason for its own package. `ArtifactService` manages standalone grants and
+Company visibility with optimistic access revisions and the same Artifact lock
+used by document writes. `handler/artifact_content.go` exposes access management
+and the readable Pages inventory. The Pages library and sharing dialog consume
+those contracts; Project and Wiki sharing remains inherited.
+Collaboration hints capture Artifact readers, cursor rooms use the Page ID, and
+browser recovery keys use the Page identity independently of placements.
+Content writes remain in PostgreSQL, not Redis or a browser ledger. The browser uses IndexedDB only for disposable accepted snapshots
 and best-effort pending-draft recovery; cached permissions grant no authority.
 These ordinary document/canvas endpoints have no Agent execution admission.
 See the Pages and Canvas contract
@@ -340,10 +430,11 @@ assignee, execution generation and Project membership, plus document-thread Runs
 restricted to their originating Page. Every Task can contribute
 within its own Project; there is no additional per-Task grant. It owns bounded reads,
 semantic block suggestions, dependency groups, comparisons and targeted
-apply/reject/undo. Page-local feeds always
+approve/reject/revise, with undo retained in history. Page-local feeds always
 include pending proposals and page through completed history. `wiki/block_operations.go`
 edits Yjs XML nodes without replacing the whole document. Human edits advance
-shared content; overlapping suggestions require refreshed review. Protected
+shared content; stored offline CRDT updates combine concurrent passage edits,
+including overlapping rewrites, in the review preview. Protected
 headings cover their following sections.
 Ordinary native Project Pages use the same editing and review rules. A campaign,
 research report or workflow guide is a composed Page, not a separate entity type.
@@ -375,8 +466,10 @@ MCP allowlist and daemon admission both enforce `saved-work`. It replaces the
 CLI presentation command; file paths are relative to the Run workspace root. `present_output` with its `page` input uses
 the exact reviewed capture to prepare a canonical attachment, then calls the
 ordinary Run output endpoint with a bound `presentationId`.
-`execution/deliverable_service.go` verifies that binding and retains the existing
-Task Deliverable promotion/review lifecycle. Result projections include a native
+`execution/deliverable_service.go` verifies that binding and links the delivery to
+its exact capture snapshot through `delivery_snapshots`. `project_presentations`
+uses that snapshot's ID; it has no single owning Output. The existing Task
+Deliverable promotion/review lifecycle remains separate. Result projections include a native
 Presentation destination. Capturing alone does not submit, approve or publish.
 `task/result_selection.go` retains explicit ordered result sets.
 `task/result_finalization.go` lets the exact live Task Run select its own deliveries
@@ -389,6 +482,48 @@ proposal-only and optional-review policy before execution. Completion requires
 selected results and application of required suggestions; exact Page decisions
 and Task approval can commit together. `page_suggestion_reviews` retains the
 before/result revisions and themes for partial acceptance and undo.
+Page review offers Approve, Reject and Revise; there is no manual merge endpoint
+or editor. `wiki/block_text.go` preserves unchanged character identities and
+formatting when applying paragraph, heading and code-block updates. The work
+baseline stores immutable CRDT updates per text operation, authored from the exact
+state the Agent read. Approval and task-delivery capture merge those same bytes
+into the live document, like an offline editor reconnecting. Overlapping text edits
+converge without a merge action; the combined preview and current content are
+covered by the review fingerprint. CRDT ordering does not judge prose quality:
+Revise asks the Agent for different content. Deleted or structurally replaced
+targets, changed attributes and protection changes still require revision.
+Text-only approvals do not advance the structural fence, so offline editor CRDT
+updates can still converge. Structural updates retain their existing fence.
+`canvas/page_revision.go` records feedback as a page comment and invokes the original
+Agent in the same transaction; retries use the review receipt and cannot enqueue
+twice. The Agent reads the latest page and submits a replacement with `supersedesId`.
+Unresolved alternatives remain independently reviewable; approval never rejects them.
+Page edit proposals retain the exact `page_read` sequence as their immutable base.
+If the draft advanced, `wiki.ReadDocumentHistoryInTx` reconstructs that revision
+from existing checkpoints and deltas; operation hashes and structure are validated
+against that base, not silently rebased onto the current draft. Unknown/future
+revisions and mismatched base hashes are rejected. Concurrent target edits become
+reviewable suggestions instead of discarding the proposal. Theme edits still require
+the current sequence because document history does not version theme metadata.
+Block review compares base, current and proposed content/placement: unchanged
+blocks are pending, effects already present are resolvable, and divergent changes
+need explicit review. Accepting a linked group applies pending operations and
+resolves already-reflected operations atomically; undo only reverses operations
+actually applied by that decision. An all-reflected acceptance creates no document
+revision. Text operations use the CRDT path above; structural operations retain
+these snapshot guards. Missing removal
+targets and already-completed moves/insertions are recognized as reflected effects.
+Review fingerprints include current target content and relevant placement, while
+terminal `resolved` decisions remain distinct from undecided `already_reflected`
+applicability. Independent blocks sharing an insertion slot or a text anchor
+remain separate review selections; only overlapping writes and invalidated
+structural references form dependency groups. Peer conflicts compare both proposal
+snapshots so moving a block cannot make the conflict visible on only one version.
+Partial insertion acceptance keeps
+the proposal's sibling order even when reviewed out of order or in partial batches.
+Stale checks and fingerprints ignore unused destination metadata on updates and
+removals; the target's content and placement remain guarded.
+Review requests do not offer a manual merge action.
 `output_documents` maps each submitted item to the same live page with its submitted
 sequence. Outputs retain their original Run and authorizing member as attribution
 (`source_run_id`, `on_behalf_of_user_id`) independently of the nullable live Run
@@ -420,7 +555,10 @@ in `pkg/agent/connector.go`. Explicit writing actions
 freeze `documentWriting` in the execution profile, receive no tools, and
 capture the text block, UTF-16 selection range and canonical content in
 `document_writing_requests`. Completion converts
-the response to native block suggestions with the original block hash. Human review
+Markdown and version-1 Intelligent UI source to native block suggestions with
+the original block hash. Invalid or incomplete component source is not staged,
+and the authoring policy checks newly generated content as well as the base.
+Human review
 alone applies these to CRDT state; intervening edits require refreshed review.
 Both writing completion and `page_edit` persist proposals through `insertPageProposal`,
 keeping input validation in their respective paths. Removing a quoted passage
@@ -506,10 +644,9 @@ These are the current ownership and persistence rules after the clean-slate
 schema and payload cleanup.
 
 - The schema begins with eight domain baseline migrations, `000001_identity`
-  through `000008_activity` (see `migrations/README.md`); later migrations
-  append after them. Server startup applies pending migrations; additive
-  feature changes preserve existing databases. The migration runner and
-  schema tests are authoritative.
+  through `000008_activity` (see `migrations/README.md`). Greenfield feature
+  changes edit the owning baseline in its final form; later migrations are
+  added only when needed. The migration runner and schema tests are authoritative.
 - `internal/conversation/pins.go` owns personal pin/archive state for task and
   direct chats. Task filing lives in `conversation_user_states` with independent
   revisions; direct filing remains creator-private on `conversations`. Archive
@@ -761,7 +898,9 @@ schema and payload cleanup.
   Both result and source feeds use bounded keyset pagination under one
   membership-checked snapshot; item metadata identifies the immutable Asset Version.
   `company_artifacts.go` lists every Artifact the caller can open and resolves
-  a set of ids for Wiki citation chips; both filter through `output_access`.
+  a set of ids for Wiki citation chips. Run submissions use `output_access`;
+  independent Whiteboards use `artifact_access`. Their merged feed preserves
+  cursor ordering and never synthesizes an Output or Run for live work.
   `artifact_run.go` resolves immutable Output items for live consuming Runs,
   requiring current access for the Run's Authorizer alone: every Run, a Task
   Run's included, reads exactly what its Authorizer reads, and no chat
@@ -1042,8 +1181,8 @@ server/
 │   │                    daemon presenter's credential Client), companyplan/,
 │   │                    tools/ (Company Plan, Agent Mail, Task failure,
 │   │                    Questions, Agent roster, execution skills, the
-│   │                    compiled zenith-platform skill under
-│   │                    tools/builtin/zenith-platform, and
+│   │                    compiled zenith-platform and zenith-intelligent-ui
+│   │                    skills under tools/builtin/, and
 │   │                    platform_skills.go, which serves it with the
 │   │                    pinned bundles). Skill reads return instruction
 │   │                    text once, plus structured verification metadata;
@@ -1298,3 +1437,45 @@ jobs; PostgreSQL receipts and Company transaction fences make duplicate deliveri
 safe. `handler/task_calendar.go` is the HTTP boundary. Connector Schedules remain
 creator-private and use the non-task lane; Task schedules use Project access and
 Task capacity.
+
+Inline chat Intelligent UI is compiled by `wiki.PreviewChatSource` through the
+member-only `POST /companies/:companyId/chat-ui-preview` validation boundary.
+It compiles caller source only and owns no new table or Page. Assistant messages
+carry raw component source among Markdown. The shared inline runtime renders
+completed prefixes and keeps local form values private. Markdown fences remain
+literal code. Responses beyond the component budget remain readable as Markdown.
+Every Run has the Intelligent UI authoring guide: ordinary chat and Task Runs
+load the compiled skill through MCP; restricted Runs receive the same compiled
+SKILL.md in their system prompt without expanding their tool authority. Page
+Agent comment replies use the shared inline renderer with local controls and
+authorized entity navigation, without inheriting a surrounding chat's send host.
+The bounded Math allowlist includes sin/cos for local SVG visualizations. SVG
+gradients and masks use isolated fragment IDs; external URL paints stay blocked.
+Page scenario captures retain acknowledged inline source, bounded JSON viewer
+state, refs and memo values, identity, theme, viewport width and renderer version.
+Read-only replay disables effects/actions and rejects unsupported capture formats.
+Declared data observations remain independently authorized and frozen. Components
+without a mounted viewer capture their explicit initial-state defaults. Non-JSON
+state and internal executable-app state remain unavailable for capture; an
+AppBlock replays its authored fallback with scripts disabled.
+
+The inline renderer also shares a versioned component-property/child schema with
+server source validation. It rejects invalid component structures and non-top-level
+hooks. AppBlock executes only in an opaque-origin iframe, with JSON/local-callback
+bindings and no GenUI action authority; noninteractive/capture views are inert.
+Chat and Page citations use the existing authorized artifact resolver.
+`docs/intelligent-ui/renderer-contract.md` records supported
+features and explicit integration deferrals against final_skill.md, the bundled
+authoring baseline. Prose components share Markdown context with inline component
+slots; evaluated values remain text. Typed literal attributes and reverse parent
+constraints use the same parser on server and browser. WritingBlock supports local
+Markdown draft versions; line charts retain shaded bands in their data table.
+
+Streaming display/preview parsing now has bounded deterministic recovery with
+catalog diagnostics, staged unfinished components and complete-statement body
+prefixes. Final Page compilation remains strict. Native expression and React
+boundaries preserve readable siblings and last working content; named hook keys
+survive source shifts and legacy captures migrate. Local controls work during
+streaming, while host actions/effects/apps wait for completion. Bounded loops and
+local mutation support interactive algorithms without exposing browser globals.
+The runtime mapping and verification contract are in docs/intelligent-ui/runtime.md.

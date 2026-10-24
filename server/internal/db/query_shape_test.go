@@ -67,7 +67,7 @@ var storedPersonParams = map[string]bool{
 // are matched on word boundaries so a column such as project_access_version
 // never passes for the view.
 var accessViews = regexp.MustCompile(
-	`\b(project_access|task_access|conversation_readers|attachment_access|output_access|project_permission_held|` +
+	`\b(project_access|task_access|conversation_readers|attachment_access|output_access|artifact_access|project_permission_held|` +
 		`delegate_permission_held|run_permission_held|project_access_paths)\b`,
 )
 
@@ -90,6 +90,7 @@ const (
 // unguardedActorQueries are statements that bind a person, read a guarded
 // table and name no access view: query name -> why, for now.
 var unguardedActorQueries = map[string]string{
+	"GetDocumentAgentRun": "resolves a Run's immutable document scope before access checks; admitPageRun locks and checks Artifact authority, and checkDocumentAgentPage enforces the same Page boundary. Filtering out revoked access here would incorrectly fall through to ordinary Run scope",
 	// Direct chats: the caller's own, with no Project.
 	"GetDirectConversationByAgent":             directChats,
 	"GetDirectConversationByRequestKey":        directChats,
@@ -208,7 +209,7 @@ func TestActorQueriesReadGuardedTablesThroughAccessViews(t *testing.T) {
 	// The scan must recognize the statements already swept, or it proves
 	// nothing about the rest.
 	for _, name := range []string{
-		"GetTaskForActiveMember", "ListTaskProjectionsForActiveMember", "GetTaskWorkspaceAnchor",
+		"ReadArtifactAccess", "GetTaskForActiveMember", "ListTaskProjectionsForActiveMember", "GetTaskWorkspaceAnchor",
 		"ListTaskDependencyProjections", "ListCompanyTaskDependencyGraph", "SearchCompany",
 		"ResolveTaskReference", "UpdateTask",
 		"SetDirectConversationTitle",
@@ -240,7 +241,7 @@ func TestActorQueriesReadGuardedTablesThroughAccessViews(t *testing.T) {
 	for name, file := range found {
 		if _, ok := unguardedActorQueries[name]; !ok {
 			t.Errorf("%s (%s) binds a person and reads a Project-scoped table without project_access, "+
-				"task_access, conversation_readers, attachment_access or output_access", name, file)
+				"task_access, conversation_readers, attachment_access, output_access or artifact_access", name, file)
 		}
 	}
 	for name := range unguardedActorQueries {

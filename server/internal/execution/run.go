@@ -517,6 +517,9 @@ func (s *DefaultRunService) runInTxWithOptions(
 }
 
 func lockTerminalRunConversation(ctx context.Context, q *db.Queries, run db.Run) error {
+	if err := lockDocumentRunLifecycle(ctx, q, run); err != nil {
+		return err
+	}
 	_, err := q.LockConversationForSystemRunQueueMutation(
 		ctx,
 		db.LockConversationForSystemRunQueueMutationParams{
@@ -526,6 +529,27 @@ func lockTerminalRunConversation(ctx context.Context, q *db.Queries, run db.Run)
 	)
 	if err != nil {
 		return fmt.Errorf("lock terminal Run Conversation: %w", err)
+	}
+	return nil
+}
+
+func lockDocumentRunLifecycle(ctx context.Context, q *db.Queries, run db.Run) error {
+	pageID, err := q.GetDocumentAgentPageID(ctx, db.GetDocumentAgentPageIDParams{
+		CompanyID: run.CompanyID, ConversationID: run.ConversationID,
+	})
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("read terminal Run document scope: %w", err)
+	}
+	// Completion and queue promotion take the Artifact lock after the Run.
+	// Acquire its lifecycle fences first so Project or member revocation can
+	// never hold those fences while waiting for this Conversation.
+	if err := auth.LockArtifactLifecycle(ctx, q, auth.UserPrincipal{
+		CompanyID: run.CompanyID, UserID: run.ExecutionAuthorizedByUserID.UUID,
+	}, pageID.UUID); err != nil {
+		return fmt.Errorf("lock terminal Run document lifecycle: %w", err)
 	}
 	return nil
 }
@@ -2226,6 +2250,12 @@ func (s *DefaultRunService) transitionFailedRuns(
 		inboxTargets, err := lockRunInboxTargets(ctx, qtx, candidateRuns)
 		if err != nil {
 			return err
+		}
+		// Fence every document before locking any Conversation in the batch.
+		for _, run := range candidateRuns {
+			if err := lockDocumentRunLifecycle(ctx, qtx, run); err != nil {
+				return err
+			}
 		}
 		if err := lockRunFailureCandidateConversations(ctx, qtx, candidates); err != nil {
 			return err

@@ -24,8 +24,25 @@ type DocumentReadInput struct {
 	Preview     bool
 }
 
+func (s *DefaultPageService) ReadPageDocument(
+	ctx context.Context, p auth.UserPrincipal, page uuid.UUID, input DocumentReadInput,
+) (Document, error) {
+	return s.readDocument(ctx, p, documentTarget{PageID: page}, input)
+}
+
+func (s *DefaultPageService) SyncPageDocument(
+	ctx context.Context, p auth.UserPrincipal, page uuid.UUID, input DocumentSyncInput,
+) (Document, error) {
+	return s.syncDocument(ctx, p, documentTarget{PageID: page}, input)
+}
+
+func (s *DefaultPageService) ReservePageBlockIDs(
+	ctx context.Context, p auth.UserPrincipal, page uuid.UUID, count int32,
+) ([]uuid.UUID, error) {
+	return s.reserveDocumentBlockIDs(ctx, p, documentTarget{PageID: page}, count)
+}
+
 // Document returns the live structured source, not the immutable review version.
-// Legacy conversion retains the old bytes and does not rewrite historical reviews.
 func (s *DefaultPageService) Document(
 	ctx context.Context,
 	p auth.UserPrincipal,
@@ -61,7 +78,7 @@ func (s *DefaultPageService) readDocument(
 				}
 				// Canvas references read Company Wiki publication. Editing the Wiki
 				// draft always uses the Wiki document endpoints, from any entry point.
-				if !page.ProjectID.Valid && !page.SourceOutputID.Valid {
+				if page.ArtifactType == "wiki" {
 					revision, err := q.GetWikiCurrentRevision(
 						ctx,
 						generated.GetWikiCurrentRevisionParams{
@@ -78,6 +95,13 @@ func (s *DefaultPageService) readDocument(
 						StructureSequence: revision.Number,
 						SchemaVersion:     1,
 					}
+					var published wiki.BlockNode
+					if len(revision.BlockContent) > 2 {
+						if err = json.Unmarshal(revision.BlockContent, &published); err != nil {
+							return err
+						}
+					}
+					result.SchemaVersion = wiki.UIDocumentSchema(published)
 					if input.Since == result.Sequence {
 						return nil
 					}
@@ -105,13 +129,14 @@ func (s *DefaultPageService) readDocument(
 				head, err := q.GetWikiBlockDraftHead(ctx, generated.GetWikiBlockDraftHeadParams{
 					CompanyID: p.CompanyID, PageID: page.ID,
 				})
-				if err == nil && head.SchemaVersion == 1 {
+				if err == nil && head.SchemaVersion >= 1 {
 					result = Document{
 						PageID:            page.ID,
 						Sequence:          head.HeadSeq,
 						StructureSequence: head.StructureSeq,
-						SchemaVersion:     1,
-						CanEdit:           canEdit,
+						SchemaVersion:     int(head.SchemaVersion),
+						CanEdit: canEdit &&
+							s.authoring.AllowsSchema(int(head.SchemaVersion)),
 					}
 					if input.Since == head.HeadSeq {
 						return nil
@@ -149,9 +174,6 @@ func (s *DefaultPageService) readDocument(
 						PageID:    page.ID,
 					},
 				)
-				if errors.Is(err, pgx.ErrNoRows) || (err == nil && draft.SchemaVersion == 0) {
-					draft, err = wiki.BlockDraftInTx(ctx, q, p.CompanyID, page.ID)
-				}
 				if err != nil {
 					return err
 				}
@@ -159,8 +181,9 @@ func (s *DefaultPageService) readDocument(
 					PageID:            draft.PageID,
 					Sequence:          draft.HeadSeq,
 					StructureSequence: draft.StructureSeq,
-					SchemaVersion:     1,
-					CanEdit:           canEdit,
+					SchemaVersion:     int(draft.SchemaVersion),
+					CanEdit: canEdit &&
+						s.authoring.AllowsSchema(int(draft.SchemaVersion)),
 				}
 				if input.Since != draft.HeadSeq {
 					if !input.Projection {
@@ -193,10 +216,10 @@ func (s *DefaultPageService) readDocument(
 		)
 		err = mapWrite(err)
 		if !errors.Is(err, ErrConflict) {
+			result.IntelligentUIAuthoringEnabled = !s.authoring.Disabled
 			return result, err
 		}
-		// Two first readers can race the legacy upgrade under repeatable-read.
-		// The aborted attempt has written nothing; retry against a fresh snapshot.
+		// Retry a serialization failure against a fresh snapshot.
 	}
 	return Document{}, err
 }
@@ -248,20 +271,18 @@ func (s *DefaultPageService) SyncDocument(
 	ctx context.Context,
 	p auth.UserPrincipal,
 	project, version uuid.UUID,
-	update []byte,
-	baseSequence int64,
+	input DocumentSyncInput,
 ) (Document, error) {
-	return s.syncDocument(ctx, p, documentTarget{ProjectID: project, VersionID: version}, update, baseSequence)
+	return s.syncDocument(ctx, p, documentTarget{ProjectID: project, VersionID: version}, input)
 }
 
 func (s *DefaultPageService) syncDocument(
 	ctx context.Context,
 	p auth.UserPrincipal,
 	target documentTarget,
-	update []byte,
-	baseSequence int64,
+	input DocumentSyncInput,
 ) (Document, error) {
-	if len(update) == 0 || len(update) > 8<<20 {
+	if len(input.Update) == 0 || len(input.Update) > 8<<20 {
 		return Document{}, ErrLimit
 	}
 	for range 4 {
@@ -269,12 +290,28 @@ func (s *DefaultPageService) syncDocument(
 		if err != nil {
 			return Document{}, err
 		}
+		if err := s.authoring.Check(saved.SchemaVersion, wiki.BlockNode{}); err != nil {
+			return Document{}, err
+		}
 		if !saved.CanEdit {
 			return Document{}, ErrForbidden
 		}
-		state, root, markdown, structural, err := mergeBlockEdit(saved, update, baseSequence)
+		if err := wiki.CheckUIDocumentWrite(
+			input.SchemaVersion,
+			saved.SchemaVersion,
+			wiki.BlockNode{},
+		); err != nil {
+			return Document{}, err
+		}
+		state, root, markdown, structural, err := mergeBlockEdit(saved, input.Update, input.BaseSequence)
 		if err != nil {
 			return Document{}, mapWrite(err)
+		}
+		if err := s.authoring.Check(saved.SchemaVersion, root); err != nil {
+			return Document{}, err
+		}
+		if err := wiki.CheckUIDocumentWrite(input.SchemaVersion, saved.SchemaVersion, root); err != nil {
+			return Document{}, err
 		}
 		if bytes.Equal(state, saved.State) {
 			return saved, nil
@@ -317,13 +354,14 @@ func (s *DefaultPageService) syncDocument(
 			rows, err := q.UpdateWikiBlockDraft(
 				ctx,
 				generated.UpdateWikiBlockDraftParams{
-					CompanyID:  p.CompanyID,
-					PageID:     saved.PageID,
-					State:      state,
-					Content:    content,
-					Markdown:   markdown,
-					HeadSeq:    saved.Sequence,
-					Structural: structural,
+					SchemaVersion: int32(wiki.UIDocumentSchema(root)),
+					CompanyID:     p.CompanyID,
+					PageID:        saved.PageID,
+					State:         state,
+					Content:       content,
+					Markdown:      markdown,
+					HeadSeq:       saved.Sequence,
+					Structural:    structural,
 				},
 			)
 			changed = rows == 1
@@ -374,14 +412,15 @@ func (s *DefaultPageService) syncDocument(
 				structureSequence = saved.Sequence + 1
 			}
 			return Document{
-				PageID:            saved.PageID,
-				Sequence:          saved.Sequence + 1,
-				StructureSequence: structureSequence,
-				SchemaVersion:     1,
-				State:             state,
-				Content:           content,
-				Markdown:          markdown,
-				CanEdit:           true,
+				IntelligentUIAuthoringEnabled: !s.authoring.Disabled,
+				PageID:                        saved.PageID,
+				Sequence:                      saved.Sequence + 1,
+				StructureSequence:             structureSequence,
+				SchemaVersion:                 max(saved.SchemaVersion, wiki.UIDocumentSchema(root)),
+				State:                         state,
+				Content:                       content,
+				Markdown:                      markdown,
+				CanEdit:                       true,
 			}, nil
 		}
 	}
@@ -542,42 +581,6 @@ func validateBlockReferences(
 		return nil
 	}
 	return walk(root)
-}
-
-func freezeAcceptedReferences(
-	ctx context.Context,
-	q *generated.Queries,
-	p auth.UserPrincipal,
-	project uuid.UUID,
-	root *wiki.BlockNode,
-) error {
-	if raw, ok := root.Attrs["versionId"].(string); ok && raw != "" && root.Attrs["format"] == "accepted" {
-		id, err := uuid.Parse(raw)
-		if err != nil {
-			return ErrInvalid
-		}
-		ref, err := q.GetCanvasReference(
-			ctx,
-			generated.GetCanvasReferenceParams{CompanyID: p.CompanyID, ProjectID: project, ID: id},
-		)
-		if err != nil {
-			return err
-		}
-		if !ref.AcceptedVersionID.Valid {
-			return ErrConflict
-		}
-		if err = canVersion(ctx, q, p, project, ref.AcceptedVersionID.UUID); err != nil {
-			return err
-		}
-		root.Attrs["versionId"] = ref.AcceptedVersionID.UUID.String()
-		root.Attrs["format"] = "pinned"
-	}
-	for i := range root.Content {
-		if err := freezeAcceptedReferences(ctx, q, p, project, &root.Content[i]); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (s *DefaultPageService) VersionBlocks(

@@ -2,6 +2,8 @@ package canvas
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 	"unicode/utf16"
 
@@ -38,7 +40,10 @@ func TestWritingReplacementWhitespace(t *testing.T) {
 				From:    test.from,
 				To:      test.to,
 			}
-			replacement := writingReplacement(base, target, writingResponse(test.response))
+			replacement, err := writingReplacement(base, target, writingResponse(test.response))
+			if err != nil {
+				t.Fatal(err)
+			}
 			got, _ := writingBlockText(replacement.Content[0])
 			if got != test.want {
 				t.Fatalf("replacement = %q, want %q", got, test.want)
@@ -57,6 +62,7 @@ func TestWritingOperationsReviewAndUndo(t *testing.T) {
 		{"heading to paragraphs", "# Original", "First\n\nSecond", "First\n\nSecond\n\n"},
 		{"paragraphs", "Original", "First\n\nSecond\n\nThird", "First\n\nSecond\n\nThird\n\n"},
 		{"heading and paragraph", "Original", "# Heading\n\nBody", "# Heading\n\nBody\n\n"},
+		{"interactive UI", "Original", `<button>Try it</button>`, "<button>Try it</button>\n"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -69,7 +75,10 @@ func TestWritingOperationsReviewAndUndo(t *testing.T) {
 				Text:    text,
 				To:      len(utf16.Encode([]rune(text))),
 			}
-			replacement := writingReplacement(base, target, writingResponse(test.response))
+			replacement, err := writingReplacement(base, target, writingResponse(test.response))
+			if err != nil {
+				t.Fatal(err)
+			}
 			wiki.AssignBlockIDs(&replacement, uuid.NewString)
 			operations := writingOperations(base, target, replacement)
 			state, err := wiki.EncodeBlocks(base)
@@ -97,15 +106,24 @@ func TestWritingOperationsReviewAndUndo(t *testing.T) {
 				Decisions:     []byte("{}"),
 				Status:        "proposed",
 			}
-			review, err := pageSuggestionState(row, base, "default", nil)
+			review, err := pageSuggestionState(
+				row,
+				pageSuggestionSnapshot{root: base, theme: "default"},
+				nil,
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
+			groupSize := len(operations)
+			if test.name == "paragraphs" {
+				groupSize = 1
+			}
 			for _, suggestion := range review.suggestions {
-				if suggestion.Status != "pending" || len(suggestion.Group) != len(operations) {
+				if suggestion.Status != "pending" || len(suggestion.Group) != groupSize {
 					t.Fatalf(
-						"review = %+v, want all operations pending in one group",
+						"review = %+v, want pending groups of %d",
 						review.suggestions,
+						groupSize,
 					)
 				}
 			}
@@ -120,5 +138,75 @@ func TestWritingOperationsReviewAndUndo(t *testing.T) {
 				t.Fatalf("undo = %+v, want %+v", restored, base)
 			}
 		})
+	}
+}
+
+func TestWritingReplacementIntelligentUI(t *testing.T) {
+	t.Parallel()
+	source := "{@body const [count, setCount] = DIL.useState(2);}\n" +
+		`<button onClick={() => setCount(count + 1)}>{count}</button>`
+	for _, test := range []struct {
+		name, markdown, response string
+		from, to                 int
+		wantTypes                []string
+		wantError                bool
+	}{
+		{"insert UI", "Before after", source, 7, 7, []string{"paragraph", "uiDocument", "paragraph"}, false},
+		{"replace UI", "Original", source, 0, 8, []string{"uiDocument"}, false},
+		{"mixed prose and UI", "Original", "# Estimate\n\n" + source, 0, 8, []string{"uiDocument"}, false},
+		{"fenced UI stays code", "Original", "```text\n" + source + "\n```", 0, 8, []string{"codeBlock"}, false},
+		{"code target stays code", "```text\nOriginal\n```", source, 0, 8, []string{"codeBlock"}, false},
+		{"incomplete UI", "Original", "<box><text>Unfinished", 0, 8, nil, true},
+		{"invalid UI", "Original", "<text>{1 + }</text>", 0, 8, nil, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			base := wiki.BlocksFromMarkdown(test.markdown)
+			wiki.AssignBlockIDs(&base, uuid.NewString)
+			block := base.Content[0]
+			text, _ := writingBlockText(block)
+			replacement, err := writingReplacement(base, DocumentWritingTarget{
+				BlockID: block.Attrs["blockId"].(string), Text: text, From: test.from, To: test.to,
+			}, test.response)
+			if test.wantError {
+				if err == nil {
+					t.Fatal("invalid UI was staged as literal Markdown")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(replacement.Content) != len(test.wantTypes) {
+				t.Fatalf("replacement = %+v, want types %v", replacement, test.wantTypes)
+			}
+			for i, node := range replacement.Content {
+				if node.Type != test.wantTypes[i] {
+					t.Fatalf("block %d = %s, want %s", i, node.Type, test.wantTypes[i])
+				}
+				if node.Type == "uiDocument" && wiki.InlineSource(node) != test.response {
+					t.Fatal("interactive source was not retained losslessly")
+				}
+			}
+			if err := wiki.ValidateBlockImport(replacement); err != nil {
+				t.Fatalf("replacement is not a valid native Page document: %v", err)
+			}
+		})
+	}
+}
+
+func TestWritingSourceFailureNamesTheConstruct(t *testing.T) {
+	t.Parallel()
+	_, err := wiki.CompileSource(`<input type="number"/>`, 1)
+	if err == nil {
+		t.Fatal("alias property compiled")
+	}
+	message := writingSourceFailure(err)
+	if !strings.Contains(message, "Unsupported property type on input") ||
+		!strings.Contains(message, "repair it") {
+		t.Fatalf("message does not name the invalid construct: %q", message)
+	}
+	if got := writingSourceFailure(errors.New("other")); !strings.Contains(got, "invalid or incomplete") {
+		t.Fatalf("non-diagnostic errors keep the generic message: %q", got)
 	}
 }

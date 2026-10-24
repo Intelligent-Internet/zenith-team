@@ -27,6 +27,7 @@ export function artifactTypeLabel(type: ArtifactType) {
     app: "App",
     media: "Media",
     text: "Text",
+    page: "Page",
     file: "File",
     whiteboard: "Whiteboard",
   }[type];

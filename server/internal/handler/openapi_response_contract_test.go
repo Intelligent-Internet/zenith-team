@@ -1316,7 +1316,8 @@ func handlerMethodName(runtimeName string) (string, bool) {
 func responseContractExemptRoute(route string) bool {
 	switch route {
 	// These routes stream authorized bytes through streamAttachmentDownload.
-	case "GET /api/v1/companies/:companyId/artifacts/:artifactId/whiteboard/files/:attachmentId",
+	case "GET /api/v1/companies/:companyId/artifacts/:artifactId/snapshots/:snapshotId/items/:itemId/download",
+		"GET /api/v1/companies/:companyId/artifacts/:artifactId/whiteboard/files/:attachmentId",
 		"GET /api/v1/public/artifacts/:token/whiteboard/files/:attachmentId",
 		"GET /api/v1/companies/:companyId/projects/:projectId/presentations/:presentationId/export",
 		"GET /api/v1/ws",
@@ -1328,6 +1329,9 @@ func responseContractExemptRoute(route string) bool {
 		return true
 	case "GET /api/v1/public/artifacts/:token/items/:ordinal/download",
 		"GET /api/v1/companies/:companyId/artifacts/:artifactId/items/:ordinal/download":
+		return true
+	// Public captures serve frozen HTML bytes, not a JSON response.
+	case "GET /api/v1/public/captures/:token":
 		return true
 	// A Whiteboard preview writes PNG bytes, 204 or 304.
 	case "GET /api/v1/companies/:companyId/artifacts/:artifactId/whiteboard/preview":

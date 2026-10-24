@@ -118,6 +118,9 @@ importers:
       '@xyflow/react':
         specifier: ^12.12.0
         version: 12.12.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.11)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      acorn:
+        specifier: 8.17.0
+        version: 8.17.0
       ai:
         specifier: ^7.0.140
         version: 7.0.140(zod@4.4.3)
@@ -154,12 +157,18 @@ importers:
       mdast-util-from-markdown:
         specifier: 2.1.0
         version: 2.1.0
+      mdast-util-gfm:
+        specifier: 3.1.0
+        version: 3.1.0
       mdast-util-gfm-strikethrough:
         specifier: 2.0.1
         version: 2.0.1
       mermaid:
         specifier: 12.2.0
         version: 12.2.0
+      micromark-extension-gfm:
+        specifier: 3.0.0
+        version: 3.0.0
       micromark-extension-gfm-strikethrough:
         specifier: 2.1.0
         version: 2.1.0

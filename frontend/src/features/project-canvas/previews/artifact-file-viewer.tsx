@@ -1,3 +1,4 @@
+import { useRetainedArtifactContentQuery } from "../api/artifact-access-api";
 import { createPortal } from "react-dom";
 import { PageDocumentLoading } from "../documents/page-document-loading";
 import { previewContentType } from "./preview-content-type";
@@ -48,6 +49,14 @@ export function ArtifactFileViewer({
   autoEdit?: boolean;
   initialOutputItemId?: string;
 }) {
+  if (version.sourceType === "retained")
+    return (
+      <RetainedArtifactViewer
+        scope={{ companyId: scope.companyId, artifactId: version.artifactId }}
+        snapshotId={version.id}
+        review={review}
+      />
+    );
   if (version.sourceType === "output" && version.outputId)
     return (
       <OutputViewer
@@ -67,6 +76,81 @@ export function ArtifactFileViewer({
       version={version}
       review={review}
     />
+  );
+}
+export function RetainedArtifactViewer({
+  scope,
+  snapshotId,
+  review,
+}: {
+  scope: { companyId: string; artifactId: string };
+  snapshotId?: string;
+  review?: MediaReview;
+}) {
+  const result = useRetainedArtifactContentQuery(
+    { ...scope, snapshotId },
+    { refetchOnMountOrArgChange: true },
+  );
+  const [selected, setSelected] = useState<string>();
+  const content = result.isError ? undefined : result.currentData;
+  if (result.isLoading) return <PageDocumentLoading toolbar={false} />;
+  if (!content)
+    return (
+      <ViewerMessage>
+        This saved content could not be opened.{" "}
+        <button onClick={() => void result.refetch()}>Retry</button>
+      </ViewerMessage>
+    );
+  const item =
+    content.items.find((candidate) => candidate.id === selected) ??
+    content.items.find((candidate) => candidate.role === "primary") ??
+    content.items[0];
+  if (!item)
+    return (
+      <div className="p-6">
+        <MarkdownView>{content.summary}</MarkdownView>
+        {content.type === "app" && (
+          <p className="mt-4 text-sm text-muted-foreground">
+            This snapshot contains the saved app launch configuration. Open its
+            Run delivery to preview the app on its original computer.
+          </p>
+        )}
+      </div>
+    );
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      {content.items.length > 1 && (
+        <label className="flex items-center gap-2 border-b border-border px-4 py-2 text-sm">
+          File
+          <select
+            value={item.id}
+            onChange={(event) => setSelected(event.target.value)}
+            className="min-w-0 flex-1 rounded border border-border bg-background px-2 py-1"
+          >
+            {content.items.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.label || candidate.filename}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      <FileViewer
+        key={item.id}
+        scope={scope}
+        version={{
+          id: content.snapshotId,
+          filename: item.filename,
+          contentType: item.contentType,
+          sizeBytes: item.sizeBytes,
+          assetVersionId: item.assetVersionId,
+        }}
+        retainedArtifactId={scope.artifactId}
+        retainedItemId={item.id}
+        outputItemId={item.id}
+        review={review}
+      />
+    </div>
   );
 }
 function OutputViewer({
@@ -278,6 +362,8 @@ export function FileViewer({
   version,
   outputOrdinal,
   outputItemId,
+  retainedArtifactId,
+  retainedItemId,
   review,
   renderShell,
   toolbarButtonClassName = "pc-icon-button",
@@ -292,6 +378,8 @@ export function FileViewer({
     >;
   outputOrdinal?: number;
   outputItemId?: string;
+  retainedArtifactId?: string;
+  retainedItemId?: string;
   review?: MediaReview;
   renderShell?: (viewer: ReactNode, actions: ReactNode) => ReactNode;
   toolbarButtonClassName?: string;
@@ -325,20 +413,25 @@ export function FileViewer({
         return;
       }
       const file =
-        outputOrdinal !== undefined
-          ? await runDeliverableService.downloadArtifactFile(
-              scope.companyId,
-              version.outputId!,
-              outputOrdinal,
-              controller.signal,
+        retainedArtifactId && retainedItemId
+          ? await apiClient.get<Blob>(
+              `/companies/${encodeURIComponent(scope.companyId)}/artifacts/${encodeURIComponent(retainedArtifactId)}/snapshots/${encodeURIComponent(version.id)}/items/${encodeURIComponent(retainedItemId)}/download`,
+              { responseType: "blob", signal: controller.signal },
             )
-          : version.attachmentId
-            ? await attachmentService.download(
+          : outputOrdinal !== undefined
+            ? await runDeliverableService.downloadArtifactFile(
                 scope.companyId,
-                version.attachmentId,
+                version.outputId!,
+                outputOrdinal,
                 controller.signal,
               )
-            : null;
+            : version.attachmentId
+              ? await attachmentService.download(
+                  scope.companyId,
+                  version.attachmentId,
+                  controller.signal,
+                )
+              : null;
       if (controller.signal.aborted) return;
       if (!file) throw new Error("Source file unavailable");
       setBlob(file);
@@ -408,6 +501,8 @@ export function FileViewer({
     version.attachmentId,
     version.outputId,
     outputOrdinal,
+    retainedArtifactId,
+    retainedItemId,
     binary,
     html,
     word,
@@ -419,18 +514,23 @@ export function FileViewer({
     try {
       const file =
         blob ??
-        (outputOrdinal !== undefined
-          ? await runDeliverableService.downloadArtifactFile(
-              scope.companyId,
-              version.outputId!,
-              outputOrdinal,
+        (retainedArtifactId && retainedItemId
+          ? await apiClient.get<Blob>(
+              `/companies/${encodeURIComponent(scope.companyId)}/artifacts/${encodeURIComponent(retainedArtifactId)}/snapshots/${encodeURIComponent(version.id)}/items/${encodeURIComponent(retainedItemId)}/download`,
+              { responseType: "blob" },
             )
-          : version.attachmentId
-            ? await attachmentService.download(
+          : outputOrdinal !== undefined
+            ? await runDeliverableService.downloadArtifactFile(
                 scope.companyId,
-                version.attachmentId,
+                version.outputId!,
+                outputOrdinal,
               )
-            : null);
+            : version.attachmentId
+              ? await attachmentService.download(
+                  scope.companyId,
+                  version.attachmentId,
+                )
+              : null);
       if (!file) return;
       const href = URL.createObjectURL(file);
       const link = document.createElement("a");

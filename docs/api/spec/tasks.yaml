@@ -194,8 +194,10 @@ paths:
         reads, with the caller's filters as asked. The server
         decides this from the token.
 
-        All matching tasks are returned in one response. The query parameters
-        below are filters, not pagination controls.
+        By default, all matching tasks are returned for existing board clients.
+        Callers can request bounded pages with `limit`; `nextCursor` is the
+        last task number in the page and is passed as `before_number` to read
+        older tasks. Cursors are stable because task numbers are immutable.
       parameters:
         - $ref: './_common.yaml#/parameters/companyId'
         - $ref: '#/parameters/runTokenRead'
@@ -213,6 +215,25 @@ paths:
           schema:
             type: array
             items: { $ref: './_common.yaml#/schemas/TaskStatus' }
+        - name: exclude_status
+          in: query
+          required: false
+          description: Comma-separated statuses to omit, like `status`.
+          style: form
+          explode: false
+          schema:
+            type: array
+            items: { $ref: './_common.yaml#/schemas/TaskStatus' }
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of tasks to return, from 1 to 1000.
+          schema: { type: integer, minimum: 1, maximum: 1000 }
+        - name: before_number
+          in: query
+          required: false
+          description: Return tasks with a smaller immutable task number.
+          schema: { type: integer, format: int64, minimum: 1 }
         - name: priority
           in: query
           required: false
@@ -241,7 +262,7 @@ paths:
           schema: { type: boolean }
       responses:
         '200':
-          description: All matching tasks.
+          description: Matching tasks, optionally bounded to one page.
           content:
             application/json:
               schema:
@@ -251,6 +272,10 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/schemas/Task' }
+                  nextCursor:
+                    type: integer
+                    format: int64
+                    description: Last task number when more matching tasks remain.
         '401': { $ref: '#/responses/UnauthorizedRunRead' }
         '404':
           description: '`404 company_not_found`, or `404 project_not_found` when `project_id` names a Project the caller cannot read.'

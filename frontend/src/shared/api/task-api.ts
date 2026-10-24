@@ -28,9 +28,13 @@ export const taskApi = zenithTeamApi.injectEndpoints({
         { id: `${argument.companyId}:list`, type: "Task" },
         { id: argument.companyId, type: "Task" },
       ],
-      queryFn: (argument: { companyId: string; options?: TaskListOptions }) =>
+      queryFn: (
+        argument: { companyId: string; options?: TaskListOptions },
+        { signal },
+      ) =>
         executeZenithTeamQuery(
-          () => taskService.listTasks(argument.companyId, argument.options),
+          () =>
+            taskService.listTasks(argument.companyId, argument.options, signal),
           "Tasks could not be loaded.",
         ),
     }),
@@ -42,9 +46,9 @@ export const taskApi = zenithTeamApi.injectEndpoints({
         { id: `${companyId}:workspace`, type: "Task" },
         { id: companyId, type: "Task" },
       ],
-      queryFn: ({ companyId, taskId }) =>
+      queryFn: ({ companyId, taskId }, { signal }) =>
         executeZenithTeamQuery(
-          () => taskService.getTask(companyId, taskId),
+          () => taskService.getTask(companyId, taskId, signal),
           "Task could not be loaded.",
           { retry: true },
         ),

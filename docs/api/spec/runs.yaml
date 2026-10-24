@@ -1372,7 +1372,7 @@ schemas:
 
   ArtifactType:
     type: string
-    enum: [app, media, text, file, whiteboard]
+    enum: [app, media, text, file, whiteboard, page]
     description: |
       The dedicated Artifact experience: running app preview, image/audio/video media,
       readable text such as a plan, a general file collection, or a live Whiteboard that
@@ -1433,6 +1433,10 @@ schemas:
         description: App requires an app command document and no file items. A Run never presents a Whiteboard.
       app:
         $ref: '#/schemas/PresentRunAppOutput'
+      artifactId:
+        type: string
+        format: uuid
+        description: Existing editable file, media or app identity to snapshot. Omit to create new work. Mutually exclusive with presentationId.
       presentationId:
         type: string
         format: uuid
@@ -1451,7 +1455,9 @@ schemas:
     additionalProperties: false
     required: [outputId]
     properties:
-      outputId: { type: string, format: uuid }
+      outputId: { type: string, format: uuid, description: Immutable Run delivery identity. }
+      artifactId: { type: string, format: uuid, description: Stable identity of retained file/media/app work. }
+      snapshotId: { type: string, format: uuid, description: Exact saved content linked to this delivery. }
 
   DeliverableItemRole:
     type: string

@@ -11,18 +11,21 @@ import (
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/wiki"
 	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
 // DocumentAgentInput links a human request to its existing document thread.
 // The Conversation domain owns enqueueing; Canvas retains the comment transaction.
 type DocumentAgentInput struct {
-	Principal     auth.UserPrincipal
-	ThreadID      uuid.UUID
-	AgentID       uuid.UUID
-	RequestKey    uuid.UUID
-	WritingTarget *DocumentWritingTarget
-	Body          string
+	RevisionChangeID uuid.UUID
+	RevisionIndexes  []int
+	Principal        auth.UserPrincipal
+	ThreadID         uuid.UUID
+	AgentID          uuid.UUID
+	RequestKey       uuid.UUID
+	WritingTarget    *DocumentWritingTarget
+	Body             string
 }
 
 type DocumentAgentInvoker func(context.Context, *db.Queries, *[]events.Event, DocumentAgentInput) error
@@ -52,12 +55,68 @@ func validateCommentAgents(c Command) error {
 }
 
 type commentAgentRequest struct {
+	Invoke    DocumentAgentInvoker
 	Principal auth.UserPrincipal
 	ThreadID  uuid.UUID
 	Command   Command
 }
 
+var errDocumentAgentConversationChanged = errors.New("document agent conversation appeared while locking page")
+
+type documentAgentConversationLocks struct {
+	params db.LockDocumentAgentConversationsParams
+	ids    []uuid.UUID
+}
+
+func lockCommentAgentConversations(
+	ctx context.Context,
+	q *db.Queries,
+	request commentAgentRequest,
+) (documentAgentConversationLocks, error) {
+	if request.Command.ThreadID == nil || len(request.Command.AgentIDs) == 0 {
+		return documentAgentConversationLocks{}, nil
+	}
+	params := db.LockDocumentAgentConversationsParams{
+		CompanyID: request.Principal.CompanyID, DocumentThreadID: nullable(request.Command.ThreadID),
+		CreatedByUserID: nullable(&request.Principal.UserID), AgentIds: request.Command.AgentIDs,
+	}
+	ids, err := q.LockDocumentAgentConversations(ctx, params)
+	return documentAgentConversationLocks{params: params, ids: ids}, err
+}
+
+// check runs after locking the Page. A conversation created while we waited
+// for that lock was absent from the prelock set; acquiring it now would invert
+// completion's Conversation -> Artifact order. Restart the transaction instead.
+func (locks documentAgentConversationLocks) check(ctx context.Context, q *db.Queries) error {
+	if !locks.params.DocumentThreadID.Valid {
+		return nil
+	}
+	ids, err := q.ListDocumentAgentConversations(ctx, db.ListDocumentAgentConversationsParams{
+		CompanyID: locks.params.CompanyID, DocumentThreadID: locks.params.DocumentThreadID,
+		CreatedByUserID: locks.params.CreatedByUserID, AgentIds: locks.params.AgentIds,
+	})
+	if err != nil {
+		return err
+	}
+	for _, id := range ids {
+		if !slices.Contains(locks.ids, id) {
+			return errDocumentAgentConversationChanged
+		}
+	}
+	return nil
+}
+
 func (s *DefaultCanvasService) invokeCommentAgents(
+	ctx context.Context,
+	q *db.Queries,
+	pending *[]events.Event,
+	request commentAgentRequest,
+) error {
+	request.Invoke = s.invokeDocumentAgent
+	return invokePageCommentAgents(ctx, q, pending, request)
+}
+
+func invokePageCommentAgents(
 	ctx context.Context,
 	q *db.Queries,
 	pending *[]events.Event,
@@ -74,7 +133,7 @@ func (s *DefaultCanvasService) invokeCommentAgents(
 	if len(agents) == 0 {
 		return nil
 	}
-	if s.invokeDocumentAgent == nil {
+	if request.Invoke == nil {
 		return ErrInvalid
 	}
 	thread, err := q.GetDocumentThreadForInvocation(
@@ -84,25 +143,27 @@ func (s *DefaultCanvasService) invokeCommentAgents(
 	if err != nil {
 		return lookup(err)
 	}
-	if !thread.PageID.Valid || !thread.ProjectID.Valid || thread.Status != "open" {
+	if !thread.PageID.Valid || thread.Status != "open" {
 		return ErrInvalid
 	}
-	if _, err = authorize(ctx, q, in.Principal, thread.ProjectID.UUID, true); err != nil {
+	if _, err = authorizeArtifactContent(ctx, q, in.Principal, thread.PageID.UUID, true); err != nil {
 		return err
 	}
-	if err = auth.RequireProjectPermissionHeld(
-		ctx,
-		q,
-		in.Principal.CompanyID,
-		thread.ProjectID.UUID,
-		in.Principal.UserID,
-		auth.ProjectPermissionTasksExecute,
-	); err != nil {
-		return err
+	if thread.ProjectID.Valid {
+		if err = auth.RequireProjectPermissionHeld(
+			ctx,
+			q,
+			in.Principal.CompanyID,
+			thread.ProjectID.UUID,
+			in.Principal.UserID,
+			auth.ProjectPermissionTasksExecute,
+		); err != nil {
+			return err
+		}
 	}
 	for _, id := range agents {
 		in.AgentID = id
-		if err = s.invokeDocumentAgent(ctx, q, pending, in); err != nil {
+		if err = request.Invoke(ctx, q, pending, in); err != nil {
 			return err
 		}
 	}
@@ -110,8 +171,9 @@ func (s *DefaultCanvasService) invokeCommentAgents(
 }
 
 type DocumentAgentCompletion struct {
-	Run  db.Run
-	Body string
+	Authoring wiki.UIAuthoringPolicy
+	Run       db.Run
+	Body      string
 }
 
 // CompleteDocumentAgentInTx publishes the reply into the original thread only
@@ -136,23 +198,15 @@ func CompleteDocumentAgentInTx(
 	if run.Status != "completed" || body == "" {
 		return nil
 	}
-	for _, permission := range []auth.ProjectPermission{auth.ProjectPermissionRead, auth.ProjectPermissionTasksWrite} {
-		allowed, e := auth.HoldsProjectPermission(
-			ctx,
-			q,
-			run.CompanyID,
-			document.ProjectID.UUID,
-			run.ExecutionAuthorizedByUserID.UUID,
-			permission,
-		)
-		if e != nil {
-			return e
-		}
-		if !allowed {
-			return nil
-		}
+	principal := auth.UserPrincipal{CompanyID: run.CompanyID, UserID: run.ExecutionAuthorizedByUserID.UUID}
+	access, err := auth.LockArtifactAccess(ctx, q, principal, document.PageID)
+	if err != nil {
+		return err
 	}
-	notice, err := stageDocumentWritingInTx(ctx, q, run, body)
+	if !access.Edit {
+		return nil
+	}
+	notice, err := stageDocumentWritingInTx(ctx, q, in)
 	if err != nil {
 		return err
 	}
@@ -165,14 +219,7 @@ func CompleteDocumentAgentInTx(
 	); err != nil {
 		return fmt.Errorf("save document agent reply: %w", err)
 	}
-	event, err := changeEvent(
-		ctx,
-		q,
-		auth.UserPrincipal{CompanyID: run.CompanyID, UserID: run.ExecutionAuthorizedByUserID.UUID},
-		document.ProjectID.UUID,
-		0,
-		document.PageID,
-	)
+	event, err := (documentTarget{PageID: document.PageID}).changed(ctx, q, principal, 0, document.PageID)
 	if err != nil {
 		return err
 	}

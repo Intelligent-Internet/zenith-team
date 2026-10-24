@@ -12,6 +12,8 @@ import (
 	"net/netip"
 	"slices"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/Intelligent-Internet/zenith-team/server/internal/task"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/agent"
@@ -110,6 +112,7 @@ type Handler struct {
 	CrashReportService       CrashReportService
 	CompanyResourceService   CompanyResourceService
 	AttachmentService        AttachmentService
+	ArtifactService          artifact.ArtifactService
 	DeliverableService       DeliverableService
 	PublicationService       PublicationService
 	MailboxService           MailboxService
@@ -219,6 +222,7 @@ func (h *Handler) registerRoutes(api *gin.RouterGroup) {
 	h.registerConnectorRoutes(api)
 	h.registerPluginRoutes(api)
 	h.registerAttachmentRoutes(api)
+	h.registerArtifactContentRoutes(api)
 	h.registerDeliverableRoutes(api)
 	h.registerPublicationRoutes(api)
 	h.registerCrashReportRoutes(api)

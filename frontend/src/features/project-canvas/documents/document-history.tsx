@@ -277,7 +277,11 @@ export function DocumentHistoryPanel({
                   setSelected(undefined);
                   onReviewSuggestion?.();
                 }}
-                to={`/projects/${selected.suggestionReview.projectId}/pages?pageId=${selected.suggestionReview.pageId}&changeId=${selected.suggestionReview.changeId}`}
+                to={
+                  selected.suggestionReview.projectId
+                    ? `/projects/${selected.suggestionReview.projectId}/pages?pageId=${selected.suggestionReview.pageId}&changeId=${selected.suggestionReview.changeId}`
+                    : `/companies/${scope.companyId}/pages/${selected.suggestionReview.pageId}?changeId=${selected.suggestionReview.changeId}`
+                }
               >
                 View suggestion and review decisions
               </Link>

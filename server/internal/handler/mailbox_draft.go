@@ -112,6 +112,11 @@ func (h *Handler) createMailboxDraftGroup(c *gin.Context) {
 		writeRequestError(c, err)
 		return
 	}
+	for _, draft := range request.Drafts {
+		if rejectInlineUI(c, storedText{"Email subject", draft.Subject}, storedText{"Email body", draft.Text}) {
+			return
+		}
+	}
 	origin, requestKey, ok := h.resolveAgentMailCreate(c, principal, conversationID)
 	if !ok {
 		return

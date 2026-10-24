@@ -3,6 +3,33 @@
 # that references it, and docs/api/conversations.md is its prose counterpart.
 
 paths:
+  chatUIPreview:
+    parameters:
+      - { name: companyId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      tags: [conversations]
+      operationId: previewChatUI
+      summary: Compile inline assistant UI source without saving a document
+      description: Compiles only caller-supplied text. Does not read product data or grant access to live sources.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source, languageVersion]
+              properties:
+                source: { type: string, maxLength: 262144 }
+                languageVersion: { type: integer, enum: [1] }
+      responses:
+        '200':
+          description: Complete or partial validated source with diagnostics.
+          content:
+            application/json:
+              schema: { $ref: './pages.yaml#/schemas/SourcePreview' }
+        '400': { $ref: './_common.yaml#/responses/BadRequest' }
+        '401': { $ref: './_common.yaml#/responses/Unauthorized' }
+        '403': { $ref: './_common.yaml#/responses/Forbidden' }
   conversationModelSettings:
     parameters:
       - { name: conversationId, in: path, required: true, schema: { type: string, format: uuid } }

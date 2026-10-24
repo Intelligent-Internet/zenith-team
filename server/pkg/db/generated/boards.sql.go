@@ -275,23 +275,22 @@ func (q *Queries) CreateBoardStroke(ctx context.Context, arg CreateBoardStrokePa
 	return err
 }
 
-const createWhiteboardOutput = `-- name: CreateWhiteboardOutput :one
-INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,owner_user_id,actor_type,actor_user_id,conversation_id)
-VALUES($1,$2,'','','whiteboard',$3,'user',$3,$4)
+const createWhiteboardArtifact = `-- name: CreateWhiteboardArtifact :one
+INSERT INTO artifacts(company_id,title,type,owner_user_id,created_by_user_id,conversation_id)
+VALUES($1,$2,'whiteboard',$3,$3,$4)
 RETURNING id
 `
 
-type CreateWhiteboardOutputParams struct {
+type CreateWhiteboardArtifactParams struct {
 	CompanyID      uuid.UUID     `json:"company_id"`
 	Title          string        `json:"title"`
 	ActorUserID    uuid.NullUUID `json:"actor_user_id"`
 	ConversationID uuid.NullUUID `json:"conversation_id"`
 }
 
-// A Whiteboard is an Artifact: its Output carries the title, owner and
-// sharing, and the Board keeps the live scene under the Output's ID.
-func (q *Queries) CreateWhiteboardOutput(ctx context.Context, arg CreateWhiteboardOutputParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, createWhiteboardOutput,
+// Whiteboards own a typed Artifact identity; Runs deliver snapshots separately.
+func (q *Queries) CreateWhiteboardArtifact(ctx context.Context, arg CreateWhiteboardArtifactParams) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, createWhiteboardArtifact,
 		arg.CompanyID,
 		arg.Title,
 		arg.ActorUserID,
@@ -623,17 +622,17 @@ func (q *Queries) InsertBoardReceipt(ctx context.Context, arg InsertBoardReceipt
 }
 
 const listBoardAudience = `-- name: ListBoardAudience :many
-SELECT user_id FROM output_access WHERE company_id=$1 AND output_id=$2 ORDER BY user_id
+SELECT user_id FROM artifact_access WHERE company_id=$1 AND artifact_id=$2 ORDER BY user_id
 `
 
 type ListBoardAudienceParams struct {
-	CompanyID uuid.UUID `json:"company_id"`
-	OutputID  uuid.UUID `json:"output_id"`
+	CompanyID  uuid.UUID `json:"company_id"`
+	ArtifactID uuid.UUID `json:"artifact_id"`
 }
 
 // Everyone who can open the Whiteboard Artifact hears of its changes.
 func (q *Queries) ListBoardAudience(ctx context.Context, arg ListBoardAudienceParams) ([]uuid.UUID, error) {
-	rows, err := q.db.Query(ctx, listBoardAudience, arg.CompanyID, arg.OutputID)
+	rows, err := q.db.Query(ctx, listBoardAudience, arg.CompanyID, arg.ArtifactID)
 	if err != nil {
 		return nil, err
 	}
@@ -1033,7 +1032,7 @@ func (q *Queries) ListBoardNoteTexts(ctx context.Context, arg ListBoardNoteTexts
 }
 
 const lockBoard = `-- name: LockBoard :one
-SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at,o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at, b.artifact_type,o.title FROM boards b JOIN artifacts o ON o.company_id=b.company_id AND o.id=b.id
 WHERE b.company_id=$1 AND b.id=$2 FOR UPDATE OF b
 `
 
@@ -1056,6 +1055,7 @@ func (q *Queries) LockBoard(ctx context.Context, arg LockBoardParams) (LockBoard
 		&i.Board.HeadSeq,
 		&i.Board.CreatedAt,
 		&i.Board.UpdatedAt,
+		&i.Board.ArtifactType,
 		&i.Title,
 	)
 	return i, err
@@ -1190,7 +1190,7 @@ func (q *Queries) MoveBoardItem(ctx context.Context, arg MoveBoardItemParams) (B
 }
 
 const readBoard = `-- name: ReadBoard :one
-SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at,o.title FROM boards b JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
+SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at, b.artifact_type,o.title FROM boards b JOIN artifacts o ON o.company_id=b.company_id AND o.id=b.id
 WHERE b.company_id=$1 AND b.id=$2
 `
 
@@ -1214,13 +1214,14 @@ func (q *Queries) ReadBoard(ctx context.Context, arg ReadBoardParams) (ReadBoard
 		&i.Board.HeadSeq,
 		&i.Board.CreatedAt,
 		&i.Board.UpdatedAt,
+		&i.Board.ArtifactType,
 		&i.Title,
 	)
 	return i, err
 }
 
 const readPublicBoard = `-- name: ReadPublicBoard :one
-SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at,o.title FROM boards b
+SELECT b.id, b.company_id, b.head_seq, b.created_at, b.updated_at, b.artifact_type,o.title FROM boards b
 JOIN outputs o ON o.company_id=b.company_id AND o.id=b.id
 JOIN companies c ON c.id=b.company_id AND c.deleting_at IS NULL
 WHERE o.public_token=$1::uuid AND o.visibility='public'
@@ -1241,25 +1242,26 @@ func (q *Queries) ReadPublicBoard(ctx context.Context, token uuid.UUID) (ReadPub
 		&i.Board.HeadSeq,
 		&i.Board.CreatedAt,
 		&i.Board.UpdatedAt,
+		&i.Board.ArtifactType,
 		&i.Title,
 	)
 	return i, err
 }
 
-const renameWhiteboardOutput = `-- name: RenameWhiteboardOutput :exec
-UPDATE outputs SET title=$1::text
+const renameWhiteboardArtifact = `-- name: RenameWhiteboardArtifact :exec
+UPDATE artifacts SET title=$1::text,version=version+1,updated_at=clock_timestamp()
 WHERE company_id=$2::uuid AND id=$3::uuid AND type='whiteboard'
 `
 
-type RenameWhiteboardOutputParams struct {
+type RenameWhiteboardArtifactParams struct {
 	Title     string    `json:"title"`
 	CompanyID uuid.UUID `json:"company_id"`
 	ID        uuid.UUID `json:"id"`
 }
 
 // The title lives on the Whiteboard Artifact; the caller holds the Board.
-func (q *Queries) RenameWhiteboardOutput(ctx context.Context, arg RenameWhiteboardOutputParams) error {
-	_, err := q.db.Exec(ctx, renameWhiteboardOutput, arg.Title, arg.CompanyID, arg.ID)
+func (q *Queries) RenameWhiteboardArtifact(ctx context.Context, arg RenameWhiteboardArtifactParams) error {
+	_, err := q.db.Exec(ctx, renameWhiteboardArtifact, arg.Title, arg.CompanyID, arg.ID)
 	return err
 }
 

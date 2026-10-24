@@ -1214,3 +1214,36 @@ func TestLoadRefusesTemplateCSRFSecretOutsideLocal(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadIntelligentUIAuthoringRollout(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name    string
+		value   string
+		want    bool
+		wantErr bool
+	}{
+		{name: "default enabled", want: true},
+		{name: "enabled", value: "true", want: true},
+		{name: "rollback", value: "false"},
+		{name: "invalid", value: "enabled", wantErr: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cfg, err := Load(configuredLookup(map[string]string{
+				"APP_DATABASE_URL":                 "postgres://zenith-team:zenith-team@localhost/zenith-team",
+				"INTELLIGENT_UI_AUTHORING_ENABLED": tc.value,
+			}))
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("Load() error = %v, want error %v", err, tc.wantErr)
+			}
+			if !tc.wantErr && cfg.IntelligentUIAuthoringEnabled != tc.want {
+				t.Errorf(
+					"IntelligentUIAuthoringEnabled = %v, want %v",
+					cfg.IntelligentUIAuthoringEnabled,
+					tc.want,
+				)
+			}
+		})
+	}
+}

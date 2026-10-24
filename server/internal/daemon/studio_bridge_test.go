@@ -50,7 +50,9 @@ func TestStudioBridgeDeadlineKillsOwnedProcess(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer b.close()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	// Starting a race-instrumented child under the full gate can exceed one
+	// second. Startup is not the deadline behavior exercised below.
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	if _, err = b.call(
 		ctx,

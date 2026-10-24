@@ -593,6 +593,7 @@ func TestRevisionBindingRejectsRevisionsOutsideTheRange(t *testing.T) {
 			RequestKey: "00000000-0000-0000-0000-000000000001",
 		},
 		"huddleNotesPolicyRequest":       &huddleNotesPolicyRequest{Enabled: new(bool), RetentionDays: 30},
+		"artifactContentAccessRequest":   &artifactContentAccessRequest{},
 		"taskScheduleRequest":            &taskScheduleRequest{},
 		"taskOccurrenceRequest":          &taskOccurrenceRequest{OccurrenceAt: time.Now()},
 		"taskAssignmentRequest":          &taskAssignmentRequest{Accept: new(bool)},

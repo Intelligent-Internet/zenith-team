@@ -248,6 +248,10 @@ WHERE tasks.company_id = sqlc.arg(company_id)::uuid
       OR tasks.status = ANY(sqlc.arg(statuses)::text[])
   )
   AND (
+      NOT sqlc.arg(has_excluded_statuses)::boolean
+      OR NOT tasks.status = ANY(sqlc.arg(excluded_statuses)::text[])
+  )
+  AND (
       NOT sqlc.arg(has_priorities)::boolean
       OR tasks.priority = ANY(sqlc.arg(priorities)::text[])
   )
@@ -266,7 +270,15 @@ WHERE tasks.company_id = sqlc.arg(company_id)::uuid
       OR sqlc.arg(dependencies_resolved)::boolean =
           (dependency_counts.unresolved_count = 0)
   )
-ORDER BY tasks.number DESC;
+  AND (
+      NOT sqlc.arg(has_before_number)::boolean
+      OR tasks.number < sqlc.arg(before_number)::bigint
+  )
+ORDER BY tasks.number DESC
+LIMIT CASE
+    WHEN sqlc.arg(has_limit)::boolean THEN sqlc.arg(row_limit)::bigint + 1
+    ELSE NULL
+END;
 
 -- name: GetTaskProjectionForSystem :one
 -- Background lifecycle writers already hold Company/Task authority and have

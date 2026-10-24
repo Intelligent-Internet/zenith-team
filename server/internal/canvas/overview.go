@@ -96,7 +96,7 @@ func (s *DefaultPageService) Overview(ctx context.Context, p auth.UserPrincipal,
 			}
 			result.Title = metadata.Title
 		}
-		result.Changes, err = projectPageChanges(ctx, q, p.CompanyID, project, nil)
+		result.Changes, err = projectPageChanges(ctx, q, p, project, nil)
 		return err
 	})
 	return result, mapWrite(err)
@@ -105,12 +105,17 @@ func (s *DefaultPageService) Overview(ctx context.Context, p auth.UserPrincipal,
 func projectPageChanges(
 	ctx context.Context,
 	q *generated.Queries,
-	company, project uuid.UUID,
+	p auth.UserPrincipal, project uuid.UUID,
 	page *uuid.UUID,
 ) ([]PageChange, error) {
 	rows, err := q.ListProjectPageChanges(
 		ctx,
-		generated.ListProjectPageChangesParams{CompanyID: company, ProjectID: project, PageID: nullable(page)},
+		generated.ListProjectPageChangesParams{
+			ActorUserID: p.UserID,
+			CompanyID:   p.CompanyID,
+			ProjectID:   project,
+			PageID:      nullable(page),
+		},
 	)
 	if err != nil {
 		return nil, err
@@ -296,7 +301,7 @@ func ensureOverviewInTx(
 	root := wiki.BlocksFromMarkdown(
 		"## Outcome\n\n" + project.Description + "\n\n## Progress and decisions\n\n## Highlights\n",
 	)
-	page, revision, err := wiki.CreateCanvasPageInTx(
+	page, _, err := wiki.CreateCanvasPageInTx(
 		ctx,
 		q,
 		wiki.CanvasPageInput{
@@ -305,38 +310,6 @@ func ensureOverviewInTx(
 			Title:     project.Title,
 			Body:      wiki.BlocksMarkdown(root),
 			Content:   &root,
-		},
-	)
-	if err != nil {
-		return false, err
-	}
-	artifact, err := q.CreateCanvasArtifact(
-		ctx,
-		generated.CreateCanvasArtifactParams{
-			CompanyID:       p.CompanyID,
-			ProjectID:       project.ID,
-			Title:           project.Title,
-			CreatedByUserID: p.UserID,
-		},
-	)
-	if err != nil {
-		return false, err
-	}
-	number, err := q.AllocateCanvasVersion(ctx, artifact.ID)
-	if err != nil {
-		return false, err
-	}
-	_, err = q.CreateCanvasVersion(
-		ctx,
-		generated.CreateCanvasVersionParams{
-			CompanyID:       p.CompanyID,
-			ProjectID:       project.ID,
-			ArtifactID:      artifact.ID,
-			Number:          number,
-			SourceType:      "wiki",
-			WikiPageID:      nullable(&page),
-			WikiRevisionID:  nullable(&revision),
-			CreatedByUserID: p.UserID,
 		},
 	)
 	if err != nil {

@@ -135,7 +135,7 @@ func (s *DefaultTaskService) FinalizeResults(
 		}
 		current := taskFromRow(row)
 		target := current
-		if err = changeTaskResultsInTx(
+		if err = s.changeTaskResultsInTx(
 			ctx,
 			q,
 			p,

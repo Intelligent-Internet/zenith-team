@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
-	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -60,8 +59,9 @@ func (s *DefaultCanvasService) OutputReview(
 			return err
 		}
 		rows, err := q.ListOutputReviewThreads(ctx, generated.ListOutputReviewThreadsParams{
-			CompanyID: p.CompanyID,
-			OutputID:  nullable(&id),
+			ActorUserID: p.UserID,
+			CompanyID:   p.CompanyID,
+			OutputID:    nullable(&id),
 		})
 		if err != nil {
 			return err
@@ -70,16 +70,8 @@ func (s *DefaultCanvasService) OutputReview(
 		if err != nil {
 			return err
 		}
-		documentAccess, err := auth.OutputDocumentAccessInTx(ctx, q, p, id)
-		if err != nil {
-			return err
-		}
-		if !documentAccess.Read {
-			threads = slices.DeleteFunc(
-				threads,
-				func(t Thread) bool { return t.PageID != nil || t.VersionID != id },
-			)
-		}
+		canEdit := false
+
 		var open int64
 		for _, thread := range threads {
 			if thread.Status == "open" {
@@ -94,16 +86,22 @@ func (s *DefaultCanvasService) OutputReview(
 		}
 		documents, err := q.ListOutputDocuments(
 			ctx,
-			generated.ListOutputDocumentsParams{CompanyID: p.CompanyID, OutputID: id},
+			generated.ListOutputDocumentsParams{
+				ActorUserID: p.UserID,
+				CompanyID:   p.CompanyID,
+				OutputID:    id,
+			},
 		)
 		if err != nil {
 			return err
 		}
 		docs := make([]OutputDocumentInfo, 0, len(documents))
 		for _, doc := range documents {
-			if !documentAccess.Read {
-				break
+			access, err := auth.ResolveArtifactAccess(ctx, q, p, doc.PageID)
+			if err != nil {
+				return err
 			}
+			canEdit = canEdit || access.Edit
 			docs = append(
 				docs,
 				OutputDocumentInfo{
@@ -115,16 +113,17 @@ func (s *DefaultCanvasService) OutputReview(
 		}
 		revisions, err := q.ListOutputDocumentVersions(
 			ctx,
-			generated.ListOutputDocumentVersionsParams{CompanyID: p.CompanyID, OutputID: id},
+			generated.ListOutputDocumentVersionsParams{
+				ActorUserID: p.UserID,
+				CompanyID:   p.CompanyID,
+				OutputID:    id,
+			},
 		)
 		if err != nil {
 			return err
 		}
 		versions := make([]Version, 0, len(revisions)+1)
 		for _, r := range revisions {
-			if !documentAccess.Read {
-				break
-			}
 			versions = append(
 				versions,
 				Version{
@@ -157,7 +156,7 @@ func (s *DefaultCanvasService) OutputReview(
 			},
 			Items:      threads,
 			CanComment: true,
-			CanEdit:    documentAccess.Edit,
+			CanEdit:    canEdit,
 			Documents:  docs,
 			Versions:   versions,
 		}
@@ -223,6 +222,10 @@ func (s *DefaultCanvasService) MutateOutputReview(
 	if err != nil {
 		return Result{}, err
 	}
+	// Live discussions use the Page endpoint, independent of the delivery.
+	if c.PageID != nil {
+		return Result{}, ErrInvalid
+	}
 	raw, err := json.Marshal(c)
 	if err != nil {
 		return Result{}, err
@@ -280,52 +283,22 @@ func mutateOutputComment(ctx context.Context, q *generated.Queries, m outputComm
 	var threadID uuid.UUID
 	if c.Type == "comment" {
 		if c.PageID != nil || (c.VersionID != nil && *c.VersionID != id) {
-			if _, err := authorizeOutputDocument(ctx, q, p, id, false); err != nil {
+			if err := authorizeOutputDocument(ctx, q, p, id, false); err != nil {
 				return uuid.Nil, err
 			}
 		}
 		var revision *uuid.UUID
 		if c.PageID == nil && c.VersionID != nil && *c.VersionID != id {
-			if _, err := q.GetOutputDocumentVersion(
-				ctx,
-				generated.GetOutputDocumentVersionParams{
-					CompanyID: p.CompanyID,
-					OutputID:  id,
-					ID:        *c.VersionID,
-				},
-			); err != nil {
+			snapshot, err := q.GetOutputDocumentVersion(ctx, generated.GetOutputDocumentVersionParams{
+				CompanyID: p.CompanyID, OutputID: id, ID: *c.VersionID, ActorUserID: p.UserID,
+			})
+			if err != nil {
 				return uuid.Nil, lookup(err)
 			}
-			revision = c.VersionID
-		}
-		if c.PageID != nil {
-			exists, err := q.OutputDocumentPageExists(
-				ctx,
-				generated.OutputDocumentPageExistsParams{
-					CompanyID: p.CompanyID,
-					OutputID:  id,
-					PageID:    *c.PageID,
-				},
-			)
-			if err != nil {
+			if err = lockPageCommentAccess(ctx, q, p, snapshot.PageID); err != nil {
 				return uuid.Nil, err
 			}
-			if !exists {
-				return uuid.Nil, ErrNotFound
-			}
-			if _, err = q.LockCanvasWikiPage(
-				ctx,
-				generated.LockCanvasWikiPageParams{CompanyID: p.CompanyID, ID: *c.PageID},
-			); err != nil {
-				return uuid.Nil, lookup(err)
-			}
-			var anchor struct {
-				Type string `json:"type"`
-			}
-			if json.Unmarshal(c.Anchor, &anchor) != nil ||
-				!slices.Contains([]string{"version", "textQuote", "block"}, anchor.Type) {
-				return uuid.Nil, ErrInvalid
-			}
+			revision = c.VersionID
 		}
 		anchor, err := parseReviewAnchor(c.Anchor)
 		if err != nil {
@@ -371,15 +344,34 @@ func mutateOutputComment(ctx context.Context, q *generated.Queries, m outputComm
 		}
 	} else {
 		thread, err := q.GetOutputReviewThread(ctx, generated.GetOutputReviewThreadParams{
-			CompanyID: p.CompanyID,
-			OutputID:  nullable(&id),
-			ID:        *c.ThreadID,
+			ActorUserID: p.UserID,
+			CompanyID:   p.CompanyID,
+			OutputID:    nullable(&id),
+			ID:          *c.ThreadID,
 		})
 		if err != nil {
 			return uuid.Nil, lookup(err)
 		}
 		if thread.PageID.Valid || thread.DocumentRevisionID.Valid {
-			if _, err := authorizeOutputDocument(ctx, q, p, id, false); err != nil {
+			if err := authorizeOutputDocument(ctx, q, p, id, false); err != nil {
+				return uuid.Nil, err
+			}
+		}
+		page := thread.PageID.UUID
+		if thread.DocumentRevisionID.Valid {
+			snapshot, err := q.GetOutputDocumentVersion(ctx, generated.GetOutputDocumentVersionParams{
+				CompanyID:   p.CompanyID,
+				OutputID:    id,
+				ID:          thread.DocumentRevisionID.UUID,
+				ActorUserID: p.UserID,
+			})
+			if err != nil {
+				return uuid.Nil, lookup(err)
+			}
+			page = snapshot.PageID
+		}
+		if page != uuid.Nil {
+			if err := lockPageCommentAccess(ctx, q, p, page); err != nil {
 				return uuid.Nil, err
 			}
 		}
@@ -476,4 +468,17 @@ type OutputDocumentInfo struct {
 	OutputItemID uuid.UUID `json:"outputItemId"`
 	PageID       uuid.UUID `json:"pageId"`
 	Title        string    `json:"title"`
+}
+
+// A Page comment is a write even when its author only has read access. Hold the
+// same Artifact lock as grant changes until its thread mutation commits.
+func lockPageCommentAccess(ctx context.Context, q *generated.Queries, p auth.UserPrincipal, page uuid.UUID) error {
+	access, err := auth.LockArtifactAccess(ctx, q, p, page)
+	if err != nil {
+		return err
+	}
+	if !access.Read {
+		return ErrNotFound
+	}
+	return nil
 }

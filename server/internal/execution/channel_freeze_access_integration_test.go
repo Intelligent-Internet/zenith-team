@@ -329,8 +329,7 @@ func TestChannelTagFreezesTheChatsWhiteboards(t *testing.T) {
 	whiteboard := func(title string, chat uuid.UUID) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
-		if err := h.pool.QueryRow(ctx, `INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,
-			owner_user_id,actor_type,actor_user_id,conversation_id) VALUES($1,$2,'','','whiteboard',$3,'user',$3,$4)
+		if err := h.pool.QueryRow(ctx, `INSERT INTO artifacts(company_id,title,type,owner_user_id,created_by_user_id,conversation_id) VALUES($1,$2,'whiteboard',$3,$3,$4)
 			RETURNING id`, f.CompanyA, title, f.UserA, chat).
 			Scan(&id); err != nil {
 			t.Fatal(err)
@@ -339,7 +338,7 @@ func TestChannelTagFreezesTheChatsWhiteboards(t *testing.T) {
 			t,
 			ctx,
 			h.pool,
-			`INSERT INTO output_conversation_grants(company_id,output_id,conversation_id,granted_by_user_id)
+			`INSERT INTO artifact_conversation_grants(company_id,artifact_id,conversation_id,granted_by_user_id)
 			VALUES($1,$2,$3,$4)`,
 			f.CompanyA,
 			id,
@@ -384,8 +383,7 @@ func TestAgentChatRunFreezesTheChatsWhiteboards(t *testing.T) {
 	whiteboard := func(title string, owner, chat uuid.UUID) uuid.UUID {
 		t.Helper()
 		var id uuid.UUID
-		if err := h.pool.QueryRow(ctx, `INSERT INTO outputs(company_id,title,summary,presentation_fingerprint,type,
-			owner_user_id,actor_type,actor_user_id,conversation_id) VALUES($1,$2,'','','whiteboard',$3,'user',$3,$4)
+		if err := h.pool.QueryRow(ctx, `INSERT INTO artifacts(company_id,title,type,owner_user_id,created_by_user_id,conversation_id) VALUES($1,$2,'whiteboard',$3,$3,$4)
 			RETURNING id`, f.CompanyA, title, owner, chat).
 			Scan(&id); err != nil {
 			t.Fatal(err)

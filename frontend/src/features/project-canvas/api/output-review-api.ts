@@ -6,6 +6,7 @@ import {
 import {
   blockDocumentPath,
   type OutputDocumentScope,
+  type PageDocumentScope,
 } from "../documents/document-scope";
 import type {
   components,
@@ -15,7 +16,7 @@ import type {
 type OpenDocumentResult =
   operations["openOutputDocument"]["responses"][200]["content"]["application/json"];
 type CheckpointResult =
-  operations["checkpointOutputDocument"]["responses"][200]["content"]["application/json"];
+  operations["checkpointPageDocument"]["responses"][200]["content"]["application/json"];
 type Scope = { companyId: string; outputId: string };
 const path = ({ companyId, outputId }: Scope) =>
   `/companies/${encodeURIComponent(companyId)}/artifacts/${encodeURIComponent(outputId)}/review`;
@@ -32,22 +33,19 @@ const api = zenithTeamApi.injectEndpoints({
         executeZenithTeamQuery(
           () =>
             apiClient.post<OpenDocumentResult>(
-              `${blockDocumentPath(scope, "")}/open`,
+              `${path(scope)}/items/${encodeURIComponent(scope.outputItemId)}/document/open`,
               {},
             ),
           "The document could not be opened.",
         ),
     }),
-    checkpointOutputDocument: builder.mutation<
+    checkpointPageDocument: builder.mutation<
       CheckpointResult,
-      OutputDocumentScope
+      PageDocumentScope
     >({
-      invalidatesTags: (_data, _error, scope) => [
-        { type: "Artifact", id: `review:${scope.outputId}` },
-      ],
       queryFn: (scope) =>
         executeZenithTeamQuery(async () => {
-          const path = blockDocumentPath(scope, "");
+          const path = blockDocumentPath(scope);
           const draft = await apiClient.get<
             components["schemas"]["CanvasDocument"]
           >(`${path}?projection=true`);
@@ -104,7 +102,7 @@ const api = zenithTeamApi.injectEndpoints({
 });
 export const {
   useOpenOutputDocumentMutation,
-  useCheckpointOutputDocumentMutation,
+  useCheckpointPageDocumentMutation,
   useOutputReviewQuery,
   useOutputReviewCommandMutation,
   useOutputDocumentVersionQuery,

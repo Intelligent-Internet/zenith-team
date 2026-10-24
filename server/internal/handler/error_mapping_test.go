@@ -296,6 +296,13 @@ func TestErrorMappersGolden(t *testing.T) {
 			},
 		}},
 		{name: "canvas", write: writeCanvasError, cases: []mappedErrorCase{
+			{
+				"authoring disabled",
+				wiki.ErrUIAuthoringDisabled,
+				http.StatusServiceUnavailable,
+				"Intelligent UI authoring is temporarily disabled",
+				"intelligent_ui_authoring_disabled",
+			},
 			{"missing", canvas.ErrNotFound, 404, "Canvas or source is unavailable", "canvas_not_found"},
 			{
 				"forbidden",
@@ -1914,6 +1921,13 @@ func TestErrorMappersGolden(t *testing.T) {
 			name:  "wiki",
 			write: writeWikiError,
 			cases: []mappedErrorCase{
+				{
+					"authoring disabled",
+					wiki.ErrUIAuthoringDisabled,
+					http.StatusServiceUnavailable,
+					"Intelligent UI authoring is temporarily disabled",
+					"intelligent_ui_authoring_disabled",
+				},
 				{
 					"invalid input",
 					wiki.ErrPageInvalidInput,

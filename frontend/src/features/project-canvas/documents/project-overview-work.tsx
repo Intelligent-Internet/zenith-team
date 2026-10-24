@@ -1,7 +1,8 @@
 import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { Link, useSearchParams } from "react-router";
 
-import { ProjectTaskCollection, taskBlockSummary } from "./work-blocks";
+import { ProjectTaskCollection } from "./work-blocks";
+import { taskBlockSummary } from "./task-summary";
 import type { OverviewTaskView } from "@/state/slice/work";
 import {
   taskWorkStatusLabel,

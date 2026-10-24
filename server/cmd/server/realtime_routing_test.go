@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	artifactdomain "github.com/Intelligent-Internet/zenith-team/server/internal/artifact"
+
 	"github.com/google/uuid"
 
 	"github.com/Intelligent-Internet/zenith-team/server/internal/activity"
@@ -501,8 +503,8 @@ func TestArtifactReviewInboxDoesNotBroadcastPrivateMetadata(t *testing.T) {
 func TestArtifactChangeRoutingOnlyInvalidatesAuthorizedRecipients(t *testing.T) {
 	bus, recorder := routedBus(t)
 	company, owner := uuid.New(), uuid.New()
-	publish(t, bus, company, execution.TopicArtifact, execution.EventArtifactChanged,
-		execution.ArtifactChanged{RecipientUserIDs: []uuid.UUID{owner, owner, uuid.Nil}})
+	publish(t, bus, company, artifactdomain.Topic, artifactdomain.EventChanged,
+		artifactdomain.Changed{RecipientUserIDs: []uuid.UUID{owner, owner, uuid.Nil}})
 	if len(recorder.sent) != 1 || recorder.sent[0] != "company_user/"+company.String()+"/"+owner.String() {
 		t.Fatalf("artifact recipients = %v", recorder.sent)
 	}

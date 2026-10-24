@@ -221,7 +221,7 @@ func boardViewerDetails(
 		var err error
 		audience, err = q.ListBoardAudience(
 			ctx,
-			generated.ListBoardAudienceParams{CompanyID: p.CompanyID, OutputID: scope.BoardID},
+			generated.ListBoardAudienceParams{CompanyID: p.CompanyID, ArtifactID: scope.BoardID},
 		)
 		if err != nil {
 			return viewer, err

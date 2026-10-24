@@ -1,0 +1,31 @@
+{@body
+const [name,setName]=DIL.useState("");
+const [qty,setQty]=DIL.useState(2);
+const [tier,setTier]=DIL.useState("standard");
+const [support,setSupport]=DIL.useState(false);
+const [submitted,setSubmitted]=DIL.useState(false);
+const count=Math.max(1,Math.min(20,Number(qty)||1));
+const amount=count*(tier==="premium"?40:25)+(support?15:0);
+const valid=name.trim().length>0;
+}
+<box border radius="xl" padding={4} gap={3}>
+  <title size="xl">Estimate builder</title>
+  <caption>Illustrative prices; nothing is charged or saved remotely</caption>
+  <label>Name</label>
+  <input value={name} onChange={(v)=>{setName(v);setSubmitted(false);}} invalid={!valid} placeholder="Contact name"/>
+  <label>Quantity</label>
+  <slider value={count} min={1} max={20} step={1} onChange={(v)=>{setQty(v);setSubmitted(false);}}/>
+  <row justify="between"><text>Items</text><text tabularNums>{count}</text></row>
+  <radio-group value={tier} onChange={(v)=>{setTier(v);setSubmitted(false);}}>
+    <radio value="standard">Standard · 25 each</radio>
+    <radio value="premium">Premium · 40 each</radio>
+  </radio-group>
+  <checkbox checked={support} onChange={(v)=>{setSupport(v);setSubmitted(false);}}>Premium support (+15)</checkbox>
+  <box background="surface-secondary" padding={3} radius="lg" gap={1}><caption>Estimated total</caption><title size="2xl" tabularNums>{amount} credits</title></box>
+  {#if !valid}<text size="sm" color="secondary">Enter a name to prepare a local preview.</text>{/if}
+  <row gap={2} wrap>
+    <button disabled={!valid} onClick={()=>setSubmitted(true)}>Prepare preview</button>
+    <button color="secondary" variant="outline" onClick={()=>{setName("");setQty(2);setTier("standard");setSupport(false);setSubmitted(false);}}>Reset</button>
+  </row>
+  {#if submitted}<text>Local preview prepared for {name}: {amount} credits. No external request was made.</text>{/if}
+</box>

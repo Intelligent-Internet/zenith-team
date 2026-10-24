@@ -105,23 +105,15 @@ func boardScopeLock(
 		}
 		viewer.Actor.ID, viewer.Actor.Kind, viewer.RunID = agent, protocol.ActorKindAgent, &scope.RunID
 	}
-	var level int32
+	resolve := auth.ResolveArtifactAccess
 	if write {
-		level, err = auth.OutputAccessInTx(ctx, q, p, scope.BoardID)
-	} else {
-		level, err = q.GetOutputAccessForManage(
-			ctx,
-			generated.GetOutputAccessForManageParams{
-				CompanyID:   p.CompanyID,
-				OutputID:    scope.BoardID,
-				ActorUserID: p.UserID,
-			},
-		)
+		resolve = auth.LockArtifactAccess
 	}
+	access, err := resolve(ctx, q, p, scope.BoardID)
 	if err != nil {
 		return boardRecord{}, viewer, err
 	}
-	if level == 0 {
+	if !access.Read {
 		return boardRecord{}, viewer, ErrBoardNotFound
 	}
 	var b boardRecord
@@ -137,8 +129,8 @@ func boardScopeLock(
 	if err != nil {
 		return b, viewer, boardError(err)
 	}
-	viewer.CanEdit = level >= 2
-	viewer.CanShare = scope.RunID == uuid.Nil && level >= 3
+	viewer.CanEdit = access.Edit
+	viewer.CanShare = scope.RunID == uuid.Nil && access.Manage
 	if write && !viewer.CanEdit {
 		return b, viewer, ErrBoardForbidden
 	}

@@ -34,7 +34,7 @@ func TestProjectPageToolsRequireAllowlistAndAcceptNativeEdits(t *testing.T) {
 	t.Parallel()
 	for _, allowed := range []map[string]struct{}{
 		nil,
-		{"project_read": {}, "page_create": {}, "page_read": {}, "page_edit": {}, "source_read": {}, "page_preview": {}},
+		{"project_read": {}, "page_create": {}, "page_read": {}, "page_edit": {}, "source_read": {}, "page_preview": {}, "page_source_preview_start": {}, "page_source_preview_read": {}, "page_source_preview_patch": {}},
 	} {
 		name := "without authorization"
 		if allowed != nil {

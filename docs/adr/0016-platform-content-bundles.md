@@ -79,3 +79,7 @@ reads only this repository, so any reviewer can run it on a pin change.
 - A pin change shows a binary diff; reviewers read `bundle-diff` instead.
 - Outside contributors cannot change Workflow content here. They propose
   Workflow content changes through an issue.
+
+The compiled skill allowlist also includes `zenith-intelligent-ui`, whose
+authoring guidance ships with the inline document grammar. Only explicitly
+named skill directories are embedded.

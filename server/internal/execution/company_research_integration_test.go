@@ -29,10 +29,9 @@ func seedResearchReceipt(t *testing.T, h *runHarness, runID uuid.UUID) {
 // seedResearchPage records a Wiki page the Run wrote under key.
 func seedResearchPage(t *testing.T, h *runHarness, runID uuid.UUID, key string) uuid.UUID {
 	t.Helper()
-	var pageID uuid.UUID
-	if err := h.pool.QueryRow(context.Background(), `
-		INSERT INTO wiki_pages(company_id, slug, title, created_by_user_id) VALUES($1, $2, $2, $3) RETURNING id`,
-		h.fixture.CompanyA, key+"-"+runID.String(), h.fixture.UserA).Scan(&pageID); err != nil {
+	pageID, err := db.New(h.pool).
+		CreateWikiPage(t.Context(), db.CreateWikiPageParams{CompanyID: h.fixture.CompanyA, Type: "wiki", Title: key + "-" + runID.String(), CreatedByUserID: h.fixture.UserA})
+	if err != nil {
 		t.Fatalf("seed wiki page: %v", err)
 	}
 	if _, err := h.pool.Exec(context.Background(),

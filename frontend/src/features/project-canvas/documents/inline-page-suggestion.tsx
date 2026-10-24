@@ -55,7 +55,12 @@ export function InlinePageSuggestion({
   children: (originalVisible: boolean) => ReactNode;
 }) {
   const id = useId();
-  const [isExpanded, setVisible] = useState(false);
+  const [isExpanded, setExpanded] = useState(false);
+  const [visited, setVisited] = useState(false);
+  const setVisible = useCallback((visible: boolean) => {
+    setExpanded(visible);
+    if (visible) setVisited(true);
+  }, []);
   const [version, updateVersion] = useState<SuggestionVersionState>({
     selected: false,
     pickerOwner: false,
@@ -181,7 +186,7 @@ export function InlinePageSuggestion({
         )}
       {createPortal(
         <div id={id} hidden={!isExpanded}>
-          {isExpanded && children(originalVisible)}
+          {visited && children(originalVisible)}
         </div>,
         preview,
       )}

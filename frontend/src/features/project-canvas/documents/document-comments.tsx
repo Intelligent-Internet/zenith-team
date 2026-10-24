@@ -1,4 +1,4 @@
-import type { CanvasScope } from "../api/canvas-api";
+import type { DocumentAgentScope } from "../documents/use-document-agents";
 import type { ReactNode } from "react";
 import { MessageBubble, MessageAdd, X } from "@/shared/ui/icons";
 import { useGetCurrentUserQuery } from "@/shared/api/account-api";
@@ -113,7 +113,7 @@ export function DocumentCommentsPanel({
   error,
   header,
   agentScope,
-  suggestions,
+  renderThreadContent,
 }: {
   comments: DocumentCommentsController;
   ready: boolean;
@@ -129,8 +129,8 @@ export function DocumentCommentsPanel({
   layout: "page" | "canvas";
   error?: string;
   header?: ReactNode;
-  suggestions?: ReactNode;
-  agentScope?: CanvasScope;
+  renderThreadContent?: (thread: ReviewThreadData) => ReactNode;
+  agentScope?: DocumentAgentScope;
 }) {
   const currentUser = useGetCurrentUserQuery();
   const cardClass =
@@ -174,7 +174,6 @@ export function DocumentCommentsPanel({
               comments.setActive("");
           }}
         >
-          {suggestions}
           {!ready && !failed && <CommentsLoading />}
           {ready &&
             !failed &&
@@ -227,6 +226,9 @@ export function DocumentCommentsPanel({
                       comments.setHovered(hovering ? thread.id : "")
                     }
                   />
+                  {comments.open &&
+                    comments.active === thread.id &&
+                    renderThreadContent?.(thread)}
                 </div>
               </div>
             ))}

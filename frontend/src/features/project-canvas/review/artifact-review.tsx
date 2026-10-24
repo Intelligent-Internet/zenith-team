@@ -1,10 +1,13 @@
+import { ArtifactSharing } from "../documents/artifact-sharing";
+import { webAppUrl } from "@/shared/lib/web-app-url";
+import { copyTextToClipboard } from "@/shared/lib/clipboard";
 import { CommentConnectors } from "../documents/comment-connectors";
 import type { Editor } from "@tiptap/react";
 import { DocumentFormatToolbar } from "../documents/document-format-toolbar";
 import { PageDocumentLoading } from "../documents/page-document-loading";
 import { DocumentHistoryPanel } from "../documents/document-history";
 import { skipToken } from "@reduxjs/toolkit/query";
-import { type OutputDocumentScope } from "../documents/document-scope";
+import { type PageDocumentScope } from "../documents/document-scope";
 import type { ArtifactScope } from "../previews/artifact-viewer";
 import {
   useOutputReviewQuery,
@@ -20,7 +23,8 @@ import {
 import "./floating-comments.css";
 import { PageContributions } from "../documents/page-contributions";
 import {
-  usePageThreadsQuery,
+  usePageReviewQuery,
+  useMutatePageReviewMutation,
   useProjectPageQuery,
   useUpdatePageMetadataMutation,
 } from "../api/page-api";
@@ -217,12 +221,11 @@ export function ArtifactReview({
           ? doc.outputItemId === documentItemId
           : true,
   );
-  const outputDocumentScope: OutputDocumentScope | undefined =
+  const outputDocumentScope: PageDocumentScope | undefined =
     outputId && selectedOutputDocument
       ? {
           companyId: scope.companyId,
-          outputId,
-          outputItemId: selectedOutputDocument.outputItemId,
+          pageId: selectedOutputDocument.pageId,
         }
       : undefined;
   const historyDocumentScope =
@@ -230,7 +233,7 @@ export function ArtifactReview({
     (projectScope &&
     workingVersion?.wikiPageId &&
     (artifact.pageId || workingVersion.sourceOutputId)
-      ? projectScope
+      ? { ...projectScope, pageId: workingVersion.wikiPageId }
       : undefined);
   const historyVersionId = workingVersion?.id ?? versionId;
   // Default to shared content, but keep explicit saved-version selections.
@@ -240,6 +243,10 @@ export function ArtifactReview({
     (companyWikiPageId
       ? canPublishWiki
       : !!outputDocumentScope || !!workingVersion?.wikiPageId);
+  const livePageId =
+    liveEditing && !companyWikiPageId
+      ? (selectedOutputDocument?.pageId ?? workingVersion?.wikiPageId)
+      : undefined;
   const draftKey = `${historyVersionId}:${selectedOutputDocument?.pageId ?? ""}:${documentReload}`;
   const handleDraftReady = useCallback(
     () => setReadyDraftKey(draftKey),
@@ -281,18 +288,19 @@ export function ArtifactReview({
       refetchOnMountOrArgChange: true,
     },
   );
-  const pageThreads = usePageThreadsQuery(
-    projectScope && workingPageId
-      ? { ...projectScope, pageId: workingPageId }
+  const pageThreads = usePageReviewQuery(
+    pageDiscussion && discussionPageId
+      ? { companyId: scope.companyId, pageId: discussionPageId }
       : skipToken,
-    { skip: !pageDiscussion, refetchOnMountOrArgChange: true },
+    { refetchOnMountOrArgChange: true },
   );
-  const threads = outputId
-    ? outputReview
-    : discussionOutputId
-      ? documentReview
-      : pageDiscussion
-        ? pageThreads
+  const [commentOnPage] = useMutatePageReviewMutation();
+  const threads = pageDiscussion
+    ? pageThreads
+    : outputId
+      ? outputReview
+      : discussionOutputId
+        ? documentReview
         : versionThreads;
   const threadsReady = !threads.isError && !!threads.currentData;
   const openingDraft =
@@ -446,6 +454,27 @@ export function ArtifactReview({
     setBusy(true);
     setError("");
     try {
+      if (
+        pageDiscussion &&
+        discussionPageId &&
+        [
+          "comment",
+          "reply",
+          "resolve",
+          "edit_comment",
+          "delete_comment",
+        ].includes(command.type)
+      ) {
+        return await commentOnPage({
+          companyId: scope.companyId,
+          pageId: discussionPageId,
+          command: {
+            ...command,
+            versionId: undefined,
+            requestKey: command.requestKey ?? crypto.randomUUID(),
+          },
+        }).unwrap();
+      }
       if (
         discussionOutputId &&
         !outputId &&
@@ -668,6 +697,11 @@ export function ArtifactReview({
               Original files
             </button>
           )}
+          {livePageId && (
+            <ArtifactSharing
+              scope={{ companyId: scope.companyId, artifactId: livePageId }}
+            />
+          )}
           {liveEditing && !companyWikiPageId && (
             <details className="pc-document-menu pc-review-document-menu relative">
               <summary
@@ -696,19 +730,28 @@ export function ArtifactReview({
               liveEditing ? "Copy document link" : "Copy submitted output link"
             }
             onClick={() => {
+              if (livePageId) {
+                void copyTextToClipboard(
+                  webAppUrl(
+                    `/companies/${scope.companyId}/pages/${livePageId}`,
+                  ),
+                )
+                  .then(() => setCopied(true))
+                  .catch(() => setError("The Page link could not be copied."));
+                return;
+              }
               const url = new URL(
                 outputId || (embedded && version?.sourceOutputId)
                   ? `/companies/${scope.companyId}/artifacts/${outputId ?? version?.sourceOutputId}`
                   : `/projects/${projectScope?.projectId}/artifacts?view=canvas`,
-                window.location.origin,
+                webAppUrl("/"),
               );
               if (!embedded || !version?.sourceOutputId)
                 url.searchParams.set("artifactId", artifact.id);
               if (!liveEditing) url.searchParams.set("versionId", versionId);
               if (outputId) url.searchParams.set("view", "canvas");
               url.searchParams.delete("mode");
-              void navigator.clipboard
-                .writeText(url.href)
+              void copyTextToClipboard(url.href)
                 .then(() => setCopied(true))
                 .catch(() => setError("The review link could not be copied."));
             }}
@@ -833,22 +876,11 @@ export function ArtifactReview({
                         statusContainer={documentStatusContainer}
                         loadingContent={<PageDocumentLoading toolbar={false} />}
                         key={draftKey}
-                        scope={
-                          workingVersion?.sourceOutputId &&
-                          workingVersion.outputItemId
-                            ? {
-                                companyId: scope.companyId,
-                                outputId: workingVersion.sourceOutputId,
-                                outputItemId: workingVersion.outputItemId,
-                              }
-                            : projectScope
-                        }
-                        versionId={
-                          workingVersion?.sourceOutputId &&
-                          workingVersion.outputItemId
-                            ? workingVersion.wikiPageId!
-                            : historyVersionId
-                        }
+                        scope={{
+                          ...projectScope,
+                          pageId: workingVersion!.wikiPageId!,
+                        }}
+                        versionId={workingVersion!.wikiPageId!}
                         title={page.currentData?.title ?? artifact.title}
                         titleMaxLength={artifact.pageId ? 200 : undefined}
                         onRename={
@@ -1140,27 +1172,20 @@ export function ArtifactReview({
                     </section>
                   </div>
                 )}
+                {liveEditing && page.currentData ? (
+                  <PageContributions
+                    editor={documentEditor}
+                    key={page.currentData.pageId}
+                    scope={{
+                      ...projectScope!,
+                      pageId: page.currentData.pageId,
+                    }}
+                    canEdit={page.currentData.canReviewSuggestions}
+                    dirty={dirty}
+                  />
+                ) : undefined}
               </div>
               <DocumentCommentsPanel
-                suggestions={
-                  liveEditing && page.currentData ? (
-                    <PageContributions
-                      onEditPage={
-                        canEditDocuments
-                          ? () => setDocumentEditing(true)
-                          : undefined
-                      }
-                      editor={documentEditor}
-                      key={page.currentData.pageId}
-                      scope={{
-                        ...projectScope!,
-                        pageId: page.currentData.pageId,
-                      }}
-                      canEdit={page.currentData.canReviewSuggestions}
-                      dirty={dirty}
-                    />
-                  ) : undefined
-                }
                 agentScope={
                   workingPageId && canComment && "projectId" in scope
                     ? scope

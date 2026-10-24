@@ -104,6 +104,15 @@ SELECT EXISTS (SELECT 1 WHERE EXISTS (
       AND NOT EXISTS (SELECT 1 FROM output_access AS access
           WHERE access.company_id=source.company_id AND access.output_id=source.output_id
             AND access.user_id=sqlc.arg(actor_user_id)::uuid)
+) OR EXISTS (
+    SELECT 1 FROM project_presentations AS presentation,
+      jsonb_array_elements_text(presentation.intelligent_evidence->'projects') AS dependency(project_id)
+    WHERE presentation.company_id=sqlc.arg(company_id)::uuid
+      AND presentation.export_attachment_id=sqlc.arg(attachment_id)::uuid
+      AND NOT EXISTS (SELECT 1 FROM project_access AS access
+        WHERE access.company_id=presentation.company_id
+          AND access.project_id=dependency.project_id::uuid
+          AND access.user_id=sqlc.arg(actor_user_id)::uuid)
 )) AS inaccessible;
 
 -- name: AuthorizeAttachmentCompletion :one
@@ -254,6 +263,16 @@ WHERE attachments.id = sqlc.arg(attachment_id)::uuid
           LIMIT 1) IS NULL
     LIMIT 1
 ) IS NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM project_presentations AS presentation,
+      jsonb_array_elements_text(presentation.intelligent_evidence->'projects') AS dependency(project_id)
+    WHERE presentation.company_id=sqlc.arg(company_id)::uuid
+      AND presentation.export_attachment_id=sqlc.arg(attachment_id)::uuid
+      AND NOT EXISTS (SELECT 1 FROM project_access AS access
+        WHERE access.company_id=presentation.company_id
+          AND access.project_id=dependency.project_id::uuid
+          AND access.user_id=sqlc.arg(authorizer_user_id)::uuid)
+  )
   AND (
       EXISTS (
           SELECT 1

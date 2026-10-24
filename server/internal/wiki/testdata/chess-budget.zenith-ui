@@ -1,0 +1,102 @@
+Moves stay local to this board.
+
+{@body
+const initialBoard=["rnbqkbnr","pppppppp","........","........","........","........","PPPPPPPP","RNBQKBNR"].join("");
+const [board,setBoard]=DIL.useState(initialBoard);
+const [turn,setTurn]=DIL.useState("w");
+const [selected,setSelected]=DIL.useState(-1);
+const [ep,setEp]=DIL.useState(-1);
+const [rights,setRights]=DIL.useState("KQkq");
+const [history,setHistory]=DIL.useState([]);
+const [promotion,setPromotion]=DIL.useState(-1);
+const at=(b,i)=>b.charAt(i);
+const side=(p)=>p==="."?"":p===p.toUpperCase()?"w":"b";
+const inside=(r,c)=>r>=0&&r<8&&c>=0&&c<8;
+const attacked=(b,sq,by)=>{
+  const r=Math.floor(sq/8),c=sq%8;
+  const pawnRow=r+(by==="w"?1:-1);
+  for(const dc of [-1,1]){const x=pawnRow*8+c+dc;if(inside(pawnRow,c+dc)&&at(b,x)===(by==="w"?"P":"p"))return true;}
+  for(const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]){const rr=r+dr,cc=c+dc;if(inside(rr,cc)&&at(b,rr*8+cc)===(by==="w"?"N":"n"))return true;}
+  for(const [dr,dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]){let rr=r+dr,cc=c+dc;while(inside(rr,cc)){const p=at(b,rr*8+cc);if(p!=="."){if(side(p)===by){const k=p.toLowerCase();if(k==="q"||(Math.abs(dr)===Math.abs(dc)?k==="b":(dr===0||dc===0)?k==="r":false)||(Math.abs(dr)===1&&Math.abs(dc)===1&&k==="k"))return true;}break;}rr+=dr;cc+=dc;}}
+  return false;
+};
+const kingSquare=(b,s)=>{for(let i=0;i<64;i++)if(at(b,i)===(s==="w"?"K":"k"))return i;return -1;};
+const inCheck=(b,s)=>attacked(b,kingSquare(b,s),s==="w"?"b":"w");
+const pseudo=(b,from,s,epr,cr)=>{
+  const p=at(b,from),k=p.toLowerCase(),r=Math.floor(from/8),c=from%8,out=[];
+  const add=(rr,cc)=>{if(inside(rr,cc)){const to=rr*8+cc;if(side(at(b,to))!==s)out.push(to);}};
+  if(k==="p"){const d=s==="w"?-1:1,home=s==="w"?6:1;if(inside(r+d,c)&&at(b,(r+d)*8+c)==="."){out.push((r+d)*8+c);if(r===home&&at(b,(r+2*d)*8+c)===".")out.push((r+2*d)*8+c);}for(const dc of [-1,1])if(inside(r+d,c+dc)){const to=(r+d)*8+c+dc;if(side(at(b,to))&&side(at(b,to))!==s)out.push(to);else if(to===epr)out.push(to);}}
+  if(k==="n")for(const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])add(r+dr,c+dc);
+  if(k==="k"){for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if(dr||dc)add(r+dr,c+dc);
+    const row=s==="w"?7:0,enemy=s==="w"?"b":"w";
+    if(from===row*8+4&&!inCheck(b,s)){
+      if(cr.includes(s==="w"?"K":"k")&&at(b,row*8+5)==="."&&at(b,row*8+6)==="."&&at(b,row*8+7)===(s==="w"?"R":"r")&&!attacked(b,row*8+5,enemy)&&!attacked(b,row*8+6,enemy))out.push(row*8+6);
+      if(cr.includes(s==="w"?"Q":"q")&&at(b,row*8+1)==="."&&at(b,row*8+2)==="."&&at(b,row*8+3)==="."&&at(b,row*8)===(s==="w"?"R":"r")&&!attacked(b,row*8+3,enemy)&&!attacked(b,row*8+2,enemy))out.push(row*8+2);
+    }}
+  if(k==="b"||k==="r"||k==="q"){const dirs=[];if(k!=="r")dirs.push([-1,-1],[-1,1],[1,-1],[1,1]);if(k!=="b")dirs.push([-1,0],[1,0],[0,-1],[0,1]);for(const [dr,dc] of dirs){let rr=r+dr,cc=c+dc;while(inside(rr,cc)){const to=rr*8+cc;if(!side(at(b,to)))out.push(to);else{if(side(at(b,to))!==s)out.push(to);break;}rr+=dr;cc+=dc;if(k==="q"||k==="r"||k==="b"){}if(k==="q"||k==="r"||k==="b"){if(k!=="q"&&k!=="r"&&k!=="b")break;}if(k!=="q"&&k!=="r"&&k!=="b")break;if(k==="q"||k==="r"||k==="b"){if(k!=="q"&&k!=="r"&&k!=="b")break;}}if(k!=="q"&&k!=="r"&&k!=="b")break;}}
+  return out;
+};
+const apply=(b,from,to,s,epr,cr,promo)=>{
+  let a=b.split(""),p=a[from],captured=a[to],newEp=-1,rights2=cr;
+  if(p.toLowerCase()==="p"&&to===epr&&from%8!==to%8){const cap=to+(s==="w"?8:-8);captured=a[cap];a[cap]=".";}
+  a[from]=".";a[to]=promo?(s==="w"?promo.toUpperCase():promo):p;
+  if(p.toLowerCase()==="p"&&Math.abs(to-from)===16)newEp=(to+from)/2;
+  if(p.toLowerCase()==="k"){rights2=rights2.replace(s==="w"?"K":"k","").replace(s==="w"?"Q":"q","");if(Math.abs(to-from)===2){const row=s==="w"?7:0,rookFrom=to>from?row*8+7:row*8,rookTo=to>from?row*8+5:row*8+3;a[rookTo]=a[rookFrom];a[rookFrom]=".";}}
+  if(p.toLowerCase()==="r"){if(from===63)rights2=rights2.replace("K","");if(from===56)rights2=rights2.replace("Q","");if(from===7)rights2=rights2.replace("k","");if(from===0)rights2=rights2.replace("q","");}
+  if(captured.toLowerCase?.()==="r"){if(to===63)rights2=rights2.replace("K","");if(to===56)rights2=rights2.replace("Q","");if(to===7)rights2=rights2.replace("k","");if(to===0)rights2=rights2.replace("q","");}
+  return {board:a.join(""),ep:newEp,rights:rights2};
+};
+const legal=(b,from,s,epr,cr)=>pseudo(b,from,s,epr,cr).filter(to=>!inCheck(apply(b,from,to,s,epr,cr,"q").board,s));
+const movesFor=(b,s,epr,cr)=>{let n=0;for(let i=0;i<64;i++)if(side(at(b,i))===s)n+=legal(b,i,s,epr,cr).length;return n;};
+const targets=selected>=0&&side(at(board,selected))===turn?legal(board,selected,turn,ep,rights):[];
+const check=inCheck(board,turn);
+const noMoves=movesFor(board,turn,ep,rights)===0;
+const status=noMoves?(check?(turn==="w"?"Black wins by checkmate":"White wins by checkmate"):"Draw by stalemate"):(check?(turn==="w"?"White is in check":"Black is in check"):(turn==="w"?"White to move":"Black to move"));
+const commit=(from,to,promo)=>{
+  const result=apply(board,from,to,turn,ep,rights,promo);
+  setHistory([...history,(turn==="w"?"White":"Black")+" "+String.fromCharCode(97+from%8)+(8-Math.floor(from/8))+" → "+String.fromCharCode(97+to%8)+(8-Math.floor(to/8))]);
+  setBoard(result.board);setEp(result.ep);setRights(result.rights);setTurn(turn==="w"?"b":"w");setSelected(-1);setPromotion(-1);
+};
+const choose=(i)=>{
+  if(promotion>=0)return;
+  if(selected>=0&&targets.includes(i)){
+    const p=at(board,selected);
+    if(p.toLowerCase()==="p"&&(Math.floor(i/8)===0||Math.floor(i/8)===7)){setPromotion(i);return;}
+    commit(selected,i,"q");return;
+  }
+  if(side(at(board,i))===turn)setSelected(i);else setSelected(-1);
+};
+const symbols={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+const squares=Array.from({length:64},(_,i)=>({i}));
+}
+<box theme="dark" background="surface" border radius="xl" padding={4} gap={3}>
+  <row justify="between" align="center" wrap gap={2}>
+    <col gap={1}><caption>GALAXY CHESS · LOCAL GAME</caption><title size="xl">The Andromeda Gambit</title></col>
+    <button color="secondary" variant="outline" onClick={()=>{setBoard(initialBoard);setTurn("w");setSelected(-1);setEp(-1);setRights("KQkq");setHistory([]);setPromotion(-1);}}>New game</button>
+  </row>
+  <row justify="between" align="center" wrap gap={2}>
+    <text strong>{status}</text><caption>{history.length} half-moves</caption>
+  </row>
+  {#if promotion>=0}
+    <box background="purple" radius="lg" padding={3} gap={2}>
+      <text>Choose promotion piece</text>
+      <row gap={2} wrap>
+        <button onClick={()=>commit(selected,promotion,"q")}>Queen</button>
+        <button color="secondary" onClick={()=>commit(selected,promotion,"r")}>Rook</button>
+        <button color="secondary" onClick={()=>commit(selected,promotion,"b")}>Bishop</button>
+        <button color="secondary" onClick={()=>commit(selected,promotion,"n")}>Knight</button>
+      </row>
+    </box>
+  {/if}
+  <grid columns={8} gap={1}>
+    {#each squares as square}
+      <grid-item>
+        <pressable onClick={()=>choose(square.i)} aspectRatio={1} align="center" justify="center" radius="sm" background={selected===square.i?"accent":targets.includes(square.i)?"green":(Math.floor(square.i/8)+square.i%8)%2===0?"purple":"blue"} tooltip={symbols[at(board,square.i)]?("Square "+String.fromCharCode(97+square.i%8)+(8-Math.floor(square.i/8))+" "+symbols[at(board,square.i)]):("Square "+String.fromCharCode(97+square.i%8)+(8-Math.floor(square.i/8)))}>
+          <text size="lg" color={side(at(board,square.i))==="w"?"default":"accent"}>{symbols[at(board,square.i)]||" "}</text>
+        </pressable>
+      </grid-item>
+    {/each}
+  </grid>
+  <row justify="between" align="center" wrap gap={2}><caption>Click a piece, then a highlighted square.</caption><text>{check?"KING UNDER ATTACK":""}</text></row>
+  {#if history.length>0}<col gap={1}><caption>MOVE HISTORY</caption>{#each history.slice(-8).reverse() as move}<text size="sm">{move}</text>{/each}</col>{/if}
+</box>

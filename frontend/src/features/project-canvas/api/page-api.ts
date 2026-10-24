@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { watchPagePreviews } from "./page-preview-sync";
 import { apiClient } from "@/lib/api-client";
 import {
   zenithTeamApi,
@@ -14,27 +15,104 @@ export type PageChange = Schema["PageChange"];
 export type Overview = Schema["ProjectOverview"];
 export type Presentation = Schema["ProjectPresentation"];
 export type PresentationEntry = Schema["ProjectPresentationEntry"];
+export type PageReviewScope = {
+  companyId: string;
+  pageId: string;
+  projectId?: string;
+};
 export type PageScope = CanvasScope & { pageId: string };
 export const projectPath = (scope: CanvasScope) =>
   `/companies/${encodeURIComponent(scope.companyId)}/projects/${encodeURIComponent(scope.projectId)}`;
-export const pagePath = (scope: PageScope) =>
-  `${projectPath(scope)}/pages/${encodeURIComponent(scope.pageId)}`;
+export const pagePath = (scope: PageReviewScope) =>
+  scope.projectId
+    ? `${projectPath({ ...scope, projectId: scope.projectId })}/pages/${encodeURIComponent(scope.pageId)}`
+    : `/companies/${encodeURIComponent(scope.companyId)}/pages/${encodeURIComponent(scope.pageId)}/document`;
 export const presentationPath = (scope: CanvasScope, id: string) =>
   `${projectPath(scope)}/presentations/${encodeURIComponent(id)}`;
-const tags = (scope: CanvasScope) => [
+const tags = (scope: {
+  companyId: string;
+  projectId?: string;
+  pageId?: string;
+}) => [
   {
     type: "CanvasHistory" as const,
-    id: `${scope.companyId}:${scope.projectId}`,
+    id: `${scope.companyId}:${scope.projectId ?? `page:${scope.pageId}`}`,
   },
 ];
 
-const suggestionDetailTag = (scope: PageScope) => ({
+const suggestionDetailTag = (scope: PageReviewScope) => ({
   type: "CanvasHistory" as const,
   id: `${scope.companyId}:${scope.projectId}:page:${scope.pageId}:suggestions`,
 });
 
 export const pageApi = zenithTeamApi.injectEndpoints({
   endpoints: (builder) => ({
+    pageSourcePreviews: builder.query<
+      Schema["PagePreviewSummary"][],
+      PageReviewScope & { runId: string }
+    >({
+      queryFn: (scope) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.get<Schema["PagePreviewSummary"][]>(
+              `${pagePath(scope)}/source-previews`,
+              { params: { runId: scope.runId } },
+            ),
+          "This temporary preview is unavailable.",
+        ),
+      keepUnusedDataFor: 0,
+      async onCacheEntryAdded(scope, { cacheEntryRemoved, dispatch }) {
+        const dispose = watchPagePreviews(scope, async () => {
+          await dispatch(
+            pageApi.endpoints.pageSourcePreviews.initiate(scope, {
+              subscribe: false,
+              forceRefetch: true,
+            }),
+          ).unwrap();
+        });
+        await cacheEntryRemoved;
+        dispose();
+      },
+    }),
+
+    pageSourcePreview: builder.query<
+      Schema["PagePreviewGeneration"],
+      PageReviewScope & { generationId: string }
+    >({
+      queryFn: (scope) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.get<Schema["PagePreviewGeneration"]>(
+              `${pagePath(scope)}/source-previews/${encodeURIComponent(scope.generationId)}`,
+            ),
+          "This temporary preview is unavailable.",
+        ),
+      keepUnusedDataFor: 0,
+      async onCacheEntryAdded(scope, { cacheEntryRemoved, dispatch }) {
+        const dispose = watchPagePreviews(scope, async () => {
+          await dispatch(
+            pageApi.endpoints.pageSourcePreview.initiate(scope, {
+              subscribe: false,
+              forceRefetch: true,
+            }),
+          ).unwrap();
+        });
+        await cacheEntryRemoved;
+        dispose();
+      },
+    }),
+
+    previewPageSource: builder.mutation<
+      Schema["PageSourcePreview"],
+      PageScope & { input: Schema["PageSourcePreviewInput"] }
+    >({
+      queryFn: ({ input, ...scope }) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.post<Schema["PageSourcePreview"]>(pagePath(scope), input),
+          "The block source could not be previewed.",
+        ),
+    }),
     projectOverview: builder.query<Overview, CanvasScope>({
       queryFn: (scope) =>
         executeZenithTeamQuery(
@@ -123,9 +201,9 @@ export const pageApi = zenithTeamApi.injectEndpoints({
       ],
     }),
     projectPage: builder.query<Page, PageScope>({
-      queryFn: (scope) =>
+      queryFn: (scope, { signal }) =>
         executeZenithTeamQuery(
-          () => apiClient.get<Page>(pagePath(scope)),
+          () => apiClient.get<Page>(pagePath(scope), { signal }),
           "This Page is unavailable or your access has changed.",
         ),
       providesTags: (_r, _e, scope) => tags(scope),
@@ -156,6 +234,62 @@ export const pageApi = zenithTeamApi.injectEndpoints({
         document();
       },
     }),
+    pageReview: builder.query<
+      Schema["CanvasThreadList"],
+      { companyId: string; pageId: string }
+    >({
+      queryFn: (scope) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.get<Schema["CanvasThreadList"]>(
+              `/companies/${scope.companyId}/pages/${scope.pageId}/document/review`,
+            ),
+          "Comments could not be loaded.",
+        ),
+      keepUnusedDataFor: 0,
+      providesTags: (_r, _e, scope) => [
+        {
+          type: "CanvasHistory",
+          id: `${scope.companyId}:page:${scope.pageId}:review`,
+        },
+      ],
+      async onCacheEntryAdded(scope, { cacheEntryRemoved, dispatch }) {
+        const stop = watchDocumentChanges(scope, {
+          getPageId: () => scope.pageId,
+          getSequence: () => -1,
+          refresh: async () => {
+            await dispatch(
+              pageApi.endpoints.pageReview.initiate(scope, {
+                subscribe: false,
+                forceRefetch: true,
+              }),
+            ).unwrap();
+          },
+        });
+        await cacheEntryRemoved;
+        stop();
+      },
+    }),
+    mutatePageReview: builder.mutation<
+      Schema["CanvasResult"],
+      { companyId: string; pageId: string; command: Schema["CanvasCommand"] }
+    >({
+      queryFn: ({ command, ...scope }) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.post<Schema["CanvasResult"]>(
+              `/companies/${scope.companyId}/pages/${scope.pageId}/document/review`,
+              command,
+            ),
+          "The comment could not be saved.",
+        ),
+      invalidatesTags: (_r, _e, scope) => [
+        {
+          type: "CanvasHistory",
+          id: `${scope.companyId}:page:${scope.pageId}:review`,
+        },
+      ],
+    }),
     pageThreads: builder.query<Schema["CanvasThreadList"], PageScope>({
       queryFn: (scope) =>
         executeZenithTeamQuery(
@@ -166,6 +300,7 @@ export const pageApi = zenithTeamApi.injectEndpoints({
           "Comments could not be loaded.",
         ),
       keepUnusedDataFor: 0,
+      providesTags: (_result, _error, scope) => tags(scope),
       async onCacheEntryAdded(scope, { cacheEntryRemoved, dispatch }) {
         const refresh = async () => {
           await dispatch(
@@ -201,13 +336,21 @@ export const pageApi = zenithTeamApi.injectEndpoints({
         { type: "Canvas", id: `${scope.companyId}:${scope.projectId}` },
       ],
     }),
-    previewPresentation: builder.mutation<Presentation, PageScope>({
-      queryFn: (scope) =>
+    previewPresentation: builder.mutation<
+      Presentation,
+      PageScope & { input?: Schema["PresentationScenarioInput"] }
+    >({
+      queryFn: ({ input, ...scope }) =>
         executeZenithTeamQuery(
           () =>
-            apiClient.get<Presentation>(
-              `${pagePath(scope)}/presentation-preview`,
-            ),
+            input
+              ? apiClient.post<Presentation>(
+                  `${pagePath(scope)}/presentation-preview`,
+                  input,
+                )
+              : apiClient.get<Presentation>(
+                  `${pagePath(scope)}/presentation-preview`,
+                ),
           "The presentation could not be prepared. Save your draft and try again.",
         ),
     }),
@@ -253,6 +396,68 @@ export const pageApi = zenithTeamApi.injectEndpoints({
       providesTags: (_r, _e, scope) => tags(scope),
       keepUnusedDataFor: 0,
     }),
+    presentationPublication: builder.query<
+      Schema["PresentationPublication"],
+      CanvasScope & { id: string }
+    >({
+      queryFn: ({ id, ...scope }) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.get<Schema["PresentationPublication"]>(
+              `${presentationPath(scope, id)}/publication`,
+            ),
+          "Publication status could not be loaded.",
+        ),
+      providesTags: (_r, _e, scope) => [
+        {
+          type: "CanvasHistory" as const,
+          id: `${scope.companyId}:${scope.projectId}:publication:${scope.id}`,
+        },
+      ],
+      keepUnusedDataFor: 0,
+    }),
+    publishPresentation: builder.mutation<
+      Schema["PresentationPublication"],
+      CanvasScope & {
+        id: string;
+        input: Schema["PresentationPublicationInput"];
+      }
+    >({
+      queryFn: ({ id, input, ...scope }) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.post<Schema["PresentationPublication"]>(
+              `${presentationPath(scope, id)}/publication`,
+              input,
+            ),
+          "This capture could not be published. Your permission or source access may have changed.",
+        ),
+      invalidatesTags: (_r, _e, scope) => [
+        {
+          type: "CanvasHistory" as const,
+          id: `${scope.companyId}:${scope.projectId}:publication:${scope.id}`,
+        },
+      ],
+    }),
+    revokePresentationPublication: builder.mutation<
+      void,
+      CanvasScope & { id: string; publicationId: string }
+    >({
+      queryFn: ({ id, publicationId, ...scope }) =>
+        executeZenithTeamQuery(
+          () =>
+            apiClient.delete<void>(
+              `${presentationPath(scope, id)}/publication/${encodeURIComponent(publicationId)}`,
+            ),
+          "The public link could not be revoked.",
+        ),
+      invalidatesTags: (_r, _e, scope) => [
+        {
+          type: "CanvasHistory" as const,
+          id: `${scope.companyId}:${scope.projectId}:publication:${scope.id}`,
+        },
+      ],
+    }),
     projectPresentation: builder.query<
       Presentation,
       CanvasScope & { id: string }
@@ -267,7 +472,7 @@ export const pageApi = zenithTeamApi.injectEndpoints({
     }),
     pageChanges: builder.query<
       Schema["PageChangeFeed"],
-      PageScope & { cursor?: string }
+      PageReviewScope & { cursor?: string }
     >({
       queryFn: ({ cursor, ...scope }) =>
         executeZenithTeamQuery(
@@ -316,23 +521,23 @@ export const pageApi = zenithTeamApi.injectEndpoints({
             zenithTeamApi.util.invalidateTags([suggestionDetailTag(scope)]),
           );
         };
-        const watcher = watchCanvasChanges(scope, {
-          refresh,
-        });
+        const watcher = projectId
+          ? watchCanvasChanges({ ...scope, projectId }, { refresh })
+          : undefined;
         const stopDocument = watchDocumentChanges(scope, {
           getPageId: () => pageId,
           getSequence: () => -1,
           refresh,
         });
-        watcher.start();
+        watcher?.start();
         await cacheEntryRemoved;
-        watcher.dispose();
+        watcher?.dispose();
         stopDocument();
       },
     }),
     pageChangeDetail: builder.query<
       Schema["PageChangeDetail"],
-      PageScope & { id: string }
+      PageReviewScope & { id: string }
     >({
       queryFn: ({ id, ...scope }) =>
         executeZenithTeamQuery(
@@ -350,7 +555,7 @@ export const pageApi = zenithTeamApi.injectEndpoints({
     }),
     reviewPageChange: builder.mutation<
       Schema["PageEditResult"],
-      PageScope & { id: string; input: Schema["PageChangeReviewInput"] }
+      PageReviewScope & { id: string; input: Schema["PageChangeReviewInput"] }
     >({
       queryFn: ({ id, input, ...scope }) =>
         executeZenithTeamQuery(
@@ -366,6 +571,11 @@ export const pageApi = zenithTeamApi.injectEndpoints({
   }),
 });
 export const {
+  usePageReviewQuery,
+  useMutatePageReviewMutation,
+  usePreviewPageSourceMutation,
+  usePageSourcePreviewsQuery,
+  usePageSourcePreviewQuery,
   useProjectOverviewQuery,
   useUpdateOverviewMutation,
   useProjectPagesQuery,
@@ -376,6 +586,9 @@ export const {
   useSavePresentationMutation,
   usePagePresentationsQuery,
   useProjectPresentationsQuery,
+  usePresentationPublicationQuery,
+  usePublishPresentationMutation,
+  useRevokePresentationPublicationMutation,
   useProjectPresentationQuery,
   usePageChangesQuery,
   usePageChangeDetailQuery,

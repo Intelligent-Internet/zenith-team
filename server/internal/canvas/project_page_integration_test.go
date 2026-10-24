@@ -86,7 +86,7 @@ func TestTaskResultPageAndLiveOverviewCapture(t *testing.T) {
 		t.Fatalf("changed replay = %v", err)
 	}
 	var sourceTask uuid.UUID
-	if err = pool.QueryRow(ctx, `SELECT task_id FROM project_artifacts WHERE id=$1`, page.ArtifactID).
+	if err = pool.QueryRow(ctx, `SELECT task_id FROM artifacts WHERE id=$1`, page.ArtifactID).
 		Scan(&sourceTask); err != nil ||
 		sourceTask != f.TaskA {
 		t.Fatalf("source task = %s, %v", sourceTask, err)
@@ -138,8 +138,8 @@ func TestTaskResultPageAndLiveOverviewCapture(t *testing.T) {
 	if err != nil || applied.Status != "applied" {
 		t.Fatalf("page update = %+v, %v", applied, err)
 	}
-	// Root remains a normal native page; task updates are reviewable in the shared project feed.
-	project, err := s.Overview(ctx, p, f.ProjectA)
+	// Contributions remain private to the member who requested the work.
+	project, err := s.Overview(ctx, member, f.ProjectA)
 	if err != nil || len(project.Changes) != 2 || project.Changes[0].PageID != page.PageID ||
 		project.Changes[0].PageTitle != page.Title {
 		t.Fatalf("page change feed = %+v, %v", project.Changes, err)
@@ -224,6 +224,12 @@ func TestTaskResultPageAndLiveOverviewCapture(t *testing.T) {
 	)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if _, err = s.Mutate(ctx, p, f.ProjectA, Command{
+		RequestKey: uuid.New(), Type: "checkpoint", ArtifactID: &overview.ArtifactID,
+		VersionID: &checkpoint.ID, WikiPageID: &overview.PageID, ExpectedRevision: revision,
+	}); !errors.Is(err, ErrConflict) {
+		t.Fatalf("checkpoint accepted a stale Artifact revision: %v", err)
 	}
 	for _, version := range []uuid.UUID{agentPage.VersionID, humanPage.ID, checkpoint.ID} {
 		content, err := s.VersionBlocks(ctx, p, f.ProjectA, version)
@@ -364,7 +370,7 @@ func TestTaskResultPageAndLiveOverviewCapture(t *testing.T) {
 	// Review is scoped to the Page recorded on the contribution, not the current overview pointer.
 	if _, err = s.ReviewPageChange(
 		ctx,
-		p,
+		member,
 		f.ProjectA,
 		page.PageID,
 		applied.ID,

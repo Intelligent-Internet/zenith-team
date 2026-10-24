@@ -21,25 +21,37 @@ import (
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
+// PresentationSelections addresses document, scope-instance path, then state name.
+// The capture compiler validates each path and scalar against the authored scope.
+type PresentationSelections map[string]map[string]map[string]any
+
+type PresentationScenarioInput struct {
+	PageID   uuid.UUID
+	Sequence int64
+	Selected PresentationSelections
+}
+
 type PresentationInput struct {
-	ChangeID    *uuid.UUID `json:"changeId,omitempty"`
-	PageID      uuid.UUID  `json:"pageId"             binding:"required"`
-	RequestKey  uuid.UUID  `json:"requestKey"         binding:"required"`
-	Sequence    int64      `json:"sequence"           binding:"min=0"`
-	Fingerprint string     `json:"fingerprint"        binding:"required,len=64"`
+	Selected    PresentationSelections `json:"selected,omitempty"`
+	ChangeID    *uuid.UUID             `json:"changeId,omitempty"`
+	PageID      uuid.UUID              `json:"pageId"             binding:"required"`
+	RequestKey  uuid.UUID              `json:"requestKey"         binding:"required"`
+	Sequence    int64                  `json:"sequence"           binding:"min=0"`
+	Fingerprint string                 `json:"fingerprint"        binding:"required,len=64"`
 }
 type PresentationEntry struct {
-	ChangeID  *uuid.UUID `json:"changeId,omitempty"`
-	PageID    uuid.UUID  `json:"pageId"`
-	Theme     string     `json:"theme"`
-	ID        uuid.UUID  `json:"id"`
-	Title     string     `json:"title"`
-	Sequence  int64      `json:"sequence"`
-	CreatedAt time.Time  `json:"createdAt"`
-	RunID     *uuid.UUID `json:"runId"`
-	OutputID  *uuid.UUID `json:"outputId"`
+	ChangeID    *uuid.UUID  `json:"changeId,omitempty"`
+	PageID      uuid.UUID   `json:"pageId"`
+	Theme       string      `json:"theme"`
+	ID          uuid.UUID   `json:"id"`
+	Title       string      `json:"title"`
+	Sequence    int64       `json:"sequence"`
+	CreatedAt   time.Time   `json:"createdAt"`
+	RunID       *uuid.UUID  `json:"runId"`
+	DeliveryIDs []uuid.UUID `json:"deliveryIds"`
 }
 type Presentation struct {
+	Evaluations map[string]wiki.UICapture `json:"evaluations,omitempty"`
 	PresentationEntry
 	Content                   json.RawMessage           `json:"content"`
 	Documents                 map[string]wiki.BlockNode `json:"documents"`
@@ -52,6 +64,8 @@ type Presentation struct {
 type presentationCapture struct {
 	Presentation
 	root              wiki.BlockNode
+	authoredDocuments map[string]wiki.BlockNode
+	uiEvidence        presentationUIEvidence
 	version           generated.CanvasVersionSource
 	sources           map[uuid.UUID]generated.CanvasVersionSource
 	markdown          string
@@ -67,6 +81,7 @@ func (s *DefaultPresentationService) buildPresentation(
 	project, pageID uuid.UUID,
 	sequence int64,
 	changeID *uuid.UUID,
+	selected PresentationSelections,
 ) (presentationCapture, error) {
 	c := presentationCapture{
 		Presentation: Presentation{
@@ -77,6 +92,7 @@ func (s *DefaultPresentationService) buildPresentation(
 		},
 		sources: map[uuid.UUID]generated.CanvasVersionSource{},
 	}
+	var inheritedUIProjects []uuid.UUID
 	var err error
 	c.version, err = q.GetProjectPageVersion(
 		ctx,
@@ -138,18 +154,27 @@ func (s *DefaultPresentationService) buildPresentation(
 		if e != nil {
 			return c, lookup(e)
 		}
-		if proposal.PageID != pageID {
+		if proposal.PageID != pageID || proposal.ActorUserID != p.UserID {
 			return c, ErrNotFound
 		}
 		if proposal.Status != "proposed" && proposal.Status != "partially_applied" {
 			return c, ErrConflict
 		}
-		review, e := pageSuggestionState(proposal, c.root, metadata.Theme, nil)
+
+		review, e := pageSuggestionState(
+			proposal,
+			pageSuggestionSnapshot{
+				root:              c.root,
+				state:             draft.State,
+				theme:             metadata.Theme,
+				structureSequence: draft.StructureSeq,
+			},
+			nil,
+		)
 		if e != nil {
 			return c, e
 		}
-		var operations []wiki.BlockOperation
-		for i, op := range review.operations {
+		for i := range review.operations {
 			if review.decisions[i] != "" {
 				continue
 			}
@@ -157,11 +182,8 @@ func (s *DefaultPresentationService) buildPresentation(
 				return c, ErrConflict
 			}
 			c.RequiredSuggestionIndexes = append(c.RequiredSuggestionIndexes, i)
-			if op.Type != "theme" {
-				operations = append(operations, op)
-			}
 		}
-		_, c.root, err = wiki.ApplyBlockOperations(draft.State, operations)
+		_, c.root, err = applyPageSuggestions(draft.State, review, c.RequiredSuggestionIndexes)
 		if err != nil {
 			return c, err
 		}
@@ -354,6 +376,31 @@ func (s *DefaultPresentationService) buildPresentation(
 			}
 			delete(active, id)
 			c.Documents[documentKey] = body
+		case v.SourceType == "retained":
+			saved, err := q.ReadRetainedSnapshot(ctx, generated.ReadRetainedSnapshotParams{
+				CompanyID:  p.CompanyID,
+				ArtifactID: v.ArtifactID,
+				SnapshotID: uuid.NullUUID{UUID: v.ID, Valid: true},
+			})
+			if err != nil {
+				return lookup(err)
+			}
+			if saved.RetainedSnapshot.ContentType == "app" {
+				c.Issues = append(
+					c.Issues,
+					"Interactive apps cannot be retained as immutable evidence yet. Use an ordinary link or a file export.",
+				)
+			}
+			items, err := q.ListRetainedSnapshotItems(
+				ctx,
+				generated.ListRetainedSnapshotItemsParams{CompanyID: p.CompanyID, SnapshotID: v.ID},
+			)
+			if err != nil {
+				return err
+			}
+			for _, item := range items {
+				byteCount += item.AssetVersion.SizeBytes
+			}
 		case v.AssetVersionID.Valid:
 			size, err := q.GetPresentationAssetSize(
 				ctx,
@@ -375,6 +422,14 @@ func (s *DefaultPresentationService) buildPresentation(
 				},
 			)
 			if previousErr == nil {
+				var evidence presentationUIEvidence
+				if err := json.Unmarshal(previous.IntelligentEvidence, &evidence); err != nil {
+					return err
+				}
+				if err := authorizePresentationUI(ctx, q, p, evidence); err != nil {
+					return err
+				}
+				inheritedUIProjects = append(inheritedUIProjects, evidence.Projects...)
 				active[id] = true
 				retained, err := q.ListProjectPresentationSources(
 					ctx,
@@ -462,9 +517,6 @@ func (s *DefaultPresentationService) buildPresentation(
 			}
 		}
 		if node.Type == "artifactReference" {
-			if err := freezeAcceptedReferences(ctx, q, p, project, node); err != nil {
-				return err
-			}
 			id, err := uuid.Parse(fmt.Sprint(node.Attrs["versionId"]))
 			if err != nil {
 				return ErrInvalid
@@ -625,7 +677,35 @@ func (s *DefaultPresentationService) buildPresentation(
 	if byteCount > 256<<20 {
 		c.Issues = append(c.Issues, "Included evidence exceeds the 256 MiB presentation limit.")
 	}
-	c.Content, err = json.Marshal(c.root)
+	c.authoredDocuments = c.Documents
+	documents := make(map[string]wiki.BlockNode, len(c.Documents)+1)
+	documents["page"] = c.root
+	for key, document := range c.Documents {
+		documents[key] = document
+	}
+	c.uiEvidence, err = capturePresentationUI(
+		ctx,
+		q,
+		p,
+		presentationUIInput{Documents: documents, Selected: selected},
+	)
+	if err != nil {
+		return c, err
+	}
+	c.uiEvidence.Projects = mergePresentationUIProjects(c.uiEvidence.Projects, inheritedUIProjects)
+	c.Evaluations = c.uiEvidence.Documents
+	renderRoot := c.root
+	if evaluation, exists := c.uiEvidence.Documents["page"]; exists {
+		renderRoot = evaluation.Content
+	}
+	c.Documents = make(map[string]wiki.BlockNode, len(c.authoredDocuments))
+	for key, document := range c.authoredDocuments {
+		if evaluation, exists := c.uiEvidence.Documents[key]; exists {
+			document = evaluation.Content
+		}
+		c.Documents[key] = document
+	}
+	c.Content, err = json.Marshal(renderRoot)
 	if err != nil {
 		return c, err
 	}
@@ -636,7 +716,8 @@ func (s *DefaultPresentationService) buildPresentation(
 		Theme     string                    `json:"theme"`
 		Content   wiki.BlockNode            `json:"content"`
 		Documents map[string]wiki.BlockNode `json:"documents"`
-	}{c.Title, c.Theme, c.root, c.Documents})
+		Evidence  presentationUIEvidence    `json:"evidence"`
+	}{c.Title, c.Theme, renderRoot, c.Documents, presentationUIFingerprint(c.uiEvidence)})
 	var normalized any
 	_ = json.Unmarshal(raw, &normalized)
 	stripCaptureTime(normalized)
@@ -646,15 +727,20 @@ func (s *DefaultPresentationService) buildPresentation(
 	c.SourceCount = len(c.sources)
 	c.CanExport = len(c.Issues) == 0
 	c.markdown = "# " + c.Title + "\n\n" + presentationMarkdown(c.root)
+	if evaluation, exists := c.uiEvidence.Documents["page"]; exists {
+		c.markdown = "# " + c.Title + "\n\n" + presentationUIMarkdown(evaluation)
+	}
 	keys := make([]string, 0, len(c.Documents))
 	for id := range c.Documents {
 		keys = append(keys, id)
 	}
 	sort.Strings(keys)
 	for _, id := range keys {
-		c.markdown += "\n\n<a id=\"artifact-" + id + "\"></a>\n\n## Retained source\n\n" + presentationMarkdown(
-			c.Documents[id],
-		)
+		body := presentationMarkdown(c.Documents[id])
+		if evaluation, exists := c.uiEvidence.Documents[id]; exists {
+			body = presentationUIMarkdown(evaluation)
+		}
+		c.markdown += "\n\n<a id=\"artifact-" + id + "\"></a>\n\n## Retained source\n\n" + body
 	}
 	return c, nil
 }
@@ -705,6 +791,33 @@ func (s *DefaultPresentationService) PreviewPresentation(
 	project, pageID uuid.UUID,
 	sequence int64,
 ) (Presentation, error) {
+	return s.previewScenario(ctx, p, project, PresentationScenarioInput{PageID: pageID, Sequence: sequence})
+}
+
+func (s *DefaultPresentationService) PreviewScenario(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	project uuid.UUID,
+	in PresentationScenarioInput,
+) (Presentation, error) {
+	if in.PageID == uuid.Nil || in.Sequence < 0 {
+		s.observeCapture("prepare", "invalid", time.Now(), Presentation{}, ErrInvalid)
+		return Presentation{}, ErrInvalid
+	}
+
+	return s.previewScenario(ctx, p, project, in)
+}
+
+func (s *DefaultPresentationService) previewScenario(
+	ctx context.Context,
+	p auth.UserPrincipal,
+	project uuid.UUID,
+	in PresentationScenarioInput,
+) (result Presentation, resultErr error) {
+	started := time.Now()
+	outcome := "prepared"
+	defer func() { s.observeCapture("prepare", outcome, started, result, resultErr) }()
+
 	var c presentationCapture
 	err := s.store.WithinTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead}, func(q *generated.Queries) error {
 		_, err := authorize(ctx, q, p, project, true)
@@ -712,7 +825,7 @@ func (s *DefaultPresentationService) PreviewPresentation(
 			return err
 		}
 
-		c, err = s.buildPresentation(ctx, q, p, project, pageID, sequence, nil)
+		c, err = s.buildPresentation(ctx, q, p, project, in.PageID, in.Sequence, nil, in.Selected)
 		return err
 	})
 	return c.Presentation, mapWrite(err)
@@ -733,7 +846,11 @@ func (s *DefaultPresentationService) capturePresentation(
 	project uuid.UUID,
 	in PresentationInput,
 	run *uuid.UUID,
-) (Presentation, error) {
+) (result Presentation, resultErr error) {
+	started := time.Now()
+	outcome := "saved"
+	defer func() { s.observeCapture("save", outcome, started, result, resultErr) }()
+
 	if in.PageID == uuid.Nil || in.RequestKey == uuid.Nil || in.Sequence < 0 || len(in.Fingerprint) != 64 {
 		return Presentation{}, ErrInvalid
 	}
@@ -777,6 +894,7 @@ func (s *DefaultPresentationService) capturePresentation(
 				) || existing.PageID != in.PageID || existing.ChangeID != nullable(in.ChangeID) {
 				return ErrConflict
 			}
+			outcome = "replayed"
 			saved = existing
 			return nil
 		}
@@ -805,7 +923,7 @@ func (s *DefaultPresentationService) capturePresentation(
 		); err != nil {
 			return lookup(err)
 		}
-		c, err := s.buildPresentation(ctx, q, p, project, in.PageID, in.Sequence, in.ChangeID)
+		c, err := s.buildPresentation(ctx, q, p, project, in.PageID, in.Sequence, in.ChangeID, in.Selected)
 		if err != nil {
 			return err
 		}
@@ -813,11 +931,16 @@ func (s *DefaultPresentationService) capturePresentation(
 			return ErrInvalid
 		}
 		if c.Fingerprint != in.Fingerprint {
+			outcome = "mismatch"
 			return ErrConflict
 		}
 
 		var versionRoot wiki.BlockNode
-		if err = json.Unmarshal(c.Content, &versionRoot); err != nil {
+		authoredContent, err := json.Marshal(c.root)
+		if err != nil {
+			return err
+		}
+		if err = json.Unmarshal(authoredContent, &versionRoot); err != nil {
 			return err
 		}
 		snapshots, err := freezePageReferences(
@@ -827,7 +950,7 @@ func (s *DefaultPresentationService) capturePresentation(
 				principal: p,
 				project:   project,
 				root:      &versionRoot,
-				documents: c.Documents,
+				documents: c.authoredDocuments,
 			},
 		)
 		if err != nil {
@@ -843,7 +966,7 @@ func (s *DefaultPresentationService) capturePresentation(
 			return err
 		}
 
-		v := generated.ProjectArtifactVersion{
+		v := generated.ArtifactSnapshot{
 			ID:             c.version.ID,
 			WikiPageID:     c.version.WikiPageID,
 			WikiRevisionID: c.version.WikiRevisionID,
@@ -863,23 +986,9 @@ func (s *DefaultPresentationService) capturePresentation(
 			if err != nil {
 				return err
 			}
-			number, err := q.AllocateCanvasVersion(ctx, c.version.ArtifactID)
-			if err != nil {
-				return err
-			}
-			v, err = q.CreateCanvasVersion(
+			v, err = q.GetArtifactSnapshot(
 				ctx,
-				generated.CreateCanvasVersionParams{
-					CompanyID:       p.CompanyID,
-					ProjectID:       project,
-					ArtifactID:      c.version.ArtifactID,
-					Number:          number,
-					SourceType:      "wiki",
-					WikiPageID:      c.version.WikiPageID,
-					WikiRevisionID:  nullable(&revision),
-					CreatedByUserID: p.UserID,
-					BaseVersionID:   nullable(&c.version.ID),
-				},
+				generated.GetArtifactSnapshotParams{CompanyID: p.CompanyID, ID: revision},
 			)
 			if err != nil {
 				return err
@@ -904,6 +1013,15 @@ func (s *DefaultPresentationService) capturePresentation(
 			},
 		)
 		if err != nil {
+			return err
+		}
+		evidence, err := json.Marshal(c.uiEvidence)
+		if err != nil {
+			return err
+		}
+		if err = q.SetPresentationIntelligentEvidence(ctx, generated.SetPresentationIntelligentEvidenceParams{
+			CompanyID: p.CompanyID, ProjectID: project, ID: saved.ID, IntelligentEvidence: evidence,
+		}); err != nil {
 			return err
 		}
 		if in.ChangeID != nil {
@@ -991,14 +1109,18 @@ func (s *DefaultPresentationService) previewPresentationForRun(
 	p auth.UserPrincipal,
 	run, pageID uuid.UUID,
 	changeID *uuid.UUID,
-) (Presentation, error) {
+) (result Presentation, resultErr error) {
+	started := time.Now()
+	outcome := "prepared"
+	defer func() { s.observeCapture("prepare", outcome, started, result, resultErr) }()
+
 	var c presentationCapture
 	err := s.store.WithinTx(ctx, pgx.TxOptions{IsoLevel: pgx.RepeatableRead}, func(q *generated.Queries) error {
 		project, _, err := admitPageRun(ctx, q, p, run, true)
 		if err != nil {
 			return err
 		}
-		c, err = s.buildPresentation(ctx, q, p, project, pageID, -1, changeID)
+		c, err = s.buildPresentation(ctx, q, p, project, pageID, -1, changeID, nil)
 		if err != nil {
 			return err
 		}
@@ -1019,6 +1141,8 @@ func (s *DefaultPresentationService) previewPresentationForRun(
 			if !page.ProjectID.Valid {
 				delete(c.Documents, presentationDocumentKey(id.String(), false))
 				delete(c.Documents, presentationDocumentKey(id.String(), true))
+				delete(c.Evaluations, presentationDocumentKey(id.String(), false))
+				delete(c.Evaluations, presentationDocumentKey(id.String(), true))
 			}
 		}
 		return nil
@@ -1177,6 +1301,10 @@ func BindPresentationOutputInTx(
 	if asset.AttachmentID != row.ExportAttachmentID.UUID {
 		return ErrInvalid
 	}
+	if err := authorizeStoredPresentationUI(ctx, q, p, row.IntelligentEvidence); err != nil {
+		return err
+	}
+
 	sources, err := q.ListProjectPresentationSources(
 		ctx,
 		generated.ListProjectPresentationSourcesParams{
@@ -1193,26 +1321,14 @@ func BindPresentationOutputInTx(
 			return err
 		}
 	}
-	rows, err := q.BindProjectPresentationOutput(
-		ctx,
-		generated.BindProjectPresentationOutputParams{
-			CompanyID:   p.CompanyID,
-			ProjectID:   project,
-			ID:          row.ID,
-			OutputID:    nullable(&in.OutputID),
-			SourceRunID: nullable(&in.RunID),
-		},
-	)
-	if err != nil {
+	if err = q.LinkDeliverySnapshot(ctx, generated.LinkDeliverySnapshotParams{
+		CompanyID: p.CompanyID, OutputID: in.OutputID, SnapshotID: row.ID, Ordinal: 0,
+	}); err != nil {
 		return err
 	}
-	if rows != 1 {
-		return ErrConflict
-	}
-	return q.LinkPresentationDocument(
-		ctx,
-		generated.LinkPresentationDocumentParams{CompanyID: p.CompanyID, ID: row.ID},
-	)
+	return q.LinkPresentationDocument(ctx, generated.LinkPresentationDocumentParams{
+		CompanyID: p.CompanyID, ID: row.ID, OutputID: in.OutputID,
+	})
 }
 
 // PresentationOutputAccessInTx keeps the aggregate export behind every retained
@@ -1233,6 +1349,10 @@ func PresentationOutputAccessInTx(
 	if err != nil {
 		return err
 	}
+	if err := authorizeStoredPresentationUI(ctx, q, p, row.IntelligentEvidence); err != nil {
+		return err
+	}
+
 	sources, err := q.ListProjectPresentationSources(
 		ctx,
 		generated.ListProjectPresentationSourcesParams{
@@ -1256,17 +1376,17 @@ func PresentationOutputAccessInTx(
 	return nil
 }
 
-func presentationEntry(row generated.ProjectPresentation) PresentationEntry {
+func presentationEntry(row generated.ProjectPresentation, deliveries []uuid.UUID) PresentationEntry {
 	return PresentationEntry{
-		ChangeID:  outputSource(row.ChangeID),
-		ID:        row.ID,
-		PageID:    row.PageID,
-		Theme:     row.Theme,
-		Title:     row.Title,
-		Sequence:  row.SourceSequence,
-		CreatedAt: row.CreatedAt.Time,
-		RunID:     outputSource(row.SourceRunID),
-		OutputID:  outputSource(row.OutputID),
+		ChangeID:    outputSource(row.ChangeID),
+		ID:          row.ID,
+		PageID:      row.PageID,
+		Theme:       row.Theme,
+		Title:       row.Title,
+		Sequence:    row.SourceSequence,
+		CreatedAt:   row.CreatedAt.Time,
+		RunID:       outputSource(row.SourceRunID),
+		DeliveryIDs: deliveries,
 	}
 }
 
@@ -1283,9 +1403,10 @@ func (s *DefaultPresentationService) Presentations(
 		rows, err := q.ListProjectPresentations(
 			ctx,
 			generated.ListProjectPresentationsParams{
-				CompanyID: p.CompanyID,
-				ProjectID: project,
-				PageID:    uuid.NullUUID{UUID: pageID, Valid: pageID != uuid.Nil},
+				CompanyID:   p.CompanyID,
+				ActorUserID: p.UserID,
+				ProjectID:   project,
+				PageID:      uuid.NullUUID{UUID: pageID, Valid: pageID != uuid.Nil},
 			},
 		)
 		for _, row := range rows {
@@ -1293,11 +1414,11 @@ func (s *DefaultPresentationService) Presentations(
 				result,
 				PresentationEntry{
 					ID: row.ID, PageID: row.PageID, Theme: row.Theme,
-					Title:     row.Title,
-					Sequence:  row.SourceSequence,
-					CreatedAt: row.CreatedAt.Time,
-					RunID:     outputSource(row.SourceRunID),
-					OutputID:  outputSource(row.OutputID),
+					Title:       row.Title,
+					Sequence:    row.SourceSequence,
+					CreatedAt:   row.CreatedAt.Time,
+					RunID:       outputSource(row.SourceRunID),
+					DeliveryIDs: row.DeliveryIds,
 				},
 			)
 		}
@@ -1323,8 +1444,19 @@ func (s *DefaultPresentationService) Presentation(
 		if err != nil {
 			return lookup(err)
 		}
+		deliveries, err := q.ListCaptureDeliveries(
+			ctx,
+			generated.ListCaptureDeliveriesParams{
+				CompanyID:  p.CompanyID,
+				SnapshotID: row.ID,
+				UserID:     p.UserID,
+			},
+		)
+		if err != nil {
+			return err
+		}
 		result = Presentation{
-			PresentationEntry:         presentationEntry(row),
+			PresentationEntry:         presentationEntry(row, deliveries),
 			Content:                   row.Content,
 			Fingerprint:               row.Fingerprint,
 			Documents:                 map[string]wiki.BlockNode{},
@@ -1354,6 +1486,10 @@ func (s *DefaultPresentationService) Presentation(
 		if err = json.Unmarshal(row.Documents, &result.Documents); err != nil {
 			return err
 		}
+		if err := authorizeStoredPresentationUI(ctx, q, p, row.IntelligentEvidence); err != nil {
+			return err
+		}
+
 		sources, err := q.ListProjectPresentationSources(
 			ctx,
 			generated.ListProjectPresentationSourcesParams{
@@ -1391,6 +1527,13 @@ func (s *DefaultPresentationService) Presentation(
 		for key, body := range result.Documents {
 			redactPresentation(&body, denied)
 			result.Documents[key] = body
+		}
+		if result.CanExport {
+			var evidence presentationUIEvidence
+			if err := json.Unmarshal(row.IntelligentEvidence, &evidence); err != nil {
+				return err
+			}
+			result.Evaluations = evidence.Documents
 		}
 		if !result.CanExport {
 			result.Issues = append(
@@ -1456,24 +1599,8 @@ func (s *DefaultPresentationService) PresentationExport(
 		if err != nil {
 			return lookup(err)
 		}
-		sources, err := q.ListProjectPresentationSources(
-			ctx,
-			generated.ListProjectPresentationSourcesParams{
-				CompanyID:      p.CompanyID,
-				ProjectID:      project,
-				PresentationID: id,
-			},
-		)
-		if err != nil {
+		if err := authorizePresentationExport(ctx, q, p, row); err != nil {
 			return err
-		}
-		for _, source := range sources {
-			if _, err = canVersionSource(ctx, q, p, project, source.VersionID); err != nil {
-				if errors.Is(err, ErrNotFound) {
-					return ErrForbidden
-				}
-				return err
-			}
 		}
 		body = row.ExportMarkdown
 		return nil
@@ -1496,6 +1623,15 @@ func presentationDocumentKey(version string, live bool) string {
 }
 
 func presentationMarkdown(root wiki.BlockNode) string {
+	return wiki.BlocksMarkdown(presentationMarkdownContent(root))
+}
+
+func presentationUIMarkdown(capture wiki.UICapture) string {
+	capture.Content = presentationMarkdownContent(capture.Content)
+	return wiki.UICaptureMarkdown(capture)
+}
+
+func presentationMarkdownContent(root wiki.BlockNode) wiki.BlockNode {
 	raw, _ := json.Marshal(root)
 	var clone wiki.BlockNode
 	_ = json.Unmarshal(raw, &clone)
@@ -1509,5 +1645,45 @@ func presentationMarkdown(root wiki.BlockNode) string {
 		}
 	}
 	walk(&clone)
-	return wiki.BlocksMarkdown(clone)
+	return clone
+}
+
+func authorizePresentationExport(
+	ctx context.Context,
+	q *generated.Queries,
+	p auth.UserPrincipal,
+	row generated.ProjectPresentation,
+) error {
+	if err := authorizeStoredPresentationUI(ctx, q, p, row.IntelligentEvidence); err != nil {
+		return err
+	}
+
+	sources, err := q.ListProjectPresentationSources(
+		ctx,
+		generated.ListProjectPresentationSourcesParams{
+			CompanyID:      p.CompanyID,
+			ProjectID:      row.ProjectID,
+			PresentationID: row.ID,
+		},
+	)
+	if err != nil {
+		return err
+	}
+	for _, source := range sources {
+		if _, err = canVersionSource(ctx, q, p, row.ProjectID, source.VersionID); err != nil {
+			if errors.Is(err, ErrNotFound) {
+				return ErrForbidden
+			}
+			return err
+		}
+	}
+	var root wiki.BlockNode
+	if err := json.Unmarshal(row.Content, &root); err != nil {
+		return err
+	}
+	var documents map[string]wiki.BlockNode
+	if err := json.Unmarshal(row.Documents, &documents); err != nil {
+		return err
+	}
+	return nil
 }

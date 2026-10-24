@@ -17,6 +17,7 @@ import {
 } from "@/shared/ui/icons";
 import { FoldAvatar } from "@/shared/ui/agent-avatar/fold-avatar";
 import { Streamdown } from "streamdown";
+import { DiscussionMessageBody } from "./discussion-message-body";
 import type { components } from "@/shared/api/generated/api.generated";
 import { discussionsApi } from "../api/discussions-api";
 import { useDiscussionUpdates } from "./discussion-provider";
@@ -485,31 +486,42 @@ export function ChannelAgentPanel({
                           })}
                         </time>
                       </header>
-                      <Streamdown
-                        className="discussion-markdown text-[length:var(--workspace-text-chat,_15px)] leading-[var(--workspace-leading-chat,_24px)] wrap-anywhere min-w-0"
-                        mode="static"
-                        controls={false}
-                        parseIncompleteMarkdown={false}
-                        remarkRehypeOptions={{ allowDangerousHtml: false }}
-                        components={{
-                          img: () => null,
-                          a: ({ href, children }) =>
-                            /^https?:\/\//i.test(href ?? "") ? (
-                              <a
-                                href={href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                referrerPolicy="no-referrer"
-                              >
-                                {children}
-                              </a>
-                            ) : (
-                              <span>{children}</span>
-                            ),
-                        }}
-                      >
-                        {entry.content}
-                      </Streamdown>
+                      {entry.type === "user_message" ? (
+                        <Streamdown
+                          className="discussion-markdown text-[length:var(--workspace-text-chat,_15px)] leading-[var(--workspace-leading-chat,_24px)] wrap-anywhere min-w-0"
+                          mode="static"
+                          controls={false}
+                          parseIncompleteMarkdown={false}
+                          remarkRehypeOptions={{ allowDangerousHtml: false }}
+                          components={{
+                            img: () => null,
+                            a: ({ href, children }) =>
+                              /^https?:\/\//i.test(href ?? "") ? (
+                                <a
+                                  href={href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  referrerPolicy="no-referrer"
+                                >
+                                  {children}
+                                </a>
+                              ) : (
+                                <span>{children}</span>
+                              ),
+                          }}
+                        >
+                          {entry.content}
+                        </Streamdown>
+                      ) : (
+                        <DiscussionMessageBody
+                          agent
+                          body={{
+                            version: 1,
+                            markdown: entry.content,
+                            references: [],
+                          }}
+                        />
+                      )}
                     </div>
                   ),
                 )}

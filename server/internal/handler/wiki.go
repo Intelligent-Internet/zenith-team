@@ -69,9 +69,10 @@ type wikiRevisionRequest struct {
 }
 
 type wikiRestoreRevisionRequest struct {
-	ExpectedRevision optional[int64] `json:"expectedRevision" binding:"omitnil,required,min=0,max=9007199254740991"`
-	RevisionID       uuid.UUID       `json:"revisionId"       binding:"required"`
-	ExpectedSequence optional[int64] `json:"expectedSequence" binding:"omitnil,required,gte=0,max=9007199254740991"`
+	SchemaVersion    int             `json:"schemaVersion,omitempty" binding:"omitempty,oneof=1 2"`
+	ExpectedRevision optional[int64] `json:"expectedRevision"        binding:"omitnil,required,min=0,max=9007199254740991"`
+	RevisionID       uuid.UUID       `json:"revisionId"              binding:"required"`
+	ExpectedSequence optional[int64] `json:"expectedSequence"        binding:"omitnil,required,gte=0,max=9007199254740991"`
 }
 
 type wikiCollectionRequest struct {
@@ -442,7 +443,11 @@ func (h *Handler) syncWikiDocument(c *gin.Context) {
 		c.Request.Context(),
 		principal,
 		id,
-		wiki.SyncDocumentInput{Update: input.Update, BaseSequence: input.BaseSequence},
+		wiki.SyncDocumentInput{
+			Update:        input.Update,
+			BaseSequence:  input.BaseSequence,
+			SchemaVersion: input.SchemaVersion,
+		},
 	)
 	if err != nil {
 		writeWikiError(c, err)
@@ -574,6 +579,7 @@ func (h *Handler) restoreWikiRevision(c *gin.Context) {
 		wiki.RestoreRevisionInput{
 			ExpectedRevision: *request.ExpectedRevision.ptr(),
 			ExpectedSequence: *request.ExpectedSequence.ptr(),
+			SchemaVersion:    request.SchemaVersion,
 		},
 	)
 	if err != nil {
@@ -605,6 +611,12 @@ func (h *Handler) favoriteWikiPage(c *gin.Context) {
 }
 
 var wikiErrorMappings = []errorMapping{
+	{
+		wiki.ErrUIAuthoringDisabled,
+		http.StatusServiceUnavailable,
+		"Intelligent UI authoring is temporarily disabled",
+		"intelligent_ui_authoring_disabled",
+	},
 	{wiki.ErrPageInvalidInput, http.StatusUnprocessableEntity, "Invalid Wiki input", "validation_failed"},
 	{wiki.ErrPageBodyTooLarge, http.StatusRequestEntityTooLarge, "Wiki page is too large", "request_too_large"},
 	{

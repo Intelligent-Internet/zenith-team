@@ -1,0 +1,135 @@
+{@body
+const [board,setBoard]=DIL.useState([
+["r","n","b","q","k","b","n","r"],["p","p","p","p","p","p","p","p"],
+["","","","","","","",""],["","","","","","","",""],
+["","","","","","","",""],["","","","","","","",""],
+["P","P","P","P","P","P","P","P"],["R","N","B","Q","K","B","N","R"]
+]);
+const [turn,setTurn]=DIL.useState("w");
+const [selected,setSelected]=DIL.useState("");
+const [targets,setTargets]=DIL.useState([]);
+const [rights,setRights]=DIL.useState({wk:true,wq:true,bk:true,bq:true});
+const [ep,setEp]=DIL.useState("");
+const [history,setHistory]=DIL.useState([]);
+const [status,setStatus]=DIL.useState("White to move");
+const [ended,setEnded]=DIL.useState(false);
+const glyph={K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"};
+const files="abcdefgh";
+const inside=(r,c)=>r>=0&&r<8&&c>=0&&c<8;
+const side=p=>p?(p===p.toUpperCase()?"w":"b"):"";
+const fresh=()=>[["r","n","b","q","k","b","n","r"],["p","p","p","p","p","p","p","p"],["","","","","","","",""],["","","","","","","",""],["","","","","","","",""],["","","","","","","",""],["P","P","P","P","P","P","P","P"],["R","N","B","Q","K","B","N","R"]];
+const attacked=(b,r,c,by)=>{
+const pd=by==="w"?1:-1, pawn=by==="w"?"P":"p";
+for(const dc of [-1,1])if(inside(r+pd,c+dc)&&b[r+pd][c+dc]===pawn)return true;
+const knight=by==="w"?"N":"n";
+for(const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])if(inside(r+dr,c+dc)&&b[r+dr][c+dc]===knight)return true;
+const king=by==="w"?"K":"k";
+for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if((dr||dc)&&inside(r+dr,c+dc)&&b[r+dr][c+dc]===king)return true;
+for(const [dr,dc,chars] of [[-1,0,"rq"],[1,0,"rq"],[0,-1,"rq"],[0,1,"rq"],[-1,-1,"bq"],[-1,1,"bq"],[1,-1,"bq"],[1,1,"bq"]]){
+let rr=r+dr,cc=c+dc;
+while(inside(rr,cc)){const p=b[rr][cc];if(p){if(side(p)===by&&chars.includes(p.toLowerCase()))return true;break;}rr+=dr;cc+=dc;}
+}
+return false;
+};
+const inCheck=(b,color)=>{
+let kr=-1,kc=-1;
+for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]===(color==="w"?"K":"k")){kr=r;kc=c;}
+return kr<0||attacked(b,kr,kc,color==="w"?"b":"w");
+};
+const pseudo=(b,r,c,cr,en)=>{
+const p=b[r][c],color=side(p),kind=p.toLowerCase(),out=[];
+if(!p)return out;
+const add=(rr,cc)=>{if(inside(rr,cc)&&side(b[rr][cc])!==color&&b[rr][cc].toLowerCase()!=="k")out.push([rr,cc]);};
+if(kind==="p"){
+const d=color==="w"?-1:1,start=color==="w"?6:1;
+if(inside(r+d,c)&&!b[r+d][c]){out.push([r+d,c]);if(r===start&&!b[r+2*d][c])out.push([r+2*d,c]);}
+for(const dc of [-1,1]){const rr=r+d,cc=c+dc;if(inside(rr,cc)&&((side(b[rr][cc])&&side(b[rr][cc])!==color&&b[rr][cc].toLowerCase()!=="k")||en===`${rr},${cc}`))out.push([rr,cc]);}
+}else if(kind==="n"){
+for(const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])add(r+dr,c+dc);
+}else if(kind==="k"){
+for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++)if(dr||dc)add(r+dr,c+dc);
+if(color==="w"&&r===7&&c===4&&!inCheck(b,color)){
+if(cr.wk&&!b[7][5]&&!b[7][6]&&b[7][7]==="R"&&!attacked(b,7,5,"b")&&!attacked(b,7,6,"b"))out.push([7,6]);
+if(cr.wq&&!b[7][3]&&!b[7][2]&&!b[7][1]&&b[7][0]==="R"&&!attacked(b,7,3,"b")&&!attacked(b,7,2,"b"))out.push([7,2]);
+}
+if(color==="b"&&r===0&&c===4&&!inCheck(b,color)){
+if(cr.bk&&!b[0][5]&&!b[0][6]&&b[0][7]==="r"&&!attacked(b,0,5,"w")&&!attacked(b,0,6,"w"))out.push([0,6]);
+if(cr.bq&&!b[0][3]&&!b[0][2]&&!b[0][1]&&b[0][0]==="r"&&!attacked(b,0,3,"w")&&!attacked(b,0,2,"w"))out.push([0,2]);
+}
+}else{
+const dirs=kind==="b"?[[-1,-1],[-1,1],[1,-1],[1,1]]:kind==="r"?[[-1,0],[1,0],[0,-1],[0,1]]:[[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]];
+for(const [dr,dc] of dirs){let rr=r+dr,cc=c+dc;while(inside(rr,cc)){if(!b[rr][cc])out.push([rr,cc]);else{if(side(b[rr][cc])!==color&&b[rr][cc].toLowerCase()!=="k")out.push([rr,cc]);break;}rr+=dr;cc+=dc;}}
+}
+return out;
+};
+const makeMove=(b,from,to,en)=>{
+const [r,c]=from,[rr,cc]=to,p=b[r][c],n=b.map(row=>row.slice());
+if(p.toLowerCase()==="p"&&c!==cc&&!n[rr][cc])n[r][cc]="";
+n[rr][cc]=p;n[r][c]="";
+if(p.toLowerCase()==="k"&&Math.abs(cc-c)===2){if(cc===6){n[rr][5]=n[rr][7];n[rr][7]="";}else{n[rr][3]=n[rr][0];n[rr][0]="";}}
+if(p==="P"&&rr===0)n[rr][cc]="Q";
+if(p==="p"&&rr===7)n[rr][cc]="q";
+return n;
+};
+const legal=(b,r,c,cr,en)=>{
+const color=side(b[r][c]);
+return pseudo(b,r,c,cr,en).filter(([rr,cc])=>!inCheck(makeMove(b,[r,c],[rr,cc],en),color));
+};
+const anyLegal=(b,color,cr,en)=>{
+for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(side(b[r][c])===color&&legal(b,r,c,cr,en).length)return true;
+return false;
+};
+const notation=(p,from,to,captured)=>`${p.toLowerCase()==="p"?(captured?files[from[1]]:""):p.toUpperCase()}${captured?"x":""}${files[to[1]]}${8-to[0]}${p.toLowerCase()==="p"&&(to[0]===0||to[0]===7)?"=Q":""}`;
+const reset=()=>{setBoard(fresh());setTurn("w");setSelected("");setTargets([]);setRights({wk:true,wq:true,bk:true,bq:true});setEp("");setHistory([]);setStatus("White to move");setEnded(false);};
+const choose=(r,c)=>{
+if(ended)return;
+const p=board[r][c];
+if(selected&&targets.some(([rr,cc])=>rr===r&&cc===c)){
+const [fr,fc]=selected.split(",").map(Number),piece=board[fr][fc],captured=board[r][c]||((piece.toLowerCase()==="p"&&fc!==c)?"p":"");
+const next=makeMove(board,[fr,fc],[r,c],ep),nr={...rights};
+if(piece==="K"){nr.wk=false;nr.wq=false;}if(piece==="k"){nr.bk=false;nr.bq=false;}
+if(piece==="R"&&fr===7&&fc===0)nr.wq=false;if(piece==="R"&&fr===7&&fc===7)nr.wk=false;
+if(piece==="r"&&fr===0&&fc===0)nr.bq=false;if(piece==="r"&&fr===0&&fc===7)nr.bk=false;
+if(board[r][c]==="R"&&r===7&&c===0)nr.wq=false;if(board[r][c]==="R"&&r===7&&c===7)nr.wk=false;
+if(board[r][c]==="r"&&r===0&&c===0)nr.bq=false;if(board[r][c]==="r"&&r===0&&c===7)nr.bk=false;
+const ne=piece.toLowerCase()==="p"&&Math.abs(r-fr)===2?`${(r+fr)/2},${fc}`:"";
+const nextTurn=turn==="w"?"b":"w",checked=inCheck(next,nextTurn),movesRemain=anyLegal(next,nextTurn,nr,ne);
+const move=notation(piece,[fr,fc],[r,c],captured)+(checked?(movesRemain?"+":"#"):"");
+setBoard(next);setRights(nr);setEp(ne);setHistory([...history,move]);setSelected("");setTargets([]);setTurn(nextTurn);
+if(!movesRemain){setEnded(true);setStatus(checked?`${turn==="w"?"White":"Black"} wins by checkmate`:"Draw by stalemate");}
+else setStatus(`${nextTurn==="w"?"White":"Black"} to move${checked?" · Check":""}`);
+return;
+}
+if(p&&side(p)===turn){setSelected(`${r},${c}`);setTargets(legal(board,r,c,rights,ep));}
+else{setSelected("");setTargets([]);}
+};
+}
+<box border radius="xl" padding={4} gap={3}>
+  <row justify="between" align="center" wrap gap={2}>
+    <col gap={1}><caption>HOLODECK · CLASSIC CHESS</caption><title size="xl">Your move.</title></col>
+    <badge label={turn==="w"?"WHITE TO MOVE":"BLACK TO MOVE"} />
+  </row>
+  <row justify="between" align="center" wrap gap={2}>
+    <text>{status}</text>
+    <button color="secondary" variant="outline" onClick={reset}>New game</button>
+  </row>
+  <col gap={0}>
+    {#each board as rank,r}
+      <row gap={0}>
+        {#each rank as piece,c}
+          <button uniform size="lg" color={selected===`${r},${c}`?"primary":"secondary"} variant={targets.some(([rr,cc])=>rr===r&&cc===c)?"solid":"outline"} disabled={ended} onClick={()=>choose(r,c)}>
+            {targets.some(([rr,cc])=>rr===r&&cc===c)?"•":(glyph[piece]||"　")}
+          </button>
+        {/each}
+      </row>
+    {/each}
+  </col>
+  <divider />
+  <caption>Move list</caption>
+  <box background="surface-secondary" border radius="lg" padding={3} gap={2}>
+    {#if history.length===0}<caption>Moves will appear here.</caption>{:else}
+      {#each history as move,i}<text>{Math.floor(i/2)+1}{i%2===0?". ":"... "}{move}</text>{/each}
+    {/if}
+  </box>
+  <caption>Local two-player game · no remote save</caption>
+</box>

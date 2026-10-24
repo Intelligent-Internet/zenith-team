@@ -93,3 +93,80 @@ func TestApplyBlockOperationsChecksTargets(t *testing.T) {
 		t.Fatalf("empty apply = %v; want unchanged state", err)
 	}
 }
+
+func TestTextUpdatePreservesOfflineEdits(t *testing.T) {
+	t.Parallel()
+	root := BlocksFromMarkdown("Old 🌍 opening, unchanged middle, old ending.")
+	AssignBlockIDs(&root, uuid.NewString)
+	base, err := EncodeBlocks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	peer := crdt.New()
+	defer peer.Destroy()
+	if err = crdt.ApplyUpdateV1(peer, base, nil); err != nil {
+		t.Fatal(err)
+	}
+	element, ok := peer.GetXmlFragment("content").Children()[0].(*crdt.YXmlElement)
+	if !ok {
+		t.Fatal("paragraph is not an XML element")
+	}
+	text, ok := element.Children()[0].(*crdt.YXmlText)
+	if !ok {
+		t.Fatal("paragraph content is not XML text")
+	}
+	peer.Transact(func(tx *crdt.Transaction) { text.Insert(tx, 26, "shared ", nil) })
+	updated := root.Content[0]
+	blockID, ok := updated.Attrs["blockId"].(string)
+	if !ok {
+		t.Fatal("paragraph block ID is not a string")
+	}
+	updated.Content = []BlockNode{{Type: "text", Text: "New 🌍 opening, unchanged middle, new ending."}}
+	state, _, err := ApplyBlockOperations(
+		base,
+		[]BlockOperation{
+			{
+				Type:         "update",
+				BlockID:      blockID,
+				ExpectedHash: BlockHash(root.Content[0]),
+				Content:      &updated,
+			},
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, got, _, structural, err := MergeBlockChanges(state, peer.EncodeStateAsUpdate())
+	if err != nil || structural ||
+		BlocksMarkdown(got) != "New 🌍 opening, unchanged shared middle, new ending.\n\n" {
+		t.Fatalf("offline merge = %q, structural=%v, error=%v", BlocksMarkdown(got), structural, err)
+	}
+}
+
+func TestTargetEditsIgnoreUnusedDestination(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []string{"update", "remove"} {
+		t.Run(kind, func(t *testing.T) {
+			t.Parallel()
+			root := BlocksFromMarkdown("Keep this target\n\nUnrelated paragraph")
+			AssignBlockIDs(&root, uuid.NewString)
+			state, err := EncodeBlocks(root)
+			if err != nil {
+				t.Fatal(err)
+			}
+			block := root.Content[0]
+			op := BlockOperation{
+				Type:         kind,
+				BlockID:      block.Attrs["blockId"].(string),
+				ExpectedHash: BlockHash(block),
+				AfterID:      uuid.NewString(),
+			}
+			if kind == "update" {
+				op.Content = &block
+			}
+			if _, _, err := ApplyBlockOperations(state, []BlockOperation{op}); err != nil {
+				t.Fatalf("unused deleted anchor blocked %s: %v", kind, err)
+			}
+		})
+	}
+}

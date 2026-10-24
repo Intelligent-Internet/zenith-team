@@ -1,0 +1,1 @@
+<Chart content={{chartType:"line",xKey:"day",series:[{dataKey:"latency",label:"P95 latency",valueSuffix:" ms"}],data:[{day:"Mon",latency:320},{day:"Tue",latency:270},{day:"Wed",latency:240}]}} />

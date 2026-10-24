@@ -1,0 +1,85 @@
+{@body
+const [note, setNote] = DIL.useState("A short note for the demo");
+const [date, setDate] = DIL.useState("2026-10-20");
+const [section, setSection] = DIL.useState("Controls");
+const [name, setName] = DIL.useState("Khoa");
+const [quantity, setQuantity] = DIL.useState(2);
+const [enabled, setEnabled] = DIL.useState(true);
+const [level, setLevel] = DIL.useState(40);
+const [choice, setChoice] = DIL.useState("Card");
+const [slide, setSlide] = DIL.useState(0);
+const [open, setOpen] = DIL.useState(false);
+const [submitted, setSubmitted] = DIL.useState(false);
+const groups = [
+{label:"Layout", items:"box · card · row · col · grid · grid-item · flow · flow-item · spacer · divider · list · list-item · table · table-section · table-row · table-cell"},
+{label:"Typography", items:"text · title · caption · label · bold · italic · underline · strikethrough · blockquote · code · badge · math"},
+{label:"Controls", items:"input · textarea · checkbox · date-picker · slider · select · segmented-control · radio-group · radio · button · pressable · form"},
+{label:"Containers", items:"carousel · carousel-item · carousel-media-item · popover · popover-trigger · popover-content"},
+{label:"Content", items:"icon · svg · favicon · AsyncImage · Chart · Link · CodeBlock · WritingBlock · FollowUp · escape"}
+];
+}
+<box border radius="xl" padding={5} gap={4}>
+  <title size="2xl">Intelligent UI playground</title>
+  <text>Explore the component families, then try the live controls. State is local to this view.</text>
+  <segmented-control value={section} options={[{label:"Controls",value:"Controls"},{label:"Layouts",value:"Layouts"},{label:"Content",value:"Content"}]} onChange={setSection} />
+  {#if section === "Controls"}
+    <card padding={4} gap={3}>
+      <title size="lg">Interactive form</title>
+      <label>Your name</label>
+      <input value={name} onChange={setName} />
+      <label>Quantity</label>
+      <input inputType="number" value={quantity} onChange={setQuantity} />
+      <checkbox checked={enabled} onChange={setEnabled}>Enable preview</checkbox>
+      <label>Intensity: {level}%</label>
+      <slider value={level} min={0} max={100} onChange={setLevel} />
+      <label>Preview style</label>
+      <select value={choice} options={[{label:"Card",value:"Card"},{label:"Compact",value:"Compact"},{label:"Editorial",value:"Editorial"}]} onChange={setChoice} />
+      <textarea value={note} onChange={setNote} />
+      <date-picker value={date} onChange={setDate} />
+      <radio-group value={choice} onChange={setChoice}><radio value="Card">Card</radio><radio value="Compact">Compact</radio></radio-group>
+      <row gap={2} wrap>
+        <button onClick={() => setQuantity(quantity + 1)}>Add one</button>
+        <button onClick={() => setQuantity(Math.max(0, quantity - 1))}>Remove one</button>
+        <button onClick={() => setSubmitted(true)}>Preview form</button>
+      </row>
+      <text>Hello, {name || "there"} — {quantity} item(s), intensity {level}%, style: {choice}.</text>
+      {#if enabled}<badge>Preview enabled</badge>{:else}<badge>Preview paused</badge>{/if}
+      {#if submitted}<blockquote>Preview prepared locally. Nothing was sent or saved.</blockquote>{/if}
+    </card>
+  {:else if section === "Layouts"}
+    <grid columns={2} gap={3}>
+      <grid-item><card padding={4}><title size="md">Card</title><text>Cards group related information.</text></card></grid-item>
+      <grid-item><card padding={4}><title size="md">Grid</title><text>Grid arranges responsive content.</text></card></grid-item>
+      <grid-item><box border padding={3}><row gap={2}><badge>Row</badge><text>Horizontal flow</text></row></box></grid-item>
+      <grid-item><box border padding={3}><col gap={2}><badge>Col</badge><text>Vertical flow</text></col></box></grid-item>
+      <grid-item><box border padding={3}><list><list-item>List item one</list-item><list-item>List item two</list-item></list></box></grid-item>
+      <grid-item><box border padding={3}><divider /><text>Divider separates content</text><spacer /></box></grid-item>
+    </grid>
+  {:else}
+    <card padding={4} gap={3}>
+      <title size="lg">Content components</title>
+      <row gap={2} wrap><badge>Badge</badge><icon name="star" /><text><bold>Bold</bold> and <italic>italic</italic> text</text></row>
+      <blockquote>Blockquote for a highlighted note.</blockquote>
+      <code>Inline code sample</code>
+      <Chart content={{chartType:"bar",xKey:"day",series:[{dataKey:"views",label:"Views"}],data:[{day:"Mon",views:3},{day:"Tue",views:7},{day:"Wed",views:5}]}} />
+      <CodeBlock language="javascript">const greeting = 'Hello';</CodeBlock>
+      <row gap={2}>
+        <button onClick={() => setSlide((slide + 1) % 3)}>Next example</button>
+        <button onClick={() => setOpen(!open)}>Toggle details</button>
+      </row>
+      <text>Example {slide + 1} of 3</text>
+      {#if open}<card padding={3}><text>Additional details appear here.</text></card>{/if}
+      <FollowUp query="Ask me to build a small interactive example." />
+      <Link url="https://example.com">Link component example</Link>
+    </card>
+  {/if}
+  <divider />
+  <title size="lg">Full component catalog</title>
+  {#each groups as group}
+    <card padding={3} gap={2}>
+      <title size="md">{group.label}</title>
+      <text>{group.items}</text>
+    </card>
+  {/each}
+  <caption>Other skill capabilities: local hooks and derived state; conditional and repeated content; bounded math and expressions; SVG drawing; popovers and carousels; and grounded references such as Entity and FileCite when the host supplies authorized data. Some host-backed components may show unavailable states when those capabilities are not connected.</caption>
+</box>

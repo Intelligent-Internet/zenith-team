@@ -1,3 +1,8 @@
+import { ArtifactSharing } from "./artifact-sharing";
+import { CapturePublication } from "./capture-publication";
+import { CaptureVersionBoundary } from "./intelligent-ui/capture-version-boundary";
+import { CaptureAssumptions } from "./capture-assumptions";
+import { PageCaptures } from "./page-captures";
 import type { Editor } from "@tiptap/react";
 import { DocumentFormatToolbar } from "./document-format-toolbar";
 import { createPortal } from "react-dom";
@@ -59,6 +64,7 @@ export function PageDocument({
   const query = useProjectPageQuery(scope);
   const [params, setParams] = useSearchParams();
   const presentationId = params.get("presentationId");
+  const [capturesOpen, setCapturesOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [documentReload, setDocumentReload] = useState(0);
   const saved = useProjectPresentationQuery(
@@ -108,9 +114,7 @@ export function PageDocument({
   };
   const choosePresentation = (id?: string) => {
     if (dirty) {
-      setError(
-        "Wait for your changes to save before opening a submitted document.",
-      );
+      setError("Wait for your changes to save before opening a capture.");
       return;
     }
     const next = new URLSearchParams(params);
@@ -229,6 +233,14 @@ export function PageDocument({
                 </Popover.Close>
               </header>
               <div ref={setActionsContainer} />
+              {!presentationId && (
+                <ArtifactSharing
+                  scope={{
+                    companyId: scope.companyId,
+                    artifactId: scope.pageId,
+                  }}
+                />
+              )}
               <button
                 disabled={dirty}
                 onClick={() => {
@@ -237,6 +249,15 @@ export function PageDocument({
                 }}
               >
                 History
+              </button>
+              <button
+                disabled={dirty}
+                onClick={() => {
+                  setSettings(false);
+                  setCapturesOpen(true);
+                }}
+              >
+                Saved captures
               </button>
               <PagePdfExport
                 title={
@@ -322,6 +343,23 @@ export function PageDocument({
           <button onClick={() => setError("")}>Dismiss</button>
         </p>
       )}
+      {capturesOpen && (
+        <CanvasDialog
+          title="Saved captures"
+          description="Frozen scenarios and submitted deliveries for this Page."
+          onClose={() => setCapturesOpen(false)}
+        >
+          <PageCaptures
+            scope={scope}
+            selectedId={presentationId}
+            disabled={dirty}
+            onSelect={(id) => {
+              choosePresentation(id);
+              setCapturesOpen(false);
+            }}
+          />
+        </CanvasDialog>
+      )}
       {historyOpen && (
         <CanvasDialog
           title="History"
@@ -343,11 +381,11 @@ export function PageDocument({
       {presentationId ? (
         saved.isFetching ? (
           <p className="po-state" role="status">
-            Loading submitted document…
+            Loading saved capture…
           </p>
         ) : saved.isError || !saved.currentData ? (
           <p className="po-state" role="alert">
-            This submitted document is unavailable.{" "}
+            This saved capture is unavailable.{" "}
             <button onClick={() => void saved.refetch()}>Retry</button>
           </p>
         ) : (
@@ -359,7 +397,9 @@ export function PageDocument({
                   <strong>
                     {saved.currentData.changeId
                       ? "Proposed delivery"
-                      : "Saved delivery"}
+                      : saved.currentData.deliveryIds.length > 0
+                        ? "Saved delivery"
+                        : "Saved scenario"}
                   </strong>
                   <small>
                     {new Date(saved.currentData.createdAt).toLocaleString()} ·{" "}
@@ -396,9 +436,34 @@ export function PageDocument({
                 }
               >
                 <Icon name="download" className="size-4" />
-                Export
+                Export Markdown
+              </button>
+              <button
+                disabled={!saved.currentData.canExport}
+                onClick={() =>
+                  void run(async () => {
+                    const response = await apiClient.get<string>(
+                      `${presentationPath(scope, presentationId)}/export?format=html`,
+                      { responseType: "text" },
+                    );
+                    downloadDocument(
+                      response,
+                      `${saved.currentData?.title ?? "Page"}.html`,
+                      "text/html",
+                    );
+                  })
+                }
+              >
+                <Icon name="download" className="size-4" />
+                Export HTML
               </button>
             </div>
+            <CapturePublication
+              key={presentationId}
+              scope={scope}
+              id={presentationId}
+              canExport={saved.currentData.canExport}
+            />
             {saved.currentData.issues.map((issue) => (
               <p className="po-error" key={issue}>
                 {issue}
@@ -463,20 +528,17 @@ export function PageDocument({
                   : undefined
               }
             />
+            <PageContributions
+              editor={documentEditor}
+              key={data.pageId}
+              scope={scope}
+              canEdit={data.canReviewSuggestions}
+              initialChangeId={params.get("changeId") ?? ""}
+              dirty={dirty}
+            />
           </div>
           <div className="po-page-comments-rail">
             <PageComments
-              suggestions={
-                <PageContributions
-                  onEditPage={data.canEdit ? () => setEditing(true) : undefined}
-                  editor={documentEditor}
-                  key={data.pageId}
-                  scope={scope}
-                  canEdit={data.canReviewSuggestions}
-                  initialChangeId={params.get("changeId") ?? ""}
-                  dirty={dirty}
-                />
-              }
               requestedThreadId={requestedThreadId}
               key={`${data.pageId}:${documentReload}`}
               scope={scope}
@@ -509,16 +571,19 @@ export function PresentationPage({
       data-page-theme={presentation.theme}
     >
       <h1>{presentation.title}</h1>
-      <SnapshotDocuments.Provider
-        value={presentation.documents as Record<string, Block>}
-      >
-        <BlockDocument
-          showOutline
-          scope={scope}
-          content={presentation.content as Block}
-          mode="snapshot"
-        />
-      </SnapshotDocuments.Provider>
+      <CaptureVersionBoundary evaluations={presentation.evaluations}>
+        <CaptureAssumptions evaluations={presentation.evaluations} />
+        <SnapshotDocuments.Provider
+          value={presentation.documents as Record<string, Block>}
+        >
+          <BlockDocument
+            showOutline
+            scope={scope}
+            content={presentation.content as Block}
+            mode="snapshot"
+          />
+        </SnapshotDocuments.Provider>
+      </CaptureVersionBoundary>
     </article>
   );
 }

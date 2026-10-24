@@ -3,6 +3,7 @@ package canvas
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -14,6 +15,17 @@ import (
 
 // PresentationService owns immutable captures, retained source reads and Run preparation.
 type PresentationService interface {
+	Publication(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID) (Publication, error)
+	PublishPresentation(
+		context.Context,
+		auth.UserPrincipal,
+		uuid.UUID,
+		uuid.UUID,
+		PublicationInput,
+	) (Publication, error)
+	RevokePublication(context.Context, auth.UserPrincipal, uuid.UUID, uuid.UUID, uuid.UUID) error
+	PublicPresentationHTML(context.Context, uuid.UUID) (string, error)
+	PreviewScenario(context.Context, auth.UserPrincipal, uuid.UUID, PresentationScenarioInput) (Presentation, error)
 	PreviewProposalForRun(
 		context.Context,
 		auth.UserPrincipal,
@@ -39,21 +51,32 @@ type PresentationService interface {
 var _ PresentationService = (*DefaultPresentationService)(nil)
 
 type DefaultPresentationService struct {
-	store          *db.Store
-	bus            *events.Bus
-	attachments    attachment.AttachmentService
-	workflowLookup func(string) (json.RawMessage, error)
+	store           *db.Store
+	bus             *events.Bus
+	attachments     attachment.AttachmentService
+	workflowLookup  func(string) (json.RawMessage, error)
+	captureObserver func(string, string, time.Duration)
+}
+
+type PresentationServiceOption func(*DefaultPresentationService)
+
+func WithPresentationWorkflowLookup(lookup func(string) (json.RawMessage, error)) PresentationServiceOption {
+	return func(service *DefaultPresentationService) { service.workflowLookup = lookup }
+}
+
+func WithPresentationCaptureObserver(observer func(string, string, time.Duration)) PresentationServiceOption {
+	return func(service *DefaultPresentationService) { service.captureObserver = observer }
 }
 
 func NewPresentationService(
 	store *db.Store,
 	bus *events.Bus,
 	attachments attachment.AttachmentService,
-	catalog ...func(string) (json.RawMessage, error),
+	options ...PresentationServiceOption,
 ) *DefaultPresentationService {
 	s := &DefaultPresentationService{store: store, bus: bus, attachments: attachments}
-	if len(catalog) > 0 {
-		s.workflowLookup = catalog[0]
+	for _, option := range options {
+		option(s)
 	}
 	return s
 }

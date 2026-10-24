@@ -8,6 +8,7 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/canvas"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/events"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/execution"
+	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 	db "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 )
 
@@ -65,7 +66,7 @@ func InvokeDocumentAgentInTx(
 		ConversationID:   conv.ID,
 		ConversationKind: "direct",
 		AgentID:          &in.AgentID,
-		ProjectID:        &document.ProjectID.UUID,
+		ProjectID:        util.NullUUIDPtr(document.ProjectID),
 	}
 	_, handled, err := queueMessageSendIfRunning(
 		ctx,
@@ -118,7 +119,7 @@ func InvokeDocumentAgentInTx(
 		prompt,
 		conv.ID,
 		conv.CompanyID,
-		&document.ProjectID.UUID,
+		util.NullUUIDPtr(document.ProjectID),
 	)
 	return err
 }

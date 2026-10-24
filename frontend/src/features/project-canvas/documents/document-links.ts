@@ -2,7 +2,7 @@ import { Extension } from "@tiptap/react";
 import { Plugin } from "@tiptap/pm/state";
 
 // Resolve older stored Canvas links without rewriting authored documents.
-function documentLocation(href: string): string | null {
+export function documentLocation(href: string): string | null {
   let url: URL;
   try {
     url = new URL(href, window.location.href);

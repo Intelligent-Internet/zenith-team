@@ -39,38 +39,6 @@ paths:
           content:
             application/json:
               schema: {$ref: './_common.yaml#/schemas/Error'}
-  block_ids:
-    post:
-      tags: [projects]
-      operationId: reserveCanvasBlockIDs
-      summary: Reserve server-generated identities for native document blocks
-      parameters:
-        - $ref: "./_common.yaml#/parameters/companyId"
-        - {name: projectId, in: path, required: true, schema: {type: string, format: uuid}}
-        - {name: versionId, in: path, required: true, schema: {type: string, format: uuid}}
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: false
-              required: [count]
-              properties:
-                count: {type: integer, minimum: 1, maximum: 256}
-      responses:
-        '200':
-          description: A bounded pool scoped to the live document
-          content:
-            application/json:
-              schema:
-                $ref: '#/schemas/CanvasBlockIDs'
-        default:
-          description: Request could not be completed
-          content:
-            application/json:
-              schema:
-                $ref: './_common.yaml#/schemas/Error'
   canvas:
     get:
       tags:
@@ -623,93 +591,6 @@ paths:
             application/json:
               schema:
                 $ref: "./_common.yaml#/schemas/Error"
-    post:
-      tags:
-        - "projects"
-      operationId: "syncCanvasDocument"
-      summary: "sync Canvas Document"
-      description: "Human collaboration only. Project access and current source permissions are checked. Writes use revision and idempotency fences; no Agent execution is admitted."
-      parameters:
-        - $ref: "./_common.yaml#/parameters/companyId"
-        - name: "projectId"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-            format: "uuid"
-        - name: "versionId"
-          in: "path"
-          required: true
-          schema:
-            type: "string"
-            format: "uuid"
-      responses:
-        "200":
-          description: "Authorized canvas state."
-          content:
-            application/json:
-              schema:
-                $ref: "#/schemas/CanvasDocument"
-        "400":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "401":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "403":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "404":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "409":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "413":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "415":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "422":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-        "500":
-          description: "Request could not be completed."
-          content:
-            application/json:
-              schema:
-                $ref: "./_common.yaml#/schemas/Error"
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/schemas/CanvasDocumentUpdate"
   presence:
     put:
       tags:
@@ -969,7 +850,7 @@ schemas:
             format: "uuid"
           - type: "null"
       outputItemId:
-        description: Required by import_output_document. The server reads this exact immutable Markdown file, retaining the Output ACL and returning the existing shared document on repeat opens. Body is ignored. Requires artifactId and the source output versionId.
+        description: Required by import_output_document. The server reads this exact immutable Markdown file, retaining import provenance and returning an existing Page only when its Artifact access permits it. Body is ignored. Requires artifactId and the source output versionId.
         anyOf:
           - type: string
             format: uuid
@@ -1171,7 +1052,7 @@ schemas:
       sourceType:
         type: "string"
       sourceOutputId:
-        description: Original Output whose current access rules govern this version, including imported native drafts. These documents are not Company Wiki publications.
+        description: Original Output retained as provenance. Live Page access follows the Artifact; access to the Output does not grant live editing authority.
         anyOf:
           - type: string
             format: uuid
@@ -1516,12 +1397,16 @@ schemas:
       - "state"
       - "markdown"
       - "canEdit"
+      - "intelligentUIAuthoringEnabled"
       - "schemaVersion"
       - "structureSequence"
     properties:
+      intelligentUIAuthoringEnabled:
+        type: boolean
+        description: Deployment capability for reactive authoring. Does not grant editing permission.
       schemaVersion:
         type: integer
-        const: 1
+        enum: [1, 2]
       content:
         $ref: "#/schemas/CanvasBlock"
       pageId:
@@ -1573,7 +1458,7 @@ schemas:
       stateVector: {type: string, format: byte, description: Client vector used to return only missing changes after acknowledgement.}
       schemaVersion:
         type: integer
-        const: 1
+        enum: [1, 2]
       update:
         type: "string"
         format: "byte"

@@ -1,3 +1,6 @@
+import { DocumentViewMode } from "./document-view-mode";
+import { taskBlockSummary } from "./task-summary";
+import { useScope, useValue } from "./intelligent-ui/reactive-values";
 import { useListWorkspaceTasksQuery } from "@/shared/api/task-api";
 import { BlockSettings, useBlockEditable } from "./block-settings";
 import { PageReportMode } from "./page-report-context";
@@ -12,26 +15,9 @@ import { taskStartAction } from "@/features/company-plan/model/task-execution";
 import { Icon } from "@/shared/ui/icon";
 import { useGetCanvasQuery, type CanvasScope } from "../api/canvas-api";
 import type { components } from "@/shared/api/generated/api.generated";
-import type { TaskDto } from "@/shared/api/types";
 
 export const WorkBlockScope = createContext<CanvasScope | null>(null);
-export const WorkBlockMode = createContext<"live" | "comparison" | "snapshot">(
-  "live",
-);
 type Task = components["schemas"]["OverviewTask"];
-
-export function taskBlockSummary(task: TaskDto): Task {
-  return {
-    id: task.id,
-    title: task.title,
-    status: task.status,
-    assigneeUserId: task.assignee.id,
-    assigneeName: task.assignee.name,
-    agentId: task.execution.agent?.id ?? null,
-    agentName: task.execution.agent?.name,
-    revision: task.revision,
-  };
-}
 
 function workLane(status: string) {
   if (["backlog", "todo"].includes(status)) return "To do";
@@ -141,13 +127,33 @@ function matches(status: string, filter: string) {
 
 export function WorkBlock(props: NodeViewProps) {
   const scope = useContext(WorkBlockScope);
+  const mode = useContext(DocumentViewMode);
+  const reactive = useScope(props);
+  const expression =
+    props.node.type.name === "taskCollection" &&
+    typeof props.node.attrs.filter === "object" &&
+    props.node.attrs.filter !== null
+      ? props.node.attrs.filter
+      : undefined;
+  const filterResult = useValue(
+    reactive.template ? undefined : expression,
+    reactive.snapshot,
+    mode,
+  );
   if (!scope)
     return (
       <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         Project work is unavailable here.
       </NodeViewWrapper>
     );
-  return <ProjectWorkBlock {...props} scope={scope} />;
+  return (
+    <ProjectWorkBlock
+      {...props}
+      scope={scope}
+      filterResult={filterResult}
+      template={reactive.template}
+    />
+  );
 }
 
 function ProjectWorkBlock({
@@ -155,23 +161,52 @@ function ProjectWorkBlock({
   editor,
   updateAttributes,
   scope,
-}: NodeViewProps & { scope: CanvasScope }) {
+  filterResult,
+  template,
+}: NodeViewProps & {
+  scope: CanvasScope;
+  filterResult: { status: string; value?: unknown };
+  template: boolean;
+}) {
   const editable = useBlockEditable(editor);
   const report = useContext(PageReportMode);
-  const mode = useContext(WorkBlockMode);
+  const mode = useContext(DocumentViewMode);
   const captured = mode === "snapshot" || Boolean(node.attrs.capturedAt);
   const navigate = useNavigate();
   const session = useSessionSnapshot();
+  const reactiveFilter =
+    node.type.name === "taskCollection" &&
+    node.attrs.filter !== null &&
+    typeof node.attrs.filter === "object";
+  const filterReady =
+    !reactiveFilter ||
+    (filterResult.status === "ready" &&
+      typeof filterResult.value === "string" &&
+      ["all", "active", "review", "done"].includes(filterResult.value));
   const query = useListWorkspaceTasksQuery(
     { companyId: scope.companyId, options: { project_id: scope.projectId } },
-    { skip: captured },
+    {
+      skip: captured || template || !filterReady,
+      refetchOnMountOrArgChange: true,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
+      pollingInterval: reactiveFilter ? 60000 : 0,
+      skipPollingIfUnfocused: true,
+    },
   );
   const runner = useTaskRun(scope.companyId);
-  const filter = String(node.attrs.filter || "all");
+  const filter = reactiveFilter
+    ? String(filterResult.value ?? "")
+    : String(node.attrs.filter || "all");
   const display = String(node.attrs.display || "list");
-  const tasks: Task[] = captured
-    ? (node.attrs.capturedTasks ?? [])
-    : (query.currentData?.items ?? []).map(taskBlockSummary);
+  const tasks: Task[] =
+    template ||
+    !filterReady ||
+    (reactiveFilter && !captured && (query.isFetching || query.isError))
+      ? []
+      : captured
+        ? (node.attrs.capturedTasks ?? [])
+        : (query.currentData?.items ?? []).map(taskBlockSummary);
   const rows = tasks.filter(
     (task) =>
       (node.type.name !== "taskReference" || task.id === node.attrs.taskId) &&
@@ -259,7 +294,12 @@ function ProjectWorkBlock({
             <label>
               Show
               <select
-                aria-label="Task filter"
+                aria-label={
+                  reactiveFilter
+                    ? "Scenario-controlled Task filter"
+                    : "Task filter"
+                }
+                disabled={reactiveFilter}
                 value={filter}
                 onChange={(event) =>
                   updateAttributes({ filter: event.target.value })
@@ -291,7 +331,16 @@ function ProjectWorkBlock({
           />
         </BlockSettings>
       )}
-      {!captured && query.isLoading ? (
+      {template ? (
+        <p role="status">Task collection template</p>
+      ) : !filterReady ? (
+        <p role="status">
+          {filterResult.status === "loading"
+            ? "Updating filter…"
+            : "The scenario filter is unavailable. Choose all, active, review, or done."}
+        </p>
+      ) : !captured &&
+        (query.isLoading || (reactiveFilter && query.isFetching)) ? (
         <p role="status">Loading work…</p>
       ) : !captured && query.isError ? (
         <p role="alert">
@@ -336,13 +385,20 @@ function ProjectWorkBlock({
 
 export function OutputCollectionBlock(props: NodeViewProps) {
   const scope = useContext(WorkBlockScope);
+  const { template } = useScope(props);
   if (!scope)
     return (
       <NodeViewWrapper className="p-[22px_16px] [border:1px_dashed_var(--pc-line)] rounded-[10px] text-[var(--pc-muted)] text-[length:12px] leading-[1.6] text-center">
         Project results are unavailable here.
       </NodeViewWrapper>
     );
-  return <ProjectOutputCollectionBlock {...props} scope={scope} />;
+  return (
+    <ProjectOutputCollectionBlock
+      {...props}
+      scope={scope}
+      template={template}
+    />
+  );
 }
 
 function ProjectOutputCollectionBlock({
@@ -350,11 +406,12 @@ function ProjectOutputCollectionBlock({
   editor,
   updateAttributes,
   scope,
-}: NodeViewProps & { scope: CanvasScope }) {
+  template,
+}: NodeViewProps & { scope: CanvasScope; template: boolean }) {
   const editable = useBlockEditable(editor);
-  const mode = useContext(WorkBlockMode);
+  const mode = useContext(DocumentViewMode);
   const captured = mode === "snapshot" || Boolean(node.attrs.capturedAt);
-  const query = useGetCanvasQuery(scope, { skip: captured });
+  const query = useGetCanvasQuery(scope, { skip: captured || template });
   const included = new Set<string>();
   editor.state.doc.descendants((block) => {
     if (block.type.name === "artifactReference") {
@@ -362,10 +419,12 @@ function ProjectOutputCollectionBlock({
       included.add(String(block.attrs.versionId));
     }
   });
-  const all = captured
-    ? ((node.attrs.capturedOutputs ??
-        []) as components["schemas"]["CanvasArtifact"][])
-    : (query.currentData?.artifacts ?? []);
+  const all = template
+    ? []
+    : captured
+      ? ((node.attrs.capturedOutputs ??
+          []) as components["schemas"]["CanvasArtifact"][])
+      : (query.currentData?.artifacts ?? []);
   const rows = all.filter(
     (artifact) =>
       (captured ||
@@ -423,7 +482,9 @@ function ProjectOutputCollectionBlock({
           </label>
         </BlockSettings>
       )}
-      {!captured && query.isError ? (
+      {template ? (
+        <p role="status">Results collection template</p>
+      ) : !captured && query.isError ? (
         <p role="alert">
           Results could not be loaded.{" "}
           <button onClick={() => void query.refetch()}>Retry</button>

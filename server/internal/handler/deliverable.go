@@ -114,6 +114,7 @@ type deliverablePresentAppRequest struct {
 }
 
 type deliverablePresentRequest struct {
+	ArtifactID      *uuid.UUID                      `json:"artifactId,omitempty"      binding:"omitempty,excluded_with=PresentationID"`
 	PresentationID  *uuid.UUID                      `json:"presentationId,omitempty"  binding:"omitempty"`
 	Type            execution.ArtifactType          `json:"type,omitempty"            binding:"omitempty,oneof=app media text file"`
 	App             *deliverablePresentAppRequest   `json:"app,omitempty"             binding:"required_if=Type app,excluded_unless=Type app"`
@@ -124,7 +125,9 @@ type deliverablePresentRequest struct {
 }
 
 type deliverablePresentResponse struct {
-	OutputID uuid.UUID `json:"outputId"`
+	ArtifactID *uuid.UUID `json:"artifactId,omitempty"`
+	SnapshotID *uuid.UUID `json:"snapshotId,omitempty"`
+	OutputID   uuid.UUID  `json:"outputId"`
 }
 
 type artifactShareResponse struct {
@@ -265,6 +268,7 @@ func (h *Handler) presentRunOutput(c *gin.Context) {
 		principal,
 		origin,
 		execution.DeliverablePresentRequest{
+			ArtifactID:     request.ArtifactID,
 			PresentationID: request.PresentationID,
 			Type:           request.Type, App: app,
 			Title: request.Title, Summary: request.Summary,
@@ -279,7 +283,14 @@ func (h *Handler) presentRunOutput(c *gin.Context) {
 	if result.Created {
 		status = http.StatusCreated
 	}
-	c.JSON(status, deliverablePresentResponse{OutputID: result.OutputID})
+	c.JSON(
+		status,
+		deliverablePresentResponse{
+			OutputID:   result.OutputID,
+			ArtifactID: result.ArtifactID,
+			SnapshotID: result.SnapshotID,
+		},
+	)
 }
 
 func (h *Handler) fetchRunResult(c *gin.Context) {

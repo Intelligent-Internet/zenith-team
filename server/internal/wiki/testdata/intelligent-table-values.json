@@ -1,0 +1,10 @@
+[
+  {"name":"nanoseconds","type":"date","left":"2026-10-19T12:00:00.000000001Z","right":"2026-10-19T12:00:00.000000002Z","order":-1,"captureValid":true,"display":"2026-10-19T12:00:00.000000001Z"},
+  {"name":"equivalent offsets","type":"date","left":"2026-10-19T12:00:00+07:00","right":"2026-10-19T05:00:00Z","order":0,"captureValid":true,"display":"2026-10-19T12:00:00+07:00"},
+  {"name":"date only rejected","type":"date","left":"2026-10-19","right":"2026-10-19T05:00:00Z","order":1,"captureValid":false,"display":"Unavailable"},
+  {"name":"locale date rejected","type":"date","left":"10/19/2026","right":"2026-10-19T05:00:00Z","order":1,"captureValid":false,"display":"Unavailable"},
+  {"name":"calendar overflow rejected","type":"date","left":"2026-02-30T00:00:00Z","right":"2026-03-01T00:00:00Z","order":1,"captureValid":false,"display":"Unavailable"},
+  {"name":"numeric date rejected","type":"date","left":1,"right":"2026-10-19T05:00:00Z","order":1,"captureValid":false,"display":"Unavailable"},
+  {"name":"null date is unavailable","type":"date","left":null,"right":"2026-10-19T05:00:00Z","order":1,"captureValid":true,"display":"Unavailable"},
+  {"name":"leap day","type":"date","left":"2024-02-29T00:00:00Z","right":"2024-03-01T00:00:00Z","order":-1,"captureValid":true,"display":"2024-02-29T00:00:00Z"}
+]

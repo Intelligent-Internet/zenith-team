@@ -1,0 +1,5 @@
+{@body const rows = [{name:"A",value:12},{name:"B",value:18}];}
+<table>
+  <table-row><table-cell header>Item</table-cell><table-cell header align="end">Value</table-cell></table-row>
+  {#each rows as item}<table-row><table-cell>{item.name}</table-cell><table-cell align="end">{item.value}</table-cell></table-row>{/each}
+</table>

@@ -36,14 +36,11 @@ func freezePageReferences(
 	ctx context.Context,
 	q *generated.Queries,
 	in pageReferenceSnapshot,
-) (map[uuid.UUID]generated.ProjectArtifactVersion, error) {
+) (map[uuid.UUID]generated.ArtifactSnapshot, error) {
 	p, project, root := in.principal, in.project, in.root
-	if err := freezeAcceptedReferences(ctx, q, p, project, root); err != nil {
-		return nil, err
-	}
-	pinned := map[uuid.UUID]generated.ProjectArtifactVersion{}
-	published := map[uuid.UUID]generated.ProjectArtifactVersion{}
-	snapshots := map[uuid.UUID]generated.ProjectArtifactVersion{}
+	pinned := map[uuid.UUID]generated.ArtifactSnapshot{}
+	published := map[uuid.UUID]generated.ArtifactSnapshot{}
+	snapshots := map[uuid.UUID]generated.ArtifactSnapshot{}
 	active := map[uuid.UUID]bool{}
 
 	var walk func(*wiki.BlockNode, int) error
@@ -100,7 +97,7 @@ func freezePageReferences(
 					if err != nil {
 						return lookup(err)
 					}
-					if !metadata.ProjectID.Valid {
+					if metadata.ArtifactType == "wiki" {
 						// Company knowledge embeds its published revision, even when
 						// the capturing member can also edit the unpublished Wiki draft.
 						current, err := q.GetWikiCurrentRevision(
@@ -114,7 +111,7 @@ func freezePageReferences(
 							return lookup(err)
 						}
 						if current.ID == source.WikiRevisionID.UUID {
-							snapshots[id] = generated.ProjectArtifactVersion{
+							snapshots[id] = generated.ArtifactSnapshot{
 								ID:             source.ID,
 								WikiRevisionID: source.WikiRevisionID,
 							}
@@ -123,32 +120,11 @@ func freezePageReferences(
 						}
 						version, ok := published[source.ArtifactID]
 						if !ok {
-							if _, err = q.LockCanvasArtifact(
+							version, err = q.GetArtifactSnapshot(
 								ctx,
-								generated.LockCanvasArtifactParams{
+								generated.GetArtifactSnapshotParams{
 									CompanyID: p.CompanyID,
-									ProjectID: project,
-									ID:        source.ArtifactID,
-								},
-							); err != nil {
-								return lookup(err)
-							}
-							number, err := q.AllocateCanvasVersion(ctx, source.ArtifactID)
-							if err != nil {
-								return err
-							}
-							version, err = q.CreateCanvasVersion(
-								ctx,
-								generated.CreateCanvasVersionParams{
-									CompanyID:       p.CompanyID,
-									ProjectID:       project,
-									ArtifactID:      source.ArtifactID,
-									Number:          number,
-									SourceType:      "wiki",
-									WikiPageID:      source.WikiPageID,
-									WikiRevisionID:  nullable(&current.ID),
-									BaseVersionID:   nullable(&source.ID),
-									CreatedByUserID: p.UserID,
+									ID:        current.ID,
 								},
 							)
 							if err != nil {
@@ -190,15 +166,6 @@ func freezePageReferences(
 						if err = json.Unmarshal(raw, &content); err != nil {
 							return err
 						}
-						if err = freezeAcceptedReferences(
-							ctx,
-							q,
-							p,
-							project,
-							&content,
-						); err != nil {
-							return err
-						}
 						active[page] = true
 						if err = walk(&content, depth+1); err != nil {
 							return err
@@ -222,22 +189,11 @@ func freezePageReferences(
 						if err != nil {
 							return err
 						}
-						number, err := q.AllocateCanvasVersion(ctx, source.ArtifactID)
-						if err != nil {
-							return err
-						}
-						saved, err := q.CreateCanvasVersion(
+						saved, err := q.GetArtifactSnapshot(
 							ctx,
-							generated.CreateCanvasVersionParams{
-								CompanyID:       p.CompanyID,
-								ProjectID:       project,
-								ArtifactID:      source.ArtifactID,
-								Number:          number,
-								SourceType:      "wiki",
-								WikiPageID:      source.WikiPageID,
-								WikiRevisionID:  nullable(&revision),
-								BaseVersionID:   nullable(&source.ID),
-								CreatedByUserID: p.UserID,
+							generated.GetArtifactSnapshotParams{
+								CompanyID: p.CompanyID,
+								ID:        revision,
 							},
 						)
 						if err != nil {
