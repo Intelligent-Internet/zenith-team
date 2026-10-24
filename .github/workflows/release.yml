@@ -1,5 +1,5 @@
-# Publishes a release from a v<major>.<minor>.<patch> tag on main: the server,
-# web and voice images to GitHub Container Registry (build-image.yml, which
+# Publishes a release from a v<major>.<minor>.<patch> tag on main: the server
+# and web images to GitHub Container Registry (build-image.yml, which
 # build-deploy.yml shares), and the zen CLI plus the zenith-team-mcp binary to
 # a GitHub Release with checksums. While desktop releases are on, it also
 # builds the production desktop app (build-desktop.yml), publishes it to the
@@ -155,7 +155,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [server, web, voice]
+        # The voice worker is not released for now; it comes back as one more
+        # entry here once its GHCR package lets this repository write to it.
+        image: [server, web]
     uses: ./.github/workflows/build-image.yml
     with:
       image: ${{ matrix.image }}
