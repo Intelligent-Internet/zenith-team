@@ -56,27 +56,27 @@ Verify runs first; images, binaries and the desktop app then build side by side,
 
 ### 2. Images
 
-Builds the server, web and voice images (`server/Dockerfile`, `frontend/Dockerfile` and `voice-agent/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to GitHub Container Registry. `.github/workflows/build-image.yml` does the work, the same steps dev deployments use: the build jobs hold no registry credentials, and one publish job pushes the platform images, merges them and tags the result.
+Builds the server, web and voice images (`server/Dockerfile`, `frontend/Dockerfile` and `voice-agent/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to the `prod` environment's Artifact Registry repository, which is private: the images are for the project's own deployments, and self-hosters build from source. `.github/workflows/build-image.yml` does the work, the same steps dev deployments use: the build jobs hold no registry credentials, and one publish job, in the `prod` environment, pushes the platform images, merges them and tags the result.
 
-- `ghcr.io/intelligent-internet/zenith-team-server`
-- `ghcr.io/intelligent-internet/zenith-team-web`
-- `ghcr.io/intelligent-internet/zenith-team-voice`, the AI voice worker for Huddles
+- `GCP_IMAGE`, the server
+- `GCP_IMAGE-web`, the web app
+- `GCP_IMAGE-voice`, the AI voice worker for Huddles
 
 For `v1.3.0`, each image gets up to four tags:
 
 | Tag | Meaning |
 | --- | --- |
-| `1.3.0` | This exact release. Self-hosters should pin this. |
+| `1.3.0` | This exact release. |
 | `1.3` | The newest patch of the 1.3 line. Only a release that is the newest of its line moves it. |
 | `latest` | The newest release. Only the newest release moves it, so re-running an older one never moves it back; the same goes for GitHub's Latest release. |
 | `sha-<full commit>` | The tagged commit. |
 
 A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`, plus `sha-<full commit>`.
 
-Each image also carries an SBOM (its list of components) and build provenance (a record of how it was built), plus a GitHub build attestation that ties its digest to this repository, the ref and commit it was built from, and the workflow. Check one with:
+Each image also carries an SBOM (its list of components) and build provenance (a record of how it was built), plus a GitHub build attestation that ties its digest to this repository, the ref and commit it was built from, and the workflow. With read access to the repository (`gcloud auth configure-docker <region>-docker.pkg.dev`), check one with:
 
 ```bash
-gh attestation verify oci://ghcr.io/intelligent-internet/zenith-team-server:1.3.0 \
+gh attestation verify "oci://$GCP_IMAGE:1.3.0" \
   --repo Intelligent-Internet/zenith-team \
   --signer-workflow Intelligent-Internet/zenith-team/.github/workflows/build-image.yml \
   --source-ref refs/tags/v1.3.0 \
@@ -85,7 +85,13 @@ gh attestation verify oci://ghcr.io/intelligent-internet/zenith-team-server:1.3.
 
 Always pin `--source-ref`: without it, a build of any branch passes.
 
-The first publish creates each GHCR package as private. A maintainer makes `zenith-team-server`, `zenith-team-web` and `zenith-team-voice` public once, in the package settings; until then nobody can pull them anonymously.
+Settings the image jobs read:
+
+| Where | Name | Holds |
+| --- | --- | --- |
+| Repository variable | `GCP_WORKLOAD_IDENTITY_PROVIDER` | The Workload Identity provider the push signs in through |
+| `prod` variable | `GCP_DEPLOYER_SA` | The service account that pushes the images, only from the `prod` environment |
+| `prod` variable | `GCP_IMAGE` | The server image, `<region>-docker.pkg.dev/<project>/<repository>/<name>`; the others add `-web` and `-voice` |
 
 ### 3. Binaries
 

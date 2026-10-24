@@ -36,12 +36,11 @@ docker build -f server/Dockerfile -t zenith-team-server:$(git rev-parse --short 
 ```
 
 `server/Dockerfile.dockerignore` trims the BuildKit context to the Go module.
-CI publishes the same image, with the web image, to
-`ghcr.io/intelligent-internet/zenith-team-server` and
-`ghcr.io/intelligent-internet/zenith-team-web` when a `v<semver>` tag is
-pushed at a commit on `main` (`.github/workflows/release.yml`), tagged with
-the version and `sha-<full commit>`. Pin a version, or
-`sha-<full commit>@sha256:<digest>`. Tag local images with the
+When a `v<semver>` tag is pushed at a commit on `main`, CI publishes the same
+image, with the web and voice images, to the project's private Artifact
+Registry for its own deployments (`.github/workflows/release.yml`), tagged
+with the version and `sha-<full commit>`; there are no public images.
+Deployments pin `sha-<full commit>@sha256:<digest>`. Tag local images with the
 commit; `latest` is a convenience, never a deploy target. The image
 contains two binaries: `/usr/local/bin/zenith-team-server`
 and `/usr/local/bin/zenith-team-readyz`, a static probe used by the container

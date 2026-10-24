@@ -135,8 +135,8 @@ docker run --env-file <your env file> -p 8081:8081 zenith-helia:0.1.0
 ```
 
 CI builds and tests this image on every change to `voice-agent/`. Each
-release publishes it as `ghcr.io/intelligent-internet/zenith-team-voice`,
-tagged like the server image; nothing deploys it.
+release publishes it to the project's private Artifact Registry, beside the
+server image and tagged like it; nothing deploys it.
 
 ### Kubernetes
 

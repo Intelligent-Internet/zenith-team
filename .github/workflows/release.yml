@@ -1,13 +1,14 @@
 # Publishes a release from a v<major>.<minor>.<patch> tag on main: the server,
-# web and voice images to GitHub Container Registry (build-image.yml, which
-# build-deploy.yml shares), and the zen CLI plus the zenith-team-mcp binary to
-# a GitHub Release with checksums. While desktop releases are on, it also
-# builds the production desktop app (build-desktop.yml), publishes it to the
-# prod downloads (publish-desktop.yml) and attaches it to the GitHub Release.
-# A tag with a -alpha.N, -beta.N or -rc.N suffix is a pre-release: it never
-# moves the `latest` image tag, the latest GitHub Release or the desktop
-# download and update manifests. A tag push is the only event that publishes;
-# only the desktop jobs use secrets and cloud access, from the prod environment.
+# web and voice images to the prod environment's Artifact Registry repository
+# (build-image.yml, which build-deploy.yml shares), and the zen CLI plus the
+# zenith-team-mcp binary to a GitHub Release with checksums. While desktop
+# releases are on, it also builds the production desktop app
+# (build-desktop.yml), publishes it to the prod downloads (publish-desktop.yml)
+# and attaches it to the GitHub Release. A tag with a -alpha.N, -beta.N or
+# -rc.N suffix is a pre-release: it never moves the `latest` image tag, the
+# latest GitHub Release or the desktop download and update manifests. A tag
+# push is the only event that publishes. Only the image and desktop jobs
+# reach GCP, from the prod environment, and only the desktop jobs use secrets.
 name: Release
 
 on:
@@ -141,15 +142,37 @@ jobs:
           echo "::error::govulncheck found vulnerabilities. Fix them, or set ALLOW_VULN_BYPASS_FOR_TAG=$GITHUB_REF_NAME to release anyway."
           exit 1
 
+  # The prod environment's image settings, read before anything builds.
+  target:
+    environment: prod
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+    steps:
+      - name: Read the image settings
+        id: image
+        env:
+          PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          DEPLOYER_SA: ${{ vars.GCP_DEPLOYER_SA }}
+          IMAGE: ${{ vars.GCP_IMAGE }}
+        run: |
+          if [ -z "$PROVIDER" ] || [ -z "$DEPLOYER_SA" ] || [ -z "$IMAGE" ]; then
+            echo "::error::Set GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOYER_SA and GCP_IMAGE for the prod environment."
+            exit 1
+          fi
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
   # Each image is built natively per platform and published, with its SBOM,
-  # provenance and a build attestation, by build-image.yml. Besides the
-  # version tags it gets sha-<commit>, repointed to this build; deployments
-  # pin sha-<commit>@<digest>.
+  # provenance and a build attestation, by build-image.yml: the server as the
+  # prod GCP_IMAGE, the others as GCP_IMAGE-web and GCP_IMAGE-voice. Besides
+  # the version tags each gets sha-<commit>, repointed to this build;
+  # deployments pin sha-<commit>@<digest>.
   images:
-    needs: verify
+    needs: [verify, target]
     permissions:
       contents: read
-      packages: write
       id-token: write
       attestations: write
     strategy:
@@ -161,6 +184,8 @@ jobs:
       image: ${{ matrix.image }}
       version: ${{ needs.verify.outputs.version }}
       tags: ${{ needs.verify.outputs.image-tags }}
+      gcp-image: ${{ matrix.image == 'server' && needs.target.outputs.image || format('{0}-{1}', needs.target.outputs.image, matrix.image) }}
+      gcp-environment: prod
 
   binaries:
     needs: verify

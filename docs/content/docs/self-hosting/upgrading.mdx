@@ -30,25 +30,6 @@ git checkout v1.3.0
 make selfhost-up
 ```
 
-## Upgrade with the prebuilt images
-
-If you run the published images, move your checkout to the new tag, so the Compose file matches, and change the image tags in `deploy/.env`:
-
-```bash
-git fetch --tags
-git checkout v1.3.0
-```
-
-```dotenv
-APP_SERVER_IMAGE=ghcr.io/intelligent-internet/zenith-team-server:1.3.0
-APP_WEB_IMAGE=ghcr.io/intelligent-internet/zenith-team-web:1.3.0
-```
-
-```bash
-docker compose -f deploy/docker-compose.production.yml pull server web
-docker compose -f deploy/docker-compose.production.yml up -d --wait
-```
-
 ## What happens at start
 
 There is no separate migration step. Before it serves any traffic, the new server applies every pending database migration that ships inside it. Migrations are append-only: a release adds new ones after the last and never edits old ones, so a server that skipped versions applies them all in order.

@@ -1,10 +1,9 @@
 # Reusable: builds one image (server, web or voice) of the calling commit for
 # linux/amd64 and linux/arm64, each on a native runner, and publishes it as one
-# multi-arch image tagged sha-<commit> plus the caller's tags. release.yml
-# publishes to GitHub Container Registry (registry: ghcr); build-deploy.yml
-# publishes to a Google Artifact Registry repository for a deployment
-# (registry: gcp), from the caller's GitHub environment, signing in through
-# Workload Identity Federation as that environment's GCP_DEPLOYER_SA.
+# multi-arch image tagged sha-<commit> plus the caller's tags to a Google
+# Artifact Registry repository. It publishes from the caller's GitHub
+# environment (dev for build-deploy.yml, prod for release.yml), signing in
+# through Workload Identity Federation as that environment's GCP_DEPLOYER_SA.
 #
 # The build jobs hold no registry credentials: they run the Dockerfile and
 # upload an OCI archive that carries the image's SBOM and provenance. Only the
@@ -31,33 +30,21 @@ on:
         required: false
         type: string
         default: ""
-      skip-existing:
-        description: "Publish nothing when sha-<commit> already exists (ghcr only)"
-        required: false
-        type: boolean
-        default: false
-      registry:
-        description: "ghcr (GitHub Container Registry) or gcp (Artifact Registry: set gcp-image and gcp-environment)"
-        required: false
-        type: string
-        default: ghcr
       gcp-image:
         description: "Image name without a tag, <region>-docker.pkg.dev/<project>/<repository>/<name>"
-        required: false
+        required: true
         type: string
-        default: ""
       gcp-environment:
-        description: "GitHub environment to publish from; it holds GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_DEPLOYER_SA"
-        required: false
+        description: "GitHub environment to publish from; it holds GCP_DEPLOYER_SA"
+        required: true
         type: string
-        default: ""
     outputs:
       image:
         description: "The image name, without a tag"
         value: ${{ jobs.plan.outputs.image }}
       digest:
-        description: "The published digest; empty when skipped"
-        value: ${{ jobs.publish.outputs.digest || jobs.publish-gcp.outputs.digest }}
+        description: "The published digest"
+        value: ${{ jobs.publish.outputs.digest }}
 
 permissions: {}
 
@@ -65,28 +52,19 @@ jobs:
   plan:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    permissions:
-      packages: read
-      attestations: read
+    permissions: {}
     outputs:
       image: ${{ steps.plan.outputs.image }}
       dockerfile: ${{ steps.plan.outputs.dockerfile }}
       context: ${{ steps.plan.outputs.context }}
-      exists: ${{ steps.plan.outputs.exists }}
       registry-host: ${{ steps.plan.outputs.registry-host }}
     steps:
-      - name: Resolve the image and check for an existing one
+      - name: Resolve the image
         id: plan
         env:
           IMAGE: ${{ inputs.image }}
-          OWNER: ${{ github.repository_owner }}
-          REGISTRY: ${{ inputs.registry }}
           GCP_IMAGE: ${{ inputs.gcp-image }}
-          GCP_ENVIRONMENT: ${{ inputs.gcp-environment }}
-          SKIP_EXISTING: ${{ inputs.skip-existing }}
           TAGS: ${{ inputs.tags }}
-          GH_ACTOR: ${{ github.actor }}
-          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # Release tags such as 1.3.0 or latest come only from a version-tag
@@ -101,56 +79,19 @@ jobs:
             voice) dockerfile=voice-agent/Dockerfile context=voice-agent ;;
             *) echo "::error::image must be server, web or voice, got '$IMAGE'"; exit 1 ;;
           esac
-          case "$REGISTRY" in
-            ghcr) name="ghcr.io/${OWNER,,}/zenith-team-${IMAGE}" ;;
-            gcp)
-              if [[ ! "$GCP_IMAGE" =~ ^[a-z0-9-]+-docker\.pkg\.dev/[a-z0-9-]+/[a-z0-9-]+/[a-z0-9][a-z0-9._/-]*$ ]]; then
-                echo "::error::gcp-image must be <region>-docker.pkg.dev/<project>/<repository>/<name>, got '$GCP_IMAGE'"
-                exit 1
-              fi
-              if [ -z "$GCP_ENVIRONMENT" ]; then
-                echo "::error::registry gcp needs gcp-environment"
-                exit 1
-              fi
-              if [ "$SKIP_EXISTING" = true ]; then
-                echo "::error::skip-existing checks ghcr attestations; it does not apply to gcp"
-                exit 1
-              fi
-              name="$GCP_IMAGE"
-              ;;
-            *) echo "::error::registry must be ghcr or gcp, got '$REGISTRY'"; exit 1 ;;
-          esac
-          exists=false
-          if [ "$SKIP_EXISTING" = true ]; then
-            authfile="$RUNNER_TEMP/ghcr-auth.json"
-            printf '%s' "$GH_TOKEN" | skopeo login --authfile "$authfile" ghcr.io --username "$GH_ACTOR" --password-stdin >/dev/null
-            # Skip only an image this workflow built and attested from this
-            # commit and ref. The tag is pushed before the attestation, so a
-            # failed attest step leaves an unattested tag that must be rebuilt.
-            # Anything missing reads as "not there": building again is always
-            # safe, skipping an image the verifier would reject never is.
-            if skopeo inspect --raw --authfile "$authfile" "docker://${name}:sha-${GITHUB_SHA}" >/dev/null 2>&1 &&
-              gh attestation verify "oci://${name}:sha-${GITHUB_SHA}" \
-                --repo "$GITHUB_REPOSITORY" \
-                --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/build-image.yml" \
-                --source-ref "$GITHUB_REF" \
-                --source-digest "$GITHUB_SHA" \
-                --deny-self-hosted-runners >/dev/null 2>&1; then
-              exists=true
-              echo "::notice::${name}:sha-${GITHUB_SHA} already exists and is attested; nothing to build."
-            fi
+          if [[ ! "$GCP_IMAGE" =~ ^[a-z0-9-]+-docker\.pkg\.dev/[a-z0-9-]+/[a-z0-9-]+/[a-z0-9][a-z0-9._/-]*$ ]]; then
+            echo "::error::gcp-image must be <region>-docker.pkg.dev/<project>/<repository>/<name>, got '$GCP_IMAGE'"
+            exit 1
           fi
           {
-            echo "image=$name"
+            echo "image=$GCP_IMAGE"
             echo "dockerfile=$dockerfile"
             echo "context=$context"
-            echo "exists=$exists"
-            echo "registry-host=${name%%/*}"
+            echo "registry-host=${GCP_IMAGE%%/*}"
           } >> "$GITHUB_OUTPUT"
 
   build:
     needs: plan
-    if: needs.plan.outputs.exists != 'true'
     strategy:
       matrix:
         include:
@@ -204,30 +145,36 @@ jobs:
           # Long enough for "Re-run failed jobs" to reach a failed publish.
           retention-days: 7
 
+  # From the caller's environment: the deploy account is bound to that
+  # environment, not to the repository.
   publish:
     needs: [plan, build]
-    if: inputs.registry == 'ghcr'
+    environment: ${{ inputs.gcp-environment }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
-      packages: write
       id-token: write
       attestations: write
     outputs:
       digest: ${{ steps.push.outputs.digest }}
     steps:
-      - &download-archives
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: image-${{ inputs.image }}-*
           path: archives
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        id: gcp
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+          token_format: access_token
+          create_credentials_file: false
       - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - &push-and-merge
-        name: Push the platform images and merge them
+          registry: ${{ needs.plan.outputs.registry-host }}
+          username: oauth2accesstoken
+          password: ${{ steps.gcp.outputs.access_token }}
+      - name: Push the platform images and merge them
         id: push
         env:
           IMAGE: ${{ needs.plan.outputs.image }}
@@ -264,45 +211,14 @@ jobs:
           docker buildx imagetools inspect --raw "$IMAGE@$digest" >/dev/null
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
           echo "::notice::Published $IMAGE:sha-$GITHUB_SHA ($digest)"
-      - &attest
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-name: ${{ needs.plan.outputs.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
           # Artifact Registry's cleanup deletes untagged manifests no image
           # references, which an attestation pushed beside the image is, so
-          # there the attestation lives on GitHub alone.
-          push-to-registry: ${{ inputs.registry == 'ghcr' }}
+          # the attestation lives on GitHub alone.
+          push-to-registry: false
           # The org-level storage record needs artifact-metadata: write, which
           # nothing here needs otherwise.
           create-storage-record: false
-
-  # The same steps for Artifact Registry, from the caller's environment: the
-  # deploy account is bound to that environment, not to the repository.
-  publish-gcp:
-    needs: [plan, build]
-    if: inputs.registry == 'gcp'
-    environment: ${{ inputs.gcp-environment }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    permissions:
-      id-token: write
-      attestations: write
-    outputs:
-      digest: ${{ steps.push.outputs.digest }}
-    steps:
-      - *download-archives
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
-        id: gcp
-        with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_DEPLOYER_SA }}
-          token_format: access_token
-          create_credentials_file: false
-      - uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
-        with:
-          registry: ${{ needs.plan.outputs.registry-host }}
-          username: oauth2accesstoken
-          password: ${{ steps.gcp.outputs.access_token }}
-      - *push-and-merge
-      - *attest
