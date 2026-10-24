@@ -14,6 +14,7 @@ var (
 	ErrPasswordResetUnavailable  = errors.New("password reset is unavailable")
 	ErrPasswordResetInvalid      = errors.New("password reset token is invalid or expired")
 	ErrInvalidCredentials        = errors.New("invalid credentials")
+	ErrPasswordWorkBusy          = errors.New("password work capacity is exhausted")
 	ErrInvalidSession            = errors.New("invalid session")
 	ErrRefreshTokenReused        = errors.New("refresh token was already used")
 	ErrSessionAlreadyRotated     = errors.New("session was already rotated")

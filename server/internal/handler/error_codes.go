@@ -129,6 +129,7 @@ var errorCodeRegistry = map[string]int{
 
 	// Authentication and session.
 	"authentication_required":   http.StatusUnauthorized,
+	"authentication_busy":       http.StatusServiceUnavailable,
 	"session_invalid":           http.StatusUnauthorized,
 	"invalid_credentials":       http.StatusUnauthorized,
 	"session_already_rotated":   http.StatusConflict,

@@ -59,6 +59,7 @@ type DefaultAuthService struct {
 	store             *db.Store
 	bus               *events.Bus
 	passwords         PasswordManager
+	passwordWork      chan struct{}
 	tokens            *TokenManager
 	invalidator       SessionInvalidator
 	dummyHash         string
@@ -91,9 +92,14 @@ func NewAuthService(options ServiceOptions) (*DefaultAuthService, error) {
 		return nil, err
 	}
 	return &DefaultAuthService{
-		store:             options.Store,
-		bus:               options.Bus,
-		passwords:         options.Passwords,
+		store:     options.Store,
+		bus:       options.Bus,
+		passwords: options.Passwords,
+		// Four simultaneous operations bound the default Argon2 working
+		// memory to 76 MiB (256 MiB for the maximum accepted stored cost).
+		// The one service composed by the API shares this budget across
+		// signup, login (including dummy verification), and password reset.
+		passwordWork:      make(chan struct{}, 4),
 		tokens:            options.Tokens,
 		invalidator:       options.SessionInvalidator,
 		dummyHash:         dummyHash,
@@ -134,7 +140,7 @@ func (s *DefaultAuthService) Signup(ctx context.Context, input SignupInput) (Sig
 	if err != nil {
 		return SignupResult{}, err
 	}
-	passwordHash, err := s.passwords.Hash(input.Password)
+	passwordHash, err := s.hashPassword(ctx, input.Password)
 	if err != nil {
 		return SignupResult{}, fmt.Errorf("hash password: %w", err)
 	}
@@ -201,13 +207,17 @@ func (s *DefaultAuthService) Login(ctx context.Context, input LoginInput) (Login
 	}
 	email, emailErr := normalizeEmail(input.Email)
 	if emailErr != nil {
-		_ = s.passwords.Verify(s.dummyHash, input.Password)
+		if _, err := s.verifyPassword(ctx, s.dummyHash, input.Password); err != nil {
+			return LoginResult{}, err
+		}
 		return LoginResult{}, ErrInvalidCredentials
 	}
 	user, err := findUserByEmail(ctx, s.store.Queries(), email)
 	if err != nil {
 		if errors.Is(err, ErrNotFound) {
-			_ = s.passwords.Verify(s.dummyHash, input.Password)
+			if _, err := s.verifyPassword(ctx, s.dummyHash, input.Password); err != nil {
+				return LoginResult{}, err
+			}
 			return LoginResult{}, ErrInvalidCredentials
 		}
 		return LoginResult{}, err
@@ -216,7 +226,10 @@ func (s *DefaultAuthService) Login(ctx context.Context, input LoginInput) (Login
 	if passwordHash == "" {
 		passwordHash = s.dummyHash
 	}
-	passwordMatches := s.passwords.Verify(passwordHash, input.Password)
+	passwordMatches, err := s.verifyPassword(ctx, passwordHash, input.Password)
+	if err != nil {
+		return LoginResult{}, err
+	}
 	if user.DisabledAt != nil || user.PasswordHash == "" || !passwordMatches {
 		return LoginResult{}, ErrInvalidCredentials
 	}

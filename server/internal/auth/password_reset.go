@@ -202,7 +202,7 @@ func (s *DefaultAuthService) ResetPassword(ctx context.Context, input PasswordRe
 	if err != nil || len(tokenBytes) != passwordResetTokenBytes {
 		return ErrPasswordResetInvalid
 	}
-	passwordHash, err := s.passwords.Hash(input.NewPassword)
+	passwordHash, err := s.hashPassword(ctx, input.NewPassword)
 	if err != nil {
 		return fmt.Errorf("hash reset password: %w", err)
 	}

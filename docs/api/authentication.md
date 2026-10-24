@@ -29,6 +29,12 @@ specifically a **cookie** session.
 
 ## Call budget
 
+Signup, password login (including dummy verification), and password reset share
+a per-process budget of four concurrent password hashes or verifications. Excess
+work is refused without queueing with `503 authentication_busy` and
+`Retry-After: 1`. Clients should retry with backoff. This resource budget does not
+replace deployment-level limits against credential stuffing or abusive signup.
+
 **Signing in is one request.**
 
 It was two. The client followed a successful `POST /auth/login` with
@@ -963,6 +969,13 @@ credential detail is ever exposed here.
 
 ## Begin the browser Google flow
 
+Google sign-in resolves existing accounts only through an already-linked
+provider subject. A new subject whose email matches an existing account is
+refused with `oauth_account_conflict`, even if the existing email is marked
+verified. Signup without email verification historically set that timestamp,
+so it cannot prove account ownership. There is no explicit account-linking flow;
+use the account's original sign-in method. Existing provider links are preserved.
+
 ```
 POST /api/v1/auth/google/web/start
 {
@@ -1045,7 +1058,7 @@ exactly as it would on an error envelope's `code`.
 | 303 | `oauth_identity_invalid` | The provider returned an unusable subject, email or name |
 | 303 | `oauth_email_unverified` | Google reports the address as unverified |
 | 303 | `account_disabled` | The matched account is disabled |
-| 303 | `oauth_account_conflict` | The identity belongs to another account. Sign in with the original method and link |
+| 303 | `oauth_account_conflict` | A new provider identity has an email already used by another account. Use the original sign-in method; email-only linking is refused |
 | 303 | `oauth_provider_unavailable` | Token exchange failed |
 | 303 | `oauth_not_configured` | Google is not configured for the web client |
 | 500 | `internal_error` | Missing web app origin or CSRF configuration, an unsafe stored return path, or an unexpected internal error. These retain the error envelope |
@@ -1164,7 +1177,7 @@ Sending both `code` and `error`, or neither, is `422 validation_failed`.
 | 401 | `oauth_identity_invalid` | Unusable provider identity |
 | 403 | `oauth_email_unverified` | Google reports the address as unverified |
 | 403 | `account_disabled` | The matched account is disabled |
-| 409 | `oauth_account_conflict` | The identity belongs to another account |
+| 409 | `oauth_account_conflict` | A new provider identity has an email already used by another account. Use the original sign-in method; email-only linking is refused |
 | 422 | `validation_failed` | The `code`/`error` rule, a non-UUID `flowId`, or a missing required field |
 | 502 | `oauth_provider_unavailable` | Token exchange failed |
 | 503 | `oauth_not_configured` | Google is not configured for the desktop client |

@@ -669,6 +669,12 @@ var authErrorMappings = []errorMapping{
 		"password_reset_invalid",
 	},
 	{auth.ErrInvalidCredentials, http.StatusUnauthorized, "email or password is incorrect", "invalid_credentials"},
+	{
+		auth.ErrPasswordWorkBusy,
+		http.StatusServiceUnavailable,
+		"authentication is busy; retry shortly",
+		"authentication_busy",
+	},
 	{auth.ErrInvalidSession, http.StatusUnauthorized, "session is invalid or expired", "session_invalid"},
 	{auth.ErrRefreshTokenReused, http.StatusUnauthorized, "session is invalid or expired", "session_invalid"},
 	{
@@ -726,6 +732,9 @@ var authErrorMappings = []errorMapping{
 }
 
 func writeAuthError(c *gin.Context, err error) {
+	if errors.Is(err, auth.ErrPasswordWorkBusy) {
+		c.Header("Retry-After", "1")
+	}
 	writeMappedError(c, err, authErrorMappings, internalErrorFallback)
 }
 
