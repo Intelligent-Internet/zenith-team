@@ -60,7 +60,7 @@ The stack refuses to start without these. `make selfhost-env` generates all thre
 | Variable | Default | What it does |
 | --- | --- | --- |
 | `APP_NAME` | `Zenith Team API` | The server's name. |
-| `APP_ENVIRONMENT` | `production` | `local`, `staging` or `production`. Outside `local`, template secrets and the `local` storage preset are refused. |
+| `APP_ENVIRONMENT` | `production` | `local`, `dev`, `staging` or `production`. Outside `local`, template secrets and the `local` storage preset are refused. The value also labels every log line. |
 | `APP_LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error`. Logs are one JSON object per line. |
 | `APP_SERVER_IMAGE` | `zenith-team-server:latest` | The server image. Read by Compose. The default is the image `make selfhost-up` builds. Set it to a published image to skip the build, for example `ghcr.io/intelligent-internet/zenith-team-server:1.2.3`. |
 | `APP_WEB_IMAGE` | `zenith-team-web:latest` | The web app image. Read by Compose. Published as `ghcr.io/intelligent-internet/zenith-team-web`. |
