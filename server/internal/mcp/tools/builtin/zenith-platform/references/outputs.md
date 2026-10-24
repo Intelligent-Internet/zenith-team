@@ -16,7 +16,8 @@ never applies suggestions, grants approval or changes the assigned review policy
 If the Task revision changed, reread it before choosing the selection again.
 End the Run normally after finalization. Required review or unapplied required
 suggestions keep the Task in Needs review. Do not call this in direct or scheduled
-chats, which have no Task result selection.
+chats, which have no Task result selection, or in a Task Run that presented no
+outputs, such as an answer-only Task: it has nothing to select.
 
 ## Native Page captures
 

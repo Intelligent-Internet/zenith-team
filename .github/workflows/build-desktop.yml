@@ -1,0 +1,217 @@
+# Reusable: builds the desktop app of one channel at the calling commit:
+# signed and notarized macOS installers for Apple silicon (arm64), the .dmg
+# itself also signed, notarized and stapled, uploaded as
+# the workflow artifact desktop-<channel>-darwin-arm64. publish-desktop.yml
+# publishes them. Intel Macs, Linux and Windows are not shipped for now; a
+# platform comes back as one more matrix entry.
+# Called by build-deploy.yml (dev) and release.yml (prod).
+#
+# The channel's GitHub environment, dev or prod, supplies DESKTOP_API_ORIGIN
+# (the server the app signs in to) and DESKTOP_RELEASE_BASE_URL (where it looks
+# for updates). The Apple credentials live apart, in the desktop-signing
+# environment, which admits only main and v* tags: a branch can deploy the dev
+# server, but nothing it changes can reach the Developer ID. Only the macOS
+# jobs run there, and each secret reaches only the step that needs it;
+# installing dependencies sees none. The signing step runs the build tools from
+# node_modules, which can reach the unlocked keychain and the notary key while
+# it runs, so dependency changes need the same review as workflow changes.
+name: Build desktop
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: "prod (Zenith Team) or dev (Zenith Team Dev)"
+        required: true
+        type: string
+      version:
+        description: "The version to build; a prod build must match frontend/package.json"
+        required: true
+        type: string
+    # The Apple credentials, which exist only in the desktop-signing
+    # environment. A called workflow sees an environment's secrets only when
+    # its caller passes them, by name here rather than with secrets: inherit;
+    # GitHub then resolves them in the macOS jobs' environment. A secret that
+    # is not passed arrives empty, so the macOS job checks all six first.
+    secrets:
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64:
+        description: "Developer ID Application certificate with its key (.p12), base64"
+        required: false
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD:
+        description: "Password of that .p12"
+        required: false
+      ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY:
+        description: "The certificate's name, Developer ID Application: <team> (<team ID>)"
+        required: false
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64:
+        description: "App Store Connect API key (.p8), base64"
+        required: false
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID:
+        description: "That key's ID"
+        required: false
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER:
+        description: "The App Store Connect issuer ID"
+        required: false
+
+permissions: {}
+
+jobs:
+  settings:
+    name: settings (${{ inputs.channel }})
+    environment: ${{ inputs.channel }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      api-origin: ${{ steps.channel.outputs.api-origin }}
+      release-base-url: ${{ steps.channel.outputs.release-base-url }}
+    steps:
+      # Without both, the shared setup would build the local variant.
+      - name: Read the channel's settings
+        id: channel
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          API_ORIGIN: ${{ vars.DESKTOP_API_ORIGIN }}
+          RELEASE_BASE_URL: ${{ vars.DESKTOP_RELEASE_BASE_URL }}
+        run: |
+          if [ "$CHANNEL" != dev ] && [ "$CHANNEL" != prod ]; then
+            echo "::error::channel must be dev or prod, got '$CHANNEL'"
+            exit 1
+          fi
+          if [ -z "$API_ORIGIN" ] || [ -z "$RELEASE_BASE_URL" ]; then
+            echo "::error::Set DESKTOP_API_ORIGIN and DESKTOP_RELEASE_BASE_URL in the $CHANNEL environment."
+            exit 1
+          fi
+          {
+            echo "api-origin=$API_ORIGIN"
+            echo "release-base-url=$RELEASE_BASE_URL"
+          } >> "$GITHUB_OUTPUT"
+
+  macos:
+    needs: settings
+    environment: desktop-signing
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            arch: arm64
+    name: darwin ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # All six at once, before anything else, so a missing one is named here
+      # rather than failing the build half an hour later.
+      - name: Require the signing secrets
+        env:
+          ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+          ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+          ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
+        run: |
+          missing=()
+          for name in ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD \
+            ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 \
+            ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing in the desktop-signing environment, or not passed by the caller: ${missing[*]}"
+            exit 1
+          fi
+      # Before any dependency is installed: install scripts are third-party
+      # code, and the certificate file and its password must be gone by then.
+      - name: Load the signing certificate into a temporary keychain
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          keychain_password="$(uuidgen)"
+          keychain="$RUNNER_TEMP/zenith-team-release.keychain-db"
+          certificate="$RUNNER_TEMP/zenith-team-mac-certificate.p12"
+          umask 077
+          # The same decode the boardly desktop pipeline used.
+          python3 -c 'import base64, os, sys; sys.stdout.buffer.write(base64.b64decode(os.environ["CERTIFICATE_BASE64"]))' > "$certificate"
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          # As boardly imported it (-A, with the partition list below), but the
+          # private key cannot be exported (-x).
+          security import "$certificate" -P "$CERTIFICATE_PASSWORD" -A -x -t cert -f pkcs12 -k "$keychain"
+          rm -f "$certificate"
+          # Keep the existing search list and put the release keychain first.
+          keychains=("$keychain")
+          while IFS= read -r line; do
+            line="${line//\"/}"
+            keychains+=("${line//[[:space:]]/}")
+          done < <(security list-keychains -d user)
+          security list-keychains -d user -s "${keychains[@]}"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
+      - uses: ./.github/actions/desktop-setup
+        with:
+          variant: ${{ inputs.channel }}
+          api-origin: ${{ needs.settings.outputs.api-origin }}
+          release-base-url: ${{ needs.settings.outputs.release-base-url }}
+          version: ${{ inputs.version }}
+      - name: Write the notary key
+        env:
+          NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          python3 -c 'import base64, os, sys; sys.stdout.buffer.write(base64.b64decode(os.environ["NOTARY_API_KEY_BASE64"]))' > "$RUNNER_TEMP/zenith-team-notary-api-key.p8"
+      - name: Make signed and notarized macOS installers
+        working-directory: frontend
+        env:
+          ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
+          # Written by the step above; the build reads the key from this file.
+          ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY: ${{ runner.temp }}/zenith-team-notary-api-key.p8
+          # The renderer build needs more than Node's default heap.
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm electron:make:mac:signed
+      - name: Remove the signing identity
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/zenith-team-release.keychain-db" || true
+          rm -f "$RUNNER_TEMP/zenith-team-notary-api-key.p8"
+      # Gatekeeper's own checks on the download: the disk image, not only the
+      # app inside it, must be signed, notarized and stapled.
+      - name: Check the disk image
+        working-directory: frontend
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r -d '' dmg; do
+            found=1
+            spctl --assess --type open --context context:primary-signature --verbose=2 "$dmg"
+            xcrun stapler validate "$dmg"
+          done < <(find out/make -name '*.dmg' -print0)
+          if [ "$found" = 0 ]; then
+            echo "::error::The build made no .dmg."
+            exit 1
+          fi
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: desktop-${{ inputs.channel }}-darwin-${{ matrix.arch }}
+          path: |
+            frontend/out/make/**/Zenith-Team-${{ inputs.channel }}-*.dmg
+            frontend/out/make/**/Zenith-Team-${{ inputs.channel }}-*.zip
+            frontend/out/make/**/Zenith-Team-${{ inputs.channel }}-*.sha256
+          # A re-run of a failed attempt uploads the same name again.
+          overwrite: true
+          if-no-files-found: error
+          # A failed publish can only resume from these exact files: a rebuild
+          # differs byte for byte and published files are never replaced.
+          retention-days: 30

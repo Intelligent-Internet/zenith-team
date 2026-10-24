@@ -1,6 +1,8 @@
-# Checks every pull request and every push to main. Each lane runs when the
-# files it reads change; a manual run checks everything. ci-gate is the one
-# required check. Slow, platform-specific suites live in nightly.yml. Fork
+# Checks every pull request and every push to main. On a pull request each
+# lane runs when the files it reads change; a push to main and a manual run
+# check every lane (the desktop lane only when its files change), so a green
+# ci-gate on a main commit vouches for the whole tree, which is what
+# release.yml relies on. ci-gate is the one required check. Slow, platform-specific suites live in nightly.yml. Fork
 # pull requests run here with a read-only token and no secrets.
 name: CI
 
@@ -12,10 +14,11 @@ on:
   workflow_dispatch:
 
 concurrency:
-  # One group per pull request or pushed ref, so a fork branch named main
-  # never shares a group with pushes to main.
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
-  # Cancel superseded runs on pull requests only; every push to main is checked.
+  # One group per pull request, and one per pushed commit: GitHub drops a
+  # waiting run when a newer one joins its group, so pushes to main must never
+  # share one or a commit could end up with no ci-gate. The event name keeps a
+  # fork branch named main out of the push groups.
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event_name == 'push' && github.sha || github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -29,11 +32,12 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      server: ${{ steps.filter.outputs.server == 'true' || github.event_name == 'workflow_dispatch' }}
-      frontend: ${{ steps.filter.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' }}
-      voice: ${{ steps.filter.outputs.voice == 'true' || github.event_name == 'workflow_dispatch' }}
-      selfhost: ${{ steps.filter.outputs.selfhost == 'true' || github.event_name == 'workflow_dispatch' }}
-      workflows: ${{ steps.filter.outputs.workflows == 'true' || github.event_name == 'workflow_dispatch' }}
+      server: ${{ steps.filter.outputs.server == 'true' || github.event_name != 'pull_request' }}
+      frontend: ${{ steps.filter.outputs.frontend == 'true' || github.event_name != 'pull_request' }}
+      voice: ${{ steps.filter.outputs.voice == 'true' || github.event_name != 'pull_request' }}
+      selfhost: ${{ steps.filter.outputs.selfhost == 'true' || github.event_name != 'pull_request' }}
+      workflows: ${{ steps.filter.outputs.workflows == 'true' || github.event_name != 'pull_request' }}
+      desktop: ${{ steps.filter.outputs.desktop == 'true' || github.event_name == 'workflow_dispatch' }}
     steps:
       # Pull requests are diffed through the API; pushes need the checkout.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,21 +51,25 @@ jobs:
           # Each lane lists the files its checks read, shared inputs included.
           filters: |
             server:
+              - ".github/workflows/ci.yml"
               - "server/**"
               - "docs/api/**"
               - "deploy/production.env.example"
               - "deploy/docker-compose.production.yml"
               - "Makefile"
             frontend:
+              - ".github/workflows/ci.yml"
               - "frontend/**"
               - "docs/api/spec/**"
               - "LICENSE"
               - "THIRD_PARTY_NOTICES.md"
               - "Makefile"
             voice:
+              - ".github/workflows/ci.yml"
               - "voice-agent/**"
               - "Makefile"
             selfhost:
+              - ".github/workflows/ci.yml"
               - "deploy/**"
               - "server/Dockerfile*"
               - "frontend/Dockerfile*"
@@ -70,13 +78,48 @@ jobs:
               - "Makefile"
             workflows:
               - ".github/**"
+            desktop:
+              - ".github/workflows/ci.yml"
+              - "frontend/electron/**"
+              - "frontend/forge.config.cjs"
+              - "frontend/package.json"
+              - "frontend/pnpm-lock.yaml"
+              - ".github/actions/desktop-setup/**"
 
-  server:
+  # The race-enabled unit tests alone: the slowest lane, so everything else
+  # go-unit checks runs in server-lint.
+  server-test:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    # The race-enabled unit suite takes about 15 minutes on a hosted runner.
     timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # setup-go's cache key is shared with every other Go job, and the first
+      # to finish writes it; this lane's -race build output needs its own.
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: "1.26.x"
+          check-latest: true
+          cache: false
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: go-race-${{ runner.os }}-${{ hashFiles('server/go.sum') }}
+          restore-keys: go-race-${{ runner.os }}-
+      # GOFLAGS cleared: the Makefile's -p=2 bounds the integration suites'
+      # database load, and these tests use no database.
+      - run: make go-unit-tests GOFLAGS=
+
+  server-lint:
+    needs: changes
+    if: needs.changes.outputs.server == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -86,8 +129,23 @@ jobs:
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: "1.26.x"
+          check-latest: true
           cache-dependency-path: server/go.sum
+      # The pinned sqlc and golangci-lint the Makefile installs into .tools.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .tools
+          key: tools-${{ runner.os }}-${{ hashFiles('Makefile') }}
+      # golangci-lint's own analysis cache; it checks each entry against the
+      # source, so a stale one only costs a re-analysis.
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/golangci-lint
+          key: golangci-lint-${{ runner.os }}-${{ hashFiles('Makefile', 'server/go.sum', 'server/.golangci.yml') }}
       - run: make go-fmt-check
+      # The rest of go-unit: shape checks, the pinned sqlc drift check, build
+      # and vet (with and without the integration tag).
+      - run: make go-unit-checks
       # Pull requests are held to zero new findings even if main has some.
       - name: Lint
         env:
@@ -98,8 +156,6 @@ jobs:
           else
             make go-lint
           fi
-      # Includes the pinned sqlc drift check (go-sqlc-check).
-      - run: make go-unit
       # zen and the MCP server ship inside the desktop app on every platform.
       - name: Cross-compile the shipped binaries
         working-directory: server
@@ -205,22 +261,61 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version: "1.26.x"
-          cache: false
-      - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-      - run: actionlint
+      # The released image, with shellcheck for run: scripts, pinned by digest.
+      - run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 -color
       - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
         with:
           version: "0.10.9"
-      - run: uvx zizmor@1.30.1 --min-severity medium .github/workflows
+      # Workflows and the composite action. The token turns on the online
+      # audits: impostor commits, pins that do not match their version comment
+      # and actions with known advisories.
+      - run: uvx zizmor@1.30.1 --min-severity medium .github
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # Unsigned installers for the local variant, built with the same shared
+  # setup as build-desktop.yml, to catch packaging breaks before a tag or a
+  # dev deploy. No secrets: only build-desktop.yml signs, and only it builds
+  # without caches. The installers stay a week as workflow artifacts for
+  # manual testing. Apple silicon only, the one platform shipped for now.
+  desktop:
+    needs: changes
+    if: needs.changes.outputs.desktop == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            platform: darwin
+            arch: arm64
+    name: desktop (${{ matrix.platform }} ${{ matrix.arch }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/desktop-setup
+        with:
+          cache: "true"
+      - name: Make unsigned installers
+        working-directory: frontend
+        env:
+          # The renderer build needs more than Node's default heap.
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm electron:make
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: zenith-team-desktop-${{ matrix.platform }}-${{ matrix.arch }}
+          path: frontend/out/make/**
+          if-no-files-found: error
+          retention-days: 7
 
   # The one required status check: fails when any lane failed or was
   # cancelled; lanes that did not need to run are skipped.
   ci-gate:
     if: always()
-    needs: [changes, server, frontend, voice, selfhost, workflows]
+    needs: [changes, server-test, server-lint, frontend, voice, selfhost, workflows, desktop]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

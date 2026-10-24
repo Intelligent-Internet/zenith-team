@@ -12,11 +12,13 @@ import { Icon } from "@/shared/ui/icon";
 import { Tooltip } from "@/shared/ui/tooltip";
 
 import "./desktop-update-button.css";
+import { useDesktopAppName } from "./use-desktop-app-name";
 
 export function DesktopUpdateButton() {
   const [updateState, setUpdateState] = useState<DesktopUpdateState>(
     WEB_DESKTOP_UPDATE_STATE_FALLBACK,
   );
+  const appName = useDesktopAppName();
 
   useEffect(() => {
     let cancelled = false;
@@ -51,10 +53,10 @@ export function DesktopUpdateButton() {
       ? ""
       : ` (${updateState.downloadPercent}%)`;
   const label = isReadyToRestart
-    ? `Restart Zenith Team to install update${version}`
+    ? `Restart ${appName} to install update${version}`
     : isDownloading
-      ? `Downloading Zenith Team update${version}${progress}`
-      : `Download Zenith Team update${version}`;
+      ? `Downloading ${appName} update${version}${progress}`
+      : `Download ${appName} update${version}`;
 
   return (
     <Tooltip label={label}>

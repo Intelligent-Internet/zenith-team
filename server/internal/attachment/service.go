@@ -21,6 +21,7 @@ import (
 	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 	generated "github.com/Intelligent-Internet/zenith-team/server/pkg/db/generated"
 	"github.com/Intelligent-Internet/zenith-team/server/pkg/protocol"
+	"github.com/Intelligent-Internet/zenith-team/server/pkg/redact"
 )
 
 // ObjectStorage is the attachment domain port for durable object bytes.
@@ -194,7 +195,7 @@ func (s *DefaultAttachmentService) Initiate(
 		return InitiateResult{}, ErrIntegrityMismatch
 	}
 	if err != nil {
-		return InitiateResult{}, safeStorageError(ctx, err)
+		return InitiateResult{}, safeStorageError(ctx, "upload", err)
 	}
 	return result, nil
 }
@@ -212,16 +213,16 @@ func (s *DefaultAttachmentService) verifyStoredContent(ctx context.Context, reco
 		if errors.Is(err, storage.ErrNotFound) {
 			return ErrUploadIncomplete
 		}
-		return safeStorageError(ctx, err)
+		return safeStorageError(ctx, "verify", err)
 	}
 	if nilDependency(reader) {
-		return ErrStorageUnavailable
+		return storageUnavailable(ctx, "verify", errNoObjectReader)
 	}
 	limited := &io.LimitedReader{R: reader, N: record.SizeBytes + 1}
 	actualSize, readErr := io.Copy(io.Discard, limited)
 	closeErr := reader.Close()
 	if readErr != nil || closeErr != nil {
-		return safeStorageError(ctx, errors.Join(readErr, closeErr))
+		return safeStorageError(ctx, "verify", errors.Join(readErr, closeErr))
 	}
 	if actualSize != record.SizeBytes {
 		return ErrIntegrityMismatch
@@ -419,8 +420,11 @@ func (s *DefaultAttachmentService) ShareResolved(
 	}
 	issuedAt := time.Now().UTC()
 	url, err := s.objects.PresignGet(ctx, record.ObjectKey, time.Hour)
-	if err != nil || url == "" {
-		return ShareResult{}, safeStorageError(ctx, err)
+	if err == nil && url == "" {
+		err = errors.New("presign returned no URL")
+	}
+	if err != nil {
+		return ShareResult{}, safeStorageError(ctx, "presign", err)
 	}
 	return ShareResult{URL: url, ExpiresAt: issuedAt.Add(time.Hour)}, nil
 }
@@ -439,10 +443,10 @@ func (s *DefaultAttachmentService) downloadRecord(
 	reader, err := s.objects.GetReader(ctx, record.ObjectKey)
 	if err != nil {
 		closeAttachmentReaderBestEffort(reader)
-		return DownloadResult{}, safeStorageError(ctx, err)
+		return DownloadResult{}, safeStorageError(ctx, "download", err)
 	}
 	if nilDependency(reader) {
-		return DownloadResult{}, ErrStorageUnavailable
+		return DownloadResult{}, storageUnavailable(ctx, "download", errNoObjectReader)
 	}
 	return DownloadResult{Attachment: response, Body: &safeAttachmentReader{ctx: ctx, reader: reader}}, nil
 }
@@ -535,7 +539,7 @@ func (s *DefaultAttachmentService) cleanupDeleting(ctx context.Context, record a
 		return ErrConflict
 	}
 	if err := s.objects.DeleteObject(ctx, record.ObjectKey); err != nil {
-		return safeStorageError(ctx, err)
+		return safeStorageError(ctx, "delete", err)
 	}
 	var pendingEvents []events.Event
 	if err := s.store.WithinTx(ctx, pgx.TxOptions{}, func(tx *generated.Queries) error {
@@ -607,7 +611,7 @@ func (r *safeAttachmentReader) Read(destination []byte) (int, error) {
 	if contextErr := r.ctx.Err(); contextErr != nil {
 		return read, contextErr
 	}
-	return read, ErrStorageUnavailable
+	return read, storageUnavailable(r.ctx, "download stream", err)
 }
 
 func (r *safeAttachmentReader) Close() error {
@@ -615,7 +619,7 @@ func (r *safeAttachmentReader) Close() error {
 		return ErrStorageUnavailable
 	}
 	if err := r.reader.Close(); err != nil {
-		return ErrStorageUnavailable
+		return storageUnavailable(r.ctx, "download stream", err)
 	}
 	return nil
 }
@@ -634,13 +638,38 @@ func safeRepositoryError(ctx context.Context, err error) error {
 	}
 }
 
-func safeStorageError(ctx context.Context, err error) error {
+// safeStorageError maps a storage failure onto the closed errors the API
+// answers with, logging the cause of an unavailable store (storageUnavailable).
+func safeStorageError(ctx context.Context, operation string, err error) error {
 	if ctx != nil && ctx.Err() != nil {
 		return ctx.Err()
 	}
 	if errors.Is(err, ErrIntegrityMismatch) {
 		return ErrIntegrityMismatch
 	}
+	return storageUnavailable(ctx, operation, err)
+}
+
+// errNoObjectReader is a storage call that reported success with no reader.
+var errNoObjectReader = errors.New("object storage returned no reader")
+
+// storageUnavailable logs why object storage failed and returns the
+// ErrStorageUnavailable the client sees, which says nothing about why. The
+// S3 adapter has already reduced a provider failure to its operation and
+// class (authentication_failed, provider_unavailable, provider_failure), so
+// no endpoint, bucket, key or signed URL reaches the message; it is redacted
+// again in case a credential slipped through. Object bytes never travel in
+// an error.
+func storageUnavailable(ctx context.Context, operation string, cause error) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	slog.ErrorContext(ctx, "attachment storage failed",
+		"request_id", util.ContextRequestID(ctx),
+		"operation", operation,
+		"error_type", fmt.Sprintf("%T", cause),
+		"error", redact.Redact(cause.Error()),
+	)
 	return ErrStorageUnavailable
 }
 

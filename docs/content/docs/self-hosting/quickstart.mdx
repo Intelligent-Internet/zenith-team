@@ -73,7 +73,7 @@ Each release also publishes ready-made images to GitHub Container Registry:
 - `ghcr.io/intelligent-internet/zenith-team-server`
 - `ghcr.io/intelligent-internet/zenith-team-web`
 
-Each one is tagged with the version (`1.2.3`), the minor line (`1.2`) and `latest`. To use them, set both in `deploy/.env`:
+Each one is tagged with the version (`1.2.3`), the minor line (`1.2`) and `latest`; use a version tag. The release also publishes `ghcr.io/intelligent-internet/zenith-team-voice`, the optional AI voice worker for Huddles (see `voice-agent/README.md`). To use them, set both in `deploy/.env`:
 
 ```dotenv
 APP_SERVER_IMAGE=ghcr.io/intelligent-internet/zenith-team-server:1.2.3

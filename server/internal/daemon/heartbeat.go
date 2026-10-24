@@ -146,6 +146,9 @@ func (d *Daemon) runRuntimeHeartbeat(ctx context.Context, rid string) {
 // while a WS heartbeat ack is fresh — the WS path already keeps last_seen_at
 // current, and HTTP resumes automatically when the freshness window expires.
 func (d *Daemon) runHeartbeatTick(ctx context.Context, rid string) bool {
+	if d.client.signedOut() {
+		return false
+	}
 	if d.wsHeartbeatRecentlyAcked(rid) {
 		d.logger.Debug("heartbeat: skipping HTTP tick, WS recently acked", "runtime_id", rid)
 		return false

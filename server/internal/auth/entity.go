@@ -125,6 +125,9 @@ type RotateSessionResult struct {
 	SessionID        uuid.UUID
 	RefreshExpiresAt time.Time
 	Mutation         SessionMutationResult
+	// refusal names why an invalid or reused token was refused, for
+	// RefusalReason.
+	refusal string
 }
 
 type SignupInput struct {

@@ -160,6 +160,11 @@ function getArtifactMetadata(
     return { maker, platform: "win32", arch: squirrelArch };
   }
 
+  // Forge 8's dmg maker writes dmg/<arch>/<name>.dmg, with no platform folder.
+  if (maker === "dmg" && platformOrArch && relativeParts.length === 3) {
+    return { maker, platform: "darwin", arch: platformOrArch };
+  }
+
   const platform = platformOrArch;
   const arch = maybeArch;
 

@@ -1,6 +1,8 @@
 package util
 
 import (
+	"context"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,6 +25,24 @@ func SetRequestID(c *gin.Context, requestID string) {
 func RequestIDFromContext(c *gin.Context) string {
 	value, _ := c.Get(requestIDKey)
 	requestID, _ := value.(string)
+	return requestID
+}
+
+// requestIDContextKey carries the same identifier on the request's
+// context.Context, for code below the handler that holds no gin.Context.
+type requestIDContextKey struct{}
+
+// WithRequestID returns ctx carrying requestID. The RequestID middleware
+// installs it beside SetRequestID, so a service-layer log line can quote the
+// id the error envelope and the request log show.
+func WithRequestID(ctx context.Context, requestID string) context.Context {
+	return context.WithValue(ctx, requestIDContextKey{}, requestID)
+}
+
+// ContextRequestID returns the identifier WithRequestID stored, or "" outside
+// an HTTP request (workers, the daemon WS plane).
+func ContextRequestID(ctx context.Context) string {
+	requestID, _ := ctx.Value(requestIDContextKey{}).(string)
 	return requestID
 }
 

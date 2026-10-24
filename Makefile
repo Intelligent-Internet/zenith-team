@@ -7,7 +7,7 @@ SHELL := /bin/bash
 GOFLAGS ?= -p=2
 export GOFLAGS
 
-.PHONY: help doctor hooks dev desktop api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend zenith-team-mcp-dev debug-app gate go-gate go-unit go-integration go-test go-sqlc go-sqlc-check go-vuln go-shape lint typecheck build infra-up infra-down infra-reset go-tools sqlc-tool go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff selfhost-env selfhost-up selfhost-down selfhost-status selfhost-logs
+.PHONY: help doctor hooks dev desktop api-docs api-html api-lint api-bundle api-generate api-types-check server server-local frontend zenith-team-mcp-dev debug-app gate go-gate go-unit go-unit-checks go-unit-tests go-integration go-test go-sqlc go-sqlc-check go-vuln go-shape lint typecheck build infra-up infra-down infra-reset go-tools sqlc-tool go-fmt go-fmt-check go-lint go-lint-fix fmt bundle-bump bundle-verify bundle-local bundle-check bundle-diff selfhost-env selfhost-up selfhost-down selfhost-status selfhost-logs
 
 .DEFAULT_GOAL := help
 
@@ -250,10 +250,15 @@ go-gate: go-shape go-sqlc-check
 # there. The tagged vet is not redundant -- a build tag hides those files from
 # build, vet, and lint alike, so without it an integration suite could stop
 # compiling and no blocking lane would notice until someone ran the tag by hand.
-go-unit: go-shape go-sqlc-check
+go-unit: go-unit-checks go-unit-tests
+
+# go-unit in two halves, so CI can run them on separate runners.
+go-unit-checks: go-shape go-sqlc-check
 	cd server && go build ./...
 	cd server && go vet ./...
 	cd server && go vet -tags=integration ./...
+
+go-unit-tests: tools-prepare
 	cd server && go test -count=1 -race ./...
 
 # The infrastructure-backed lane, on the shared container. A build tag adds files

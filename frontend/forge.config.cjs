@@ -1,3 +1,4 @@
+const { spawnSync } = require("node:child_process");
 const path = require("node:path");
 const { FusesPlugin } = require("@electron-forge/plugin-fuses");
 const { FuseV1Options, FuseVersion } = require("@electron/fuses");
@@ -82,10 +83,13 @@ module.exports = {
     ...(shouldSignMac
       ? {
           osxSign: {
-            entitlements: macEntitlementsPath,
-            "entitlements-inherit": macEntitlementsPath,
-            "hardened-runtime": true,
             identity: process.env.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY,
+            // @electron/osx-sign 1.x reads entitlements and the hardened
+            // runtime only per file; top-level keys are ignored.
+            optionsForFile: () => ({
+              entitlements: macEntitlementsPath,
+              hardenedRuntime: true,
+            }),
           },
         }
       : {}),
@@ -157,7 +161,52 @@ module.exports = {
       [FuseV1Options.GrantFileProtocolExtraPrivileges]: false,
     }),
   ],
+  hooks: {
+    postMake: async (_forgeConfig, makeResults) => {
+      if (shouldSignMac) {
+        for (const { artifacts } of makeResults) {
+          for (const artifactPath of artifacts) {
+            if (path.extname(artifactPath) === ".dmg") {
+              await signMacDiskImage(artifactPath);
+            }
+          }
+        }
+      }
+
+      return makeResults;
+    },
+  },
 };
+
+// The app inside is already signed, notarized and stapled. The disk image
+// around it gets the same, so Gatekeeper can check the download itself, even
+// offline. This runs before finalize-artifacts writes the checksums.
+async function signMacDiskImage(dmgPath) {
+  const result = spawnSync(
+    "codesign",
+    [
+      "--sign",
+      process.env.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY,
+      "--timestamp",
+      dmgPath,
+    ],
+    { stdio: "inherit" },
+  );
+
+  if (result.error) {
+    throw result.error;
+  }
+
+  if (result.status !== 0) {
+    throw new Error(`codesign could not sign ${dmgPath}.`);
+  }
+
+  if (macNotarizeConfig) {
+    // notarize() also staples the ticket to the disk image.
+    const { notarize } = await import("@electron/notarize");
+    await notarize({ appPath: dmgPath, ...macNotarizeConfig });
+  }
+}
 
 function getMacNotarizeConfig(env) {
   if (env.ZENITH_TEAM_DESKTOP_MAC_NOTARIZE !== "true") {

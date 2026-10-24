@@ -10,6 +10,7 @@ Run every command on this page from the repository root. `make help` lists all t
 | Target | What it runs | Needs Docker |
 | --- | --- | --- |
 | `make go-unit` | The shape checks, the sqlc drift check, `go build`, `go vet` (with and without the `integration` tag) and `go test -race` on every package. Integration files are not compiled in. | No |
+| `make go-unit-checks`, `make go-unit-tests` | The two halves of `go-unit`, as CI's `server-lint` and `server-test` run them: everything but the tests, then the `-race` tests. | No |
 | `make go-integration` | The tagged suites, plus the unit tests again, with `-race`, on one shared PostgreSQL container. | Yes |
 | `make go-test` | Like `go-integration`, without `-race`, for the packages and flags in `GO_TEST_ARGS`. | Yes |
 | `make go-gate` | `go build`, `go vet` and the complete tagged suite with `-race`, plus the shape and sqlc checks. | Yes |
@@ -99,13 +100,17 @@ A first job, `changes`, looks at the changed files and picks the lanes. Each lan
 
 | Lane | Runs when these change | What it runs |
 | --- | --- | --- |
-| `server` | `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | `make go-fmt-check`; `make go-lint` (on a pull request, only findings new since its merge base fail); `make go-unit`, which includes the unit tests with `-race` and the pinned sqlc drift check; and cross-builds of `zen` and `zenith-team-mcp` for macOS, and `zenith-team-mcp` for Windows |
+| `server-test` | `server/**`, `docs/api/**`, `deploy/production.env.example`, `deploy/docker-compose.production.yml` | `make go-unit-tests`: the unit tests with `-race`, as many packages at once as the runner has cores |
+| `server-lint` | The same as `server-test` | `make go-fmt-check`; `make go-unit-checks` (the rest of `go-unit`: the shape checks, the pinned sqlc drift check, `go build` and both `go vet` runs); `make go-lint` (on a pull request, only findings new since its merge base fail); and cross-builds of `zen` and `zenith-team-mcp` for macOS, and `zenith-team-mcp` for Windows |
 | `frontend` | `frontend/**`, `docs/api/spec/**`, `LICENSE`, `THIRD_PARTY_NOTICES.md` | `make lint typecheck`, `make api-lint api-types-check`, the production build (`make build`) and the Electron security scan |
 | `voice` | `voice-agent/**` | `ruff check`, `ruff format --check`, the Python tests, and a Docker build |
 | `selfhost` | `deploy/**`, a Dockerfile, `LICENSE`, `THIRD_PARTY_NOTICES.md` | Builds both images, runs `make selfhost-env`, boots the Compose stack, and checks that `/readyz` and the web app answer |
-| `workflows` | `.github/**` | `actionlint` and `zizmor` (medium severity and above) on the GitHub workflows |
+| `desktop` | `frontend/electron/**`, `frontend/forge.config.cjs`, `frontend/package.json`, `frontend/pnpm-lock.yaml`, `.github/actions/desktop-setup/**` | Unsigned desktop installers for macOS (arm64) with `pnpm electron:make`, kept a week as workflow artifacts |
+| `workflows` | `.github/**` | `actionlint` (with `shellcheck`) on the workflows, and `zizmor` (medium severity and above) on the workflows and the composite action |
 
-A change to the `Makefile` runs every lane except `workflows`. A manual run from the Actions tab runs every lane.
+A change to `.github/workflows/ci.yml` runs every lane. A change to the `Makefile` runs every lane except `desktop` and `workflows`. A push to `main` runs every lane except `desktop`, which still runs only when its files change, so a green `ci-gate` on a `main` commit covers the whole tree; releases rely on that. Each push to `main` gets its own run, so none is skipped. A manual run from the Actions tab runs every lane.
+
+`server-lint` caches the pinned `golangci-lint` and `sqlc` (`.tools`) and golangci-lint's analysis; `server-test` keeps its own `-race` build cache; and the `desktop` lane caches the pnpm store and Go builds. Nothing that is signed or published restores a cache.
 
 ### The required check
 
@@ -120,12 +125,15 @@ Pull requests from forks run with a read-only token and no secrets.
 | Job | What it runs |
 | --- | --- |
 | `integration` | `make go-integration`: every PostgreSQL suite with `-race` |
+| `vulnerabilities` | `make go-vuln`, the scan a release runs, so a new advisory shows up before a tag |
 | `windows` | On Windows: the platform-content tests, a few `zenith-team-mcp` tests, and a build of `zenith-team-mcp`, proving the pinned content survives a CRLF checkout |
 | `macos` | On macOS: the daemon's sandbox tests, which keep agents away from sign-in files and other runs' folders |
 
 ### Secrets and dependencies
 
-GitHub does this work, so no workflow repeats it: secret scanning with push protection refuses a push that contains a known secret format, and Dependabot alerts and security updates track vulnerable dependencies. Dependabot also checks Go modules, npm packages, Python packages, GitHub Actions and Docker base images every week, skipping versions younger than a week. Tag releases run `govulncheck` and fail on a known vulnerability (see [Releasing](/developers/releasing)).
+GitHub does this work, so no workflow repeats it: secret scanning with push protection refuses a push that contains a known secret format, and Dependabot alerts track vulnerable dependencies. Dependabot's update pull requests are off for now (see [Maintaining](/developers/maintaining#regular-work)). The nightly run and every tag release run `govulncheck`, and a release fails on a known vulnerability (see [Releasing](/developers/releasing)).
+
+`.github/workflows/codeql.yml` runs CodeQL code scanning on the Go server, the TypeScript apps, the voice worker and the workflows: on every pull request, on pushes to `main` and weekly. Findings appear under **Security → Code scanning** and on the pull request; it is not a required check.
 
 ## Local git hooks
 

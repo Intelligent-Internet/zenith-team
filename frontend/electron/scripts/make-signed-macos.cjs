@@ -1,6 +1,10 @@
 const { spawnSync } = require("node:child_process");
 const path = require("node:path");
-const { PROD_ENV_FILES, loadElectronEnvFiles } = require("./env-files.cjs");
+const {
+  DEV_ENV_FILES,
+  PROD_ENV_FILES,
+  loadElectronEnvFiles,
+} = require("./env-files.cjs");
 
 function createSignedMacBuildEnv({
   cwd = process.cwd(),
@@ -12,7 +16,13 @@ function createSignedMacBuildEnv({
   }
 
   const buildEnv = { ...env };
-  loadElectronEnvFiles({ cwd, env: buildEnv, files: PROD_ENV_FILES });
+  // A signed build is prod unless the caller picked the dev app.
+  loadElectronEnvFiles({
+    cwd,
+    env: buildEnv,
+    files:
+      env.ZENITH_TEAM_DESKTOP_ENV === "dev" ? DEV_ENV_FILES : PROD_ENV_FILES,
+  });
 
   buildEnv.ZENITH_TEAM_DESKTOP_RELEASE_PACKAGE = "true";
   buildEnv.ZENITH_TEAM_DESKTOP_TARGET_PLATFORM = "darwin";

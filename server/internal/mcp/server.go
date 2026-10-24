@@ -337,7 +337,7 @@ func registerTaskResultTool(server *mcpsdk.Server, service tools.TaskResultToolS
 		&mcpsdk.Tool{
 			Name:        "finalize_task_results",
 			Title:       "Select final Task results",
-			Description: "After presenting all final outputs, explicitly select their ordered outputIds for this Task. Read the current Task revision first. This selects only this live Run's deliveries, without accepting suggestions, approving results, changing review policy or ending the Run. End the Run normally after finalization; configured review and required suggestion acceptance still apply.",
+			Description: "After presenting all final outputs, explicitly select their ordered outputIds for this Task. Call it only when this Run presented outputs; a Run that presented none, such as an answer-only Task, ends without it. Read the current Task revision first. This selects only this live Run's deliveries, without accepting suggestions, approving results, changing review policy or ending the Run. End the Run normally after finalization; configured review and required suggestion acceptance still apply.",
 			Annotations: &mcpsdk.ToolAnnotations{IdempotentHint: true, OpenWorldHint: &closed},
 		},
 		func(ctx context.Context, _ *mcpsdk.CallToolRequest, in tools.FinalizeTaskResultsInput) (*mcpsdk.CallToolResult, tools.FinalizeTaskResultsResult, error) {

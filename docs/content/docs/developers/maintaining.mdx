@@ -9,12 +9,7 @@ This page is for maintainers with admin access to the GitHub repository. The fir
 
 ### Teams
 
-Create the two teams that [`.github/CODEOWNERS`](https://github.com/Intelligent-Internet/zenith-team/blob/main/.github/CODEOWNERS) names, and give both write access to the repository:
-
-- `@Intelligent-Internet/zenith-team-maintainers`, which owns everything except the paths below
-- `@Intelligent-Internet/zenith-team-security`, which owns the security-sensitive paths (sign-in, configuration, middleware, the agent sandbox, provider adapters, migrations, `frontend/electron/`, `.github/`, `.gitleaks.toml` and `SECURITY.md`)
-
-GitHub ignores a CODEOWNERS line whose team does not exist or has no write access.
+[`.github/CODEOWNERS`](https://github.com/Intelligent-Internet/zenith-team/blob/main/.github/CODEOWNERS) names `@Intelligent-Internet/ii-agent`, which maintains the repository and owns every path. Keep that team's write (or maintain) access: GitHub ignores a CODEOWNERS line whose team does not exist or has no write access. To route the security-sensitive paths to a separate team later, add their lines below the catch-all; the file lists them.
 
 ### Protect `main`
 
@@ -31,7 +26,7 @@ Do not require the individual CI lanes. They skip when their folders did not cha
 
 When you squash-merge, make sure the title is a Conventional Commit: it becomes the commit message on `main`. Contributors check their own commit messages and branch names with the local hooks (`make hooks`).
 
-Keep **secret scanning** and **push protection** on under **Settings → Code security**, together with **Dependabot alerts** and **Dependabot security updates**. They are the project's secret and dependency checks; no workflow repeats them.
+Keep **secret scanning**, **push protection** and **Dependabot alerts** on under **Settings → Code security**. They are the project's secret and dependency checks; no workflow repeats them. **Dependabot security updates** are off for now, together with version updates (see below); turn them back on here when Dependabot resumes.
 
 ### Sign-off
 
@@ -59,9 +54,27 @@ Pull requests with no matching label land under **Other changes**.
 
 ### Releases
 
-Only maintainers should be able to push version tags, because a pushed `v*` tag publishes images and a GitHub Release at once. Add a tag ruleset for `v*` that only maintainers can bypass.
+Only admins can push version tags, because a pushed `v*` tag publishes images and a GitHub Release at once, and runs the release workflow of whatever commit it points at. The `release-tags` ruleset blocks creating, moving and deleting `v*` tags for everyone else; only repository admins and organization admins bypass it, the same as `main-protection`.
 
-The release workflow needs no secrets beyond its own GitHub token. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
+Only the desktop jobs use secrets. Leave the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` unset; [Releasing](/developers/releasing) explains the one case for it.
+
+Deployments and desktop builds run in three environments, under **Settings → Environments**. Create them, with their rules, before the cloud side trusts them: GitHub creates a missing environment, with no rules, the first time a job names it.
+
+| Environment | Deployment rule | Holds | Used by |
+| --- | --- | --- | --- |
+| `dev` | None, so any branch can deploy | The dev variables | `build-deploy.yml` |
+| `prod` | The `main` branch and `v*` tags only | The prod desktop variables | `release.yml`'s desktop jobs |
+| `desktop-signing` | The `main` branch and `v*` tags only | The six Apple secrets, nothing else | The macOS builds of both |
+
+Only `desktop-signing` holds secrets, so no branch can reach the Developer ID: only code on `main`, which needs a reviewed pull request, or a `v*` tag. A tag can point at any commit, and the release runs that commit's workflow, so whoever may push `v*` tags can reach the Developer ID and the prod downloads without review. That is why the `release-tags` ruleset admits admins only; required reviewers on `desktop-signing` would be the next step. Required reviewers on `prod` are optional: the `main` and tag rulesets already decide what can release, and with reviewers every release waits for approval twice, when its desktop build starts and again before the upload.
+
+To publish the desktop app with releases:
+
+1. Create the three environments as above.
+2. Add the six Apple secrets to `desktop-signing`: `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD`, `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID` and `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER`.
+3. Set the `dev` and `prod` variables, and the repository variable `GCP_WORKLOAD_IDENTITY_PROVIDER`, as [Releasing](/developers/releasing#desktop-app) lists. Then set `ZENITH_TEAM_DESKTOP_RELEASE` to `true`.
+
+The desktop jobs then also require `frontend/package.json` to carry each tag's version.
 
 ### Actions
 
@@ -71,7 +84,7 @@ The release workflow needs no secrets beyond its own GitHub token. Leave the rep
 ## Regular work
 
 - **Triage.** Label new issues, and answer or close questions that belong in Discussions.
-- **Dependabot.** Each week Dependabot opens grouped update pull requests for Go, npm, Python, GitHub Actions and Docker base images. Merge them once CI is green.
+- **Dependabot.** Update pull requests are off for now: the repository has no `.github/dependabot.yml`, so Dependabot runs no update jobs, and security updates are off. Dependabot alerts still list vulnerable dependencies under the **Security** tab. To resume, restore `.github/dependabot.yml` from git history (it was removed in the commit that touched this line) and turn security updates back on; Dependabot then opens grouped weekly pull requests for Go, npm, Python, GitHub Actions and Docker base images. Merge them once CI is green.
 - **Nightly.** The Nightly workflow runs the PostgreSQL integration suites and the Windows and macOS checks each night. A red nightly run means something drifted that no single pull request touched. Fix it before the next release.
 - **Security alerts.** Review secret-scanning and Dependabot alerts under the **Security** tab. Close a test fixture as "used in tests"; rotate anything real.
 - **Platform bundles.** Workflow and skill content is pinned from a separate plugins repository ([ADR 0016](https://github.com/Intelligent-Internet/zenith-team/blob/main/docs/adr/0016-platform-content-bundles.md)). Updating a pin needs access to that repository, so only maintainers can do it, with `make bundle-bump`, `make bundle-verify` and `make bundle-diff`.

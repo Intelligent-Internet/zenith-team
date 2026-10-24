@@ -1195,6 +1195,7 @@ func TestLoadRefusesTemplateCSRFSecretOutsideLocal(t *testing.T) {
 		wantError                 bool
 	}{
 		{name: "local keeps the dev value", environment: "local", secret: "development-only-32-byte-secret!"},
+		{name: "dev", environment: "dev", secret: "development-only-32-byte-secret!", wantError: true},
 		{name: "staging", environment: "staging", secret: "development-only-32-byte-secret!", wantError: true},
 		{name: "production", environment: "production", secret: "development-only-32-byte-secret!", wantError: true},
 		{name: "placeholder", environment: "production", secret: "<generate: openssl rand -hex 32>", wantError: true},

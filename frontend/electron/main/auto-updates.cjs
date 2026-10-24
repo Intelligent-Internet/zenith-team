@@ -753,14 +753,60 @@ function compareReleaseVersions(current, next) {
     return -1;
   }
 
-  return currentParts.prerelease.localeCompare(nextParts.prerelease);
+  return comparePrereleases(currentParts.prerelease, nextParts.prerelease);
+}
+
+// SemVer precedence for pre-release identifiers: dot-separated, numeric ones
+// compared as numbers and ranked below alphanumeric ones, and a shorter list
+// lower when it is a prefix of the other. A plain string compare would rank
+// dev.10 below dev.9, so a dev install would stop updating.
+function comparePrereleases(current, next) {
+  const currentIds = current.split(".");
+  const nextIds = next.split(".");
+
+  for (
+    let index = 0;
+    index < Math.max(currentIds.length, nextIds.length);
+    index += 1
+  ) {
+    const currentId = currentIds[index];
+    const nextId = nextIds[index];
+
+    if (currentId === undefined) {
+      return -1;
+    }
+
+    if (nextId === undefined) {
+      return 1;
+    }
+
+    if (currentId === nextId) {
+      continue;
+    }
+
+    const currentNumeric = /^\d+$/.test(currentId);
+    const nextNumeric = /^\d+$/.test(nextId);
+
+    if (currentNumeric && nextNumeric) {
+      return Number(currentId) - Number(nextId);
+    }
+
+    if (currentNumeric !== nextNumeric) {
+      return currentNumeric ? -1 : 1;
+    }
+
+    return currentId < nextId ? -1 : 1;
+  }
+
+  return 0;
 }
 
 function parseReleaseVersion(value) {
-  const [versionPart, prerelease = ""] = normalizeReleaseVersion(value).split(
-    "-",
-    2,
-  );
+  // Build metadata (+...) never affects precedence.
+  const [withoutBuild] = normalizeReleaseVersion(value).split("+", 1);
+  const dash = withoutBuild.indexOf("-");
+  const versionPart = dash === -1 ? withoutBuild : withoutBuild.slice(0, dash);
+  const prerelease = dash === -1 ? "" : withoutBuild.slice(dash + 1);
   const numbers = versionPart
     .split(".")
     .slice(0, 3)

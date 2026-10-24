@@ -6,10 +6,15 @@ import axios, {
   type InternalAxiosRequestConfig,
 } from "axios";
 import {
+  type AccessSessionTiming,
   cacheStoredAccessToken,
+  cancelAccessRenewal,
   clearStoredAccessToken,
+  getAccessRenewalDueAt,
   getStoredAccessToken,
   getStoredAuthorizationHeader,
+  noteAccessSession,
+  setCurrentSessionId,
 } from "@/lib/auth-token";
 import { plainApiErrorCopy } from "@/lib/api-error-copy";
 import type {
@@ -378,7 +383,9 @@ export function refreshAuthSession(): Promise<
         if (getStoredAccessToken() !== accessTokenBeforeRefresh) {
           throw new Error("Your session changed. Try again.");
         }
+        setCurrentSessionId(result.response.session.id);
         cacheStoredAccessToken(result.response.session.accessToken);
+        scheduleAccessRenewal(result.response.session);
         return result.response;
       })
       .finally(() => {
@@ -392,7 +399,11 @@ export function refreshAuthSession(): Promise<
       client: "web",
       clientMetadata: { platform: "web" },
     })
-    .then((response) => response.data)
+    .then((response) => {
+      setCurrentSessionId(response.data.session.id);
+      scheduleAccessRenewal(response.data.session);
+      return response.data;
+    })
     .catch((error: unknown) => {
       // The server answered and refused: no cookie, an expired or revoked
       // family, a lost rotation race. None of these mend with a retry.
@@ -415,6 +426,67 @@ export function refreshAuthSession(): Promise<
     });
 
   return refreshRequest;
+}
+
+// The access token is renewed shortly before it expires rather than after a
+// request comes back 401: a rotation retires the old token at once, and
+// pollers and presence heartbeats would otherwise each spend a request on it.
+let accessRenewalTimer: ReturnType<typeof setTimeout> | undefined;
+
+export function scheduleAccessRenewal(session: AccessSessionTiming) {
+  noteAccessSession(session);
+  armAccessRenewal();
+}
+
+function armAccessRenewal() {
+  clearTimeout(accessRenewalTimer);
+  const dueAt = getAccessRenewalDueAt();
+  if (dueAt === null) return;
+  accessRenewalTimer = setTimeout(
+    () => void renewAccessIfDue(),
+    Math.max(0, dueAt - Date.now()),
+  );
+}
+
+async function renewAccessIfDue() {
+  const dueAt = getAccessRenewalDueAt();
+  if (dueAt === null || Date.now() < dueAt) return;
+  try {
+    await refreshAuthSession();
+  } catch (error) {
+    // A lost session is ended by the next 401. Any other failure leaves the
+    // renewal due, so the next request or wake tries again.
+    if (error instanceof SessionLostError) cancelAccessRenewal();
+    return;
+  }
+  // The renewal gave back a token this computer's clock already counts as
+  // due. Renewing again would loop, so the 401 path takes over.
+  const nextDueAt = getAccessRenewalDueAt();
+  if (nextDueAt !== null && nextDueAt <= Date.now()) cancelAccessRenewal();
+}
+
+// A request waits for a renewal in flight instead of going out with the
+// token it retires, and renews first when the token is already due.
+async function withRenewedAccess(config: InternalAxiosRequestConfig) {
+  if (refreshRequest) {
+    await refreshRequest.catch(() => undefined);
+  } else {
+    await renewAccessIfDue();
+  }
+  return config;
+}
+
+if (typeof window !== "undefined") {
+  // Timers stall while the computer sleeps. Waking re-arms the renewal from
+  // the wall clock, so a token that lapsed meanwhile is renewed before
+  // polling resumes.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") armAccessRenewal();
+  });
+  window.addEventListener("online", armAccessRenewal);
+  window.zenithTeamDesktop?.onPowerLifecycleUpdated?.((state) => {
+    if (state.lastEvent?.type === "resume") armAccessRenewal();
+  });
 }
 
 function readCookie(cookies: string, name: string): string | null {
@@ -492,6 +564,9 @@ function withDesktopAuthorization(config: InternalAxiosRequestConfig) {
 
 rawApiClient.interceptors.request.use(withCookieCSRF);
 rawApiClient.interceptors.request.use(withDesktopAuthorization);
+// Axios runs request interceptors last-registered first, so the renewal
+// settles before the token and CSRF cookie are read.
+rawApiClient.interceptors.request.use(withRenewedAccess);
 refreshApiClient.interceptors.request.use(withCookieCSRF);
 
 rawApiClient.interceptors.response.use(

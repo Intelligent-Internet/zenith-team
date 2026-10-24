@@ -1,0 +1,118 @@
+# Shared setup for every desktop build: build-desktop.yml's signed builds and
+# the CI desktop lane. It installs the toolchain and the frontend dependencies,
+# then chooses the build variant. It sees no secrets, so nothing a dependency
+# runs at install time can read them; callers sign afterwards, in a step that
+# runs the build tools from node_modules. Signed builds restore no cache, so
+# they never use what another run wrote; the unsigned CI lane opts in to the
+# pnpm and Go caches.
+name: Desktop setup
+description: Install the desktop build toolchain and dependencies, and choose the build variant.
+
+inputs:
+  variant:
+    description: "prod (Zenith Team) or dev (Zenith Team Dev); ignored without api-origin"
+    required: false
+    default: prod
+  api-origin:
+    description: "Server origin the build signs in to, https without a trailing slash; empty builds the local variant"
+    required: false
+    default: ""
+  release-base-url:
+    description: "Where releases are served, https without a trailing slash; set, it turns on static auto-updates (needs api-origin)"
+    required: false
+    default: ""
+  version:
+    description: "Version to build: a dev build is stamped with it, any other must already carry it in frontend/package.json"
+    required: false
+    default: ""
+  cache:
+    description: "\"true\" restores and saves the pnpm and Go caches; never for a build that is signed or published"
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      with:
+        package_json_file: frontend/package.json
+        run_install: false
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 24
+        package-manager-cache: false
+        cache: ${{ inputs.cache == 'true' && 'pnpm' || '' }}
+        cache-dependency-path: frontend/pnpm-lock.yaml
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version: "1.26.x"
+        check-latest: true
+        cache: ${{ inputs.cache == 'true' }}
+        cache-dependency-path: server/go.sum
+    - name: Install the frontend dependencies
+      shell: bash
+      run: pnpm --dir frontend install --frozen-lockfile
+    - name: Choose the desktop variant
+      shell: bash
+      env:
+        VARIANT: ${{ inputs.variant }}
+        API_ORIGIN: ${{ inputs.api-origin }}
+        RELEASE_BASE_URL: ${{ inputs.release-base-url }}
+      run: |
+        set -euo pipefail
+        case "$VARIANT" in
+          prod) origin_key=ZENITH_TEAM_DESKTOP_PROD_ORIGIN ;;
+          dev) origin_key=ZENITH_TEAM_DESKTOP_DEV_ORIGIN ;;
+          *) echo "::error::variant must be prod or dev, got '$VARIANT'"; exit 1 ;;
+        esac
+        for value in "$API_ORIGIN" "$RELEASE_BASE_URL"; do
+          if [ -n "$value" ] && [[ ! "$value" =~ ^https://[A-Za-z0-9.-]+(/[A-Za-z0-9._/-]*[A-Za-z0-9._-])?$ ]]; then
+            echo "::error::Desktop origins must be https URLs without a trailing slash; got '$value'"
+            exit 1
+          fi
+        done
+        if [ -n "$RELEASE_BASE_URL" ] && [ -z "$API_ORIGIN" ]; then
+          echo "::error::Auto-updates need a cloud build: set api-origin with release-base-url."
+          exit 1
+        fi
+        if [ -n "$API_ORIGIN" ]; then
+          {
+            echo "ZENITH_TEAM_DESKTOP_ENV=$VARIANT"
+            echo "$origin_key=$API_ORIGIN"
+            echo "ZENITH_TEAM_DESKTOP_API_BASE_URL=$API_ORIGIN/api/v1"
+            echo "VITE_API_URL=$API_ORIGIN"
+          } >> "$GITHUB_ENV"
+        else
+          {
+            echo "ZENITH_TEAM_DESKTOP_ENV=local"
+            echo "ZENITH_TEAM_DESKTOP_API_BASE_URL=http://127.0.0.1:8788/api/v1"
+            echo "VITE_API_URL=http://127.0.0.1:8788"
+          } >> "$GITHUB_ENV"
+        fi
+        if [ -n "$RELEASE_BASE_URL" ]; then
+          {
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE=true"
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_STATIC_FEED=true"
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_MANIFEST_URL=$RELEASE_BASE_URL/latest.json"
+            echo "ZENITH_TEAM_DESKTOP_AUTO_UPDATE_FEED_BASE_URL=$RELEASE_BASE_URL/updates"
+          } >> "$GITHUB_ENV"
+        fi
+    # The app and its file names carry the version from package.json.
+    - name: Set the version
+      if: inputs.version != ''
+      shell: bash
+      env:
+        VARIANT: ${{ inputs.variant }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        current="$(jq -r .version frontend/package.json)"
+        if [ "$current" = "$VERSION" ]; then
+          exit 0
+        fi
+        if [ "$VARIANT" != dev ]; then
+          echo "::error::frontend/package.json is $current, not the $VARIANT version $VERSION"
+          exit 1
+        fi
+        jq --arg version "$VERSION" '.version = $version' frontend/package.json > "$RUNNER_TEMP/package.json"
+        mv "$RUNNER_TEMP/package.json" frontend/package.json

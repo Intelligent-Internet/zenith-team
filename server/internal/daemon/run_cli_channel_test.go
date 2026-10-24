@@ -982,6 +982,7 @@ type renewingSession struct{ token, renewed string }
 
 func (s renewingSession) AccessToken(context.Context) (string, error)   { return s.token, nil }
 func (s renewingSession) Renew(context.Context, string) (string, error) { return s.renewed, nil }
+func (renewingSession) SignedOut() bool                                 { return false }
 
 func TestRunSystemPromptAdvertisesExactlyTheChannelCommands(t *testing.T) {
 	t.Parallel()

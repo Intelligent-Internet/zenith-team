@@ -5,6 +5,7 @@ export type DesktopEnvironmentName = "dev" | "local" | "prod" | "unknown";
 export type DesktopEnvironment = {
   isDesktop: boolean;
   platform: DesktopPlatform;
+  appName: string | null;
   appVersion: string | null;
   environment: DesktopEnvironmentName;
 };
@@ -793,7 +794,8 @@ export type ZenithTeamDesktopBridge = {
   ): Promise<DesktopWorkspaceAssetActionResult>;
   getEnvironment(): Promise<DesktopEnvironment>;
   getStoredAccessToken?(): Promise<
-    { ok: true; accessToken: string | null } | { ok: false; reason: string }
+    | { ok: true; accessToken: string | null; accessExpiresAt?: string | null }
+    | { ok: false; reason: string }
   >;
   clearStoredAccessToken?(): Promise<
     { ok: true } | { ok: false; reason: string }

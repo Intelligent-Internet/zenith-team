@@ -51,7 +51,14 @@ func (s *DefaultTaskResultToolService) FinalizeTaskResults(
 	ctx context.Context,
 	in FinalizeTaskResultsInput,
 ) (FinalizeTaskResultsResult, error) {
-	if in.ExpectedRevision < 1 || len(in.OutputIDs) == 0 || len(in.OutputIDs) > 32 {
+	// Only a Task with deliveries needs a selection, so an answer-only Run has
+	// nothing to finalize; say so rather than reject it as malformed input.
+	if len(in.OutputIDs) == 0 {
+		return FinalizeTaskResultsResult{}, errors.New(
+			"Task result selection is empty: select outputIds that present_output returned in this Run, or end the Run without finalizing when it presented none",
+		)
+	}
+	if in.ExpectedRevision < 1 || len(in.OutputIDs) > 32 {
 		return FinalizeTaskResultsResult{}, errors.New("Task result selection is invalid")
 	}
 	ids := make([]string, len(in.OutputIDs))

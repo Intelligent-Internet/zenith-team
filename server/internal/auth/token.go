@@ -25,6 +25,10 @@ const (
 
 var ErrInvalidToken = errors.New("invalid token")
 
+// errAccessTokenExpired is ErrInvalidToken for an authentic access token past
+// its expiry, which Authenticate reports apart from a forged or garbled one.
+var errAccessTokenExpired = fmt.Errorf("%w: access token expired", ErrInvalidToken)
+
 type TokenManagerOptions struct {
 	Secret     []byte
 	AccessTTL  time.Duration
@@ -244,6 +248,11 @@ func (m *TokenManager) ValidateAccess(raw string) (AccessClaims, error) {
 		jwt.WithIssuedAt(),
 		jwt.WithTimeFunc(m.now),
 	)
+	// The parser checks the signature before the claims, so an expiry error
+	// means the token itself was ours.
+	if errors.Is(err, jwt.ErrTokenExpired) {
+		return AccessClaims{}, errAccessTokenExpired
+	}
 	if err != nil || !token.Valid || claims.TokenUse != accessTokenUse {
 		return AccessClaims{}, ErrInvalidToken
 	}

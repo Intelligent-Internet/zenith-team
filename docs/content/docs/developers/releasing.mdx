@@ -5,17 +5,18 @@ description: How maintainers cut a Zenith Team release, and what the release wor
 
 import { Callout } from "fumadocs-ui/components/callout";
 
-A release starts with one action: a maintainer pushes a version tag on `main`. `.github/workflows/release.yml` does the rest. It needs no secrets beyond the workflow's own GitHub token.
+A release starts with one action: a repository admin pushes a version tag on `main` (the `release-tags` ruleset lets only admins push `v*` tags; see [Maintaining](/developers/maintaining#releases)). `.github/workflows/release.yml` does the rest. Only its desktop jobs use secrets and cloud access, from the `prod` and `desktop-signing` environments; everything else runs on the workflow's own GitHub token.
 
-Merges to `main` publish nothing. Only a tag does.
+Only a tag publishes a release. The project's own dev server, deployed from any branch, and its dev desktop app, built from `main`, go through a separate workflow that publishes only to the dev environment and the dev downloads (see [Dev deployments](#dev-deployments)).
 
 ## Before you tag
 
 - The commit you tag is on `main`, and CI is green on it.
-- The integration suites pass. The nightly CI run includes them; check the latest one, or start the CI workflow by hand. See [Testing](/developers/testing#ci).
+- The integration suites pass. The Nightly workflow runs them; check its latest run, or start it by hand. See [Testing](/developers/testing#nightly).
 - `make go-vuln` finds no known vulnerabilities in the Go dependencies. The release stops on any (see below).
 - Merged pull requests carry the right labels, so the release notes sort them (see below).
 - Docs and `deploy/production.env.example` cover any new setting.
+- When desktop releases are on, `frontend/package.json` has the tag's version. The release stops in its first step otherwise.
 
 ## Cut the release
 
@@ -41,35 +42,50 @@ A pushed tag publishes images and a GitHub Release right away. Check the commit 
 
 ## What the workflow does
 
-The four jobs run in this order. One release runs at a time per tag, and a running release is never cancelled.
+Verify runs first; images, binaries and the desktop app then build side by side, and publish runs last. One release runs at a time per tag, and a running release is never cancelled.
 
 ### 1. Verify
 
 - Checks the tag shape and decides whether it is a pre-release.
 - Checks that the tagged commit is on `main`. A tag anywhere else fails here.
-- Scans the Go dependencies for known vulnerabilities with `make go-vuln`. This is fail-closed: any finding stops the release.
-- Runs `make go-fmt-check`, `make go-unit`, and the frontend checks `make lint typecheck api-lint api-types-check`.
+- When desktop releases are on, checks that `frontend/package.json` has the tag's version.
+- Requires `ci-gate` to have passed on the tagged commit. `main-protection` requires it before a merge, and every push to `main` runs every CI lane on the whole tree in its own run, so the release does not repeat the checks. A tag pushed right after a merge waits up to 30 minutes for that run. If the commit has no run, start **CI** by hand at the tag, then re-run the release.
+- Scans the Go dependencies for known vulnerabilities with `make go-vuln`. This is fail-closed: any finding stops the release. Advisories can appear after a merge, so this check is not skipped.
 
 **Releasing despite a vulnerability.** Sometimes a finding has no fix yet and does not affect Zenith Team. A maintainer can then release one tag anyway: set the repository variable `ALLOW_VULN_BYPASS_FOR_TAG` to exactly that tag, such as `v1.3.1`, and re-run the workflow. The bypass works only for that one tag, and the run shows a warning. Remove the variable afterwards, and say in the release notes why the bypass was needed.
 
 ### 2. Images
 
-Builds the server and web images (`server/Dockerfile` and `frontend/Dockerfile`) for `linux/amd64` and `linux/arm64`, and pushes them to GitHub Container Registry:
+Builds the server, web and voice images (`server/Dockerfile`, `frontend/Dockerfile` and `voice-agent/Dockerfile`) for `linux/amd64` and `linux/arm64`, each on a native runner, and pushes them to GitHub Container Registry. `.github/workflows/build-image.yml` does the work, the same steps dev deployments use: the build jobs hold no registry credentials, and one publish job pushes the platform images, merges them and tags the result.
 
 - `ghcr.io/intelligent-internet/zenith-team-server`
 - `ghcr.io/intelligent-internet/zenith-team-web`
+- `ghcr.io/intelligent-internet/zenith-team-voice`, the AI voice worker for Huddles
 
-For `v1.3.0`, each image gets three tags:
+For `v1.3.0`, each image gets up to four tags:
 
 | Tag | Meaning |
 | --- | --- |
 | `1.3.0` | This exact release. Self-hosters should pin this. |
-| `1.3` | The newest patch of the 1.3 line. |
-| `latest` | The newest release. |
+| `1.3` | The newest patch of the 1.3 line. Only a release that is the newest of its line moves it. |
+| `latest` | The newest release. Only the newest release moves it, so re-running an older one never moves it back; the same goes for GitHub's Latest release. |
+| `sha-<full commit>` | The tagged commit. |
 
-A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`.
+A pre-release such as `v1.3.0-rc.1` gets only its exact tag, `1.3.0-rc.1`, plus `sha-<full commit>`.
 
-Each image also carries an SBOM (its list of components) and build provenance (a record of how it was built).
+Each image also carries an SBOM (its list of components) and build provenance (a record of how it was built), plus a GitHub build attestation that ties its digest to this repository, the ref and commit it was built from, and the workflow. Check one with:
+
+```bash
+gh attestation verify oci://ghcr.io/intelligent-internet/zenith-team-server:1.3.0 \
+  --repo Intelligent-Internet/zenith-team \
+  --signer-workflow Intelligent-Internet/zenith-team/.github/workflows/build-image.yml \
+  --source-ref refs/tags/v1.3.0 \
+  --deny-self-hosted-runners
+```
+
+Always pin `--source-ref`: without it, a build of any branch passes.
+
+The first publish creates each GHCR package as private. A maintainer makes `zenith-team-server`, `zenith-team-web` and `zenith-team-voice` public once, in the package settings; until then nobody can pull them anonymously.
 
 ### 3. Binaries
 
@@ -85,7 +101,7 @@ Archives are named like `zenith-team_v1.3.0_linux_amd64.tar.gz`. Each one also h
 
 ### 4. Publish
 
-Creates a GitHub Release named `Zenith Team v1.3.0` with the archives and `checksums.txt` attached, marked as a pre-release when the tag is one. The release notes are generated from the pull requests merged since the last release.
+Creates a GitHub Release named `Zenith Team v1.3.0` with the archives and `checksums.txt` attached, plus the desktop files once they are published (see [Desktop app](#desktop-app)), marked as a pre-release when the tag is one. Every attached file has a build attestation; check an archive with `gh attestation verify <file> --repo Intelligent-Internet/zenith-team --signer-workflow Intelligent-Internet/zenith-team/.github/workflows/release.yml --source-ref refs/tags/v1.3.0`, and a desktop file the same way with `--signer-workflow Intelligent-Internet/zenith-team/.github/workflows/publish-desktop.yml`. The release notes are generated from the pull requests merged since the last release.
 
 ## Release notes
 
@@ -104,14 +120,59 @@ Pull requests labelled `skip-changelog`, and those opened by Dependabot, are lef
 
 ## Desktop app
 
-The release workflow does not build the desktop app. Each desktop build has its server's address built in, so self-hosters build their own; see [Desktop app](/desktop-app).
+While the repository variable `ZENITH_TEAM_DESKTOP_RELEASE` is `true`, the release also builds the production desktop app with `.github/workflows/build-desktop.yml`. The macOS builds are signed in the `desktop-signing` environment, the only place the Apple credentials live; it admits `main` and `v*` tags only:
 
-To check packaging, a maintainer runs **Desktop Smoke Build** (`.github/workflows/desktop-smoke.yml`) from the Actions tab. It builds unsigned macOS (arm64) and Linux (x64) installers and keeps them as workflow artifacts for a week. Leave its `api_origin` input empty for the local variant, or give a server address for a prod build. Windows joins once `zen` builds there.
+- signed and notarized macOS installers for Apple silicon (`arm64`): a `.dmg` to download and a `.zip` for updates. The `.dmg` itself is also signed, notarized and stapled, and the build fails unless Gatekeeper accepts it.
+
+Intel Macs, Linux and Windows are not shipped for now; adding one back is one more entry in `build-desktop.yml`'s matrix.
+
+These builds sign in to the server at `DESKTOP_API_ORIGIN` and check for updates at `DESKTOP_RELEASE_BASE_URL`; self-hosters still build their own (see [Desktop app](/desktop-app)). Once the images and binaries are out too, `.github/workflows/publish-desktop.yml` uploads the files to `DESKTOP_UPLOAD_URL`, the Cloud Storage location served at `DESKTOP_RELEASE_BASE_URL`, and the GitHub Release gets the same files:
+
+| File | What it is | Uploaded to |
+| --- | --- | --- |
+| Installers and their `.sha256` | The `.dmg` and `.zip` files above | `<version>/<platform>/<arch>/`, once, never replaced |
+| `latest.json` | The download manifest the website reads, and the app's update manifest | `latest.json` |
+| `update-darwin-<arch>.json` | The macOS update feed | `updates/darwin/<arch>/latest.json` |
+| `release-publish.json` | Every file above with its SHA-256 | `<version>/release-publish.json`, last: it marks the version published |
+
+A pre-release uploads its installers but moves no manifest, and the manifests never move back to an older version. Re-running the publish of the same build finds `release-publish.json` and stops; a different build of a published version fails instead of replacing files.
+
+Settings the desktop jobs read:
+
+| Where | Name | Holds |
+| --- | --- | --- |
+| Repository variable | `ZENITH_TEAM_DESKTOP_RELEASE` | `true` to build the desktop app |
+| Repository variable | `GCP_WORKLOAD_IDENTITY_PROVIDER` | The Workload Identity provider the upload signs in through |
+| `prod` variable | `DESKTOP_API_ORIGIN` | The server the builds sign in to, such as `https://api.example.com` |
+| `prod` variable | `DESKTOP_RELEASE_BASE_URL` | Where installers and manifests are served, such as `https://downloads.example.com/zenith-team` |
+| `prod` variable | `DESKTOP_UPLOAD_URL` | The bucket and prefix behind it, such as `gs://downloads/zenith-team` |
+| `prod` variable | `GCP_DESKTOP_SA` | The service account that may write there, only from the `prod` environment |
+| `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64`, `..._MAC_CERTIFICATE_PASSWORD` | The Developer ID Application certificate (.p12) and its password |
+| `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY` | The signing identity name |
+| `desktop-signing` secret | `ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64`, `..._NOTARY_API_KEY_ID`, `..._NOTARY_API_ISSUER` | The App Store Connect API key used to notarize |
+
+Packaging is checked before a tag by CI's `desktop` lane, which builds unsigned macOS (arm64) installers with the same setup (`.github/actions/desktop-setup`) whenever a pull request changes the desktop packaging, and keeps them as workflow artifacts for a week. Start the CI workflow by hand to run it on demand.
+
+## Dev deployments
+
+The project's own dev server and **Zenith Team Dev**, the desktop app built for it, are not releases. `.github/workflows/build-deploy.yml` builds the branch or tag it runs on and deploys it to the `dev` environment. The Slack deploy bot starts it, and so does **Actions → Build and deploy → Run workflow**:
+
+- **Server** (on by default): builds the server image as a release does and pushes it to the dev Artifact Registry repository, `GCP_IMAGE`. Then it commits `sha-<commit>@<digest>` to the deployment repository (`charts/zenith-team/envs/dev.yaml` in `Intelligent-Internet/ii-infras-mono`), and Argo CD rolls it out.
+- **Desktop** (off by default, `main` only): builds Zenith Team Dev `<X.Y.Z of frontend/package.json>-dev.<run number>` with `build-desktop.yml` and publishes it with `publish-desktop.yml`, as above, to the dev channel. Installed dev apps update to it. A re-run attempt gets its own version, `-dev.<run number>.<attempt>`. It is `main` only because it is signed in `desktop-signing`: a branch can deploy the dev server, but cannot reach the Developer ID. The dev downloads themselves are writable from the `dev` environment, so anyone with write access could replace them, the same trust as the dev server.
+
+Deploys to an environment run one at a time, in the order they started; a newer request replaces one that is still waiting. Anyone with write access can deploy to `dev`. Every job that touches the cloud runs in the environment, and its accounts accept no other job. The `dev` environment holds the same desktop variables as `prod`, with its own values, plus:
+
+| Variable | Holds |
+| --- | --- |
+| `GCP_DEPLOYER_SA` | The service account that pushes the image and reads the deploy key, only from `dev` |
+| `GCP_IMAGE` | The image, `<region>-docker.pkg.dev/<project>/<repository>/<name>` |
+| `GITOPS_DEPLOY_KEY_SECRET` | The Secret Manager secret holding the deployment repository's deploy key, `projects/<project>/secrets/<name>` |
 
 ## If a release fails
 
 - **Verify failed.** Fix the problem on `main`, then tag a new patch version. Do not move an existing tag. For a vulnerability finding, see the bypass above.
 - **A later job failed.** Re-run the failed jobs from the workflow run page. If the code itself must change, tag a new patch version.
+- **The desktop upload failed.** Use **Re-run failed jobs**, within the 30 days the desktop build artifacts are kept: it uploads those same files. **Re-run all jobs** rebuilds them, and a rebuilt, re-signed file never matches one already uploaded, so the upload stops rather than replace it. If that happens, or the artifacts have expired, tag a new patch version, or have someone with delete rights on the bucket remove the partly uploaded `<version>/` folder, which has no `release-publish.json` yet, and re-run.
 
 ## Next steps
 

@@ -133,9 +133,11 @@ func rotateSession(
 			return err
 		}
 		if !found {
+			result.refusal = "refresh_token_unknown"
 			return nil
 		}
 		if storedUser.DisabledAt.Valid {
+			result.refusal = "account_disabled"
 			return nil
 		}
 		if !sameSessionClient(current.ClientMetadata, next.ClientMetadata) {
@@ -152,6 +154,7 @@ func rotateSession(
 			// An expired live session has no revocable rows. Keep natural expiry
 			// distinct from refresh-token reuse instead of reporting a mutation.
 			if !current.RevokedAt.Valid && len(revocations) == 0 {
+				result.refusal = "refresh_token_expired"
 				return nil
 			}
 			stageSessionRevocations(&pending, revocations, events.SystemActor())
@@ -159,6 +162,7 @@ func rotateSession(
 				Outcome:     SessionMutationTokenReuse,
 				Revocations: revocations,
 			}
+			result.refusal = "refresh_token_reused"
 			return nil
 		}
 		if current.RevokedAt.Valid {
@@ -214,6 +218,12 @@ func rotateSession(
 				Outcome:     SessionMutationTokenReuse,
 				Revocations: revocations,
 			}
+			// A rotated token presented again is replay; one ended any
+			// other way (logout, a revoked family) was revoked.
+			result.refusal = "refresh_token_revoked"
+			if current.RevocationReason.String == string(SessionRevocationRefreshRotated) {
+				result.refusal = "refresh_token_reused"
+			}
 			return nil
 		}
 		row, err := queries.RevokeLiveAuthSession(ctx, generated.RevokeLiveAuthSessionParams{
@@ -222,6 +232,8 @@ func rotateSession(
 			ID:               current.ID,
 		})
 		if errors.Is(err, pgx.ErrNoRows) {
+			// Not revoked, so the live-session guard failed on expiry.
+			result.refusal = "refresh_token_expired"
 			return nil
 		}
 		if err != nil {

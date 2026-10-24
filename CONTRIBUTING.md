@@ -236,7 +236,8 @@ The full recipe is
 CI picks its lanes from the files you change. Each lane also runs when a
 shared file it reads changes, such as `docs/api/**` or
 `deploy/production.env.example`. A change to the CI workflow runs every lane,
-and a change to the `Makefile` runs all but the macOS sandbox tests.
+and a change to the `Makefile` runs every lane except the desktop and
+workflow checks.
 
 | You changed | CI runs | Run it yourself with |
 | --- | --- | --- |
@@ -244,7 +245,8 @@ and a change to the `Makefile` runs all but the macOS sandbox tests.
 | `frontend/**`, `docs/api/spec/**` | Lint, typecheck, API contract checks, a production build and the Electron security scan | `make lint typecheck api-lint api-types-check build` |
 | `voice-agent/**` | `ruff` lint and format check, the Python tests and a Docker build | `make voice-gate` (needs `uv`) |
 | `deploy/**`, a Dockerfile | Builds both images and boots the self-hosting stack | `make selfhost-env selfhost-up` on a throwaway checkout |
-| `.github/**` | `actionlint` and `zizmor` on the workflows | `actionlint` |
+| `frontend/electron/**`, `frontend/forge.config.cjs`, `frontend/package.json`, `frontend/pnpm-lock.yaml` | Unsigned desktop installers for macOS (Apple silicon) | `cd frontend && pnpm electron:make` |
+| `.github/**` | `actionlint` and `zizmor` on the workflows and the composite action | `actionlint` |
 
 `ci-gate` is the one required check. It fails when any lane failed or was
 cancelled.
@@ -436,22 +438,8 @@ There is no CLA.
 
 ### Code owner review
 
-A pull request needs a review from the code owners of the paths it changes.
-`@Intelligent-Internet/zenith-team-maintainers` owns every path except these
-security-sensitive ones, which `@Intelligent-Internet/zenith-team-security`
-owns:
-
-- `server/internal/auth/`
-- `server/internal/config/`
-- `server/internal/middleware/`
-- `server/internal/daemon/execenv/`
-- `server/pkg/agent/`
-- `server/migrations/`
-- `frontend/electron/`
-- `.github/`
-- `.gitleaks.toml`
-- `SECURITY.md`
-
+A pull request needs a review from the code owners. `@Intelligent-Internet/ii-agent`,
+the team that maintains Zenith Team, owns every path.
 [.github/CODEOWNERS](.github/CODEOWNERS) is the source of truth.
 
 ### Secrets and test data

@@ -19,6 +19,10 @@ import (
 // so the file must be replaced, not retried.
 var ErrSessionRejected = errors.New("Zenith Team rejected the stored session")
 
+// ErrSessionExpired is a stored session whose refresh token is past its
+// expiry. Like ErrSessionRejected, only a new sign-in replaces it.
+var ErrSessionExpired = errors.New("Zenith Team session has expired; run `zen auth login` again")
+
 // Doer performs the refresh request. *http.Client satisfies it; tests pass a
 // stub.
 type Doer interface {
@@ -85,7 +89,7 @@ func Ensure(
 			return nil
 		}
 		if current.RefreshExpiresAt != nil && !now.Before(*current.RefreshExpiresAt) {
-			return errors.New("Zenith Team session has expired; run `zen auth login` again")
+			return ErrSessionExpired
 		}
 		if current.PendingRotationID == nil {
 			rotationID, err := uuid.NewRandom()

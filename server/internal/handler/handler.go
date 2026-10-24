@@ -167,7 +167,7 @@ func New(h Handler) *Handler {
 		middleware.RequestID(),
 		middleware.ClientMetadata(),
 		middleware.HTTPMetrics(h.HTTPMetrics),
-		middleware.RequestLogger(h.Logger),
+		middleware.RequestLogger(h.Logger, h.TrustedProxies),
 		middleware.Recovery(h.Logger),
 		middleware.OAuthSecurityHeaders(
 			h.AuthCookies.Secure, googleOAuthWebCallbackPath, clearGoogleOAuthWebBindingCookie),

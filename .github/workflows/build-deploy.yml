@@ -1,0 +1,243 @@
+# Builds the branch or tag it runs on and deploys it to one GitHub environment
+# (dev for now), as the other II apps on GCP deploy. The Slack deploy bot
+# (ii-infras-mono charts/ii-bots) dispatches it with only `environment`; the
+# Actions tab can also pick the parts:
+#
+# - server (on by default): build-image.yml publishes the server image to the
+#   environment's Artifact Registry repository, then promote pins
+#   sha-<commit>@<digest> in ii-infras-mono's
+#   charts/zenith-team/envs/<environment>.yaml, which Argo CD rolls out.
+# - desktop (off by default, main only): build-desktop.yml and
+#   publish-desktop.yml ship Zenith Team Dev
+#   <X.Y.Z of frontend/package.json>-dev.<run number>[.<attempt>] to the dev update
+#   channel, so every dev build moves it forward. It is signed in the
+#   desktop-signing environment, which admits only main and v* tags.
+#
+# Anyone with write access may run it. Every job that touches GCP runs in the
+# environment, whose accounts are bound to it, and the environment's
+# deployment rules decide which refs reach it. It holds GCP_DEPLOYER_SA,
+# GCP_IMAGE and GITOPS_DEPLOY_KEY_SECRET (the Secret Manager secret with the
+# ii-infras-mono deploy key), plus the desktop settings those workflows list;
+# GCP_WORKLOAD_IDENTITY_PROVIDER is a repository variable.
+name: Build and deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Where to deploy"
+        required: true
+        type: choice
+        options:
+          - dev
+        default: dev
+      server:
+        description: "Build and deploy the server"
+        required: false
+        type: boolean
+        default: true
+      desktop:
+        description: "Build and publish the desktop app to this environment's update channel"
+        required: false
+        type: boolean
+        default: false
+
+# Deploys to one environment run in order and none is cancelled halfway; a
+# newer request replaces any that is still waiting.
+concurrency:
+  group: build-deploy-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  target:
+    name: target (${{ inputs.environment }})
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      image: ${{ steps.server.outputs.image }}
+      desktop-version: ${{ steps.desktop.outputs.version }}
+    steps:
+      - name: Read the server settings
+        id: server
+        if: inputs.server
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+          PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          DEPLOYER_SA: ${{ vars.GCP_DEPLOYER_SA }}
+          IMAGE: ${{ vars.GCP_IMAGE }}
+          DEPLOY_KEY_SECRET: ${{ vars.GITOPS_DEPLOY_KEY_SECRET }}
+        run: |
+          if [ -z "$PROVIDER" ] || [ -z "$DEPLOYER_SA" ] || [ -z "$IMAGE" ] || [ -z "$DEPLOY_KEY_SECRET" ]; then
+            echo "::error::Set GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOYER_SA, GCP_IMAGE and GITOPS_DEPLOY_KEY_SECRET for the $ENVIRONMENT environment."
+            exit 1
+          fi
+          echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: inputs.desktop
+        with:
+          persist-credentials: false
+          sparse-checkout: frontend/package.json
+          sparse-checkout-cone-mode: false
+      - name: Choose the desktop version
+        id: desktop
+        if: inputs.desktop
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          set -euo pipefail
+          # Only the dev app builds here; release.yml builds prod from tags.
+          if [ "$ENVIRONMENT" != dev ]; then
+            echo "::error::Desktop builds from this workflow are dev builds; $ENVIRONMENT desktop releases come from release.yml."
+            exit 1
+          fi
+          # Said here, before anything builds; the desktop-signing environment
+          # enforces it.
+          if [ "$GITHUB_REF" != refs/heads/main ]; then
+            echo "::error::Desktop dev builds run from main only: they are signed in the desktop-signing environment, which admits main and v* tags. Deploy the server from $GITHUB_REF_NAME with desktop off."
+            exit 1
+          fi
+          package_version="$(jq -r .version frontend/package.json)"
+          num='(0|[1-9][0-9]*)'
+          # The X.Y.Z core: main may carry an -rc.N version while a pre-release
+          # is being cut.
+          if [[ ! "$package_version" =~ ^($num\.$num\.$num)(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::frontend/package.json has no X.Y.Z version: '$package_version'"
+            exit 1
+          fi
+          # A re-run of this job rebuilds, and a rebuild never replaces published
+          # files, so each attempt after the first gets its own version.
+          version="${BASH_REMATCH[1]}-dev.$GITHUB_RUN_NUMBER"
+          if [ "$GITHUB_RUN_ATTEMPT" != 1 ]; then
+            version="$version.$GITHUB_RUN_ATTEMPT"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  server:
+    needs: target
+    if: inputs.server
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/build-image.yml
+    with:
+      image: server
+      registry: gcp
+      gcp-image: ${{ needs.target.outputs.image }}
+      gcp-environment: ${{ inputs.environment }}
+
+  promote:
+    needs: server
+    environment: ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ENVIRONMENT: ${{ inputs.environment }}
+      IMAGE: ${{ needs.server.outputs.image }}
+      DIGEST: ${{ needs.server.outputs.digest }}
+      VALUES: charts/zenith-team/envs/${{ inputs.environment }}.yaml
+    steps:
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        id: gcp
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SA }}
+          token_format: access_token
+          create_credentials_file: false
+      - name: Load the ii-infras-mono deploy key
+        env:
+          SECRET: ${{ vars.GITOPS_DEPLOY_KEY_SECRET }}
+          TOKEN: ${{ steps.gcp.outputs.access_token }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$SECRET" =~ ^projects/[a-z0-9-]+/secrets/[A-Za-z0-9_-]+$ ]]; then
+            echo "::error::GITOPS_DEPLOY_KEY_SECRET must be projects/<project>/secrets/<name>, got '$SECRET'"
+            exit 1
+          fi
+          umask 077
+          curl -fsS --retry 3 -H "Authorization: Bearer $TOKEN" \
+            "https://secretmanager.googleapis.com/v1/$SECRET/versions/latest:access" |
+            jq -er .payload.data | base64 --decode > "$RUNNER_TEMP/deploy_key"
+          # GitHub's published host keys, fetched over HTTPS, instead of
+          # trusting whatever key answers first.
+          gh api meta --jq '.ssh_keys[] | "github.com " + .' > "$RUNNER_TEMP/known_hosts"
+          test -s "$RUNNER_TEMP/known_hosts"
+      - name: Pin the image in ii-infras-mono
+        env:
+          GIT_SSH_COMMAND: ssh -i ${{ runner.temp }}/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=${{ runner.temp }}/known_hosts
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::build-image.yml returned no digest: '$DIGEST'"
+            exit 1
+          fi
+          git clone --depth 1 --single-branch --branch main git@github.com:Intelligent-Internet/ii-infras-mono.git infra
+          cd infra
+          if [ ! -f "$VALUES" ]; then
+            echo "::error::ii-infras-mono has no $VALUES; add the $ENVIRONMENT environment there first."
+            exit 1
+          fi
+          # The commit and its exact image: a later push to the tag never
+          # changes what runs.
+          TAG="sha-$GITHUB_SHA@$DIGEST" yq -i '.image.repository = strenv(IMAGE) | .image.tag = strenv(TAG)' "$VALUES"
+          git config user.name "ii-deploy-bot"
+          git config user.email "deploy-bot@ii.inc"
+          git add "$VALUES"
+          if git diff --staged --quiet; then
+            echo "::notice::$ENVIRONMENT already runs $IMAGE:sha-$GITHUB_SHA."
+            exit 0
+          fi
+          git commit -q -m "deploy(zenith-team-$ENVIRONMENT): promote $GITHUB_REF_NAME [${GITHUB_SHA::7}]" -m "Run: $RUN_URL"
+          for attempt in 1 2 3; do
+            if git push -q origin HEAD:main; then
+              echo "::notice::Deployed $GITHUB_REF_NAME (${GITHUB_SHA::7}) to $ENVIRONMENT; Argo CD rolls it out."
+              exit 0
+            fi
+            echo "Push attempt $attempt lost a race; rebasing."
+            git pull -q --rebase origin main
+          done
+          echo "::error::Could not push to ii-infras-mono after 3 attempts."
+          exit 1
+      - name: Remove the deploy key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/deploy_key"
+
+  desktop:
+    needs: target
+    if: inputs.desktop
+    permissions:
+      contents: read
+    uses: ./.github/workflows/build-desktop.yml
+    with:
+      channel: ${{ inputs.environment }}
+      version: ${{ needs.target.outputs.desktop-version }}
+    # Resolved in desktop-signing, where only the macOS jobs run.
+    secrets:
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_BASE64 }}
+      ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_CERTIFICATE_PASSWORD }}
+      ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_SIGN_IDENTITY }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_BASE64 }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_KEY_ID }}
+      ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER: ${{ secrets.ZENITH_TEAM_DESKTOP_MAC_NOTARY_API_ISSUER }}
+
+  desktop-publish:
+    needs: [target, desktop]
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    uses: ./.github/workflows/publish-desktop.yml
+    with:
+      channel: ${{ inputs.environment }}
+      version: ${{ needs.target.outputs.desktop-version }}

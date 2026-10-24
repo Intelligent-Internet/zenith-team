@@ -34,6 +34,8 @@ const DESKTOP_SESSION_TIMEOUT_MS = 35_000;
 const AUTH_REQUEST_TIMEOUT_MS = 30_000;
 // Renew this long before the access token expires: request latency and
 // clock drift between this computer and the server (the CLI uses the same).
+// The renderer asks for its renewal 20 seconds ahead (src/lib/auth-token.ts),
+// inside this window, so that request always rotates.
 const REFRESH_SKEW_MS = 30_000;
 // The CLI's cross-process lock on auth.json (internal/authfile): the same
 // file name, the same stale age and the same wait.
@@ -50,6 +52,18 @@ class SessionNotSavedError extends Error {
     super(cause?.message || "Desktop auth session could not be saved");
     this.name = "SessionNotSavedError";
     this.code = cause?.code ?? null;
+  }
+}
+
+// A renewal that failed, with what it says about the session in the auth
+// API's words (DesktopAuthError kinds): the server refused it (rejected),
+// there was none to renew (session_missing), or the server could not be
+// reached (network) or answered 5xx (server). Only the first two end it.
+class DesktopSessionError extends Error {
+  constructor(kind, message) {
+    super(message);
+    this.name = "DesktopSessionError";
+    this.kind = kind;
   }
 }
 
@@ -280,7 +294,10 @@ function createDesktopAuthTokenStore({
         session.refreshExpiresAt &&
         Date.parse(session.refreshExpiresAt) <= Date.now()
       ) {
-        throw new Error("Desktop authentication session has expired");
+        throw new DesktopSessionError(
+          "session_missing",
+          "Desktop authentication session has expired",
+        );
       }
       if (!session.pendingRotationId) {
         session = { ...session, pendingRotationId: crypto.randomUUID() };
@@ -297,7 +314,10 @@ function createDesktopAuthTokenStore({
     });
     if (renewed) return { ...renewed, shared: true };
     if (readSessionStore()) return refreshSession();
-    throw new Error("Desktop authentication session is missing");
+    throw new DesktopSessionError(
+      "session_missing",
+      "Desktop authentication session is missing",
+    );
   }
 
   // moveSharedSession is the upgrade path: under the CLI's own lock on
@@ -381,7 +401,13 @@ function createDesktopAuthTokenStore({
 
   async function readStoredAccessToken() {
     const stored = await readStoredSession();
-    return stored.ok ? { ok: true, accessToken: stored.accessToken } : stored;
+    return stored.ok
+      ? {
+          ok: true,
+          accessToken: stored.accessToken,
+          accessExpiresAt: stored.accessExpiresAt,
+        }
+      : stored;
   }
 
   async function installStoredSession(session) {
@@ -446,19 +472,33 @@ function createDesktopAuthTokenStore({
           notSaved: true,
         };
       }
-      return failedSession("Unable to refresh the desktop session.");
+      // Any other failure on the way (the network, the server, this
+      // computer) leaves the stored session to renew on the next try, with
+      // the same rotation id.
+      return {
+        ...failedSession("Unable to refresh the desktop session."),
+        kind: error instanceof DesktopSessionError ? error.kind : "server",
+      };
     }
   }
 
   async function refreshSession() {
     let session = readSessionStore();
-    if (!session) throw new Error("Desktop authentication session is missing");
+    if (!session) {
+      throw new DesktopSessionError(
+        "session_missing",
+        "Desktop authentication session is missing",
+      );
+    }
     if (!needsRefresh(session)) return session;
     if (
       session.refreshExpiresAt &&
       Date.parse(session.refreshExpiresAt) <= Date.now()
     ) {
-      throw new Error("Desktop authentication session has expired");
+      throw new DesktopSessionError(
+        "session_missing",
+        "Desktop authentication session has expired",
+      );
     }
     if (!session.pendingRotationId) {
       session = { ...session, pendingRotationId: crypto.randomUUID() };
@@ -653,12 +693,20 @@ function createDesktopAuthTokenStore({
       "Content-Type": "application/json",
     };
     if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-    const response = await fetchImplementation(url, {
-      body: JSON.stringify(body),
-      headers,
-      method: "POST",
-      signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT_MS),
-    });
+    let response;
+    try {
+      response = await fetchImplementation(url, {
+        body: JSON.stringify(body),
+        headers,
+        method: "POST",
+        signal: AbortSignal.timeout(AUTH_REQUEST_TIMEOUT_MS),
+      });
+    } catch (error) {
+      throw new DesktopSessionError(
+        "network",
+        error?.message || "Zenith Team could not be reached",
+      );
+    }
     if (!response?.ok) {
       let code = null;
       try {
@@ -666,8 +714,13 @@ function createDesktopAuthTokenStore({
       } catch {
         code = null;
       }
-      throw new Error(
-        `Zenith Team answered ${response?.status ?? "nothing"}${code ? ` ${code}` : ""}`,
+      // The auth API's rule (rejectedByServer): a refusal is a 4xx with an
+      // error envelope; a 5xx or an answer without one is the server's.
+      const status =
+        typeof response?.status === "number" ? response.status : null;
+      throw new DesktopSessionError(
+        status === null || status >= 500 || !code ? "server" : "rejected",
+        `Zenith Team answered ${status ?? "nothing"}${code ? ` ${code}` : ""}`,
       );
     }
     // A sign-out answers 204 with no body.

@@ -34,6 +34,31 @@ var (
 	ErrOAuthAccountConflict     = errors.New("oauth identity conflicts with an existing account")
 )
 
+// refusal is ErrInvalidSession or ErrRefreshTokenReused carrying why the
+// credential was refused. Callers keep matching the sentinel and the client
+// still gets session_invalid; only the server's request log reads the reason
+// (RefusalReason), so a caller learns nothing it could probe tokens with.
+type refusal struct {
+	reason string
+	err    error
+}
+
+func (r refusal) Error() string { return r.err.Error() + ": " + r.reason }
+func (r refusal) Unwrap() error { return r.err }
+
+// RefusalReason returns the request-log label for a refused credential:
+// access_token_expired, access_token_invalid, session_ended,
+// refresh_token_malformed, refresh_token_unknown, refresh_token_expired,
+// refresh_token_revoked, refresh_token_reused or account_disabled. It is ""
+// for any other error.
+func RefusalReason(err error) string {
+	var refused refusal
+	if errors.As(err, &refused) {
+		return refused.reason
+	}
+	return ""
+}
+
 // ErrDesktopHandoffCodeInvalid and ErrDesktopHandoffCodeExpired are the two
 // terminal outcomes the desktop handoff service distinguishes when a code
 // fails to consume. The storage layer (createDesktopHandoffCode /

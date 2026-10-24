@@ -1,4 +1,5 @@
 import { clearInvalidClientSessionState } from "@/app/session/client-session-state";
+import { getCurrentSessionId } from "@/lib/auth-token";
 import {
   readSessionSnapshot,
   refreshSessionSnapshot,
@@ -40,7 +41,7 @@ export function applyAuthCacheEvent(
       updateCurrentUser(context, event.payload as User);
       return true;
     case "auth.session_revoked":
-      reconcileSession();
+      if (isOwnSession(event.payload.sessionId)) reconcileSession();
       return true;
     case "auth.company_access_changed":
       applyCompanyAccessChange(context, event);
@@ -220,6 +221,14 @@ function updateCurrentUser(context: RealtimeSyncContext, user: User) {
   context.dispatch(
     accountApi.util.upsertQueryData("getCurrentUser", undefined, user),
   );
+}
+
+// Every device sees every revocation, and most are another device's routine
+// rotation. A client that never learned its own session id still reconciles
+// on each one.
+function isOwnSession(sessionId: unknown) {
+  const currentSessionId = getCurrentSessionId();
+  return currentSessionId === null || sessionId === currentSessionId;
 }
 
 function reconcileSession() {
