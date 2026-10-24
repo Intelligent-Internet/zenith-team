@@ -1230,3 +1230,39 @@ func TestConversationListRendersTheAgentName(t *testing.T) {
 		t.Fatalf("row %q should render - for a deleted agent", deletedRow)
 	}
 }
+
+// The CLI's own refresh carries the same client metadata as its API calls,
+// so a refused refresh names the CLI in the server's request log.
+func TestOperatorRefreshSendsTheCLIClientMetadata(t *testing.T) {
+	var refreshPlatform string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/api/v1/auth/refresh" {
+			refreshPlatform = r.Header.Get("X-Client-Platform")
+		}
+		w.WriteHeader(http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+	seedSession(t, srv.URL)
+	path, err := daemon.CredentialPath()
+	if err != nil {
+		t.Fatalf("credential path: %v", err)
+	}
+	credential, err := authfile.Load(path)
+	if err != nil {
+		t.Fatalf("load credential: %v", err)
+	}
+	expired := time.Now().Add(-time.Minute)
+	credential.AccessExpiresAt = &expired
+	if err := authfile.Save(path, credential); err != nil {
+		t.Fatalf("save credential: %v", err)
+	}
+	t.Setenv("ZENITH_TEAM_RUN_ID", "")
+	t.Setenv("ZENITH_TEAM_RUN_TOKEN", "")
+
+	if _, err := executeCLI(t, newRootCmd, "task", "list"); err == nil {
+		t.Fatal("task list succeeded on a refused refresh")
+	}
+	if refreshPlatform != "cli" {
+		t.Fatalf("refresh X-Client-Platform = %q, want cli", refreshPlatform)
+	}
+}

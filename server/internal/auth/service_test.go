@@ -270,3 +270,57 @@ func TestServiceLogoutIgnoresUnusableRefreshTokensBeforeLookup(t *testing.T) {
 		t.Fatalf("Logout(invalid) = %#v, %v", mutation, err)
 	}
 }
+
+// The request log names why a credential was refused, while the error still
+// matches the sentinel every caller maps to session_invalid. These are the
+// refusals reached before storage; session_integration_test.go covers the
+// ones a session row decides.
+func TestServiceRefusalsNameTheirReasonAndKeepTheSentinel(t *testing.T) {
+	t.Parallel()
+
+	now := time.Date(2026, time.July, 11, 10, 30, 0, 0, time.UTC)
+	tokens, err := NewTokenManager(TokenManagerOptions{
+		Secret:     []byte("01234567890123456789012345678901"),
+		AccessTTL:  15 * time.Minute,
+		RefreshTTL: 30 * 24 * time.Hour,
+		Now:        func() time.Time { return now },
+		Random:     bytes.NewReader(make([]byte, 64)),
+	})
+	if err != nil {
+		t.Fatalf("NewTokenManager() error = %v", err)
+	}
+	issued, err := tokens.Issue(uuid.New(), uuid.New())
+	if err != nil {
+		t.Fatalf("Issue() error = %v", err)
+	}
+	later, err := NewTokenManager(TokenManagerOptions{
+		Secret:     []byte("01234567890123456789012345678901"),
+		AccessTTL:  15 * time.Minute,
+		RefreshTTL: 30 * 24 * time.Hour,
+		Now:        func() time.Time { return now.Add(time.Hour) },
+		Random:     bytes.NewReader(make([]byte, 64)),
+	})
+	if err != nil {
+		t.Fatalf("NewTokenManager(later) error = %v", err)
+	}
+	service := storelessService(t, ServiceOptions{Tokens: later})
+
+	for name, accessToken := range map[string]string{
+		"access_token_expired": issued.AccessToken,
+		"access_token_invalid": issued.AccessToken[:len(issued.AccessToken)-4] + "AAAA",
+	} {
+		_, err := service.Authenticate(context.Background(), accessToken, TokenKindBearer)
+		if !errors.Is(err, ErrInvalidSession) || RefusalReason(err) != name {
+			t.Errorf("Authenticate(%s) error = %v, reason %q", name, err, RefusalReason(err))
+		}
+	}
+	_, err = service.Refresh(context.Background(), RefreshInput{
+		RefreshToken: "not-a-refresh-token", Client: ClientDesktop,
+	})
+	if !errors.Is(err, ErrInvalidSession) || RefusalReason(err) != "refresh_token_malformed" {
+		t.Errorf("Refresh(malformed) error = %v, reason %q", err, RefusalReason(err))
+	}
+	if reason := RefusalReason(ErrInvalidSession); reason != "" {
+		t.Errorf("RefusalReason(bare sentinel) = %q, want none", reason)
+	}
+}

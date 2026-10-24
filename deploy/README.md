@@ -434,10 +434,15 @@ Point liveness probes at `/healthz` and load-balancer/traffic probes at
 
 One JSON object per line on stdout (`log/slog`); bootstrap failures may land
 on stderr. Every HTTP request logs `msg="HTTP request"` with `method`,
-`route` (template, not raw path), `status`, `duration_ms`, and `request_id`;
-probe paths (`/healthz`, `/readyz`, `/metrics`) are not logged. Background
-components log with `component` and `error_code` fields. Logs never contain
-tokens, provider credentials, attachment keys, or local filesystem paths.
+`route` (template, not raw path), `status`, `duration_ms`, `request_id`, and
+`client_ip` (taken from `X-Forwarded-For` only when the peer is in
+`ZENITH_TEAM_TRUSTED_PROXIES`). It adds `user_agent`, `client_platform`,
+`client_version`, `client_os` and `daemon_id` when the caller sends them, and
+on a 401 an `auth_failure` reason such as `access_token_expired` or
+`refresh_token_revoked`. Probe paths (`/healthz`, `/readyz`, `/metrics`) are
+not logged. Background components log with `component` and `error_code`
+fields. Logs never contain tokens, provider credentials, attachment keys, or
+local filesystem paths.
 The production compose caps json-file logs at 5 × 50 MB per container.
 
 ### Metrics and dashboard

@@ -596,6 +596,21 @@ func TestDaemonStatusShowsVersionAndAPendingRestart(t *testing.T) {
 	}
 }
 
+func TestDaemonStatusShowsASignedOutDaemon(t *testing.T) {
+	t.Setenv("ZENITH_TEAM_HOME", t.TempDir())
+	health := runningHealth(os.Getpid(), time.Now().UTC(), "0.9.2", 0)
+	health.SignedOut = true
+	newFakeDaemon(t, health)
+
+	out, err := executeCLI(t, newRootCmd, "daemon", "status")
+	if err != nil {
+		t.Fatalf("daemon status: %v", err)
+	}
+	if !strings.Contains(out, "signed out:") || !strings.Contains(out, "zen daemon start") {
+		t.Fatalf("status output %q does not say the daemon is signed out", out)
+	}
+}
+
 // /health reports the companies the daemon registered runtimes in and the
 // providers it skipped; the table form has to show both, and in a stable
 // order — the daemon ranges over maps to build them.

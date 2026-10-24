@@ -1029,3 +1029,88 @@ func startAuthPostgres(t *testing.T) (*pgxpool.Pool, *db.Store) {
 	}
 	return pool, store
 }
+
+// A refused refresh names why for the request log: a token no session owns,
+// one whose session expired, one revoked by logout, one already rotated and
+// replayed, and one whose person was disabled.
+func TestAuthRefreshRefusalsNameWhyTheSessionWasRefused(t *testing.T) {
+	pool, store := startAuthPostgres(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
+	rotate := func(t *testing.T, fixture authTestSession, tokenHash []byte, childByte byte) RotateSessionResult {
+		t.Helper()
+		result, err := rotateSession(ctx, store, authTestBus(t), tokenHash, NewSession{
+			TokenPrefix: fmt.Sprintf("brf_refusal-%d", childByte),
+			TokenHash:   bytes.Repeat([]byte{childByte}, 32), ExpiresAt: time.Now().UTC().Add(time.Hour),
+			ClientMetadata: fixture.ClientMetadata,
+		})
+		if err != nil {
+			t.Fatalf("rotateSession() error = %v", err)
+		}
+		return result
+	}
+
+	unknown := createAuthTestSession(t, ctx, store, "refusal-unknown@zenith-team.test", 201, `{"client":"desktop"}`)
+	if got := rotate(t, unknown, bytes.Repeat([]byte{202}, 32), 203); got.refusal != "refresh_token_unknown" {
+		t.Errorf("unknown token refusal = %q", got.refusal)
+	}
+
+	expired := createAuthTestSession(t, ctx, store, "refusal-expired@zenith-team.test", 211, `{"client":"desktop"}`)
+	if _, err := pool.Exec(ctx, `
+		UPDATE auth_sessions
+		SET created_at = clock_timestamp() - INTERVAL '2 hours', expires_at = clock_timestamp() - INTERVAL '1 hour'
+		WHERE id = $1`, expired.SessionID); err != nil {
+		t.Fatalf("expire session: %v", err)
+	}
+	if got := rotate(t, expired, expired.TokenHash, 212); got.refusal != "refresh_token_expired" {
+		t.Errorf("expired session refusal = %q", got.refusal)
+	}
+
+	loggedOut := createAuthTestSession(
+		t,
+		ctx,
+		store,
+		"refusal-logout@zenith-team.test",
+		221,
+		`{"client":"desktop"}`,
+	)
+	if _, err := revokeSession(ctx, store, authTestBus(t), loggedOut.TokenHash); err != nil {
+		t.Fatalf("revokeSession() error = %v", err)
+	}
+	if got := rotate(t, loggedOut, loggedOut.TokenHash, 222); got.refusal != "refresh_token_revoked" ||
+		got.Mutation.Outcome != SessionMutationTokenReuse {
+		t.Errorf("logged-out session = %q (%s)", got.refusal, got.Mutation.Outcome)
+	}
+
+	replayed := createAuthTestSession(t, ctx, store, "refusal-replay@zenith-team.test", 231, `{"client":"desktop"}`)
+	if got := rotate(t, replayed, replayed.TokenHash, 232); got.Mutation.Outcome != SessionMutationRotated {
+		t.Fatalf("first rotation = %s", got.Mutation.Outcome)
+	}
+	// Past the recent-rotation grace, so the replay is not taken for a retry.
+	if _, err := pool.Exec(ctx, `
+		UPDATE auth_sessions SET revoked_at = clock_timestamp() - INTERVAL '1 hour'
+		WHERE id = $1`, replayed.SessionID); err != nil {
+		t.Fatalf("age the rotation: %v", err)
+	}
+	if got := rotate(t, replayed, replayed.TokenHash, 233); got.refusal != "refresh_token_reused" ||
+		got.Mutation.Outcome != SessionMutationTokenReuse {
+		t.Errorf("replayed token = %q (%s)", got.refusal, got.Mutation.Outcome)
+	}
+
+	disabled := createAuthTestSession(
+		t,
+		ctx,
+		store,
+		"refusal-disabled@zenith-team.test",
+		241,
+		`{"client":"desktop"}`,
+	)
+	if _, err := pool.Exec(ctx, `UPDATE users SET disabled_at = clock_timestamp() WHERE id = $1`,
+		disabled.UserID); err != nil {
+		t.Fatalf("disable user: %v", err)
+	}
+	if got := rotate(t, disabled, disabled.TokenHash, 242); got.refusal != "account_disabled" {
+		t.Errorf("disabled person refusal = %q", got.refusal)
+	}
+}

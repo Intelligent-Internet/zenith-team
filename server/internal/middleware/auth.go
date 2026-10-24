@@ -19,6 +19,7 @@ func RequireUserAuth(service auth.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		accessToken, kind, ok := accessCredential(c)
 		if !ok {
+			SetAuthFailure(c, missingCredentialReason(c))
 			util.WriteError(
 				c,
 				http.StatusUnauthorized,
@@ -40,6 +41,7 @@ func RequireDaemonAuth(service auth.AuthService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, ok := bearerToken(c)
 		if !ok {
+			SetAuthFailure(c, missingCredentialReason(c))
 			util.WriteError(
 				c,
 				http.StatusUnauthorized,
@@ -66,6 +68,7 @@ func authenticate(
 	principal, err := service.Authenticate(c.Request.Context(), accessToken, kind)
 	if err != nil {
 		if errors.Is(err, auth.ErrInvalidSession) {
+			SetAuthFailure(c, auth.RefusalReason(err))
 			util.WriteError(c, http.StatusUnauthorized, "session is invalid or expired", "session_invalid")
 		} else {
 			util.WriteError(c, http.StatusInternalServerError, "internal server error", "internal_error")
@@ -95,6 +98,16 @@ func accessCredential(c *gin.Context) (string, auth.TokenKind, bool) {
 		return "", "", false
 	}
 	return token, auth.TokenKindSession, true
+}
+
+// missingCredentialReason labels a request the guards refused before any
+// lookup: no credential at all, or an Authorization header that is not one
+// well-formed bearer token.
+func missingCredentialReason(c *gin.Context) string {
+	if c.GetHeader("Authorization") != "" {
+		return "access_token_malformed"
+	}
+	return "access_token_missing"
 }
 
 func bearerToken(c *gin.Context) (string, bool) {

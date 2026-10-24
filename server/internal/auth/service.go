@@ -268,7 +268,7 @@ func (s *DefaultAuthService) Refresh(ctx context.Context, input RefreshInput) (R
 	if err != nil {
 		return RefreshResult{
 			Mutation: SessionMutationResult{Outcome: SessionMutationInvalid},
-		}, ErrInvalidSession
+		}, refusal{"refresh_token_malformed", ErrInvalidSession}
 	}
 	var refresh IssuedRefresh
 	if input.RotationID == nil {
@@ -293,7 +293,7 @@ func (s *DefaultAuthService) Refresh(ctx context.Context, input RefreshInput) (R
 	result := RefreshResult{Mutation: rotation.Mutation}
 	switch rotation.Mutation.Outcome {
 	case SessionMutationInvalid:
-		return result, ErrInvalidSession
+		return result, refusal{rotation.refusal, ErrInvalidSession}
 	case SessionMutationAlreadyRotated:
 		return result, ErrSessionAlreadyRotated
 	case SessionMutationRecovered:
@@ -309,7 +309,7 @@ func (s *DefaultAuthService) Refresh(ctx context.Context, input RefreshInput) (R
 			return RefreshResult{}, err
 		}
 	case SessionMutationTokenReuse:
-		return result, ErrRefreshTokenReused
+		return result, refusal{rotation.refusal, ErrRefreshTokenReused}
 	case SessionMutationRotated:
 	default:
 		return result, fmt.Errorf(
@@ -362,11 +362,11 @@ func (s *DefaultAuthService) Authenticate(
 		return UserPrincipal{}, ErrInvalidSession
 	}
 	claims, err := s.tokens.ValidateAccess(accessToken)
-	if err != nil {
-		return UserPrincipal{}, ErrInvalidSession
+	if errors.Is(err, errAccessTokenExpired) {
+		return UserPrincipal{}, refusal{"access_token_expired", ErrInvalidSession}
 	}
-	if !util.ValidUUID(claims.SessionID) {
-		return UserPrincipal{}, ErrInvalidSession
+	if err != nil || !util.ValidUUID(claims.SessionID) {
+		return UserPrincipal{}, refusal{"access_token_invalid", ErrInvalidSession}
 	}
 	row, err := s.store.Queries().GetActiveSessionUser(ctx, generated.GetActiveSessionUserParams{
 		SessionID: claims.SessionID,
@@ -374,7 +374,9 @@ func (s *DefaultAuthService) Authenticate(
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return UserPrincipal{}, ErrInvalidSession
+			// Revoked, expired, or its person disabled: the token was
+			// authentic, the session behind it is gone.
+			return UserPrincipal{}, refusal{"session_ended", ErrInvalidSession}
 		}
 		return UserPrincipal{}, fmt.Errorf("get active auth session: %w", err)
 	}

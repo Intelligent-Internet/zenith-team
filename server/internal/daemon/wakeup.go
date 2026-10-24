@@ -110,8 +110,14 @@ func (d *Daemon) runWakeupConnection(
 		return 0, err
 	}
 
+	// Without a token the upgrade can only be refused, so a failed refresh
+	// waits out the backoff instead of dialing.
+	token, err := d.client.bearer(ctx)
+	if err != nil {
+		return 0, err
+	}
 	headers := http.Header{}
-	if token, err := d.client.bearer(ctx); err == nil && token != "" {
+	if token != "" {
 		headers.Set("Authorization", "Bearer "+token)
 	}
 	if d.client.platform != "" {

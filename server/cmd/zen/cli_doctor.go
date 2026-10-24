@@ -211,6 +211,17 @@ func runDoctor(cmd *cobra.Command, _ []string) error {
 				},
 			)
 		}
+		if health.SignedOut {
+			report.Checks = append(
+				report.Checks,
+				doctorCheck{
+					Name:   "daemon session",
+					Status: "fail",
+					Detail: "the server ended the daemon's session; it calls nothing until a new one is stored",
+					Action: "run `zen daemon start` (or sign in to the desktop app)",
+				},
+			)
+		}
 	}
 
 	// 4. Local files the CLI depends on.

@@ -464,8 +464,13 @@ func (d *Daemon) setSkippedAgents(skipped map[string]string, unusable map[string
 // claimableRuntimeIDs returns the runtime ids the daemon claims work for:
 // allRuntimeIDs minus the runtimes of unusable providers. Heartbeat and
 // deregister keep using allRuntimeIDs so an unusable runtime's row stays
-// fresh (the server keeps it offline) while the machine is on.
+// fresh (the server keeps it offline) while the machine is on. A signed-out
+// daemon claims for none, so the claim, task merge and wakeup loops idle
+// instead of calling a server that will refuse them.
 func (d *Daemon) claimableRuntimeIDs() []string {
+	if d.client.signedOut() {
+		return nil
+	}
 	d.skippedAgentsMu.RLock()
 	unusable := d.unusableProviders
 	d.skippedAgentsMu.RUnlock()
@@ -648,7 +653,7 @@ func (d *Daemon) resolveAuth(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	session := NewFileSession(path)
+	session := NewFileSession(path, d.client, d.logger)
 	if _, err := session.AccessToken(ctx); err != nil {
 		if errors.Is(err, authfile.ErrNotFound) {
 			d.logger.Warn("the daemon has no session of its own — run 'zen auth login' and " +

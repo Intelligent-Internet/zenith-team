@@ -504,6 +504,9 @@ func printDaemonStatusReport(out io.Writer, health *daemonpkg.HealthResponse, se
 	if health.ReloadPendingReason != "" {
 		rows = append(rows, row{"restart pending", health.ReloadPendingReason})
 	}
+	if health.SignedOut {
+		rows = append(rows, row{"signed out", "the server ended the daemon's session; run `zen daemon start`"})
+	}
 	width := 0
 	for _, r := range rows {
 		width = max(width, len(r.key)+1)
