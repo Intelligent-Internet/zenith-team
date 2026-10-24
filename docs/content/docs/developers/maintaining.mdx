@@ -76,6 +76,24 @@ To publish the desktop app with releases:
 
 The desktop jobs then also require `frontend/package.json` to carry each tag's version.
 
+### Hosted web app
+
+The project's own web app at `https://team.ii.inc` is a Cloudflare Pages project connected to this repository through Cloudflare's GitHub integration. Pages builds it on every push to `main`, and builds each other branch as a preview on its `*.pages.dev` address. No GitHub workflow or Cloudflare token is involved. It needs these settings:
+
+| Setting | Value |
+| --- | --- |
+| Repository and production branch | `Intelligent-Internet/zenith-team`, `main` |
+| Root directory | `frontend` (Pages then also deploys `frontend/functions`, the `/api` proxy) |
+| Build command | `pnpm build` |
+| Output directory | `dist` |
+| `NODE_VERSION` | `24`, as in `.nvmrc` |
+| `VITE_API_URL` | The API origin, `https://dev.api-zenith-team.ii.inc` for now |
+| `ZENITH_TEAM_API_ORIGIN` | The same origin, for the `/api` proxy (see `frontend/functions/README.md`) |
+| `VITE_ZENITH_TEAM_DESKTOP_RELEASE_MANIFEST_URL` | `https://sfile.ii.inc/zenith-team-dev/latest.json`, the dev channel; the prod channel's once production exists |
+| Custom domain | `team.ii.inc` |
+
+The `VITE_` values are built into the bundle, so changing one needs a new deployment (**Retry deployment** in Pages). The manifest's contents are not: the download buttons fetch it, uncached, each time the page loads, so a new desktop build shows up at once. The bucket's CORS policy must allow the site's origin; it allows `https://team.ii.inc`.
+
 ### Actions
 
 - Under **Settings → Actions → General**, keep the default workflow token read-only. Each workflow asks for the extra permissions it needs.
