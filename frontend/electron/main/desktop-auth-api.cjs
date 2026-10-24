@@ -275,6 +275,14 @@ function createDesktopAuthApi(dependencies) {
           "Zenith Team Desktop could not save the renewed session",
         );
       }
+      // A renewal that failed keeps its cause, so an unreachable or failing
+      // server is retried and only a refusal or no session signs out.
+      if (stored && !stored.ok && stored.kind) {
+        throw new DesktopAuthError(
+          stored.kind,
+          "Desktop authentication session could not be renewed",
+        );
+      }
       if (
         !stored?.ok ||
         !stored.accessToken ||
