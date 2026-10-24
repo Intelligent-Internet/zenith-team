@@ -113,9 +113,9 @@ func Load(lookup LookupEnv) (Config, error) {
 	appName := valueOrDefault(lookup, "APP_NAME", "Zenith Team API")
 	appEnvironment := strings.ToLower(valueOrDefault(lookup, "APP_ENVIRONMENT", "local"))
 	switch appEnvironment {
-	case "local", "staging", "production":
+	case "local", "dev", "staging", "production":
 	default:
-		return Config{}, errors.New("APP_ENVIRONMENT must be local, staging, or production")
+		return Config{}, errors.New("APP_ENVIRONMENT must be local, dev, staging, or production")
 	}
 	databaseURL, _ := lookup("APP_DATABASE_URL")
 	databaseURL = strings.TrimSpace(databaseURL)
