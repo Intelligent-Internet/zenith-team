@@ -161,6 +161,7 @@ func TestToolActivityIsIdempotentAcrossStartAndCompletedItem(t *testing.T) {
 func TestRunIdleWatchdogWaitsForTranscriptAppend(t *testing.T) {
 	t.Parallel()
 
+	const window = 20 * time.Millisecond
 	d := &Daemon{}
 	ctx, cancelContext := context.WithCancel(context.Background())
 	defer cancelContext()
@@ -172,11 +173,18 @@ func TestRunIdleWatchdogWaitsForTranscriptAppend(t *testing.T) {
 	var appendInFlight atomic.Bool
 	appendInFlight.Store(true)
 	watchdogCancelled := make(chan struct{})
-	cancelExecution := func() { close(watchdogCancelled) }
+	// Measure the silence when the watchdog cancels, as the watchdog does. A
+	// short timer raced against the cancellation fails at random whenever a
+	// loaded runner stalls this goroutine past the window.
+	var idleAtCancel time.Duration
+	cancelExecution := func() {
+		idleAtCancel = time.Since(time.Unix(0, lastActivity.Load()))
+		close(watchdogCancelled)
+	}
 
 	go d.runIdleWatchdog(
 		ctx,
-		20*time.Millisecond,
+		window,
 		time.Second,
 		&lastActivity,
 		&inFlightTools,
@@ -196,13 +204,15 @@ func TestRunIdleWatchdogWaitsForTranscriptAppend(t *testing.T) {
 	appendInFlight.Store(false)
 	select {
 	case <-watchdogCancelled:
-		t.Fatal("watchdog fired immediately after a durable append acknowledgement")
-	case <-time.After(10 * time.Millisecond):
-	}
-	select {
-	case <-watchdogCancelled:
-	case <-time.After(time.Second):
+	case <-time.After(10 * time.Second):
 		t.Fatal("watchdog did not fire after transcript append finished")
+	}
+	if idleAtCancel < window {
+		t.Fatalf(
+			"watchdog fired %s after a durable append acknowledgement, want at least %s",
+			idleAtCancel,
+			window,
+		)
 	}
 	if !fired.Load() {
 		t.Fatal("watchdog cancellation did not record the fired state")
@@ -212,6 +222,7 @@ func TestRunIdleWatchdogWaitsForTranscriptAppend(t *testing.T) {
 func TestRunIdleWatchdogUsesToolWindowWhileToolIsActive(t *testing.T) {
 	t.Parallel()
 
+	const toolWindow = 100 * time.Millisecond
 	d := &Daemon{}
 	ctx, cancelContext := context.WithCancel(context.Background())
 	defer cancelContext()
@@ -223,32 +234,38 @@ func TestRunIdleWatchdogUsesToolWindowWhileToolIsActive(t *testing.T) {
 	var threshold atomic.Int64
 	var appendInFlight atomic.Bool
 	watchdogCancelled := make(chan struct{})
+	var idleAtCancel time.Duration
 
 	go d.runIdleWatchdog(
 		ctx,
 		20*time.Millisecond,
-		100*time.Millisecond,
+		toolWindow,
 		&lastActivity,
 		&inFlightTools,
 		&fired,
 		&threshold,
 		&appendInFlight,
-		func() { close(watchdogCancelled) },
+		func() {
+			idleAtCancel = time.Since(time.Unix(0, lastActivity.Load()))
+			close(watchdogCancelled)
+		},
 		testLogger(),
 		uuid.MustParse("00000000-0000-4000-8000-000000004711"),
 	)
 	select {
 	case <-watchdogCancelled:
-		t.Fatal("watchdog used the ordinary idle window for an active tool")
-	case <-time.After(60 * time.Millisecond):
-	}
-	select {
-	case <-watchdogCancelled:
-	case <-time.After(time.Second):
+	case <-time.After(10 * time.Second):
 		t.Fatal("watchdog did not enforce the tool window")
 	}
-	if got := time.Duration(threshold.Load()); got != 100*time.Millisecond {
-		t.Fatalf("watchdog threshold = %s, want 100ms", got)
+	if idleAtCancel < toolWindow {
+		t.Fatalf(
+			"watchdog fired after %s of silence during an active tool, want at least %s",
+			idleAtCancel,
+			toolWindow,
+		)
+	}
+	if got := time.Duration(threshold.Load()); got != toolWindow {
+		t.Fatalf("watchdog threshold = %s, want %s", got, toolWindow)
 	}
 }
 
