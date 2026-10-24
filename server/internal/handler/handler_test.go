@@ -110,7 +110,7 @@ func TestRequestLoggerUsesRouteTemplateAndRequestID(t *testing.T) {
 	var output bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&output, nil))
 	router := gin.New()
-	router.Use(middleware.RequestID(), middleware.RequestLogger(logger))
+	router.Use(middleware.RequestID(), middleware.RequestLogger(logger, nil))
 	router.GET("/tasks/:taskId", func(c *gin.Context) { c.Status(http.StatusNoContent) })
 
 	request := httptest.NewRequest(http.MethodGet, "/tasks/0197f590-10b8-7cc0-a6c6-160ed7a18b2c", nil)

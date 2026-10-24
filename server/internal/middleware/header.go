@@ -18,6 +18,7 @@ func RequestID() gin.HandlerFunc {
 			requestID = uuid.Must(uuid.NewV7()).String()
 		}
 		util.SetRequestID(c, requestID)
+		c.Request = c.Request.WithContext(util.WithRequestID(c.Request.Context(), requestID))
 		c.Header("X-Request-ID", requestID)
 		c.Next()
 	}

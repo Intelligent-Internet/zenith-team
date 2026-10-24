@@ -394,6 +394,7 @@ func (h *Handler) refresh(c *gin.Context) {
 			(errors.Is(err, auth.ErrInvalidSession) || errors.Is(err, auth.ErrRefreshTokenReused)) {
 			clearAuthCookies(c, h.AuthCookies)
 		}
+		middleware.SetAuthFailure(c, auth.RefusalReason(err))
 		writeAuthError(c, err)
 		return
 	}

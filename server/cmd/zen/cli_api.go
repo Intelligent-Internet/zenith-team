@@ -145,7 +145,7 @@ func (t *operatorTransport) do(
 	body []byte,
 	requestKey string,
 ) (int, []byte, error) {
-	credential, err := authfile.Ensure(ctx, t.httpClient, t.credentialPath, time.Now(), authfile.EnsureOptions{})
+	credential, err := authfile.Ensure(ctx, t, t.credentialPath, time.Now(), authfile.EnsureOptions{})
 	if err != nil {
 		return 0, nil, &modeError{msg: err.Error()}
 	}
@@ -169,17 +169,13 @@ func (t *operatorTransport) do(
 	}
 	request.Header.Set("Authorization", "Bearer "+credential.AccessToken)
 	request.Header.Set("Accept", "application/json")
-	// Client metadata: lets the server split logs and metrics by caller.
-	request.Header.Set("X-Client-Platform", "cli")
-	request.Header.Set("X-Client-Version", version)
-	request.Header.Set("X-Client-OS", runtime.GOOS)
 	if len(body) != 0 {
 		request.Header.Set("Content-Type", "application/json")
 	}
 	if requestKey != "" {
 		request.Header.Set("Idempotency-Key", requestKey)
 	}
-	response, err := t.httpClient.Do(request)
+	response, err := t.Do(request)
 	if err != nil {
 		return 0, nil, &networkError{Method: method, Path: pathOnly, Err: err}
 	}
@@ -194,6 +190,16 @@ func (t *operatorTransport) do(
 		}
 	}
 	return response.StatusCode, data, nil
+}
+
+// Do sends request with the CLI's client metadata, which lets the server
+// split logs and metrics by caller. authfile.Ensure refreshes through it
+// too, so a refused refresh names the CLI in the server's request log.
+func (t *operatorTransport) Do(request *http.Request) (*http.Response, error) {
+	request.Header.Set("X-Client-Platform", "cli")
+	request.Header.Set("X-Client-Version", version)
+	request.Header.Set("X-Client-OS", runtime.GOOS)
+	return t.httpClient.Do(request)
 }
 
 // runChannelTransport carries requests over the daemon's Run channel. The

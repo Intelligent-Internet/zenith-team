@@ -7,12 +7,15 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
+	"github.com/Intelligent-Internet/zenith-team/server/internal/auth"
 	"github.com/Intelligent-Internet/zenith-team/server/internal/util"
 )
 
@@ -29,7 +32,7 @@ func (s *statusLog) ObserveHTTP(_, _ string, status int, _ time.Duration) {
 func newObservedRouter(logs *bytes.Buffer, metrics *statusLog, handle gin.HandlerFunc) *gin.Engine {
 	logger := slog.New(slog.NewJSONHandler(logs, nil))
 	router := gin.New()
-	router.Use(RequestID(), ClientMetadata(), HTTPMetrics(metrics), RequestLogger(logger), Recovery(logger))
+	router.Use(RequestID(), ClientMetadata(), HTTPMetrics(metrics), RequestLogger(logger, nil), Recovery(logger))
 	router.GET("/plain", handle)
 	router.Group("/bounded", RequestTimeout(time.Minute)).GET("", handle)
 	return router
@@ -185,6 +188,145 @@ func TestRequestLogAndMetricsRecordClientClosedFailuresAs499(t *testing.T) {
 			if panicLine, has := lines["recovered HTTP panic"]; has != tt.wantPanic ||
 				(has && panicLine["level"] != "ERROR") {
 				t.Fatalf("recovered panic line = %v, want present %t at ERROR", panicLine, tt.wantPanic)
+			}
+		})
+	}
+}
+
+// refusingAuthenticator refuses every credential the way an ended session is
+// refused.
+type refusingAuthenticator struct{ auth.AuthService }
+
+func (refusingAuthenticator) Authenticate(context.Context, string, auth.TokenKind) (auth.UserPrincipal, error) {
+	return auth.UserPrincipal{}, auth.ErrInvalidSession
+}
+
+// A client stuck on 401s has to be traceable from the request log alone: who
+// it is (address, user agent, self-reported client and daemon id) and why
+// it was refused, with nothing of the credential it sent.
+func TestRequestLogAttributesARefusedCallerWithoutItsCredential(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name          string
+		authorization string
+		wantFailure   string
+	}{
+		{name: "no credential", wantFailure: "access_token_missing"},
+		{name: "not a bearer", authorization: "Basic c2VjcmV0LXRva2Vu", wantFailure: "access_token_malformed"},
+		{name: "refused bearer", authorization: "Bearer secret-token"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var logs bytes.Buffer
+			logger := slog.New(slog.NewJSONHandler(&logs, nil))
+			router := gin.New()
+			router.Use(RequestID(), ClientMetadata(),
+				RequestLogger(logger, []netip.Prefix{netip.MustParsePrefix("10.1.0.0/16")}))
+			router.GET(
+				"/api/v1/daemon/ws",
+				RequireDaemonAuth(refusingAuthenticator{}),
+				func(c *gin.Context) {
+					c.Status(http.StatusNoContent)
+				},
+			)
+
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/daemon/ws", nil)
+			request.RemoteAddr = "10.1.4.2:51234"
+			request.Header.Set("X-Forwarded-For", "198.51.100.7, 203.0.113.9")
+			request.Header.Set("User-Agent", "Go-http-client/1.1")
+			request.Header.Set(HeaderClientPlatform, "daemon")
+			request.Header.Set(HeaderClientVersion, "0.2.47")
+			request.Header.Set(HeaderClientOS, "macos")
+			request.Header.Set(HeaderDaemonID, "6b0f3c55-6a3e-4f43-9a51-0c8f6d2f1b7e")
+			if tt.authorization != "" {
+				request.Header.Set("Authorization", tt.authorization)
+			}
+			response := httptest.NewRecorder()
+			router.ServeHTTP(response, request)
+
+			if response.Code != http.StatusUnauthorized {
+				t.Fatalf("status = %d, want 401", response.Code)
+			}
+			line, ok := logLines(t, &logs)["HTTP request"]
+			if !ok {
+				t.Fatalf("no request log line in %s", logs.String())
+			}
+			want := map[string]any{
+				"client_ip":       "203.0.113.9",
+				"user_agent":      "Go-http-client/1.1",
+				"client_platform": "daemon",
+				"client_version":  "0.2.47",
+				"client_os":       "macos",
+				"daemon_id":       "6b0f3c55-6a3e-4f43-9a51-0c8f6d2f1b7e",
+			}
+			for key, value := range want {
+				if line[key] != value {
+					t.Errorf("%s = %v, want %v", key, line[key], value)
+				}
+			}
+			if failure, has := line["auth_failure"]; tt.wantFailure != "" && failure != tt.wantFailure ||
+				tt.wantFailure == "" && has {
+				t.Errorf("auth_failure = %v (present %t), want %q", failure, has, tt.wantFailure)
+			}
+			if strings.Contains(logs.String(), "secret-token") ||
+				strings.Contains(logs.String(), "c2VjcmV0") {
+				t.Fatalf("request log carries the credential: %s", logs.String())
+			}
+		})
+	}
+}
+
+func TestClientIPTrustsForwardedForOnlyFromTrustedProxies(t *testing.T) {
+	t.Parallel()
+
+	trusted := []netip.Prefix{netip.MustParsePrefix("10.1.0.0/16"), netip.MustParsePrefix("fd00::/8")}
+	tests := []struct {
+		name       string
+		remoteAddr string
+		forwarded  []string
+		want       string
+	}{
+		{name: "direct caller", remoteAddr: "203.0.113.9:443", want: "203.0.113.9"},
+		{
+			name:       "untrusted peer cannot claim an address",
+			remoteAddr: "203.0.113.9:443", forwarded: []string{"198.51.100.7"},
+			want: "203.0.113.9",
+		},
+		{
+			name:       "the hop the proxy appended wins over what the client sent",
+			remoteAddr: "10.1.4.2:51234", forwarded: []string{"198.51.100.7, 203.0.113.9"},
+			want: "203.0.113.9",
+		},
+		{
+			name:       "chained proxies and repeated headers",
+			remoteAddr: "10.1.4.2:51234", forwarded: []string{"198.51.100.7", "203.0.113.9, 10.1.9.9"},
+			want: "203.0.113.9",
+		},
+		{
+			name:       "a garbled hop stops the walk at the last vouched address",
+			remoteAddr: "10.1.4.2:51234", forwarded: []string{"203.0.113.9, not-an-ip"},
+			want: "10.1.4.2",
+		},
+		{name: "trusted proxy with no header", remoteAddr: "10.1.4.2:51234", want: "10.1.4.2"},
+		{
+			name:       "IPv6 proxy",
+			remoteAddr: "[fd00::1]:443", forwarded: []string{"2001:db8::7"},
+			want: "2001:db8::7",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			request := httptest.NewRequest(http.MethodGet, "/", nil)
+			request.RemoteAddr = tt.remoteAddr
+			for _, value := range tt.forwarded {
+				request.Header.Add("X-Forwarded-For", value)
+			}
+			if got := clientIP(request, trusted); got != tt.want {
+				t.Fatalf("clientIP() = %q, want %q", got, tt.want)
 			}
 		})
 	}

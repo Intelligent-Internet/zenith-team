@@ -120,8 +120,11 @@ type HealthResponse struct {
 	// ReloadPendingReason explains why the daemon has confirmed a change to
 	// the zen binary on disk but has not restarted into it yet — it was
 	// busy at the last check and retries when idle. Diagnostic only.
-	ReloadPendingReason string          `json:"reloadPendingReason,omitempty"`
-	Companies           []HealthCompany `json:"companies"`
+	ReloadPendingReason string `json:"reloadPendingReason,omitempty"`
+	// SignedOut is set once Zenith Team ended the daemon's session: the
+	// daemon stays up but calls nothing until a new session is stored.
+	SignedOut bool            `json:"signedOut,omitempty"`
+	Companies []HealthCompany `json:"companies"`
 }
 
 // HealthCompany is one company the daemon registered runtimes in, with the
@@ -199,6 +202,7 @@ func (d *Daemon) healthHandler(startedAt time.Time) http.HandlerFunc {
 			AgentVersions:        versions,
 			SkippedAgents:        d.skippedAgentsSnapshot(),
 			ReloadPendingReason:  d.reloadPending(),
+			SignedOut:            d.client.signedOut(),
 			Companies:            companies,
 		}
 		if digest := d.selfDigest.Load(); digest != nil {

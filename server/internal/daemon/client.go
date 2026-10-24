@@ -239,6 +239,12 @@ func (c *Client) bearer(ctx context.Context) (string, error) {
 	return c.session.AccessToken(ctx)
 }
 
+// signedOut reports that the server ended the daemon's session; the
+// background loops pause on it instead of retrying requests that cannot pass.
+func (c *Client) signedOut() bool {
+	return c != nil && c.session != nil && c.session.SignedOut()
+}
+
 // renewBearer forces a refresh after the server rejected a token.
 func (c *Client) renewBearer(ctx context.Context, rejected string) (string, error) {
 	if c.session == nil {
