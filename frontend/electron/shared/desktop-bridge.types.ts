@@ -5,6 +5,7 @@ export type DesktopEnvironmentName = "dev" | "local" | "prod" | "unknown";
 export type DesktopEnvironment = {
   isDesktop: boolean;
   platform: DesktopPlatform;
+  appName: string | null;
   appVersion: string | null;
   environment: DesktopEnvironmentName;
 };
