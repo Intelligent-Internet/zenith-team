@@ -66,28 +66,7 @@ curl -fsS http://localhost:8788/readyz     # {"status":"ready"}
 
 `make selfhost-logs` follows the logs of every container.
 
-### Use the prebuilt images
-
-Each release also publishes ready-made images to GitHub Container Registry:
-
-- `ghcr.io/intelligent-internet/zenith-team-server`
-- `ghcr.io/intelligent-internet/zenith-team-web`
-
-Each one is tagged with the version (`1.2.3`), the minor line (`1.2`) and `latest`; use a version tag. The release also publishes `ghcr.io/intelligent-internet/zenith-team-voice`, the optional AI voice worker for Huddles (see `voice-agent/README.md`). To use them, set both in `deploy/.env`:
-
-```dotenv
-APP_SERVER_IMAGE=ghcr.io/intelligent-internet/zenith-team-server:1.2.3
-APP_WEB_IMAGE=ghcr.io/intelligent-internet/zenith-team-web:1.2.3
-```
-
-`make selfhost-up` always builds from source, so pull and start with Compose instead:
-
-```bash
-docker compose -f deploy/docker-compose.production.yml pull server web
-docker compose -f deploy/docker-compose.production.yml up -d --wait
-```
-
-Pin a version rather than `latest`, so you choose when to upgrade. Keep your checkout on the same release tag, so the Compose file matches the images.
+There are no public prebuilt images: a self-hosted stack always builds from its checkout. To run a release, check out its tag (`git checkout v1.2.3`) before `make selfhost-up`.
 
 ## 4. Create your account and company
 

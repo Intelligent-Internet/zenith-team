@@ -49,11 +49,8 @@ make selfhost-status                      # the server should be "healthy"
 curl -fsS http://localhost:8788/readyz    # {"status":"ready"}
 ```
 
-To use the published images instead of building, set `APP_SERVER_IMAGE` and
-`APP_WEB_IMAGE` in `deploy/.env` to a release such as
-`ghcr.io/intelligent-internet/zenith-team-server:1.2.3`, then run
-`docker compose -f deploy/docker-compose.production.yml pull server web` and
-`docker compose -f deploy/docker-compose.production.yml up -d --wait`.
+There are no public prebuilt images: the stack always builds from your
+checkout. To run a release, check out its tag (`git checkout v1.2.3`) first.
 
 ## 3. Create your account
 

@@ -9,7 +9,7 @@ All configuration lives in `deploy/.env`. There are no config files. `make selfh
 
 The server checks every setting when it starts. A bad value stops it with an error that names the variable. An empty value means the same as no value.
 
-After you edit `deploy/.env`, run `make selfhost-up` again (or `docker compose -f deploy/docker-compose.production.yml up -d` when you use the prebuilt images). Compose recreates the containers whose settings changed.
+After you edit `deploy/.env`, run `make selfhost-up` again. Compose recreates the containers whose settings changed.
 
 ## Minimum production config
 
@@ -62,8 +62,8 @@ The stack refuses to start without these. `make selfhost-env` generates all thre
 | `APP_NAME` | `Zenith Team API` | The server's name. |
 | `APP_ENVIRONMENT` | `production` | `local`, `dev`, `staging` or `production`. Outside `local`, template secrets and the `local` storage preset are refused. The value also labels every log line. |
 | `APP_LOG_LEVEL` | `info` | `debug`, `info`, `warn` or `error`. Logs are one JSON object per line. |
-| `APP_SERVER_IMAGE` | `zenith-team-server:latest` | The server image. Read by Compose. The default is the image `make selfhost-up` builds. Set it to a published image to skip the build, for example `ghcr.io/intelligent-internet/zenith-team-server:1.2.3`. |
-| `APP_WEB_IMAGE` | `zenith-team-web:latest` | The web app image. Read by Compose. Published as `ghcr.io/intelligent-internet/zenith-team-web`. |
+| `APP_SERVER_IMAGE` | `zenith-team-server:latest` | The server image. Read by Compose. The default is the image `make selfhost-up` builds. Set it to run an image you built and pushed yourself. |
+| `APP_WEB_IMAGE` | `zenith-team-web:latest` | The web app image. Read by Compose. The default is the image `make selfhost-up` builds. |
 | `APP_DATABASE_URL` | the bundled PostgreSQL | Connection URL of your own PostgreSQL, such as `postgresql://zenith_team:password@db.example.com:5432/zenith_team`. |
 | `APP_REDIS_URL` | `redis://redis:6379/0` | **Required.** Connection URL of your own Redis. Redis carries realtime updates and the queue that starts Schedules on time; PostgreSQL stays the source of truth. |
 | `AUTH_DESKTOP_HANDOFF_CODE_TTL_SECONDS` | `60` | How long a desktop sign-in handoff code stays valid. Between 10 and 300 seconds. |
