@@ -24,6 +24,7 @@ import { Icon } from "@/shared/ui/icon";
 import { ProgressBar } from "@/shared/ui/progress-bar";
 
 import "./desktop-update-dialog.css";
+import { useDesktopAppName } from "./use-desktop-app-name";
 
 export function DesktopUpdateDialog() {
   const [open, setOpen] = useState(false);
@@ -33,6 +34,7 @@ export function DesktopUpdateDialog() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [isActing, setIsActing] = useState(false);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
+  const appName = useDesktopAppName();
 
   useEffect(() => {
     let cancelled = false;
@@ -65,7 +67,7 @@ export function DesktopUpdateDialog() {
 
   const busy =
     isActiveDownload(updateState) || updateState.status === "checking";
-  const presentation = getUpdatePresentation(updateState);
+  const presentation = getUpdatePresentation(updateState, appName);
 
   const runAction = async () => {
     setActionError(null);
@@ -170,8 +172,8 @@ export function DesktopUpdateDialog() {
               />
               <p className="text-secondary mt-3 text-xs leading-5">
                 {isReadyToInstall(updateState)
-                  ? "Zenith Team will reopen after the update is installed."
-                  : "Keep Zenith Team open while the update downloads."}
+                  ? `${appName} will reopen after the update is installed.`
+                  : `Keep ${appName} open while the update downloads.`}
               </p>
             </div>
           ) : null}
@@ -236,14 +238,14 @@ function isReadyToInstall(state: DesktopUpdateState) {
   return state.status === "downloaded" || state.status === "restart-required";
 }
 
-function getUpdatePresentation(state: DesktopUpdateState) {
+function getUpdatePresentation(state: DesktopUpdateState, appName: string) {
   const version = state.availableVersion ? ` v${state.availableVersion}` : "";
 
   if (isReadyToInstall(state)) {
     return {
       actionLabel: "Install and restart",
       actingLabel: "Restarting…",
-      description: `Zenith Team${version} is downloaded and ready to install.`,
+      description: `${appName}${version} is downloaded and ready to install.`,
       icon: "tick-circle",
       title: "Update ready",
     };
@@ -254,7 +256,7 @@ function getUpdatePresentation(state: DesktopUpdateState) {
       return {
         actionLabel: "Download update",
         actingLabel: "Starting download…",
-        description: `Zenith Team${version} is available. Download it now to install the update.`,
+        description: `${appName}${version} is available. Download it now to install the update.`,
         icon: "download",
         title: "A new update is available",
       };
@@ -262,7 +264,7 @@ function getUpdatePresentation(state: DesktopUpdateState) {
       return {
         actionLabel: null,
         actingLabel: "Checking…",
-        description: "Looking for the latest Zenith Team release.",
+        description: `Looking for the latest ${appName} release.`,
         icon: "refresh",
         title: "Checking for updates",
       };
@@ -270,7 +272,7 @@ function getUpdatePresentation(state: DesktopUpdateState) {
       return {
         actionLabel: null,
         actingLabel: "Downloading…",
-        description: `Zenith Team${version} is downloading securely.`,
+        description: `${appName}${version} is downloading securely.`,
         icon: "download",
         title: "Downloading update",
       };
@@ -278,8 +280,7 @@ function getUpdatePresentation(state: DesktopUpdateState) {
       return {
         actionLabel: "Try again",
         actingLabel: "Checking…",
-        description:
-          "Zenith Team could not complete the update check or download.",
+        description: `${appName} could not complete the update check or download.`,
         icon: "danger",
         title: "Update failed",
       };
@@ -287,17 +288,17 @@ function getUpdatePresentation(state: DesktopUpdateState) {
       return {
         actionLabel: null,
         actingLabel: "Checking…",
-        description: `Zenith Team v${state.installedVersion ?? "current"} is the latest available version.`,
+        description: `${appName} v${state.installedVersion ?? "current"} is the latest available version.`,
         icon: "tick-circle",
-        title: "Zenith Team is up to date",
+        title: `${appName} is up to date`,
       };
     default:
       return {
         actionLabel: "Check again",
         actingLabel: "Checking…",
-        description: "Check whether a newer Zenith Team release is available.",
+        description: `Check whether a newer ${appName} release is available.`,
         icon: "refresh",
-        title: "Zenith Team update",
+        title: `${appName} update`,
       };
   }
 }

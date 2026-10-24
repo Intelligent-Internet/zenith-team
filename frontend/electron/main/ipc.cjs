@@ -139,6 +139,7 @@ function registerIpcHandlers(options = {}) {
   ipcMain.handle("desktop:get-environment", () => ({
     isDesktop: true,
     platform: getDesktopPlatform(),
+    appName: app.getName(),
     appVersion: app.getVersion(),
     environment: getDesktopEnvironmentName(),
   }));

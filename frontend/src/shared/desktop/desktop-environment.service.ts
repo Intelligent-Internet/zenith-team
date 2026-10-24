@@ -97,6 +97,7 @@ declare global {
 export const WEB_DESKTOP_ENVIRONMENT_FALLBACK: DesktopEnvironment = {
   isDesktop: false,
   platform: "unknown",
+  appName: null,
   appVersion: null,
   environment: "unknown",
 };
