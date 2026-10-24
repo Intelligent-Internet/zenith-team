@@ -1,11 +1,13 @@
-# Code owners. GitHub asks this team to review every pull request, and the
-# main-branch ruleset requires that review to merge.
+# Code owners. GitHub asks these people to review every pull request, and the
+# main-branch ruleset requires one of their reviews to merge.
 #
-# The ii-agent team maintains Zenith Team and owns every path. To give the
-# security-sensitive paths their own reviewers later (sign-in, configuration,
-# middleware, run isolation, the agent adapters, migrations, the desktop app's
-# native code, CI, the secret-scan rules and the security policy), add a line
-# for each below this one: the last matching line wins. A team must exist and
-# have write access to the repository, or GitHub ignores its lines.
+# The maintainers own every path: the admins (tungduongbk, khoangothe,
+# PhungVanDuy, baquy96) and the maintainers (thang-lq, phamm259, ducphuE10).
+# To give the security-sensitive paths their own reviewers later (sign-in,
+# configuration, middleware, run isolation, the agent adapters, migrations, the
+# desktop app's native code, CI, the secret-scan rules and the security
+# policy), add a line for each below this one: the last matching line wins.
+# Everyone named must have write access to the repository, or GitHub ignores
+# them.
 
-* @Intelligent-Internet/ii-agent
+* @tungduongbk @khoangothe @PhungVanDuy @baquy96 @thang-lq @phamm259 @ducphuE10

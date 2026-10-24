@@ -438,9 +438,9 @@ There is no CLA.
 
 ### Code owner review
 
-A pull request needs a review from the code owners. `@Intelligent-Internet/ii-agent`,
-the team that maintains Zenith Team, owns every path.
-[.github/CODEOWNERS](.github/CODEOWNERS) is the source of truth.
+A pull request needs a review from one of the code owners: the maintainers,
+who own every path. [.github/CODEOWNERS](.github/CODEOWNERS) lists them and is
+the source of truth.
 
 ### Secrets and test data
 
