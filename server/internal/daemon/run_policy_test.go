@@ -370,6 +370,23 @@ func TestTaskRunPromptDefinesDurableHumanInputExit(t *testing.T) {
 	}
 }
 
+// Selection is required only for a Task with deliveries, so an answer-only Run
+// that presented nothing must not call finalize_task_results, which needs at
+// least one output.
+func TestTaskRunPromptFinalizesOnlyPresentedOutputs(t *testing.T) {
+	t.Parallel()
+	var prompt strings.Builder
+	appendTaskRunPrompt(&prompt, RunTaskContext{Key: "ENG-42", Title: "Count files"}, "/work/current")
+	for _, want := range []string{
+		"If you presented final deliveries, read the current Task revision and call finalize_task_results",
+		"A Run that presented no outputs, such as one that only answers in chat, does not call finalize_task_results.",
+	} {
+		if !strings.Contains(prompt.String(), want) {
+			t.Errorf("Task prompt missing %q:\n%s", want, prompt.String())
+		}
+	}
+}
+
 // A Task Run always works in a Task worktree, whose repository is its Project
 // main's, which a Run on a protected computer cannot write,
 // so it leaves its changes, Memory included, uncommitted for the review.
