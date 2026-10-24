@@ -34,6 +34,8 @@ const DESKTOP_SESSION_TIMEOUT_MS = 35_000;
 const AUTH_REQUEST_TIMEOUT_MS = 30_000;
 // Renew this long before the access token expires: request latency and
 // clock drift between this computer and the server (the CLI uses the same).
+// The renderer asks for its renewal 20 seconds ahead (src/lib/auth-token.ts),
+// inside this window, so that request always rotates.
 const REFRESH_SKEW_MS = 30_000;
 // The CLI's cross-process lock on auth.json (internal/authfile): the same
 // file name, the same stale age and the same wait.
@@ -399,7 +401,13 @@ function createDesktopAuthTokenStore({
 
   async function readStoredAccessToken() {
     const stored = await readStoredSession();
-    return stored.ok ? { ok: true, accessToken: stored.accessToken } : stored;
+    return stored.ok
+      ? {
+          ok: true,
+          accessToken: stored.accessToken,
+          accessExpiresAt: stored.accessExpiresAt,
+        }
+      : stored;
   }
 
   async function installStoredSession(session) {

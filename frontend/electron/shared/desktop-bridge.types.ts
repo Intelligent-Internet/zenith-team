@@ -793,7 +793,8 @@ export type ZenithTeamDesktopBridge = {
   ): Promise<DesktopWorkspaceAssetActionResult>;
   getEnvironment(): Promise<DesktopEnvironment>;
   getStoredAccessToken?(): Promise<
-    { ok: true; accessToken: string | null } | { ok: false; reason: string }
+    | { ok: true; accessToken: string | null; accessExpiresAt?: string | null }
+    | { ok: false; reason: string }
   >;
   clearStoredAccessToken?(): Promise<
     { ok: true } | { ok: false; reason: string }
