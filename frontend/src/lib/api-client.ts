@@ -10,6 +10,7 @@ import {
   clearStoredAccessToken,
   getStoredAccessToken,
   getStoredAuthorizationHeader,
+  setCurrentSessionId,
 } from "@/lib/auth-token";
 import { plainApiErrorCopy } from "@/lib/api-error-copy";
 import type {
@@ -378,6 +379,7 @@ export function refreshAuthSession(): Promise<
         if (getStoredAccessToken() !== accessTokenBeforeRefresh) {
           throw new Error("Your session changed. Try again.");
         }
+        setCurrentSessionId(result.response.session.id);
         cacheStoredAccessToken(result.response.session.accessToken);
         return result.response;
       })
@@ -392,7 +394,10 @@ export function refreshAuthSession(): Promise<
       client: "web",
       clientMetadata: { platform: "web" },
     })
-    .then((response) => response.data)
+    .then((response) => {
+      setCurrentSessionId(response.data.session.id);
+      return response.data;
+    })
     .catch((error: unknown) => {
       // The server answered and refused: no cookie, an expired or revoked
       // family, a lost rotation race. None of these mend with a retry.

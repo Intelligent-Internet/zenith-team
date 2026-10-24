@@ -90,6 +90,7 @@ export function cacheStoredAccessToken(token: string | null | undefined): void {
 }
 
 export function clearStoredAccessToken(): void {
+  currentSessionId = null;
   setStoredAccessToken(null);
 
   if (typeof window !== "undefined" && isLocalhost(window.location.hostname)) {
@@ -100,6 +101,19 @@ export function clearStoredAccessToken(): void {
 export function getStoredAuthorizationHeader(): string | null {
   const token = getStoredAccessToken();
   return token ? `Bearer ${token}` : null;
+}
+
+// The `session.id` the sign-in or the last rotation handed back, which is what
+// `auth.session_revoked` carries. Null when this client never saw one: after a
+// reload, a web Google sign-in or a desktop start.
+let currentSessionId: string | null = null;
+
+export function getCurrentSessionId(): string | null {
+  return currentSessionId;
+}
+
+export function setCurrentSessionId(id: string): void {
+  currentSessionId = id;
 }
 
 function persistDesktopAccessToken(token: string | null) {
