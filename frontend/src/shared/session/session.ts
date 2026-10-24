@@ -1,6 +1,6 @@
 import { authService } from "@/shared/api/auth.service";
 import { isLoginResponse } from "@/shared/api/auth-response";
-import { clearStoredAccessToken } from "@/lib/auth-token";
+import { clearStoredAccessToken, setCurrentSessionId } from "@/lib/auth-token";
 import { isAuthenticationFailure } from "@/lib/api-client";
 import { companyService } from "@/shared/api/company.service";
 import type {
@@ -250,6 +250,7 @@ export async function writeSessionFromLoginResponse(
   response: ClientLoginResponse | AuthSessionResponse,
   provider?: SessionProvider,
 ): Promise<SessionSnapshot> {
+  if ("session" in response) setCurrentSessionId(response.session.id);
   const requestVersion = sessionSnapshotVersion;
   const currentSession = readSessionSnapshot();
   const currentCompanyId =
